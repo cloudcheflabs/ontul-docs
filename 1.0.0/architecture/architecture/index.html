@@ -1,0 +1,1303 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/architecture/architecture/">
+      
+      
+      
+        <link rel="next" href="../../intro/intro/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/logo/ontul-logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Ontul Architecture - Ontul</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Ontul" class="md-header__button md-logo" aria-label="Ontul" data-md-component="logo">
+      
+  <img src="../../images/logo/ontul-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ontul
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Ontul Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../intro/intro/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../features/unified-engine/" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Ontul" class="md-nav__button md-logo" aria-label="Ontul" data-md-component="logo">
+      
+  <img src="../../images/logo/ontul-logo.png" alt="logo">
+
+    </a>
+    Ontul
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontul Architecture
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontul Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ontul-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ontul Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ontul Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#master" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Master
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worker
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execution-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execution Modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#communication-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Communication Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-coordination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cluster Coordination
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connector-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connector Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#geospatial-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geospatial Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#client-interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client Interfaces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Design Principles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/intro/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/unified-engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Unified Data Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/arrow-native-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow-Native Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/interactive-sql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive SQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/batch-streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch & Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/connector-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connector Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Queries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/iceberg-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Iceberg Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/kafka-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kafka Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/iam/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/encryption/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encryption & KMS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/geospatial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geospatial Support
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/high-availability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    High Availability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/admin-ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="architecture">Architecture</h1>
+<p>Ontul is a <strong>distributed unified data engine</strong> that combines a processing engine and a query engine into a single system. Instead of operating separate clusters for batch processing, stream processing, and interactive SQL queries, Ontul provides all three capabilities in one engine — reducing operational complexity and eliminating redundant infrastructure.</p>
+<ul>
+<li><strong>Processing Engine</strong>: Distributed batch and stream processing with a programmatic SDK (Java, Python). Submit batch ETL jobs, run continuous streaming pipelines (Kafka → Iceberg), and execute complex data transformations — all within the same cluster.</li>
+<li><strong>Query Engine</strong>: Interactive SQL queries with federation across multiple data sources. Connect from any JDBC tool (DBeaver, DataGrip) or BI platform via Arrow Flight SQL, and query Iceberg, JDBC databases, files on S3, and more through a unified SQL interface.</li>
+</ul>
+<p>Both modes share the same distributed execution engine, the same Arrow-native operator pipeline, and the same cluster infrastructure. A single Ontul deployment replaces what traditionally requires three or more separate systems.</p>
+<h2 id="ontul-architecture">Ontul Architecture</h2>
+<p><img width="1200" src="../../images/architecture/ontul-architecture.png" align="center"/></p>
+<p>Ontul consists of two main deployable components: <strong>Master</strong> and <strong>Worker</strong>.</p>
+<h3 id="master">Master</h3>
+<p>The Master is the entry point for all client interactions — SQL queries, job submissions, and administrative operations.</p>
+<ul>
+<li><strong>SQL Parsing &amp; Planning</strong>: Parses SQL using Apache Calcite with a rule-based optimizer. Supports standard DML (INSERT, UPDATE, DELETE, MERGE INTO), DDL (CREATE TABLE, DROP, ALTER, CREATE VIEW), metadata commands (SHOW CATALOGS/SCHEMAS/TABLES, DESCRIBE, EXPLAIN), and full SELECT queries including JOINs, aggregations, window functions, CTEs, and subqueries.</li>
+<li><strong>Distributed Planning</strong>: Generates physical execution plans with an operator tree, resolves data splits from connectors, and distributes per-worker plans with split assignments. Supports predicate pushdown to connectors and plan caching (SHA-256 based LRU cache) for repeated queries.</li>
+<li><strong>Job Management</strong>: Manages batch and streaming jobs submitted via the SDK or REST API. Small batch jobs run with the Master as driver; large batch and streaming jobs are delegated to a Worker as driver, keeping the Master lightweight. Tracks job lifecycle (SUBMITTED → RUNNING → COMPLETED/FAILED/KILLED) with history stored locally or on S3.</li>
+<li><strong>Multi-Catalog Management</strong>: Manages multiple data source catalogs with a 3-level Calcite schema hierarchy (Catalog → Schema → Table). Catalogs can be dynamically registered and unregistered at runtime without restarts.</li>
+<li><strong>Arrow Flight SQL Server</strong>: Provides the Flight SQL endpoint for JDBC and Arrow-native client connections. Supports multiple authentication methods: JWT bearer tokens, access key pairs, STS temporary credentials, and basic auth.</li>
+<li><strong>Admin API &amp; UI</strong>: Exposes a Netty HTTP/2 REST API and serves the React-based Admin UI for cluster management, catalog browsing, SQL query editor, job monitoring, IAM, KMS, backup/restore, and Prometheus metrics.</li>
+<li><strong>Cluster State Management</strong>: The leader Master maintains all cluster state — catalog metadata, IAM policies, KMS keys, sessions, and connection credentials — in RocksDB, and synchronizes to follower Masters via the internal NIO protocol.</li>
+</ul>
+<h3 id="worker">Worker</h3>
+<p>The Worker is the execution engine that processes both query plans and long-running jobs.</p>
+<ul>
+<li><strong>Operator Pipeline Execution</strong>: Executes physical plans as a pull-based streaming operator pipeline: Scan → Filter → Project → HashJoin / SortMergeJoin → HashAggregate → Sort → TopN → Window → Exchange. All operators process data in Apache Arrow columnar format for vectorized execution.</li>
+<li><strong>Split-Based Data Reading</strong>: Reads data splits independently via connector-specific RecordBatchReaders. Each Worker processes only its assigned splits, enabling parallel data ingestion across the cluster.</li>
+<li><strong>Memory Management &amp; Disk Spill</strong>: Worker local disk is used exclusively for temporary spill storage, not permanent data. When operators (Sort, HashJoin, HashAggregate) exceed the memory threshold, intermediate results spill to disk via SpillStore with automatic cleanup.</li>
+<li><strong>Data Shuffling</strong>: Transfers intermediate results between Workers via Arrow Flight for operations requiring data redistribution (joins, aggregations across partitions).</li>
+<li><strong>Streaming Job Execution</strong>: Runs long-lived streaming pipelines (e.g., Kafka → processing → Iceberg/Kafka) with watermark and window support. Streaming jobs are always assigned to Workers as drivers.</li>
+<li><strong>Python UDF Support</strong>: Executes Python user-defined functions via a separate process bridge with Arrow IPC for data transfer, isolating Python dependencies from the JVM.</li>
+</ul>
+<h3 id="execution-modes">Execution Modes</h3>
+<p>Ontul supports two execution modes within the same cluster:</p>
+<p><strong>Query Mode (Interactive SQL)</strong></p>
+<p>Clients connect via Arrow Flight SQL (JDBC, Python <code>pyarrow.flight</code>, Ontul Python SDK) and submit SQL queries. The Master parses and plans the query, then distributes execution plans to Workers. After planning, Workers communicate directly with each other (W2W) for shuffles — the Master is not a bottleneck during execution. Results stream back to the client via Arrow Flight.</p>
+<p><strong>Job Mode (Batch &amp; Streaming)</strong></p>
+<p>Clients submit jobs programmatically using the Ontul SDK:</p>
+<ul>
+<li><em>Client mode</em> (<code>session.source()</code> / <code>df.sink()</code>): Interactive, no dependency upload needed. Results return to the client directly.</li>
+<li><em>Server mode</em> (<code>session.submit(MyJob.class)</code>): Upload JARs with custom dependencies to the server. Jobs run asynchronously; the client can disconnect after submission. Suitable for scheduled batch ETL (e.g., via Airflow) and long-running streaming pipelines.</li>
+</ul>
+<p>SQL and code can be mixed freely in both modes. Execution is lazy — the full plan is optimized at <code>.execute()</code> time.</p>
+<h3 id="communication-architecture">Communication Architecture</h3>
+<p>Ontul uses a strict two-channel communication design:</p>
+<p><strong>Control Plane — Custom NIO Protocol</strong></p>
+<p>A lightweight binary protocol for all non-data communication between nodes:</p>
+<ul>
+<li>Wire format: <code>[4B length][4B correlationId][2B opCode][1B flags][payload]</code></li>
+<li>Health checks, readiness checks, heartbeats</li>
+<li>Metadata, IAM, KMS, session, and connection state synchronization (Master → Master)</li>
+<li>Task assignment and cancellation signals (Master → Worker)</li>
+<li>Catalog configuration sync (Master → Worker)</li>
+</ul>
+<p><strong>Data Plane — Apache Arrow Flight</strong></p>
+<p>Arrow Flight is used exclusively for bulk data transfer:</p>
+<ul>
+<li>Query results (Worker → Master → Client)</li>
+<li>Shuffle data between Workers (W2W)</li>
+<li>Source/Sink data transfers for jobs</li>
+<li>All data stays in Arrow IPC binary format — no JSON serialization, no base64 encoding</li>
+</ul>
+<h3 id="cluster-coordination">Cluster Coordination</h3>
+<p>Ontul uses Apache ZooKeeper (via Curator) for:</p>
+<ul>
+<li><strong>Service Discovery</strong>: Masters and Workers register as ephemeral nodes, enabling automatic detection of node joins and failures.</li>
+<li><strong>Leader Election</strong>: ZooKeeper leader latch elects a primary Master that owns all write operations to the state store (RocksDB). On leader failure, a new leader is automatically elected and reloads persisted state.</li>
+<li><strong>State Replication</strong>: The leader Master replicates state to follower Masters via NIO sync messages (METADATA_SYNC_PUSH, KMS_SYNC_PUSH, IAM_SYNC_PUSH, SESSION_SYNC_PUSH, CONN_SYNC_PUSH).</li>
+<li><strong>Worker Health Monitoring</strong>: Scheduled health checks from Master to Workers with configurable intervals, timeouts, and failure thresholds. Unhealthy Workers are automatically detected and excluded from query planning.</li>
+</ul>
+<h3 id="connector-architecture">Connector Architecture</h3>
+<p>Ontul is a processing engine, not a storage engine. Data lives in external systems accessed through a plugin-based connector architecture with three distinct concepts:</p>
+<p><strong>Connectors</strong> (physical connections): S3, JDBC, Kafka — credentials stored in the encrypted ConnectionStore.</p>
+<p><strong>Catalogs</strong> (table metadata): Iceberg (REST/JDBC/Hadoop), JDBC, TPC-H, TPC-DS, File, CDC, Delta Lake, Elasticsearch — registered at runtime, referencing Connectors by connection ID.</p>
+<p><strong>Formats</strong> (data serialization): Parquet, ORC, CSV, JSON, Avro.</p>
+<p>Built-in connectors:</p>
+<ul>
+<li><strong>Iceberg</strong>: Read/write via REST catalog (e.g., Polaris, Nessie). Parquet and ORC formats. Snapshot isolation, schema evolution, streaming writes, and automated maintenance (snapshot expiration, data compaction, manifest rewrite, orphan file cleanup).</li>
+<li><strong>File</strong>: Read Parquet, ORC, CSV, JSON, Avro files from S3-compatible storage or local filesystem. Recursive directory scan with hidden file filtering.</li>
+<li><strong>JDBC</strong>: Query external databases with HikariCP connection pooling and configurable split sizes for parallel reads.</li>
+<li><strong>Kafka</strong>: Streaming source (JSON, Avro with Schema Registry, raw format) and sink (JSON with optional partitioning).</li>
+<li><strong>CDC (Debezium)</strong>: Consume Debezium change events from Kafka for CDC pipelines.</li>
+<li><strong>Delta Lake</strong>: Read Delta tables by parsing the transaction log.</li>
+<li><strong>Elasticsearch</strong>: Query Elasticsearch indices via the scroll API.</li>
+<li><strong>TPC-H / TPC-DS</strong>: Built-in benchmark data generators with configurable scale factors.</li>
+</ul>
+<p>External connectors can be loaded as plugins via <code>URLClassLoader</code> with dependency isolation.</p>
+<h3 id="security">Security</h3>
+<ul>
+<li><strong>KMS (Envelope Encryption)</strong>: AES-256-GCM encryption with PBKDF2-SHA256 master key derivation (200K iterations). Per-key DEKs encrypted by the master key. RocksDB keystore replicated from leader to all nodes. Connection credentials, IAM secrets, and sensitive metadata are encrypted at rest.</li>
+<li><strong>IAM</strong>: AWS-style JSON policy-based access control with users, groups, and policies. Supports catalog-level, table-level, column-level (column deny), and row-level (row filter conditions) security. Password authentication (PBKDF2 hashed), long-lived access keys (AKIA prefix), and STS temporary credentials (ASIA prefix) with configurable expiration.</li>
+<li><strong>Audit Logging</strong>: All administrative and data access operations logged to RocksDB with 90-day retention.</li>
+<li><strong>TLS</strong>: Optional TLS for both Arrow Flight SQL and Admin HTTP endpoints.</li>
+</ul>
+<h3 id="geospatial-support">Geospatial Support</h3>
+<p>PostGIS-compatible SQL functions powered by JTS (Java Topology Suite), registered as Calcite UDFs:</p>
+<ul>
+<li><strong>Construction</strong>: <code>ST_GeomFromText</code>, <code>ST_Point</code>, <code>ST_MakePoint</code>, <code>ST_GeomFromGeoJSON</code></li>
+<li><strong>Output</strong>: <code>ST_AsText</code>, <code>ST_AsGeoJSON</code></li>
+<li><strong>Spatial Relationships</strong>: <code>ST_Distance</code>, <code>ST_Contains</code>, <code>ST_Within</code>, <code>ST_Intersects</code>, <code>ST_Overlaps</code>, <code>ST_Touches</code></li>
+<li><strong>Processing</strong>: <code>ST_Area</code>, <code>ST_Buffer</code>, <code>ST_Centroid</code>, <code>ST_Union</code>, <code>ST_Intersection</code>, <code>ST_Envelope</code>, <code>ST_Length</code></li>
+<li><strong>Accessors</strong>: <code>ST_X</code>, <code>ST_Y</code>, <code>ST_SRID</code>, <code>ST_SetSRID</code>, <code>ST_GeometryType</code>, <code>ST_NumPoints</code>, <code>ST_IsValid</code></li>
+</ul>
+<h3 id="client-interfaces">Client Interfaces</h3>
+<table>
+<thead>
+<tr>
+<th>Port</th>
+<th>Protocol</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8080</td>
+<td>HTTP/2 (Netty)</td>
+<td>Admin UI, REST API (<code>/v1/api/sql</code>, <code>/v1/api/job/*</code>, <code>/admin/*</code>), Prometheus metrics (<code>/metrics</code>)</td>
+</tr>
+<tr>
+<td>47470</td>
+<td>Arrow Flight SQL</td>
+<td>JDBC connections (DBeaver, DataGrip, etc.), Python SDK, programmatic Arrow clients</td>
+</tr>
+<tr>
+<td>19999</td>
+<td>Custom NIO</td>
+<td>Internal cluster communication only (Master↔Master, Master↔Worker, Worker↔Worker)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-design-principles">Key Design Principles</h3>
+<ol>
+<li><strong>Single engine</strong> — One Ontul cluster handles batch processing, stream processing, and interactive SQL. No need for separate clusters for each workload.</li>
+<li><strong>Arrow-native</strong> — One conversion in, one conversion out, zero-copy in the middle. All internal data processing in Arrow columnar format.</li>
+<li><strong>Processing engine, not storage engine</strong> — Data lives in external systems (S3, Iceberg, JDBC, Kafka). Workers use local disk only for temporary spill.</li>
+<li><strong>Lazy execution</strong> — Full plan optimization at <code>.execute()</code> time, enabling cross-operation optimization.</li>
+<li><strong>SQL everywhere</strong> — SQL usable in both Query and Job modes. SQL and code can be mixed freely.</li>
+<li><strong>Dynamic catalogs</strong> — Register and unregister data sources at runtime without cluster restarts.</li>
+<li><strong>Minimal external dependencies</strong> — Java-native execution engine (no JNI, no Velox, no DataFusion). ZooKeeper + RocksDB for coordination and state (no etcd). Custom NIO protocol for control plane (no gRPC dependency for internal communication).</li>
+<li><strong>Strict channel separation</strong> — Arrow Flight for data, custom NIO for control. Never mixed.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © <script>document.write(new Date().getFullYear())</script> Cloud Chef Labs, Inc. All rights reserved. <a href="mailto:admin@cloudchef-labs.com">admin@cloudchef-labs.com</a>
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "2.2.0", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/extra.js"></script>
+      
+    
+  </body>
+</html>
