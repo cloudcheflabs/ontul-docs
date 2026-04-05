@@ -1,26 +1,40 @@
-# Encryption at Rest
+# Encryption & KMS
 
-NeorunBase provides built-in encryption at rest to protect data stored on disk, ensuring that sensitive data is always encrypted without any application-level changes.
+Ontul provides built-in encryption with a Key Management Service (KMS) to protect sensitive data at rest across the cluster.
 
 ## Envelope Encryption
 
-NeorunBase uses envelope encryption, a widely adopted encryption approach used by major cloud providers. Each shard is encrypted with its own unique Data Encryption Key (DEK), and DEKs are encrypted with a master key managed by the built-in Key Management Service (KMS).
+Ontul uses envelope encryption — each piece of sensitive data is encrypted with its own Data Encryption Key (DEK), and DEKs are encrypted with a master key:
 
-## Built-in KMS
-
-NeorunBase includes a built-in Key Management Service that:
-
-- Generates and manages encryption keys
-- Distributes keys securely across the cluster
-- Synchronizes keys between Coordinators and Data Nodes automatically
+- **Algorithm**: AES-256-GCM
+- **Master Key Derivation**: PBKDF2-SHA256 with 200,000 iterations
+- **Master Key Source**: Environment variable `ONTUL_MASTER_KEY` (minimum 32 characters)
 
 ## What Is Encrypted
 
-- **Shard data**: All table data stored on Data Nodes is encrypted at rest.
-- **Metadata**: Table schemas and shard maps maintained by the Coordinator are encrypted.
-- **Write-Ahead Log (WAL)**: WAL segments are encrypted to protect data durability records.
-- **Internal communication**: Data transmitted between Coordinators and Data Nodes is encrypted using AES.
+- **Connection credentials**: S3 access keys, JDBC passwords, Kafka credentials stored in the ConnectionStore
+- **IAM secrets**: User passwords, access key secrets, STS tokens
+- **Cluster state metadata**: Sensitive metadata in the RocksDB state store
 
-## Transparent to Clients
+## Built-in KMS
 
-Encryption is fully transparent to clients. No changes to queries, connection settings, or application code are required. Data is encrypted when written to disk and decrypted when read, all handled internally by NeorunBase.
+Ontul includes a built-in KMS that:
+
+- Generates and manages encryption keys in a RocksDB-backed keystore
+- Distributes keys from the leader Master to all cluster nodes automatically
+- Replicates the encrypted keystore to follower Masters for high availability
+
+No external KMS service is required.
+
+## Key Distribution
+
+1. The leader Master generates and stores DEKs in the local encrypted RocksDB keystore
+2. On leader election or key changes, the keystore is replicated to follower Masters via the internal NIO protocol
+3. Workers receive relevant keys for decrypting connection credentials needed during query execution
+
+## TLS
+
+Ontul supports optional TLS for external-facing endpoints:
+
+- **Arrow Flight SQL**: Encrypted JDBC and SDK connections
+- **Admin HTTP**: HTTPS for the Admin UI and REST API
