@@ -1,34 +1,37 @@
 # Iceberg Integration
 
-NeorunBase integrates with Apache Iceberg, enabling automatic synchronization of transactional data to an open lakehouse format. This allows downstream analytics engines such as Apache Spark, Trino, and Hive to query NeorunBase data directly.
+Ontul integrates with Apache Iceberg as a first-class catalog, supporting both read and write operations with full table management and automated maintenance.
 
-## Automatic Data Synchronization
+## Catalog Type
 
-NeorunBase automatically syncs table data to Iceberg tables in the background:
+Ontul supports the Iceberg REST Catalog, connecting to REST catalog servers such as Polaris or Nessie with OAuth2 or static token authentication.
 
-- **Initial sync**: A full snapshot of the table is exported as Parquet files to S3-compatible object storage and registered in the Iceberg catalog.
-- **Incremental sync**: After the initial sync, only the changes (inserts, updates, deletes) are synchronized incrementally, minimizing the overhead.
+## Read Operations
 
-## Iceberg Catalog Support
+- Query Iceberg tables using standard SQL with fully qualified names (`iceberg_catalog.schema.table`)
+- Snapshot isolation — queries read from a consistent snapshot
+- Schema evolution detection — Ontul automatically detects and reflects column changes
+- Parquet and ORC data file formats supported
 
-NeorunBase connects to any Iceberg REST catalog (e.g., Polaris, Nessie) with support for:
+## Write Operations
 
-- OAuth2 client credentials authentication
-- Static bearer token authentication
+- **INSERT INTO**: Append data to existing Iceberg tables
+- **CREATE TABLE AS SELECT (CTAS)**: Create new Iceberg tables from query results
+- **MERGE INTO**: Upsert operations using Iceberg's OverwriteFiles API
+- **Streaming writes**: Continuous ingestion from Kafka or other streaming sources directly into Iceberg tables
+- Tables are auto-created if they don't exist when writing via the SDK
 
-## Open Lakehouse Analytics
+## Automated Maintenance
 
-Once data is synced to Iceberg, it can be queried by any engine that supports the Iceberg table format:
+Ontul includes a built-in Iceberg maintenance service that runs scheduled tasks:
 
-- **Apache Spark**: Batch and streaming analytics
-- **Trino**: Interactive SQL queries
-- **Apache Hive**: Data warehousing workloads
-- **Apache Flink**: Stream processing
+- **Expire Snapshots**: Remove old snapshots beyond the configured retention period (default 7 days)
+- **Rewrite Data Files**: Compact small files into larger ones for better read performance
+- **Rewrite Manifests**: Optimize manifest files for faster query planning
+- **Remove Orphan Files**: Clean up data files that are no longer referenced by any snapshot
 
-## External Iceberg Table Queries
-
-NeorunBase can also read data from external Iceberg tables. This allows you to query data stored in Iceberg (Parquet, ORC, Avro formats) directly from NeorunBase using standard SQL, bridging the gap between the transactional and analytical worlds.
+Maintenance can be configured per table through the Admin UI or triggered manually via `ALTER TABLE EXECUTE` SQL commands.
 
 ## S3-Compatible Storage
 
-Iceberg data files are stored in S3-compatible object storage, supporting AWS S3, MinIO, and other S3-compatible services.
+Iceberg data files are stored in S3-compatible object storage. Ontul supports AWS S3, MinIO, and other S3-compatible services, configured through the ConnectionStore.
