@@ -50,6 +50,10 @@ nav:
       - "Geospatial Support": features/geospatial.md
       - "High Availability": features/high-availability.md
       - "Admin UI": features/admin-ui.md
+  - "Use Cases":
+      - "Batch ETL: S3 Parquet + Iceberg": use-cases/batch-etl.md
+      - "Interactive SQL: Iceberg via JDBC": use-cases/interactive-sql.md
+      - "Streaming: Kafka to Iceberg": use-cases/streaming.md
 
 
 
