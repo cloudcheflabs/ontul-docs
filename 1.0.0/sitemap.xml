@@ -2,66 +2,78 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/architecture/architecture/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/admin-ui/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/arrow-native-execution/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/batch-streaming/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/connector-architecture/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/encryption/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/federation/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/geospatial/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/high-availability/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/iam/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/iceberg-integration/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/interactive-sql/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/kafka-integration/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/unified-engine/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
     </url>
     <url>
          <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/intro/intro/</loc>
-         <lastmod>2026-04-05</lastmod>
+         <lastmod>2026-04-06</lastmod>
+    </url>
+    <url>
+         <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/use-cases/batch-etl/</loc>
+         <lastmod>2026-04-06</lastmod>
+    </url>
+    <url>
+         <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/use-cases/interactive-sql/</loc>
+         <lastmod>2026-04-06</lastmod>
+    </url>
+    <url>
+         <loc>https://cloudcheflabs.github.io/ontul-docs/1.0.0/use-cases/streaming/</loc>
+         <lastmod>2026-04-06</lastmod>
     </url>
 </urlset>
