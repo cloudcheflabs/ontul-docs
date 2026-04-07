@@ -42,17 +42,21 @@ examples/bin/run-remote-pipeline-python.sh
 
 ```
 Client (ontul-sdk.jar / Python SDK)
+  │  Client only sends SQL commands + receives Arrow results.
+  │  No data passes through the client.
   │
-  ├── Step 1: Generate sales + product data (in-memory)
+  ├── Step 1: Generate sales + product data (in-memory → VALUES SQL)
   │
-  ├── Step 2: Source.data() → Sink.s3() [Write Parquet to S3]
-  │       └── Arrow Flight → Ontul → S3 (MinIO)
+  ├── Step 2: Sink.s3() → WRITE_S3 command
+  │       └── Master writes Parquet directly to S3 (MinIO)
   │
-  ├── Step 3: Source.s3() → filter → withColumn [Transform]
-  │       └── Read Parquet → filter(qty > 0) → enrich(total_amount)
+  ├── Step 3: Source.s3() → read_s3() table function
+  │       └── Master reads S3 via FileConnector → Arrow cache in memory
+  │       └── filter(qty > 0) → withColumn(total_amount) — executed on Worker
   │
-  ├── Step 4: join(sales, products) [Dimension lookup]
-  │       └── Sales × Product dimension table
+  ├── Step 4: join(sales, products)
+  │       └── Worker fetches Arrow cache from Master via NIO
+  │       └── HashJoin on Worker — all server-side
   │
   ├── Step 5: groupBy → agg → Sink.table() [Aggregate → Iceberg]
   │       ├── revenue_by_category_region
@@ -60,12 +64,12 @@ Client (ontul-sdk.jar / Python SDK)
   │       └── region_summary
   │
   ├── Step 6: Source.sql("SELECT * FROM ice.examples...") [Query]
-  │       └── Iceberg → Arrow Flight → Client display
+  │       └── Worker scans Iceberg → Arrow Flight → Client display
   │
   └── Step 7: Iceberg × TPC-H federation query
 ```
 
-All steps execute on the Ontul cluster. The client only sends/receives Arrow data via Flight.
+**All processing happens on the Ontul cluster (Master + Workers).** The client only sends SQL strings via Arrow Flight and receives Arrow RecordBatch results. S3 read/write is performed server-side — data never passes through the client.
 
 ---
 
@@ -171,10 +175,23 @@ from ontul.session import OntulSession
 
 session = OntulSession()
 
-# Write to S3
+s3_config = {
+    'endpoint': 'http://localhost:9000',
+    'accessKey': 'minioadmin',
+    'secretKey': 'minioadmin',
+    'pathStyle': 'true',
+}
+
+# Write to S3 (server-side — Master writes directly to S3)
 session.sink_s3(sales, "s3://bucket/raw/sales", "parquet", s3_config)
 
-# Read + transform (server-side via RemoteDataFrame)
+# Read from S3 (server-side — Master reads via FileConnector)
+raw_sales = session.source_s3("s3://bucket/raw/sales", "parquet", s3_config)
+
+# Sink to Iceberg staging (PyArrow Table → CTAS)
+session.sink(raw_sales, "ice.examples.stg_sales")
+
+# Transform (server-side via RemoteDataFrame)
 valid = (source(session, "ice.examples.stg_sales")
     .filter("quantity > 0")
     .with_column("total_amount", "quantity * unit_price"))
