@@ -54,6 +54,7 @@ nav:
       - "Batch ETL: S3 Parquet + Iceberg": use-cases/batch-etl.md
       - "Interactive SQL: Iceberg via JDBC": use-cases/interactive-sql.md
       - "Streaming: Kafka to Iceberg": use-cases/streaming.md
+      - "Remote Pipeline: S3 → Transform → Iceberg": use-cases/remote-pipeline.md
 
 
 
