@@ -1352,29 +1352,33 @@
 <hr />
 <h2 id="pipeline-architecture">Pipeline Architecture</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Client (ontul-sdk.jar / Python SDK)
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  │
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  ├── Step 1: Generate sales + product data (in-memory)
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  │  Client only sends SQL commands + receives Arrow results.
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  │  No data passes through the client.
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  │
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  ├── Step 2: Source.data() → Sink.s3() [Write Parquet to S3]
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  │       └── Arrow Flight → Ontul → S3 (MinIO)
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  │
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  ├── Step 3: Source.s3() → filter → withColumn [Transform]
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  │       └── Read Parquet → filter(qty &gt; 0) → enrich(total_amount)
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  │
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>  ├── Step 4: join(sales, products) [Dimension lookup]
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  │       └── Sales × Product dimension table
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  ├── Step 1: Generate sales + product data (in-memory → VALUES SQL)
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  │
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  ├── Step 2: Sink.s3() → WRITE_S3 command
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  │       └── Master writes Parquet directly to S3 (MinIO)
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  │
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  ├── Step 3: Source.s3() → read_s3() table function
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>  │       └── Master reads S3 via FileConnector → Arrow cache in memory
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  │       └── filter(qty &gt; 0) → withColumn(total_amount) — executed on Worker
 <a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>  │
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>  ├── Step 5: groupBy → agg → Sink.table() [Aggregate → Iceberg]
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>  │       ├── revenue_by_category_region
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>  │       ├── top_products
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>  │       └── region_summary
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>  │
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>  ├── Step 6: Source.sql(&quot;SELECT * FROM ice.examples...&quot;) [Query]
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>  │       └── Iceberg → Arrow Flight → Client display
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>  │
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>  └── Step 7: Iceberg × TPC-H federation query
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>  ├── Step 4: join(sales, products)
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>  │       └── Worker fetches Arrow cache from Master via NIO
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>  │       └── HashJoin on Worker — all server-side
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>  │
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>  ├── Step 5: groupBy → agg → Sink.table() [Aggregate → Iceberg]
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>  │       ├── revenue_by_category_region
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>  │       ├── top_products
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>  │       └── region_summary
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>  │
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>  ├── Step 6: Source.sql(&quot;SELECT * FROM ice.examples...&quot;) [Query]
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>  │       └── Worker scans Iceberg → Arrow Flight → Client display
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>  │
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>  └── Step 7: Iceberg × TPC-H federation query
 </code></pre></div>
-<p>All steps execute on the Ontul cluster. The client only sends/receives Arrow data via Flight.</p>
+<p><strong>All processing happens on the Ontul cluster (Master + Workers).</strong> The client only sends SQL strings via Arrow Flight and receives Arrow RecordBatch results. S3 read/write is performed server-side — data never passes through the client.</p>
 <hr />
 <h2 id="example-code-java">Example Code (Java)</h2>
 <h3 id="connect-to-ontul-cluster">Connect to Ontul Cluster</h3>
@@ -1453,25 +1457,38 @@
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">session</span> <span class="o">=</span> <span class="n">OntulSession</span><span class="p">()</span>
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="c1"># Write to S3</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="n">session</span><span class="o">.</span><span class="n">sink_s3</span><span class="p">(</span><span class="n">sales</span><span class="p">,</span> <span class="s2">&quot;s3://bucket/raw/sales&quot;</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">,</span> <span class="n">s3_config</span><span class="p">)</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="c1"># Read + transform (server-side via RemoteDataFrame)</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="n">valid</span> <span class="o">=</span> <span class="p">(</span><span class="n">source</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="s2">&quot;ice.examples.stg_sales&quot;</span><span class="p">)</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s2">&quot;quantity &gt; 0&quot;</span><span class="p">)</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="o">.</span><span class="n">with_column</span><span class="p">(</span><span class="s2">&quot;total_amount&quot;</span><span class="p">,</span> <span class="s2">&quot;quantity * unit_price&quot;</span><span class="p">))</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>
-<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="c1"># Join</span>
-<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="n">joined</span> <span class="o">=</span> <span class="n">valid</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">products_df</span><span class="p">,</span> <span class="s2">&quot;l.product_id = r.product_id&quot;</span><span class="p">)</span>
-<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>
-<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a><span class="c1"># Aggregate → Iceberg</span>
-<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="p">(</span><span class="n">joined</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="s2">&quot;category&quot;</span><span class="p">,</span> <span class="s2">&quot;region&quot;</span><span class="p">)</span>
-<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>    <span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="s2">&quot;SUM(total_amount) AS revenue&quot;</span><span class="p">,</span> <span class="s2">&quot;COUNT(*) AS cnt&quot;</span><span class="p">)</span>
-<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>    <span class="o">.</span><span class="n">save_as_table</span><span class="p">(</span><span class="s2">&quot;ice.examples.revenue_summary&quot;</span><span class="p">))</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">s3_config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="s1">&#39;endpoint&#39;</span><span class="p">:</span> <span class="s1">&#39;http://localhost:9000&#39;</span><span class="p">,</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="s1">&#39;accessKey&#39;</span><span class="p">:</span> <span class="s1">&#39;minioadmin&#39;</span><span class="p">,</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="s1">&#39;secretKey&#39;</span><span class="p">:</span> <span class="s1">&#39;minioadmin&#39;</span><span class="p">,</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="s1">&#39;pathStyle&#39;</span><span class="p">:</span> <span class="s1">&#39;true&#39;</span><span class="p">,</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="p">}</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="c1"># Write to S3 (server-side — Master writes directly to S3)</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="n">session</span><span class="o">.</span><span class="n">sink_s3</span><span class="p">(</span><span class="n">sales</span><span class="p">,</span> <span class="s2">&quot;s3://bucket/raw/sales&quot;</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">,</span> <span class="n">s3_config</span><span class="p">)</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="c1"># Read from S3 (server-side — Master reads via FileConnector)</span>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a><span class="n">raw_sales</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">source_s3</span><span class="p">(</span><span class="s2">&quot;s3://bucket/raw/sales&quot;</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">,</span> <span class="n">s3_config</span><span class="p">)</span>
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="c1"># Sink to Iceberg staging (PyArrow Table → CTAS)</span>
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a><span class="n">session</span><span class="o">.</span><span class="n">sink</span><span class="p">(</span><span class="n">raw_sales</span><span class="p">,</span> <span class="s2">&quot;ice.examples.stg_sales&quot;</span><span class="p">)</span>
 <a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>
-<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a><span class="c1"># Query results</span>
-<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="nb">print</span><span class="p">(</span><span class="n">source</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="s2">&quot;ice.examples.revenue_summary&quot;</span><span class="p">)</span>
-<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>    <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">())</span>
+<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a><span class="c1"># Transform (server-side via RemoteDataFrame)</span>
+<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="n">valid</span> <span class="o">=</span> <span class="p">(</span><span class="n">source</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="s2">&quot;ice.examples.stg_sales&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>    <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s2">&quot;quantity &gt; 0&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a>    <span class="o">.</span><span class="n">with_column</span><span class="p">(</span><span class="s2">&quot;total_amount&quot;</span><span class="p">,</span> <span class="s2">&quot;quantity * unit_price&quot;</span><span class="p">))</span>
+<a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a>
+<a id="__codelineno-10-26" name="__codelineno-10-26" href="#__codelineno-10-26"></a><span class="c1"># Join</span>
+<a id="__codelineno-10-27" name="__codelineno-10-27" href="#__codelineno-10-27"></a><span class="n">joined</span> <span class="o">=</span> <span class="n">valid</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">products_df</span><span class="p">,</span> <span class="s2">&quot;l.product_id = r.product_id&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-28" name="__codelineno-10-28" href="#__codelineno-10-28"></a>
+<a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a><span class="c1"># Aggregate → Iceberg</span>
+<a id="__codelineno-10-30" name="__codelineno-10-30" href="#__codelineno-10-30"></a><span class="p">(</span><span class="n">joined</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="s2">&quot;category&quot;</span><span class="p">,</span> <span class="s2">&quot;region&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-31" name="__codelineno-10-31" href="#__codelineno-10-31"></a>    <span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="s2">&quot;SUM(total_amount) AS revenue&quot;</span><span class="p">,</span> <span class="s2">&quot;COUNT(*) AS cnt&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-32" name="__codelineno-10-32" href="#__codelineno-10-32"></a>    <span class="o">.</span><span class="n">save_as_table</span><span class="p">(</span><span class="s2">&quot;ice.examples.revenue_summary&quot;</span><span class="p">))</span>
+<a id="__codelineno-10-33" name="__codelineno-10-33" href="#__codelineno-10-33"></a>
+<a id="__codelineno-10-34" name="__codelineno-10-34" href="#__codelineno-10-34"></a><span class="c1"># Query results</span>
+<a id="__codelineno-10-35" name="__codelineno-10-35" href="#__codelineno-10-35"></a><span class="nb">print</span><span class="p">(</span><span class="n">source</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="s2">&quot;ice.examples.revenue_summary&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-36" name="__codelineno-10-36" href="#__codelineno-10-36"></a>    <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">())</span>
 </code></pre></div>
 <hr />
 <h2 id="cleanup">Cleanup</h2>
