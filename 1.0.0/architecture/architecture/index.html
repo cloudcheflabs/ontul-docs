@@ -958,6 +958,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/udf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User-Defined Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/iam/" class="md-nav__link">
         
   
@@ -1262,6 +1290,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../use-cases/udf-tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UDF Tutorial: TEMPORARY → USER → GLOBAL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1315,7 +1371,7 @@
 <li><strong>Memory Management &amp; Disk Spill</strong>: Worker local disk is used exclusively for temporary spill storage, not permanent data. When operators (Sort, HashJoin, HashAggregate) exceed the memory threshold, intermediate results spill to disk via SpillStore with automatic cleanup.</li>
 <li><strong>Data Shuffling</strong>: Transfers intermediate results between Workers via Arrow Flight for operations requiring data redistribution (joins, aggregations across partitions).</li>
 <li><strong>Streaming Job Execution</strong>: Runs long-lived streaming pipelines (e.g., Kafka → processing → Iceberg/Kafka) with watermark and window support. Streaming jobs are always assigned to Workers as drivers.</li>
-<li><strong>Python UDF Support</strong>: Executes Python user-defined functions via a separate process bridge with Arrow IPC for data transfer, isolating Python dependencies from the JVM.</li>
+<li><strong>SQL UDF Execution</strong>: Executes user-defined scalar functions registered via the Ontul SDK as first-class Calcite functions. Java method-reference UDFs run in-process under a cached deps <code>URLClassLoader</code> (so static state — caches, ML models — survives across queries). Python UDFs execute in a long-lived per-worker subprocess with batch-level Arrow IPC, isolating Python dependencies from the JVM. UDFs support primitive, <code>byte[]</code>, <code>List&lt;X&gt;</code>, and POJO <code>struct</code> return types — POJOs are materialised directly into Arrow <code>StructVector</code> without any JSON detour.</li>
 </ul>
 <h3 id="execution-modes">Execution Modes</h3>
 <p>Ontul supports two execution modes within the same cluster:</p>

@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/iam/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/udf/">
       
       
-        <link rel="prev" href="../udf/">
+        <link rel="prev" href="../kafka-integration/">
       
       
-        <link rel="next" href="../encryption/">
+        <link rel="next" href="../iam/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>IAM - Ontul</title>
+        <title>User-Defined Functions - Ontul</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#identity-and-access-management" class="md-skip">
+        <a href="#user-defined-functions-udf" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              IAM
+              User-Defined Functions
             
           </span>
         </div>
@@ -783,34 +783,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../udf/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    User-Defined Functions
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -830,7 +802,7 @@
   <span class="md-ellipsis">
     
   
-    IAM
+    User-Defined Functions
   
 
     
@@ -848,7 +820,7 @@
   <span class="md-ellipsis">
     
   
-    IAM
+    User-Defined Functions
   
 
     
@@ -874,10 +846,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#authentication" class="md-nav__link">
+  <a href="#three-scopes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Authentication
+        Three scopes
       
     </span>
   </a>
@@ -885,10 +857,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#users-and-groups" class="md-nav__link">
+  <a href="#authoring-is-sdk-only" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Users and Groups
+        Authoring is SDK-only
       
     </span>
   </a>
@@ -896,10 +868,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#policy-based-access-control" class="md-nav__link">
+  <a href="#discovery-from-anywhere-show-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Policy-Based Access Control
+        Discovery from anywhere — SHOW FUNCTIONS
       
     </span>
   </a>
@@ -907,10 +879,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#column-level-security" class="md-nav__link">
+  <a href="#java-udf-features" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Column-Level Security
+        Java UDF features
       
     </span>
   </a>
@@ -918,10 +890,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#row-level-security" class="md-nav__link">
+  <a href="#python-udf-features" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Row-Level Security
+        Python UDF features
       
     </span>
   </a>
@@ -929,10 +901,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#udf-permissions" class="md-nav__link">
+  <a href="#iam-controlled-execution" class="md-nav__link">
     <span class="md-ellipsis">
       
-        UDF Permissions
+        IAM-controlled execution
       
     </span>
   </a>
@@ -940,10 +912,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#management" class="md-nav__link">
+  <a href="#architecture-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Management
+        Architecture notes
       
     </span>
   </a>
@@ -954,6 +926,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iam/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1294,60 +1294,108 @@
 
 
 
-<h1 id="identity-and-access-management">Identity and Access Management</h1>
-<p>Ontul includes a built-in IAM system that provides authentication, authorization, and fine-grained access control down to the column and row level.</p>
-<h2 id="authentication">Authentication</h2>
-<p>Ontul supports multiple authentication methods:</p>
+<h1 id="user-defined-functions-udf">User-Defined Functions (UDF)</h1>
+<p>Ontul lets you register Java and Python functions as first-class SQL UDFs and call them from any client — Ontul SDK, Arrow Flight SQL JDBC, or REST. UDFs run on Workers in the same Arrow-native pipeline as built-in operators, so there is no per-row JVM ↔ Python boundary cost for primitives, and POJO/dict return values are materialised directly into Arrow <code>StructVector</code> / <code>ListVector</code> (no JSON detour).</p>
+<p>UDFs are real Calcite scalar functions — usable in <code>SELECT</code>, <code>WHERE</code>, <code>GROUP BY</code>, ordering, projection, and inside other SQL expressions:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">masked</span><span class="p">,</span><span class="w"> </span><span class="n">length_class</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">bucket</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">users</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">is_likely_bot</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">FALSE</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">length_class</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+</code></pre></div>
+<h2 id="three-scopes">Three scopes</h2>
+<p>Ontul supports three UDF scopes that map to common organisational needs:</p>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Visibility</th>
+<th>Persistence</th>
+<th>Author with</th>
+<th>Drop with</th>
+<th>Lifetime</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TEMPORARY</strong></td>
+<td>Current SDK session only — JDBC connections do <em>not</em> see it</td>
+<td>None</td>
+<td><code>session.registerUdf(...)</code></td>
+<td><code>session.unregisterUdf(...)</code></td>
+<td>Until session closes</td>
+</tr>
+<tr>
+<td><strong>USER</strong></td>
+<td>All sessions of the same authenticated user (SDK + JDBC alike)</td>
+<td>RocksDB metadata, replicated to follower Masters</td>
+<td><code>session.registerPersistentUdf(...)</code></td>
+<td><code>session.unregisterPersistentUdf(...)</code> or <code>DROP FUNCTION name</code></td>
+<td>Until explicitly dropped, survives master restarts</td>
+</tr>
+<tr>
+<td><strong>GLOBAL</strong></td>
+<td>All authenticated users (subject to IAM <code>UDF:EXECUTE</code>)</td>
+<td>RocksDB metadata, replicated</td>
+<td><code>session.registerGlobalUdf(...)</code></td>
+<td><code>session.unregisterGlobalUdf(...)</code> or <code>DROP GLOBAL FUNCTION name</code></td>
+<td>Until explicitly dropped, survives master restarts</td>
+</tr>
+</tbody>
+</table>
+<p>When a name collision exists, lookup precedence is <strong>TEMPORARY &gt; USER &gt; GLOBAL</strong>. A session can shadow a USER UDF, and a USER UDF can shadow a GLOBAL one without affecting other clients.</p>
+<h2 id="authoring-is-sdk-only">Authoring is SDK-only</h2>
+<p>UDFs are authored exclusively through the SDK because authoring inherently requires shipping code (a Java class or Python function) to the Workers. The SDK auto-uploads the defining class as a JAR to <code>data/deps/</code> on the master, and the worker classloader picks it up on the next query — no manual jar drops, no <code>CREATE FUNCTION ... USING JAR 'hdfs://...'</code> ceremony. JDBC clients (BI tools, dashboards, notebooks) consume UDFs but do not author them, mirroring how Snowflake/BigQuery treat function objects.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Helpers</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">maskEmail</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">email</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">email</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">email</span><span class="p">;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">email</span><span class="p">.</span><span class="na">indexOf</span><span class="p">(</span><span class="sc">&#39;@&#39;</span><span class="p">);</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*&quot;</span><span class="p">.</span><span class="na">repeat</span><span class="p">(</span><span class="n">at</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">email</span><span class="p">.</span><span class="na">substring</span><span class="p">(</span><span class="n">at</span><span class="p">);</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">OntulSession</span><span class="w"> </span><span class="n">session</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OntulSession</span><span class="p">.</span><span class="na">builder</span><span class="p">().</span><span class="na">master</span><span class="p">(</span><span class="s">&quot;localhost&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">47470</span><span class="p">).</span><span class="na">build</span><span class="p">();</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">session</span><span class="p">.</span><span class="na">registerPersistentUdf</span><span class="p">(</span><span class="s">&quot;mask_email&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Helpers</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;maskEmail&quot;</span><span class="p">);</span>
+</code></pre></div>
+<p>Subsequent SDK sessions of the same user — and any JDBC connection authenticated as the same user — can immediately call <code>mask_email(...)</code> without re-registration.</p>
+<h2 id="discovery-from-anywhere-show-functions">Discovery from anywhere — <code>SHOW FUNCTIONS</code></h2>
+<p>Both SDK and JDBC clients can discover the UDFs visible to them through standard SQL:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">FUNCTIONS</span><span class="p">;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1">-- name        | language    | return_type | param_types | scope</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1">-- mask_email  | java-method | string      | string      | USER</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1">-- length_class| java-method | string      | string      | TEMPORARY</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1">-- geohash     | java-method | string      | double, double | GLOBAL</span>
+</code></pre></div>
+<p><code>DESCRIBE FUNCTION mask_email</code> returns full metadata: language, parameter types, return type, scope, owner, target class, target method, struct fields (for POJO returns), etc.</p>
+<h2 id="java-udf-features">Java UDF features</h2>
 <ul>
-<li><strong>Username / Password</strong>: Basic authentication with PBKDF2-hashed passwords</li>
-<li><strong>Access Keys</strong>: Long-lived credentials (AKIA prefix) with access key ID and secret key for programmatic access</li>
-<li><strong>STS Temporary Credentials</strong>: Short-lived credentials (ASIA prefix) with configurable expiration for temporary access</li>
-<li><strong>JWT Tokens</strong>: Bearer token authentication for Arrow Flight SQL and REST API</li>
+<li><strong>Method-reference style</strong> — preferred. Pass <code>(class, methodName)</code>; the SDK uploads the class and registers metadata only. The function does not need to implement <code>Serializable</code>.</li>
+<li><strong>Lambda style</strong> — <code>session.registerUdf("name", (Udf1&lt;String,String&gt;) s -&gt; ...)</code> for one-off inline functions; the lambda is <code>ObjectOutputStream</code>-serialized.</li>
+<li><strong>Multi-argument</strong> — up to 4 arguments out of the box; arbitrary arity through method references.</li>
+<li><strong>Primitive returns</strong> — <code>String</code>, <code>long</code>, <code>double</code>, <code>boolean</code>, <code>byte[]</code> (for ML embeddings or binary blobs), <code>BigDecimal</code>.</li>
+<li><strong><code>List&lt;X&gt;</code> returns</strong> — materialised as Arrow <code>ListVector</code>. Element type can be primitive or struct.</li>
+<li><strong>POJO struct returns</strong> — public-field POJOs become Arrow <code>StructVector</code>. Field access via dot notation works in SQL: <code>SELECT ocr(image).text, ocr(image).confidence FROM images</code>. The POJO is never serialised across the wire — workers populate the struct child vectors via reflection.</li>
+<li><strong>External libraries</strong> — UDFs can use any third-party JAR available on the worker classpath (Apache Commons Math, Guava, JTS, etc.).</li>
+<li><strong>Static state</strong> — the worker deps classloader is cached and fingerprinted, so static caches inside UDF classes (e.g. a loaded ML model) survive across queries.</li>
 </ul>
-<h2 id="users-and-groups">Users and Groups</h2>
-<ul>
-<li>Create and manage database users with passwords and metadata</li>
-<li>Organize users into IAM groups</li>
-<li>Policies attached to a group apply to all members</li>
-</ul>
-<h2 id="policy-based-access-control">Policy-Based Access Control</h2>
-<p>Ontul uses AWS-style JSON policies to manage permissions:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;statements&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">      </span><span class="nt">&quot;effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ALLOW&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">&quot;actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;SELECT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;INSERT&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">&quot;resources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;iceberg_catalog.sales.*&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">&quot;effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DENY&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">&quot;actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;SELECT&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">&quot;resources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;iceberg_catalog.hr.salaries&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">&quot;columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;salary&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ssn&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">  </span><span class="p">]</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">}</span>
+<h2 id="python-udf-features">Python UDF features</h2>
+<p>Python UDFs are executed in a long-lived Python subprocess per worker, with batch-level Arrow IPC between the JVM worker and the subprocess (no per-row JSON, no per-call process spawn):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ontul.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">OntulSession</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">session</span> <span class="o">=</span> <span class="n">OntulSession</span><span class="p">()</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">normalise</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="k">return</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="n">name</span> <span class="k">else</span> <span class="kc">None</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">session</span><span class="o">.</span><span class="n">register_udf</span><span class="p">(</span><span class="s2">&quot;normalise&quot;</span><span class="p">,</span> <span class="n">normalise</span><span class="p">,</span> <span class="n">return_type</span><span class="o">=</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="n">param_types</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">])</span>
 </code></pre></div>
 <ul>
-<li>Policies define allowed or denied actions on specific resources (catalogs, schemas, tables)</li>
-<li>Policies can be attached to users or groups</li>
-<li>Deny rules take precedence over allow rules</li>
-<li>Deny-by-default: no matching policies means access is denied</li>
+<li><strong>cloudpickle-based</strong> — register any callable, including closures and methods.</li>
+<li><strong>Returns</strong>: primitives, <code>dict</code> (→ Arrow struct), <code>list</code> (→ Arrow list), <code>bytes</code> (→ Arrow binary).</li>
+<li><strong>Notebook-friendly</strong> — interactive Jupyter / IPython workflows work without restarting the cluster.</li>
+<li><strong>Same SQL surface</strong> as Java UDFs — <code>SELECT my_py_udf(col) FROM ...</code> works identically from JDBC and the SDK.</li>
 </ul>
-<h2 id="column-level-security">Column-Level Security</h2>
-<p>Restrict access to specific columns within a table. Denied columns are automatically removed from query results — no changes to the query required.</p>
-<h2 id="row-level-security">Row-Level Security</h2>
-<p>Apply row filter conditions to restrict which rows a user can see:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ALLOW&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;SELECT&quot;</span><span class="p">],</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;resources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;iceberg_catalog.sales.orders&quot;</span><span class="p">],</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;rowFilter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;region = &#39;APAC&#39;&quot;</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">}</span>
-</code></pre></div>
-<p>Row filters are injected into the query plan automatically, ensuring users only see data they are authorized to access.</p>
-<h2 id="udf-permissions">UDF Permissions</h2>
-<p>User-defined functions are first-class IAM resources. Five action verbs control the UDF lifecycle:</p>
+<h2 id="iam-controlled-execution">IAM-controlled execution</h2>
+<p>Every UDF call is authorised through the IAM policy engine. Five action verbs apply:</p>
 <table>
 <thead>
 <tr>
@@ -1358,19 +1406,19 @@
 <tbody>
 <tr>
 <td><code>UDF:EXECUTE</code></td>
-<td>Calling a UDF in a query (planner enforces this against every UDF the query references)</td>
+<td>Calling a UDF in any query (TEMPORARY UDFs in your own session are implicitly allowed)</td>
 </tr>
 <tr>
 <td><code>UDF:CREATE</code></td>
-<td>Registering a TEMPORARY or USER-scoped UDF</td>
+<td>Registering a TEMPORARY or USER UDF</td>
 </tr>
 <tr>
 <td><code>UDF:DROP</code></td>
-<td>Dropping a USER-scoped UDF</td>
+<td>Dropping a USER UDF</td>
 </tr>
 <tr>
 <td><code>UDF:CREATE_GLOBAL</code></td>
-<td>Registering a GLOBAL UDF visible to all users</td>
+<td>Registering a GLOBAL UDF</td>
 </tr>
 <tr>
 <td><code>UDF:DROP_GLOBAL</code></td>
@@ -1378,16 +1426,38 @@
 </tr>
 </tbody>
 </table>
-<p>UDF resources are addressed as <code>udf:&lt;name&gt;</code>, so policies can target an exact function or a wildcard family:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UDF:EXECUTE&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;udf:mask_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:hash_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:geohash&quot;</span><span class="p">]</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">}</span>
+<p>Resources are addressed as <code>udf:&lt;name&gt;</code> so policies can use exact match or wildcards. Examples:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ExecuteAnyUdf&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UDF:EXECUTE&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;udf:*&quot;</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">}</span>
 </code></pre></div>
-<p>The Admin UI policy editor ships with templates <em>UDF Execute Any</em>, <em>UDF Author</em>, <em>UDF Sandbox</em>, <em>UDF Deny Sensitive</em>, <em>UDF Global Admin</em>, and <em>UDF Global Read-Only</em>. See the <a href="../udf/">UDF feature page</a> and the <a href="../../use-cases/udf-tutorial/">UDF tutorial</a> for the full lifecycle.</p>
-<h2 id="management">Management</h2>
-<p>Users, groups, and policies are managed through the Admin UI (with a visual policy editor) or the REST API.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ExecuteOnlySafeFamily&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UDF:EXECUTE&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;udf:mask_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:hash_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:geohash&quot;</span><span class="p">]</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DenySensitiveUdfs&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UDF:EXECUTE&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;udf:internal_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:*_admin&quot;</span><span class="p">]</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>The Admin UI policy editor ships with preset templates for the most common shapes: <em>UDF Execute Any</em>, <em>UDF Author</em>, <em>UDF Sandbox</em>, <em>UDF Deny Sensitive</em>, <em>UDF Global Admin</em>, <em>UDF Global Read-Only</em>. The planner enforces <code>UDF:EXECUTE</code> against the actual functions referenced in each query — execution is denied early, before any data is touched.</p>
+<h2 id="architecture-notes">Architecture notes</h2>
+<ul>
+<li><strong>Calcite integration</strong> — UDFs are installed onto a per-query <code>SchemaPlus</code> clone wrapped in a chained operator table (<code>SqlStdOperatorTable</code> + the per-session UDF schema reader). Per-query isolation means concurrent queries with different UDF names never collide.</li>
+<li><strong>Plan attachment</strong> — the planner attaches the resolved <code>Map&lt;String, UdfDescriptor&gt;</code> directly onto <code>PhysicalPlan.udfs</code>. The distributed planner copies the map onto every worker plan, so workers receive only the UDFs the query actually uses, with no out-of-band registration step.</li>
+<li><strong>Row-wise vs batch evaluation</strong> — Java method-ref UDFs are wrapped in a per-row <code>EvalExpr</code>. Python UDFs short-circuit through <code>PyUdfBatchExpr</code>, which packs all argument rows into Arrow IPC and ships a single batch to the Python subprocess, so the per-call cost amortises across thousands of rows.</li>
+<li><strong>Auto-upload + cached classloader</strong> — <code>WorkerServer.buildDepsClassLoader()</code> caches the URLClassLoader for <code>data/deps/</code> and invalidates on directory change (file size + mtime fingerprint). UDFs that hold static models (caches, embeddings, ML weights) are loaded once per worker and reused across queries.</li>
+<li><strong>Persistence</strong> — USER and GLOBAL descriptors are JSON-serialised into the cluster <code>RocksDbMetadataStore</code> under <code>udf.&lt;userId&gt;.&lt;name&gt;</code> and <code>udf._global.&lt;name&gt;</code> respectively. The store is the same KMS-encrypted, leader-replicated metadata store used for catalogs and connections, so UDFs participate in HA and survive master restarts. JARs are persisted independently in <code>data/deps/</code> by the auto-upload path.</li>
+<li><strong>Strict Arrow data plane</strong> — control messages (descriptor metadata, registration acks) travel as JSON over Flight Actions. All data flowing in or out of a UDF travels as Arrow IPC. There is never a JSON or base64 hop on the data path, even for <code>byte[]</code>, list, or struct return types.</li>
+</ul>
 
 
 
