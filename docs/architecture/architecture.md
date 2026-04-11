@@ -34,7 +34,7 @@ The Worker is the execution engine that processes both query plans and long-runn
 - **Memory Management & Disk Spill**: Worker local disk is used exclusively for temporary spill storage, not permanent data. When operators (Sort, HashJoin, HashAggregate) exceed the memory threshold, intermediate results spill to disk via SpillStore with automatic cleanup.
 - **Data Shuffling**: Transfers intermediate results between Workers via Arrow Flight for operations requiring data redistribution (joins, aggregations across partitions).
 - **Streaming Job Execution**: Runs long-lived streaming pipelines (e.g., Kafka → processing → Iceberg/Kafka) with watermark and window support. Streaming jobs are always assigned to Workers as drivers.
-- **Python UDF Support**: Executes Python user-defined functions via a separate process bridge with Arrow IPC for data transfer, isolating Python dependencies from the JVM.
+- **SQL UDF Execution**: Executes user-defined scalar functions registered via the Ontul SDK as first-class Calcite functions. Java method-reference UDFs run in-process under a cached deps `URLClassLoader` (so static state — caches, ML models — survives across queries). Python UDFs execute in a long-lived per-worker subprocess with batch-level Arrow IPC, isolating Python dependencies from the JVM. UDFs support primitive, `byte[]`, `List<X>`, and POJO `struct` return types — POJOs are materialised directly into Arrow `StructVector` without any JSON detour.
 
 ### Execution Modes
 

@@ -63,6 +63,30 @@ Apply row filter conditions to restrict which rows a user can see:
 
 Row filters are injected into the query plan automatically, ensuring users only see data they are authorized to access.
 
+## UDF Permissions
+
+User-defined functions are first-class IAM resources. Five action verbs control the UDF lifecycle:
+
+| Action | Required for |
+|---|---|
+| `UDF:EXECUTE` | Calling a UDF in a query (planner enforces this against every UDF the query references) |
+| `UDF:CREATE` | Registering a TEMPORARY or USER-scoped UDF |
+| `UDF:DROP` | Dropping a USER-scoped UDF |
+| `UDF:CREATE_GLOBAL` | Registering a GLOBAL UDF visible to all users |
+| `UDF:DROP_GLOBAL` | Dropping a GLOBAL UDF |
+
+UDF resources are addressed as `udf:<name>`, so policies can target an exact function or a wildcard family:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": "UDF:EXECUTE",
+  "Resource": ["udf:mask_*", "udf:hash_*", "udf:geohash"]
+}
+```
+
+The Admin UI policy editor ships with templates *UDF Execute Any*, *UDF Author*, *UDF Sandbox*, *UDF Deny Sensitive*, *UDF Global Admin*, and *UDF Global Read-Only*. See the [UDF feature page](udf.md) and the [UDF tutorial](../use-cases/udf-tutorial.md) for the full lifecycle.
+
 ## Management
 
 Users, groups, and policies are managed through the Admin UI (with a visual policy editor) or the REST API.

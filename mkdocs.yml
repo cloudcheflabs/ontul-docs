@@ -45,6 +45,7 @@ nav:
       - "Federation Queries": features/federation.md
       - "Iceberg Integration": features/iceberg-integration.md
       - "Kafka Integration": features/kafka-integration.md
+      - "User-Defined Functions": features/udf.md
       - "IAM": features/iam.md
       - "Encryption & KMS": features/encryption.md
       - "Geospatial Support": features/geospatial.md
@@ -55,6 +56,7 @@ nav:
       - "Interactive SQL: Iceberg via JDBC": use-cases/interactive-sql.md
       - "Streaming: Kafka to Iceberg": use-cases/streaming.md
       - "Remote Pipeline: S3 → Transform → Iceberg": use-cases/remote-pipeline.md
+      - "UDF Tutorial: TEMPORARY → USER → GLOBAL": use-cases/udf-tutorial.md
 
 
 
