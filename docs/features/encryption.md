@@ -15,6 +15,8 @@ Ontul uses envelope encryption — each piece of sensitive data is encrypted wit
 - **Connection credentials**: S3 access keys, JDBC passwords, Kafka credentials stored in the ConnectionStore
 - **IAM secrets**: User passwords, access key secrets, STS tokens
 - **Cluster state metadata**: Sensitive metadata in the RocksDB state store
+- **Exchange Manager data**: All data spill (query/batch/streaming) and state snapshots (streaming checkpoint) are KMS envelope-encrypted on disk
+- **Streaming state store**: RocksDB-backed window state and Kafka offset checkpoints
 
 ## Built-in KMS
 

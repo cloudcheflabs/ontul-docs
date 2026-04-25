@@ -264,21 +264,34 @@ Client (SDK)
   │       ├── Dispatch to Worker(s) via NIO
   │       │       │
   │       │       ▼
-  │       │   Worker (StreamingJobExecutor)
+  │       │   Worker(s) (StreamingJobExecutor, dedicated thread per job)
   │       │       │
-  │       │       ├── KafkaStreamSource (consumer group)
+  │       │       ├── KafkaStreamSource (consumer group, multi-worker partition distribution)
   │       │       │       ├── JSON auto-schema inference
-  │       │       │       └── Poll micro-batches (Arrow RecordBatch)
+  │       │       │       └── Continuous poll (100ms) — Flink-style, NOT micro-batch
   │       │       │
-  │       │       ├── applyFilterSelect()
-  │       │       │       ├── Parse JSON values
-  │       │       │       ├── Evaluate filter predicates
-  │       │       │       └── Select output columns
+  │       │       ├── Operations pipeline
+  │       │       │       ├── FILTER: evaluate predicates
+  │       │       │       ├── SELECT: project output columns
+  │       │       │       ├── WINDOW: TUMBLING / SLIDING / SESSION
+  │       │       │       ├── GROUP_BY + AGG: windowed aggregation (with alias)
+  │       │       │       └── Multi-worker hash shuffle (STREAM_SHUFFLE opcode)
   │       │       │
-  │       │       └── IcebergStreamingSink
-  │       │               ├── Write Parquet data files
-  │       │               ├── Commit to Iceberg (AppendFiles)
-  │       │               └── Kafka offset commit (after Iceberg commit)
+  │       │       ├── StreamSink (pluggable)
+  │       │       │       ├── Iceberg: Parquet write → AppendFiles commit
+  │       │       │       ├── NeorunBase: REST bulk-insert (high throughput)
+  │       │       │       ├── Kafka: producer (transactional mode for exactly-once)
+  │       │       │       ├── JDBC / Elasticsearch / HTTP / Console
+  │       │       │       └── Sink commit tied to barrier checkpoint (exactly-once)
+  │       │       │
+  │       │       └── Exchange Manager
+  │       │               ├── State snapshot (Kafka offsets + window state)
+  │       │               └── KMS envelope encryption
+  │       │
+  │       ├── CheckpointCoordinator (Master)
+  │       │       ├── Periodic CHECKPOINT_TRIGGER → all Workers
+  │       │       ├── Collect CHECKPOINT_COMPLETE acks
+  │       │       └── Globally complete → prune old snapshots
   │       │
   │       └── Catalog refresh → Calcite schema update
   │
@@ -287,9 +300,12 @@ Client (SDK)
 
 **Key design decisions:**
 
-- **auto.commit = false**: Kafka offsets are committed only after Iceberg data is safely persisted
+- **Flink-style continuous processing**: Events are processed as soon as they arrive from Kafka (100ms poll), NOT Spark-style micro-batch
+- **Barrier checkpoint**: Master-coordinated distributed checkpoint — sink commit → offset commit → state snapshot (exactly-once for transactional sinks)
+- **auto.commit = false**: Kafka offsets are committed only after sink transaction is safely committed
 - **JSON schema inference**: The first message's structure determines the Arrow schema
-- **Filter/Select in Worker**: Transformations are applied before writing to minimize Iceberg data size
+- **Multi-worker shuffle**: Windowed aggregation with GROUP BY distributes records by hash key across Workers
+- **Exchange Manager**: All checkpoint state is KMS envelope-encrypted
 
 ---
 

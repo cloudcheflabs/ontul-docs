@@ -22,9 +22,21 @@ Both modes share:
 
 - The same **Master/Worker** cluster infrastructure
 - The same **Arrow-native operator pipeline** (Scan, Filter, Project, Join, Aggregate, Sort, Window, Exchange)
+- The same **Exchange Manager** — unified fault-tolerance for batch spill and streaming checkpoint (KMS encrypted)
 - The same **connector architecture** for accessing external data sources
 - The same **IAM policies** for security and access control
 - The same **Admin UI** for monitoring and management
+
+## Exchange Manager
+
+The Exchange Manager is Ontul's unified fault-tolerance infrastructure, providing two capabilities through a single backend:
+
+| Capability | Used By | Purpose |
+|-----------|---------|---------|
+| **Data Spill** | Query / Batch / Streaming | When operators (Sort, HashJoin, HashAggregate) exceed memory, intermediate Arrow batches are spilled to local disk. Interactive SQL queries, batch ETL, streaming — 모두 동일한 경로 |
+| **State Snapshot** | Streaming | Kafka offsets + window state are checkpointed for failure recovery via barrier checkpoint |
+
+All spill and snapshot data is KMS envelope-encrypted (AES-256-GCM). Storage is two-tier: local disk (always, low-latency) plus optional S3 backup (async, for cross-worker recovery).
 
 ## Execution Modes
 
