@@ -829,10 +829,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#streaming-sink" class="md-nav__link">
+  <a href="#operations-pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Streaming Sink
+        Operations Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-sinks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming Sinks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#barrier-checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Barrier Checkpoint
       
     </span>
   </a>
@@ -852,10 +874,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#real-time-ingestion" class="md-nav__link">
+  <a href="#real-time-ingestion-with-transform" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Real-Time Ingestion
+        Real-Time Ingestion with Transform
       
     </span>
   </a>
@@ -863,10 +885,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#stream-processing" class="md-nav__link">
+  <a href="#stream-to-stream" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Stream Processing
+        Stream-to-Stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cdc-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CDC Pipeline
       
     </span>
   </a>
@@ -1290,39 +1323,113 @@
 
 
 <h1 id="kafka-integration">Kafka Integration</h1>
-<p>Ontul supports Apache Kafka as both a streaming source and sink, enabling real-time data pipelines within the same cluster used for batch processing and interactive SQL.</p>
+<p>Ontul supports Kafka (including ItdaStream) as a streaming source, enabling real-time data pipelines with Flink-style continuous processing. Data is consumed event-at-a-time, NOT in micro-batches.</p>
 <h2 id="streaming-source">Streaming Source</h2>
 <p>Ontul consumes messages from Kafka topics with support for multiple formats:</p>
 <ul>
-<li><strong>JSON</strong>: Parse JSON messages with automatic schema inference or a provided schema</li>
+<li><strong>JSON</strong>: Parse JSON messages with automatic schema inference from the first message</li>
 <li><strong>Avro</strong>: Deserialize Avro messages using Schema Registry integration</li>
 <li><strong>Raw</strong>: Access raw key, value, topic, partition, offset, and timestamp fields</li>
 </ul>
-<p>Each consumer group runs as an independent long-lived streaming job on a Worker node.</p>
-<h2 id="streaming-sink">Streaming Sink</h2>
-<p>Processed data can be written back to Kafka topics:</p>
-<ul>
-<li>Arrow rows are serialized to JSON and produced to the target topic</li>
-<li>Optional key field for partitioning</li>
-<li>Batched writes with LZ4 compression</li>
-<li>Kafka producer properties are fully configurable</li>
-</ul>
-<h2 id="use-cases">Use Cases</h2>
-<h3 id="real-time-ingestion">Real-Time Ingestion</h3>
-<p>Consume events from Kafka and write directly into Iceberg tables for near-real-time analytics:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Kafka Topic → Ontul Streaming Job → Iceberg Table
+<p>Multi-worker consumption: Workers share a consumer group and partitions are automatically distributed across Workers.</p>
+<h2 id="operations-pipeline">Operations Pipeline</h2>
+<p>Streaming jobs support a configurable operations pipeline:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;operations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FILTER&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;amount &gt; 100&quot;</span><span class="p">},</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;WINDOW&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TUMBLING(SIZE 10 SECONDS)&quot;</span><span class="p">},</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GROUP_BY&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;category&quot;</span><span class="p">},</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AGG&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUM(amount) as total, COUNT(*) as cnt&quot;</span><span class="p">}</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="stream-processing">Stream Processing</h3>
-<p>Read from one Kafka topic, transform data with SQL or SDK operations, and write to another:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Kafka Input Topic → Ontul Processing → Kafka Output Topic
+<ul>
+<li><strong>FILTER</strong>: Predicate-based row filtering</li>
+<li><strong>WINDOW</strong>: TUMBLING, SLIDING (with slide interval), SESSION (with gap)</li>
+<li><strong>GROUP_BY</strong>: Hash-based multi-worker shuffle (STREAM_SHUFFLE opcode)</li>
+<li><strong>AGG</strong>: SUM, COUNT, AVG, MIN, MAX with alias support</li>
+</ul>
+<h2 id="streaming-sinks">Streaming Sinks</h2>
+<p>Processed data can be written to multiple sink types:</p>
+<table>
+<thead>
+<tr>
+<th>Sink</th>
+<th>Mode</th>
+<th style="text-align: center;">Exactly-Once</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Iceberg</td>
+<td>Parquet → AppendFiles commit</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>NeorunBase</td>
+<td>REST bulk-insert (high throughput)</td>
+<td style="text-align: center;">at-least-once</td>
+</tr>
+<tr>
+<td>NeorunBase</td>
+<td>JDBC batch insert</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Kafka</td>
+<td>Producer (transactional mode available)</td>
+<td style="text-align: center;">O (with tx)</td>
+</tr>
+<tr>
+<td>JDBC</td>
+<td>Batch insert</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td>Bulk API</td>
+<td style="text-align: center;">at-least-once</td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td>JSON POST</td>
+<td style="text-align: center;">at-least-once</td>
+</tr>
+<tr>
+<td>Console</td>
+<td>Job log output (debugging)</td>
+<td style="text-align: center;">—</td>
+</tr>
+</tbody>
+</table>
+<h2 id="barrier-checkpoint">Barrier Checkpoint</h2>
+<p>Ontul uses Master-coordinated barrier checkpoint for distributed streaming:</p>
+<ol>
+<li>Master triggers <code>CHECKPOINT_TRIGGER</code> to all Workers (periodic, configurable interval)</li>
+<li>Each Worker: flush sink → commit transaction → snapshot state to Exchange Manager</li>
+<li>Commit Kafka consumer offsets (AFTER sink commit)</li>
+<li>Report <code>CHECKPOINT_COMPLETE</code> back to Master</li>
+<li>Master: all Workers acked → checkpoint globally complete</li>
+</ol>
+<p>This ensures exactly-once for transactional sinks — if a Worker crashes, it restores from the last checkpoint and replays from committed Kafka offsets.</p>
+<h2 id="use-cases">Use Cases</h2>
+<h3 id="real-time-ingestion-with-transform">Real-Time Ingestion with Transform</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Kafka → FILTER + WINDOW + AGG → Iceberg Table
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Kafka → FILTER → NeorunBase (REST bulk-insert)
+</code></pre></div>
+<h3 id="stream-to-stream">Stream-to-Stream</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Kafka Input → Transform → Kafka Output (transactional)
+</code></pre></div>
+<h3 id="cdc-pipeline">CDC Pipeline</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>NeorunBase (Iceberg CDC) → Polaris → Ontul SQL query
 </code></pre></div>
 <h2 id="job-management">Job Management</h2>
-<p>Kafka streaming jobs are managed through the Admin UI or REST API:</p>
+<p>Streaming jobs are managed through the Admin UI or REST API:</p>
 <ul>
-<li>Start and stop consumer groups</li>
-<li>Monitor ingestion progress and throughput</li>
-<li>View real-time job logs</li>
-<li>Configure consumer properties (group ID, offset reset, poll timeout, batch size)</li>
+<li>Submit, kill, and monitor jobs (multiple jobs concurrently)</li>
+<li>View real-time job logs from all Workers (multi-worker log merge)</li>
+<li>Monitor checkpoint progress</li>
+<li>Configure consumer properties (group ID, offset reset, poll timeout)</li>
 </ul>
 
 

@@ -801,6 +801,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#ddl-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DDL Operations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#read-operations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -816,6 +827,17 @@
     <span class="md-ellipsis">
       
         Write Operations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#neorunbase-iceberg-cdc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NeorunBase Iceberg CDC
       
     </span>
   </a>
@@ -1273,24 +1295,55 @@
 
 
 <h1 id="iceberg-integration">Iceberg Integration</h1>
-<p>Ontul integrates with Apache Iceberg as a first-class catalog, supporting both read and write operations with full table management and automated maintenance.</p>
+<p>Ontul integrates with Apache Iceberg as a first-class catalog, supporting both read and write operations with full table management, automated maintenance, and streaming ingestion.</p>
 <h2 id="catalog-type">Catalog Type</h2>
-<p>Ontul supports the Iceberg REST Catalog, connecting to REST catalog servers such as Polaris or Nessie with OAuth2 or static token authentication.</p>
+<p>Ontul supports the Iceberg <strong>REST Catalog only</strong>, connecting to REST catalog servers such as Polaris with OAuth2 authentication. S3 storage is accessed directly using credentials from the catalog configuration (no credential vending/STS dependency).</p>
+<p>Multiple Iceberg catalogs can be registered simultaneously, each with independent REST catalog and S3 configurations.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="err">POST</span><span class="w"> </span><span class="err">/admi</span><span class="kc">n</span><span class="err">/ca</span><span class="kc">tal</span><span class="err">ogs</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;iceberg&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;iceberg&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">&quot;catalog-type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rest&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">&quot;uri&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://polaris:8181/api/catalog&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">&quot;warehouse&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my_catalog&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">&quot;credential&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;root:secret&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">&quot;scope&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PRINCIPAL_ROLE:ALL&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">&quot;io-impl&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;org.apache.iceberg.aws.s3.S3FileIO&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">&quot;s3.endpoint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://s3-host:9000&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">&quot;s3.path-style-access&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;true&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">&quot;s3.accessKey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ACCESS_KEY&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">&quot;s3.secretKey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SECRET_KEY&quot;</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="ddl-operations">DDL Operations</h2>
+<ul>
+<li><strong>CREATE SCHEMA IF NOT EXISTS</strong>: Create Iceberg namespaces</li>
+<li><strong>CREATE TABLE IF NOT EXISTS</strong>: Create tables with Arrow-to-Iceberg type mapping</li>
+<li><strong>DROP TABLE IF EXISTS</strong>: Drop tables with metadata cleanup</li>
+<li><strong>DROP SCHEMA IF EXISTS</strong>: Drop namespaces</li>
+</ul>
 <h2 id="read-operations">Read Operations</h2>
 <ul>
-<li>Query Iceberg tables using standard SQL with fully qualified names (<code>iceberg_catalog.schema.table</code>)</li>
+<li>Query Iceberg tables using standard SQL with fully qualified names (<code>iceberg.schema.table</code>)</li>
 <li>Snapshot isolation — queries read from a consistent snapshot</li>
 <li>Schema evolution detection — Ontul automatically detects and reflects column changes</li>
-<li>Parquet and ORC data file formats supported</li>
+<li>Parquet data file format</li>
 </ul>
 <h2 id="write-operations">Write Operations</h2>
 <ul>
 <li><strong>INSERT INTO</strong>: Append data to existing Iceberg tables</li>
-<li><strong>CREATE TABLE AS SELECT (CTAS)</strong>: Create new Iceberg tables from query results</li>
+<li><strong>CREATE TABLE AS SELECT (CTAS)</strong>: Create new Iceberg tables from query results (with immediate catalog refresh)</li>
 <li><strong>MERGE INTO</strong>: Upsert operations using Iceberg's OverwriteFiles API</li>
-<li><strong>Streaming writes</strong>: Continuous ingestion from Kafka or other streaming sources directly into Iceberg tables</li>
+<li><strong>Streaming writes</strong>: Continuous ingestion from Kafka directly into Iceberg tables with exactly-once semantics (barrier checkpoint + snapshot isolation)</li>
 <li>Tables are auto-created if they don't exist when writing via the SDK</li>
 </ul>
+<h2 id="neorunbase-iceberg-cdc">NeorunBase Iceberg CDC</h2>
+<p>NeorunBase supports Iceberg CDC (Change Data Capture), automatically synchronizing NeorunBase table changes to Iceberg tables via Polaris. Ontul can query this CDC data:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">-- NeorunBase CDC data accessible via Iceberg catalog</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">iceberg</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">cdc_table</span>
+</code></pre></div>
 <h2 id="automated-maintenance">Automated Maintenance</h2>
 <p>Ontul includes a built-in Iceberg maintenance service that runs scheduled tasks:</p>
 <ul>
@@ -1301,7 +1354,7 @@
 </ul>
 <p>Maintenance can be configured per table through the Admin UI or triggered manually via <code>ALTER TABLE EXECUTE</code> SQL commands.</p>
 <h2 id="s3-compatible-storage">S3-Compatible Storage</h2>
-<p>Iceberg data files are stored in S3-compatible object storage. Ontul supports AWS S3, MinIO, and other S3-compatible services, configured through the ConnectionStore.</p>
+<p>Iceberg data files are stored in S3-compatible object storage. Ontul supports ShannonStore, AWS S3, MinIO, and other S3-compatible services. S3 credentials are part of the catalog configuration — Polaris is used for metadata only (no credential vending).</p>
 
 
 

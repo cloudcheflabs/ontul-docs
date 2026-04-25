@@ -1286,6 +1286,8 @@
 <li><strong>Connection credentials</strong>: S3 access keys, JDBC passwords, Kafka credentials stored in the ConnectionStore</li>
 <li><strong>IAM secrets</strong>: User passwords, access key secrets, STS tokens</li>
 <li><strong>Cluster state metadata</strong>: Sensitive metadata in the RocksDB state store</li>
+<li><strong>Exchange Manager data</strong>: All data spill (query/batch/streaming) and state snapshots (streaming checkpoint) are KMS envelope-encrypted on disk</li>
+<li><strong>Streaming state store</strong>: RocksDB-backed window state and Kafka offset checkpoints</li>
 </ul>
 <h2 id="built-in-kms">Built-in KMS</h2>
 <p>Ontul includes a built-in KMS that:</p>

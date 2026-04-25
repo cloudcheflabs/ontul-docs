@@ -683,6 +683,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#exchange-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exchange Manager
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#execution-modes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1331,10 +1342,35 @@
 <ul>
 <li>The same <strong>Master/Worker</strong> cluster infrastructure</li>
 <li>The same <strong>Arrow-native operator pipeline</strong> (Scan, Filter, Project, Join, Aggregate, Sort, Window, Exchange)</li>
+<li>The same <strong>Exchange Manager</strong> — unified fault-tolerance for batch spill and streaming checkpoint (KMS encrypted)</li>
 <li>The same <strong>connector architecture</strong> for accessing external data sources</li>
 <li>The same <strong>IAM policies</strong> for security and access control</li>
 <li>The same <strong>Admin UI</strong> for monitoring and management</li>
 </ul>
+<h2 id="exchange-manager">Exchange Manager</h2>
+<p>The Exchange Manager is Ontul's unified fault-tolerance infrastructure, providing two capabilities through a single backend:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Used By</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data Spill</strong></td>
+<td>Query / Batch / Streaming</td>
+<td>When operators (Sort, HashJoin, HashAggregate) exceed memory, intermediate Arrow batches are spilled to local disk. Interactive SQL queries, batch ETL, streaming — 모두 동일한 경로</td>
+</tr>
+<tr>
+<td><strong>State Snapshot</strong></td>
+<td>Streaming</td>
+<td>Kafka offsets + window state are checkpointed for failure recovery via barrier checkpoint</td>
+</tr>
+</tbody>
+</table>
+<p>All spill and snapshot data is KMS envelope-encrypted (AES-256-GCM). Storage is two-tier: local disk (always, low-latency) plus optional S3 backup (async, for cross-worker recovery).</p>
 <h2 id="execution-modes">Execution Modes</h2>
 <h3 id="query-mode">Query Mode</h3>
 <p>Clients connect via Arrow Flight SQL and submit SQL queries interactively. The Master plans the query and distributes execution to Workers. After planning, Workers communicate directly with each other for shuffles — the Master is not a bottleneck during execution.</p>

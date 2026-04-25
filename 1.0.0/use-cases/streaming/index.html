@@ -1570,31 +1570,47 @@
 <a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>  │       ├── Dispatch to Worker(s) via NIO
 <a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>  │       │       │
 <a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>  │       │       ▼
-<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>  │       │   Worker (StreamingJobExecutor)
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>  │       │   Worker(s) (StreamingJobExecutor, dedicated thread per job)
 <a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>  │       │       │
-<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>  │       │       ├── KafkaStreamSource (consumer group)
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>  │       │       ├── KafkaStreamSource (consumer group, multi-worker partition distribution)
 <a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>  │       │       │       ├── JSON auto-schema inference
-<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>  │       │       │       └── Poll micro-batches (Arrow RecordBatch)
+<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>  │       │       │       └── Continuous poll (100ms) — Flink-style, NOT micro-batch
 <a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>  │       │       │
-<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>  │       │       ├── applyFilterSelect()
-<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>  │       │       │       ├── Parse JSON values
-<a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>  │       │       │       ├── Evaluate filter predicates
-<a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>  │       │       │       └── Select output columns
-<a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>  │       │       │
-<a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>  │       │       └── IcebergStreamingSink
-<a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a>  │       │               ├── Write Parquet data files
-<a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a>  │       │               ├── Commit to Iceberg (AppendFiles)
-<a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a>  │       │               └── Kafka offset commit (after Iceberg commit)
-<a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a>  │       │
-<a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a>  │       └── Catalog refresh → Calcite schema update
-<a id="__codelineno-17-28" name="__codelineno-17-28" href="#__codelineno-17-28"></a>  │
-<a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a>  └── Query Iceberg table to verify results
+<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>  │       │       ├── Operations pipeline
+<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>  │       │       │       ├── FILTER: evaluate predicates
+<a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>  │       │       │       ├── SELECT: project output columns
+<a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>  │       │       │       ├── WINDOW: TUMBLING / SLIDING / SESSION
+<a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>  │       │       │       ├── GROUP_BY + AGG: windowed aggregation (with alias)
+<a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>  │       │       │       └── Multi-worker hash shuffle (STREAM_SHUFFLE opcode)
+<a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a>  │       │       │
+<a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a>  │       │       ├── StreamSink (pluggable)
+<a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a>  │       │       │       ├── Iceberg: Parquet write → AppendFiles commit
+<a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a>  │       │       │       ├── NeorunBase: REST bulk-insert (high throughput)
+<a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a>  │       │       │       ├── Kafka: producer (transactional mode for exactly-once)
+<a id="__codelineno-17-28" name="__codelineno-17-28" href="#__codelineno-17-28"></a>  │       │       │       ├── JDBC / Elasticsearch / HTTP / Console
+<a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a>  │       │       │       └── Sink commit tied to barrier checkpoint (exactly-once)
+<a id="__codelineno-17-30" name="__codelineno-17-30" href="#__codelineno-17-30"></a>  │       │       │
+<a id="__codelineno-17-31" name="__codelineno-17-31" href="#__codelineno-17-31"></a>  │       │       └── Exchange Manager
+<a id="__codelineno-17-32" name="__codelineno-17-32" href="#__codelineno-17-32"></a>  │       │               ├── State snapshot (Kafka offsets + window state)
+<a id="__codelineno-17-33" name="__codelineno-17-33" href="#__codelineno-17-33"></a>  │       │               └── KMS envelope encryption
+<a id="__codelineno-17-34" name="__codelineno-17-34" href="#__codelineno-17-34"></a>  │       │
+<a id="__codelineno-17-35" name="__codelineno-17-35" href="#__codelineno-17-35"></a>  │       ├── CheckpointCoordinator (Master)
+<a id="__codelineno-17-36" name="__codelineno-17-36" href="#__codelineno-17-36"></a>  │       │       ├── Periodic CHECKPOINT_TRIGGER → all Workers
+<a id="__codelineno-17-37" name="__codelineno-17-37" href="#__codelineno-17-37"></a>  │       │       ├── Collect CHECKPOINT_COMPLETE acks
+<a id="__codelineno-17-38" name="__codelineno-17-38" href="#__codelineno-17-38"></a>  │       │       └── Globally complete → prune old snapshots
+<a id="__codelineno-17-39" name="__codelineno-17-39" href="#__codelineno-17-39"></a>  │       │
+<a id="__codelineno-17-40" name="__codelineno-17-40" href="#__codelineno-17-40"></a>  │       └── Catalog refresh → Calcite schema update
+<a id="__codelineno-17-41" name="__codelineno-17-41" href="#__codelineno-17-41"></a>  │
+<a id="__codelineno-17-42" name="__codelineno-17-42" href="#__codelineno-17-42"></a>  └── Query Iceberg table to verify results
 </code></pre></div>
 <p><strong>Key design decisions:</strong></p>
 <ul>
-<li><strong>auto.commit = false</strong>: Kafka offsets are committed only after Iceberg data is safely persisted</li>
+<li><strong>Flink-style continuous processing</strong>: Events are processed as soon as they arrive from Kafka (100ms poll), NOT Spark-style micro-batch</li>
+<li><strong>Barrier checkpoint</strong>: Master-coordinated distributed checkpoint — sink commit → offset commit → state snapshot (exactly-once for transactional sinks)</li>
+<li><strong>auto.commit = false</strong>: Kafka offsets are committed only after sink transaction is safely committed</li>
 <li><strong>JSON schema inference</strong>: The first message's structure determines the Arrow schema</li>
-<li><strong>Filter/Select in Worker</strong>: Transformations are applied before writing to minimize Iceberg data size</li>
+<li><strong>Multi-worker shuffle</strong>: Windowed aggregation with GROUP BY distributes records by hash key across Workers</li>
+<li><strong>Exchange Manager</strong>: All checkpoint state is KMS envelope-encrypted</li>
 </ul>
 <hr />
 <h2 id="cleanup">Cleanup</h2>

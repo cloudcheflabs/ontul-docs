@@ -806,6 +806,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cross-engine-federation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-Engine Federation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#plugin-connectors" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1320,11 +1331,13 @@
 <li><strong>S3</strong>: endpoint, access key, secret key, region, path style</li>
 <li><strong>JDBC</strong>: URL, username, password</li>
 <li><strong>Kafka</strong>: bootstrap servers, consumer/producer properties</li>
+<li><strong>NeorunBase</strong>: REST API endpoint + JDBC (pg-wire)</li>
 </ul>
 <h3 id="catalogs-table-metadata">Catalogs (Table Metadata)</h3>
 <p>Catalogs manage table metadata and discovery. Each catalog references a Connector by connection ID.</p>
 <ul>
-<li><strong>Iceberg</strong>: REST catalog (e.g., Polaris, Nessie) — references an S3 connector for storage</li>
+<li><strong>Iceberg</strong>: REST catalog (Polaris) — S3 direct access for data, Polaris for metadata</li>
+<li><strong>NeorunBase</strong>: REST API for table discovery, JDBC (pg-wire) for reads, REST bulk-insert for writes</li>
 <li><strong>JDBC</strong>: References a JDBC connector — discovers tables from the database schema</li>
 <li><strong>TPC-H / TPC-DS</strong>: Built-in benchmark data generators (no external connection needed)</li>
 </ul>
@@ -1335,18 +1348,39 @@
 </ul>
 <h2 id="dynamic-catalog-registration">Dynamic Catalog Registration</h2>
 <p>Catalogs can be registered and unregistered at runtime through the Admin API or Admin UI without restarting the cluster.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>POST /admin/catalogs
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>{
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  &quot;name&quot;: &quot;my_iceberg&quot;,
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  &quot;connector&quot;: &quot;iceberg&quot;,
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  &quot;connectionId&quot;: &quot;my-s3-conn&quot;,
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  &quot;config&quot;: {
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    &quot;catalog.type&quot;: &quot;rest&quot;,
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    &quot;catalog.uri&quot;: &quot;http://polaris:8181/api/catalog&quot;
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>  }
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>}
-</code></pre></div>
-<p>Once registered, tables are immediately queryable via fully qualified names: <code>my_iceberg.db.my_table</code>.</p>
+<p><strong>Iceberg catalog:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="err">POST</span><span class="w"> </span><span class="err">/admi</span><span class="kc">n</span><span class="err">/ca</span><span class="kc">tal</span><span class="err">ogs</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;iceberg&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;iceberg&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">&quot;catalog-type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rest&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">&quot;uri&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://polaris:8181/api/catalog&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">&quot;warehouse&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my_catalog&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">&quot;credential&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;root:secret&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">&quot;scope&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PRINCIPAL_ROLE:ALL&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">&quot;io-impl&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;org.apache.iceberg.aws.s3.S3FileIO&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">&quot;s3.endpoint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://s3-host:9000&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">&quot;s3.path-style-access&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;true&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">&quot;s3.accessKey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ACCESS_KEY&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">&quot;s3.secretKey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SECRET_KEY&quot;</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="p">}</span>
+</code></pre></div></p>
+<p><strong>NeorunBase catalog:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="err">POST</span><span class="w"> </span><span class="err">/admi</span><span class="kc">n</span><span class="err">/ca</span><span class="kc">tal</span><span class="err">ogs</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neorun&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neorunbase&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">&quot;endpoint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://neorunbase-host:8080&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">&quot;jdbcUrl&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc:postgresql://neorunbase-host:5432/neorunbase?preferQueryMode=simple&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;admin&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;password&quot;</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">}</span>
+</code></pre></div></p>
+<p>Once registered, tables are immediately queryable via fully qualified names: <code>iceberg.db.my_table</code>, <code>neorun.public.events</code>.</p>
 <h2 id="built-in-connectors">Built-in Connectors</h2>
 <table>
 <thead>
@@ -1354,7 +1388,7 @@
 <th>Catalog</th>
 <th>Read</th>
 <th>Write</th>
-<th>Streaming</th>
+<th>Streaming Sink</th>
 <th>Description</th>
 </tr>
 </thead>
@@ -1364,14 +1398,42 @@
 <td>O</td>
 <td>O</td>
 <td>O</td>
-<td>Open table format with maintenance automation</td>
+<td>Open table format, REST catalog (Polaris), S3 direct access</td>
+</tr>
+<tr>
+<td>NeorunBase</td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+<td>REST bulk-insert sink (high throughput), JDBC pg-wire source</td>
 </tr>
 <tr>
 <td>JDBC</td>
 <td>O</td>
-<td></td>
-<td></td>
+<td>O</td>
+<td>O</td>
 <td>Any JDBC database with connection pooling (HikariCP)</td>
+</tr>
+<tr>
+<td>Kafka</td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>Kafka producer sink (transactional mode supported)</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>Bulk API sink with optional upsert</td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>JSON POST to REST endpoint</td>
 </tr>
 <tr>
 <td>TPC-H</td>
@@ -1389,6 +1451,12 @@
 </tr>
 </tbody>
 </table>
+<h2 id="cross-engine-federation">Cross-Engine Federation</h2>
+<p>Multiple catalogs can be joined in a single query:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">neorun</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">events</span><span class="w"> </span><span class="n">n</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_custkey</span>
+</code></pre></div>
 <h2 id="plugin-connectors">Plugin Connectors</h2>
 <p>External connectors can be loaded as plugins via <code>URLClassLoader</code> with full dependency isolation. Each plugin JAR is loaded in its own classloader, preventing dependency conflicts between connectors.</p>
 <h2 id="connection-management">Connection Management</h2>
