@@ -1,49 +1,90 @@
 # Kafka Integration
 
-Ontul supports Apache Kafka as both a streaming source and sink, enabling real-time data pipelines within the same cluster used for batch processing and interactive SQL.
+Ontul supports Kafka (including ItdaStream) as a streaming source, enabling real-time data pipelines with Flink-style continuous processing. Data is consumed event-at-a-time, NOT in micro-batches.
 
 ## Streaming Source
 
 Ontul consumes messages from Kafka topics with support for multiple formats:
 
-- **JSON**: Parse JSON messages with automatic schema inference or a provided schema
+- **JSON**: Parse JSON messages with automatic schema inference from the first message
 - **Avro**: Deserialize Avro messages using Schema Registry integration
 - **Raw**: Access raw key, value, topic, partition, offset, and timestamp fields
 
-Each consumer group runs as an independent long-lived streaming job on a Worker node.
+Multi-worker consumption: Workers share a consumer group and partitions are automatically distributed across Workers.
 
-## Streaming Sink
+## Operations Pipeline
 
-Processed data can be written back to Kafka topics:
+Streaming jobs support a configurable operations pipeline:
 
-- Arrow rows are serialized to JSON and produced to the target topic
-- Optional key field for partitioning
-- Batched writes with LZ4 compression
-- Kafka producer properties are fully configurable
+```json
+{
+  "operations": [
+    {"type": "FILTER", "value": "amount > 100"},
+    {"type": "WINDOW", "value": "TUMBLING(SIZE 10 SECONDS)"},
+    {"type": "GROUP_BY", "value": "category"},
+    {"type": "AGG", "value": "SUM(amount) as total, COUNT(*) as cnt"}
+  ]
+}
+```
+
+- **FILTER**: Predicate-based row filtering
+- **WINDOW**: TUMBLING, SLIDING (with slide interval), SESSION (with gap)
+- **GROUP_BY**: Hash-based multi-worker shuffle (STREAM_SHUFFLE opcode)
+- **AGG**: SUM, COUNT, AVG, MIN, MAX with alias support
+
+## Streaming Sinks
+
+Processed data can be written to multiple sink types:
+
+| Sink | Mode | Exactly-Once |
+|------|------|:---:|
+| Iceberg | Parquet → AppendFiles commit | O |
+| NeorunBase | REST bulk-insert (high throughput) | at-least-once |
+| NeorunBase | JDBC batch insert | O |
+| Kafka | Producer (transactional mode available) | O (with tx) |
+| JDBC | Batch insert | O |
+| Elasticsearch | Bulk API | at-least-once |
+| HTTP | JSON POST | at-least-once |
+| Console | Job log output (debugging) | — |
+
+## Barrier Checkpoint
+
+Ontul uses Master-coordinated barrier checkpoint for distributed streaming:
+
+1. Master triggers `CHECKPOINT_TRIGGER` to all Workers (periodic, configurable interval)
+2. Each Worker: flush sink → commit transaction → snapshot state to Exchange Manager
+3. Commit Kafka consumer offsets (AFTER sink commit)
+4. Report `CHECKPOINT_COMPLETE` back to Master
+5. Master: all Workers acked → checkpoint globally complete
+
+This ensures exactly-once for transactional sinks — if a Worker crashes, it restores from the last checkpoint and replays from committed Kafka offsets.
 
 ## Use Cases
 
-### Real-Time Ingestion
-
-Consume events from Kafka and write directly into Iceberg tables for near-real-time analytics:
+### Real-Time Ingestion with Transform
 
 ```
-Kafka Topic → Ontul Streaming Job → Iceberg Table
+Kafka → FILTER + WINDOW + AGG → Iceberg Table
+Kafka → FILTER → NeorunBase (REST bulk-insert)
 ```
 
-### Stream Processing
-
-Read from one Kafka topic, transform data with SQL or SDK operations, and write to another:
+### Stream-to-Stream
 
 ```
-Kafka Input Topic → Ontul Processing → Kafka Output Topic
+Kafka Input → Transform → Kafka Output (transactional)
+```
+
+### CDC Pipeline
+
+```
+NeorunBase (Iceberg CDC) → Polaris → Ontul SQL query
 ```
 
 ## Job Management
 
-Kafka streaming jobs are managed through the Admin UI or REST API:
+Streaming jobs are managed through the Admin UI or REST API:
 
-- Start and stop consumer groups
-- Monitor ingestion progress and throughput
-- View real-time job logs
-- Configure consumer properties (group ID, offset reset, poll timeout, batch size)
+- Submit, kill, and monitor jobs (multiple jobs concurrently)
+- View real-time job logs from all Workers (multi-worker log merge)
+- Monitor checkpoint progress
+- Configure consumer properties (group ID, offset reset, poll timeout)

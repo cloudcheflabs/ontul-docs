@@ -15,8 +15,35 @@ Batch jobs process a bounded dataset and complete when all data has been process
 
 Streaming jobs process unbounded data continuously and run until explicitly stopped. Use cases include real-time ingestion from Kafka, CDC pipelines, and continuous ETL.
 
-- Streaming jobs are always delegated to a Worker as the driver
-- Support watermark and window operations (tumbling, sliding)
+- **Flink-style continuous processing** — events are processed as soon as they arrive (poll 100ms), NOT Spark-style micro-batch
+- Streaming jobs are always delegated to Workers (multi-worker, partition-based distribution)
+- Barrier checkpoint: Master-coordinated distributed checkpoint across all Workers
+- Window operations: TUMBLING, SLIDING, SESSION (with alias support for AGG expressions)
+- Operations: FILTER, GROUP_BY, WINDOW, AGG — configured via REST API
+- **Exactly-once semantics** for transactional sinks (Iceberg, JDBC, NeorunBase JDBC, Kafka Transactions)
+
+### Exactly-Once Delivery
+
+For transactional sinks, Ontul guarantees exactly-once semantics through barrier checkpoint:
+
+```
+1. Master triggers CHECKPOINT_TRIGGER → all Workers
+2. Each Worker: flush sink → commit sink transaction
+3. Snapshot state (Kafka offsets + window state) to Exchange Manager
+4. Commit Kafka consumer offsets (AFTER sink commit)
+5. Report CHECKPOINT_COMPLETE → Master
+6. Master: all Workers acked → checkpoint globally complete
+```
+
+| Sink | Transactional | Exactly-Once |
+|------|:---:|:---:|
+| Iceberg | O | O |
+| JDBC | O | O |
+| NeorunBase (JDBC) | O | O |
+| Kafka (transactional=true) | O | O |
+| NeorunBase (REST) | X | at-least-once |
+| Kafka (non-tx) | X | at-least-once |
+| Console/ES/HTTP | X | at-least-once |
 
 ## SDK
 
