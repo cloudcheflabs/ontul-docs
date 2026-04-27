@@ -130,6 +130,72 @@ bin/start-worker.sh \
   -Dontul.worker.internal.port=29998
 ```
 
+### Nginx Reverse Proxy
+
+In production, place Nginx in front of the Ontul Masters to provide TLS termination, load balancing, and a single entry point for clients.
+
+Ontul exposes two protocols that require separate Nginx configurations:
+
+- **Admin UI + REST API** (HTTP/1.1) — Web console, catalog management, job submission
+- **Arrow Flight SQL** (gRPC over HTTP/2) — JDBC connections from DBeaver, DataGrip, SDK applications
+
+Nginx distributes requests across multiple Masters for high availability. If one Master goes down, Nginx automatically routes traffic to the remaining Masters.
+
+```nginx
+# ── Upstream: multiple Masters for HA ──
+upstream ontul_admin {
+    server master-1:8080;
+    server master-2:8080;
+}
+
+upstream ontul_flight_sql {
+    server master-1:47470;
+    server master-2:47470;
+}
+
+# ── Admin UI + REST API (HTTP/1.1) ──
+server {
+    listen 443 ssl;
+    server_name ontul.example.com;
+
+    ssl_certificate     /etc/nginx/ssl/ontul.crt;
+    ssl_certificate_key /etc/nginx/ssl/ontul.key;
+
+    location / {
+        proxy_pass http://ontul_admin;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# ── Arrow Flight SQL (gRPC over HTTP/2) ──
+server {
+    listen 443 ssl http2;
+    server_name flight.ontul.example.com;
+
+    ssl_certificate     /etc/nginx/ssl/ontul.crt;
+    ssl_certificate_key /etc/nginx/ssl/ontul.key;
+
+    location / {
+        grpc_pass grpc://ontul_flight_sql;
+        grpc_set_header Host $host;
+    }
+}
+```
+
+#### JDBC Connection via Nginx
+
+When connecting through Nginx with TLS, set `useEncryption=true`:
+
+```
+URL:      jdbc:arrow-flight-sql://flight.ontul.example.com:443
+Username: admin
+Password: (your password)
+Properties: useEncryption=true
+```
+
 ### Next Steps
 
 - [Getting Started](../intro/intro.md) — Run your first query and example
