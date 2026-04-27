@@ -161,6 +161,9 @@ server {
     ssl_certificate     /etc/nginx/ssl/ontul.crt;
     ssl_certificate_key /etc/nginx/ssl/ontul.key;
 
+    # No body size limit (large INSERT, bulk-insert, file uploads)
+    client_max_body_size 0;
+
     location / {
         proxy_pass http://ontul_admin;
         proxy_set_header Host $host;
@@ -177,6 +180,9 @@ server {
 
     ssl_certificate     /etc/nginx/ssl/ontul.crt;
     ssl_certificate_key /etc/nginx/ssl/ontul.key;
+
+    # No body size limit (large query results, streaming data)
+    client_max_body_size 0;
 
     location / {
         grpc_pass grpc://ontul_flight_sql;
