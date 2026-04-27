@@ -1,24 +1,15 @@
 # Getting Started
 
-This shows how to install Ontul on local to experience it quickly.
+This guide shows how to run Ontul locally and execute the included examples.
 
-## Prerequisites
+## Install
 
-Because Ontul is written in Java, Java 17 needs to be installed on local.
+Follow the [Installation Guide](../installation/installation.md) to download and set up Ontul.
 
-## Install Ontul on Local
+After installation:
 
-Ontul distribution can be downloaded like this.
-
-```agsl
-curl -L -O https://github.com/cloudcheflabs/ontul-pack/releases/download/ontul-archive/ontul-1.0.0.tar.gz
-```
-
-And untar the downloaded package.
-```agsl
-tar zxvf ontul-1.0.0.tar.gz
-
-cd ontul-1.0.0;
+```bash
+cd ontul-1.0.0-SNAPSHOT
 ```
 
 ## Run Example Server and Run Examples
