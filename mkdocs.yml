@@ -34,6 +34,8 @@ theme:
 nav:
   - "Architecture":
       - "Ontul Architecture": architecture/architecture.md
+  - "Installation":
+      - "Download & Install": installation/installation.md
   - "Getting Started":
       - "Getting Started": intro/intro.md
   - "Features":
@@ -50,7 +52,12 @@ nav:
       - "Encryption & KMS": features/encryption.md
       - "Geospatial Support": features/geospatial.md
       - "High Availability": features/high-availability.md
-      - "Admin UI": features/admin-ui.md
+  - "Reference":
+      - "REST API": reference/rest-api.md
+      - "Java SDK": reference/sdk-java.md
+      - "Python SDK": reference/sdk-python.md
+  - "Community":
+      - "Mailing List": community/mailing-list.md
   - "Use Cases":
       - "Batch ETL: S3 Parquet + Iceberg": use-cases/batch-etl.md
       - "Interactive SQL: Iceberg via JDBC": use-cases/interactive-sql.md

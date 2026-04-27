@@ -16,12 +16,12 @@ This tutorial demonstrates how to build a batch ETL pipeline using Ontul with Ap
 - Java 17
 - Docker (for MinIO + Polaris)
 
-## 1. Download and Install Ontul
+## 1. Install Ontul
+
+Follow the [Installation Guide](../installation/installation.md) to download and set up Ontul, then:
 
 ```bash
-curl -L -O https://github.com/cloudcheflabs/ontul-pack/releases/download/ontul-archive/ontul-1.0.0.tar.gz
-tar zxvf ontul-1.0.0.tar.gz
-cd ontul-1.0.0
+cd ontul-1.0.0-SNAPSHOT
 ```
 
 ## 2. Start Infrastructure

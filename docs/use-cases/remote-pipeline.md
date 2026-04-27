@@ -18,9 +18,10 @@ This tutorial demonstrates Ontul's **Remote mode** — building an end-to-end da
 
 ## 1. Setup
 
+Follow the [Installation Guide](../installation/installation.md) to download and set up Ontul, then:
+
 ```bash
-curl -L -O https://github.com/cloudcheflabs/ontul-pack/releases/download/ontul-archive/ontul-1.0.0.tar.gz
-tar zxvf ontul-1.0.0.tar.gz && cd ontul-1.0.0
+cd ontul-1.0.0-SNAPSHOT
 
 docker compose -f examples/docker-compose-iceberg.yml up -d
 examples/bin/setup-iceberg.sh
