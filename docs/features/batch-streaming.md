@@ -130,7 +130,98 @@ curl -X POST http://localhost:8080/v1/api/job/submit \
   }'
 ```
 
-### 2. Java SDK
+### 2. Shell Script (`bin/submit.sh`)
+
+Ontul ships with `bin/submit.sh` for submitting CLASS and PYTHON jobs from the command line. The script handles dependency diffing, upload, job submission, and log streaming automatically.
+
+#### CLASS Job
+
+```bash
+bin/submit.sh \
+  --master localhost:8080 \
+  --class com.example.job.MyEtlJob \
+  --jar-dirs /path/to/project/build/libs,/path/to/project/build/deps \
+  --token $ONTUL_USER_TOKEN \
+  --args "input=s3://bucket/raw,output=ice.warehouse.processed"
+```
+
+Or specify individual JARs:
+
+```bash
+bin/submit.sh \
+  --master localhost:8080 \
+  --class com.example.job.ImageProcessingJob \
+  --jars /path/to/job.jar,/path/to/dep1.jar,/path/to/dep2.jar \
+  --token $ONTUL_USER_TOKEN
+```
+
+#### PYTHON Job
+
+```bash
+bin/submit.sh \
+  --master localhost:8080 \
+  --python /path/to/etl_pipeline.py \
+  --pydeps /path/to/requirements.txt \
+  --token $ONTUL_USER_TOKEN \
+  --args "input_table=ice.raw.events,output_table=ice.analytics.summary"
+```
+
+#### Options
+
+| Option | Description |
+|--------|-------------|
+| `--master host:port` | Master admin endpoint (required) |
+| `--class className` | Java class to execute (CLASS job) |
+| `--python script.py` | Python script to execute (PYTHON job) |
+| `--jars jar1,jar2,...` | Comma-separated JAR files |
+| `--jar-dirs dir1,dir2,...` | Comma-separated directories (all `*.jar` collected) |
+| `--pydeps requirements.txt` | Python requirements file |
+| `--token TOKEN` | JWT token (or env `ONTUL_USER_TOKEN`) |
+| `--accesskey AK` | AccessKey auth (or env `ONTUL_USER_ACCESS_KEY`) |
+| `--secretkey SK` | SecretKey auth (or env `ONTUL_USER_SECRET_KEY`) |
+| `--args "k1=v1,k2=v2"` | Job arguments as key=value pairs |
+| `--no-wait` | Submit and exit without waiting for completion |
+
+#### What the Script Does
+
+```
+Step 1: Compare client JARs with server deps (GET /v1/api/deps)
+        → SKIP JARs already on server
+Step 2: Upload missing JARs (POST /v1/api/deps)
+Step 3: Submit job (POST /v1/api/job/submit)
+Step 4: Poll status + stream logs until COMPLETED / FAILED / KILLED
+```
+
+Example output:
+
+```
+=== Ontul Job Submit ===
+Master:  http://localhost:8080
+Class:   com.example.job.MyEtlJob
+JARs:    5 files
+
+Step 1: Comparing deps with server...
+  SKIP (on server): guava-33.4.0-jre.jar
+  SKIP (on server): jackson-core-2.18.2.jar
+  Missing: 2 JARs to upload
+
+Step 2: Uploading missing JARs...
+  Uploaded: my-etl-job.jar (245760 bytes) → deps/my-etl-job.jar
+  Uploaded: custom-lib.jar (102400 bytes) → deps/custom-lib.jar
+
+Step 3: Submitting CLASS job...
+  Job ID: class-1714300000000
+
+Step 4: Waiting for completion...
+  2026-04-28 10:00:01 INFO  Starting MyEtlJob
+  2026-04-28 10:00:05 INFO  Reading from s3://bucket/raw
+  2026-04-28 10:00:30 INFO  Wrote 50000 rows to ice.warehouse.processed
+  2026-04-28 10:00:30 INFO  Job completed
+
+=== Job COMPLETED (ID: class-1714300000000) ===
+```
+
+### 3. Java SDK
 
 #### Batch (DataFrame API)
 
@@ -221,7 +312,7 @@ job.logs().forEach(System.out::println);
 job.kill();
 ```
 
-### 3. Python SDK
+### 4. Python SDK
 
 #### Batch
 
