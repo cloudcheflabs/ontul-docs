@@ -162,16 +162,135 @@ String jobId = session.submit("com.example.MyBatchJob")
 
 ## User-Defined Functions (UDFs)
 
+Ontul supports three UDF scopes:
+
+| Scope | Visibility | Lifetime |
+|-------|-----------|----------|
+| **TEMPORARY** | Current session only | Session end |
+| **USER** | All sessions of the user | Persistent |
+| **GLOBAL** | All authenticated users | Persistent (IAM-controlled) |
+
+### Step 1: Write a UDF Class
+
+UDFs are plain `public static` methods — no interface to implement, no `Serializable` required.
+
 ```java
-// Register a temporary UDF (session-scoped)
-session.execute("CREATE TEMPORARY FUNCTION double_it AS 'com.example.DoubleUdf'");
+public class MyUdfs {
 
-// Use in SQL
-DataFrame result = session.source(
-    Source.sql("SELECT id, double_it(amount) as doubled FROM iceberg.db.sales"));
+    /** Single-arg: trim + lowercase an email. */
+    public static String cleanEmail(String email) {
+        if (email == null) return null;
+        return email.trim().toLowerCase();
+    }
 
-// Register a persistent UDF (survives restarts)
-session.execute("CREATE FUNCTION my_func AS 'com.example.MyFunc'");
+    /** Multi-arg: wrap a string with configurable padding. */
+    public static String bracket(String s, Long padLen) {
+        if (s == null) return null;
+        int pad = padLen != null ? padLen.intValue() : 1;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < pad; i++) sb.append('[');
+        sb.append(s);
+        for (int i = 0; i < pad; i++) sb.append(']');
+        return sb.toString();
+    }
+
+    /** Returns boolean. */
+    public static boolean isBot(String userAgent) {
+        if (userAgent == null) return false;
+        String ua = userAgent.toLowerCase();
+        return ua.contains("bot") || ua.contains("crawl") || ua.contains("spider");
+    }
+
+    /** Complex scoring logic. */
+    public static long emailScore(String email) {
+        if (email == null) return 0;
+        String e = email.toLowerCase();
+        long score = 0;
+        if (e.endsWith(".com")) score += 100;
+        if (e.endsWith(".io"))  score += 80;
+        if (e.contains("admin")) score += 25;
+        return score;
+    }
+}
+```
+
+### Step 2: Register UDF (Method-Reference)
+
+```java
+// Register with class + method name (recommended)
+session.registerUdf("clean_email", MyUdfs.class, "cleanEmail");
+session.registerUdf("email_score", MyUdfs.class, "emailScore");
+session.registerUdf("bracket",     MyUdfs.class, "bracket");
+session.registerUdf("is_bot",      MyUdfs.class, "isBot");
+```
+
+### Step 3: Use in SQL
+
+```java
+// SELECT with UDFs
+DataFrame df = session.source(Source.sql(
+    "SELECT n_name, "
+    + "clean_email('USER@' || n_name || '.com') AS clean, "
+    + "email_score('admin@' || LOWER(n_name) || '.com') AS score, "
+    + "bracket(n_name, 2) AS padded "
+    + "FROM tpch.tiny.nation ORDER BY n_nationkey LIMIT 5"));
+
+// UDF in WHERE clause
+DataFrame filtered = session.source(Source.sql(
+    "SELECT n_name FROM tpch.tiny.nation "
+    + "WHERE email_score('admin@' || LOWER(n_name) || '.com') > 100"));
+
+// UDF via DataFrame API
+DataFrame result = session.source(Source.sql("SELECT n_name FROM tpch.tiny.nation"))
+    .withColumn("padded", "bracket(n_name, 1)")
+    .withColumn("cleaned", "clean_email('user@' || n_name || '.com')")
+    .filter("email_score('a@' || LOWER(n_name) || '.com') > 50")
+    .limit(5);
+```
+
+### Inline Lambda UDF
+
+For quick one-off UDFs, use a lambda (requires `Udf1`/`Udf2`/`Udf3` functional interface):
+
+```java
+import com.cloudcheflabs.ontul.sql.udf.Udf1;
+
+session.registerUdf("upper_pad",
+    (Udf1<String, String>) s -> s == null ? null : "[" + s.toUpperCase() + "]");
+
+DataFrame df = session.source(Source.sql(
+    "SELECT upper_pad(n_name) AS p FROM tpch.tiny.nation LIMIT 3"));
+```
+
+### Global UDF (IAM-Controlled)
+
+Global UDFs are visible to all users. Registration requires `UDF:CREATE_GLOBAL` permission.
+
+```java
+// Admin registers a global UDF
+session.registerGlobalUdf("global_upper", MyUdfs.class, "cleanEmail");
+
+// Any authenticated user with UDF:EXECUTE policy can call it
+DataFrame df = session.source(Source.sql(
+    "SELECT global_upper(n_name) FROM tpch.tiny.nation LIMIT 5"));
+
+// Admin drops it
+session.unregisterGlobalUdf("global_upper");
+```
+
+### Unregister UDF
+
+```java
+session.unregisterUdf("clean_email");
+
+// After unregister, SQL will fail with "function not found"
+```
+
+### SHOW FUNCTIONS
+
+```java
+// List all registered UDFs (name, args, return_type, language, scope)
+DataFrame df = session.source(Source.sql("SHOW FUNCTIONS"));
 ```
 
 ## Cross-Catalog Federation
