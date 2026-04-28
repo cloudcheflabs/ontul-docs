@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/connector-architecture/">
       
       
-        <link rel="prev" href="../batch-streaming/">
+        <link rel="prev" href="../arrow-native-execution/">
       
       
         <link rel="next" href="../federation/">
@@ -50,6 +50,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -213,6 +215,25 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
@@ -241,26 +262,6 @@
   
   
   Installation
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../intro/intro/" class="md-tabs__link">
-          
-  
-  
-  Getting Started
 
         </a>
       </li>
@@ -318,11 +319,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../community/mailing-list/" class="md-tabs__link">
+        <a href="../../query/guide/" class="md-tabs__link">
           
   
   
-  Community
+  Query
 
         </a>
       </li>
@@ -338,11 +339,51 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../use-cases/batch-etl/" class="md-tabs__link">
+        <a href="../../batch/guide/" class="md-tabs__link">
           
   
   
-  Use Cases
+  Batch
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../streaming/guide/" class="md-tabs__link">
+          
+  
+  
+  Streaming
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../community/mailing-list/" class="md-tabs__link">
+          
+  
+  
+  Community
 
         </a>
       </li>
@@ -390,6 +431,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -404,10 +472,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -425,8 +493,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_1">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -491,10 +559,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -512,8 +580,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -550,65 +618,6 @@
   
 
               
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Getting Started
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Getting Started
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
             
               
                 
@@ -762,62 +771,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../interactive-sql/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Interactive SQL
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../batch-streaming/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Batch & Streaming
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -950,6 +903,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Built-in Connectors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#catalog-connectors-querybatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catalog Connectors (Query/Batch)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#streaming-sinks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming Sinks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1037,34 +1018,6 @@
     
   
     Iceberg Integration
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../kafka-integration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Kafka Integration
   
 
     
@@ -1426,7 +1379,7 @@
   <span class="md-ellipsis">
     
   
-    Community
+    Query
   
 
     
@@ -1442,7 +1395,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Community
+    Query
   
 
           </label>
@@ -1455,14 +1408,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../community/mailing-list/" class="md-nav__link">
+      <a href="../../query/guide/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Mailing List
+    Query Guide
   
 
     
@@ -1513,7 +1466,7 @@
   <span class="md-ellipsis">
     
   
-    Use Cases
+    Batch
   
 
     
@@ -1529,7 +1482,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Use Cases
+    Batch
   
 
           </label>
@@ -1542,14 +1495,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../use-cases/batch-etl/" class="md-nav__link">
+      <a href="../../batch/guide/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Batch ETL: S3 Parquet + Iceberg
+    Batch Guide
   
 
     
@@ -1563,6 +1516,65 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Streaming
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
               
                 
   
@@ -1570,14 +1582,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../use-cases/interactive-sql/" class="md-nav__link">
+      <a href="../../streaming/guide/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Interactive SQL: Iceberg via JDBC
+    Streaming Guide
   
 
     
@@ -1591,21 +1603,44 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
   
   
-    <li class="md-nav__item">
-      <a href="../../use-cases/streaming/" class="md-nav__link">
+    
+    
+    
+    
+      
+      
         
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
     
   
-    Streaming: Kafka to Iceberg
+    Community
   
 
     
@@ -1613,11 +1648,19 @@
   
   
 
-      </a>
-    </li>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
   
 
-              
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
             
               
                 
@@ -1626,42 +1669,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../use-cases/remote-pipeline/" class="md-nav__link">
+      <a href="../../community/mailing-list/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Remote Pipeline: S3 → Transform → Iceberg
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../use-cases/udf-tutorial/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    UDF Tutorial: TEMPORARY → USER → GLOBAL
+    Mailing List
   
 
     
@@ -1759,13 +1774,14 @@
 </code></pre></div></p>
 <p>Once registered, tables are immediately queryable via fully qualified names: <code>iceberg.db.my_table</code>, <code>neorun.public.events</code>.</p>
 <h2 id="built-in-connectors">Built-in Connectors</h2>
+<h3 id="catalog-connectors-querybatch">Catalog Connectors (Query/Batch)</h3>
+<p>Registered via <code>POST /admin/catalogs</code>. Used in SQL queries and batch pipelines.</p>
 <table>
 <thead>
 <tr>
-<th>Catalog</th>
+<th>Connector</th>
 <th>Read</th>
 <th>Write</th>
-<th>Streaming Sink</th>
 <th>Description</th>
 </tr>
 </thead>
@@ -1774,48 +1790,29 @@
 <td>Iceberg</td>
 <td>O</td>
 <td>O</td>
-<td>O</td>
 <td>Open table format, REST catalog (Polaris), S3 direct access</td>
 </tr>
 <tr>
 <td>NeorunBase</td>
 <td>O</td>
 <td>O</td>
-<td>O</td>
-<td>REST bulk-insert sink (high throughput), JDBC pg-wire source</td>
+<td>JDBC pg-wire read, REST bulk-insert write</td>
 </tr>
 <tr>
 <td>JDBC</td>
 <td>O</td>
 <td>O</td>
-<td>O</td>
-<td>Any JDBC database with connection pooling (HikariCP)</td>
+<td>PostgreSQL, MySQL, etc. with HikariCP pooling</td>
 </tr>
 <tr>
-<td>Kafka</td>
-<td></td>
-<td></td>
+<td>File</td>
 <td>O</td>
-<td>Kafka producer sink (transactional mode supported)</td>
-</tr>
-<tr>
-<td>Elasticsearch</td>
-<td></td>
-<td></td>
 <td>O</td>
-<td>Bulk API sink with optional upsert</td>
-</tr>
-<tr>
-<td>HTTP</td>
-<td></td>
-<td></td>
-<td>O</td>
-<td>JSON POST to REST endpoint</td>
+<td>CSV, Parquet, JSON, Avro, ORC on S3</td>
 </tr>
 <tr>
 <td>TPC-H</td>
 <td>O</td>
-<td></td>
 <td></td>
 <td>Built-in benchmark data (configurable scale)</td>
 </tr>
@@ -1823,8 +1820,55 @@
 <td>TPC-DS</td>
 <td>O</td>
 <td></td>
-<td></td>
 <td>Built-in benchmark data (configurable scale)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="streaming-sinks">Streaming Sinks</h3>
+<p>Used in streaming jobs. Configured via job config, not catalog registration.</p>
+<table>
+<thead>
+<tr>
+<th>Sink</th>
+<th style="text-align: center;">Transactional</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Iceberg (table)</td>
+<td style="text-align: center;">O</td>
+<td>Parquet write + AppendFiles commit</td>
+</tr>
+<tr>
+<td>Kafka</td>
+<td style="text-align: center;">O</td>
+<td>Producer with optional Kafka Transactions</td>
+</tr>
+<tr>
+<td>JDBC</td>
+<td style="text-align: center;">O</td>
+<td>Batch INSERT with transaction commit</td>
+</tr>
+<tr>
+<td>NeorunBase</td>
+<td style="text-align: center;">O/X</td>
+<td>JDBC mode (tx) or REST mode (at-least-once)</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td style="text-align: center;">X</td>
+<td>Bulk API with optional upsert</td>
+</tr>
+<tr>
+<td>HTTP / Webhook</td>
+<td style="text-align: center;">X</td>
+<td>JSON POST to REST endpoint</td>
+</tr>
+<tr>
+<td>Console</td>
+<td style="text-align: center;">X</td>
+<td>Debug output to stdout</td>
 </tr>
 </tbody>
 </table>
