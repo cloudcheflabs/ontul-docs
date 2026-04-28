@@ -72,16 +72,32 @@ Once registered, tables are immediately queryable via fully qualified names: `ic
 
 ## Built-in Connectors
 
-| Catalog | Read | Write | Streaming Sink | Description |
-|---------|------|-------|----------------|-------------|
-| Iceberg | O | O | O | Open table format, REST catalog (Polaris), S3 direct access |
-| NeorunBase | O | O | O | REST bulk-insert sink (high throughput), JDBC pg-wire source |
-| JDBC | O | O | O | Any JDBC database with connection pooling (HikariCP) |
-| Kafka | | | O | Kafka producer sink (transactional mode supported) |
-| Elasticsearch | | | O | Bulk API sink with optional upsert |
-| HTTP | | | O | JSON POST to REST endpoint |
-| TPC-H | O | | | Built-in benchmark data (configurable scale) |
-| TPC-DS | O | | | Built-in benchmark data (configurable scale) |
+### Catalog Connectors (Query/Batch)
+
+Registered via `POST /admin/catalogs`. Used in SQL queries and batch pipelines.
+
+| Connector | Read | Write | Description |
+|-----------|------|-------|-------------|
+| Iceberg | O | O | Open table format, REST catalog (Polaris), S3 direct access |
+| NeorunBase | O | O | JDBC pg-wire read, REST bulk-insert write |
+| JDBC | O | O | PostgreSQL, MySQL, etc. with HikariCP pooling |
+| File | O | O | CSV, Parquet, JSON, Avro, ORC on S3 |
+| TPC-H | O | | Built-in benchmark data (configurable scale) |
+| TPC-DS | O | | Built-in benchmark data (configurable scale) |
+
+### Streaming Sinks
+
+Used in streaming jobs. Configured via job config, not catalog registration.
+
+| Sink | Transactional | Description |
+|------|:---:|-------------|
+| Iceberg (table) | O | Parquet write + AppendFiles commit |
+| Kafka | O | Producer with optional Kafka Transactions |
+| JDBC | O | Batch INSERT with transaction commit |
+| NeorunBase | O/X | JDBC mode (tx) or REST mode (at-least-once) |
+| Elasticsearch | X | Bulk API with optional upsert |
+| HTTP / Webhook | X | JSON POST to REST endpoint |
+| Console | X | Debug output to stdout |
 
 ## Cross-Engine Federation
 
