@@ -32,21 +32,18 @@ theme:
 
 
 nav:
+  - "Home": index.md
   - "Architecture":
       - "Ontul Architecture": architecture/architecture.md
   - "Installation":
       - "Download & Install": installation/installation.md
-  - "Getting Started":
       - "Getting Started": intro/intro.md
   - "Features":
       - "Unified Data Engine": features/unified-engine.md
       - "Arrow-Native Execution": features/arrow-native-execution.md
-      - "Interactive SQL": features/interactive-sql.md
-      - "Batch & Streaming": features/batch-streaming.md
       - "Connector Architecture": features/connector-architecture.md
       - "Federation Queries": features/federation.md
       - "Iceberg Integration": features/iceberg-integration.md
-      - "Kafka Integration": features/kafka-integration.md
       - "Remote Mode": features/remote-mode.md
       - "User-Defined Functions": features/udf.md
       - "IAM": features/iam.md
@@ -57,14 +54,14 @@ nav:
       - "REST API": reference/rest-api.md
       - "Java SDK": reference/sdk-java.md
       - "Python SDK": reference/sdk-python.md
+  - "Query":
+      - "Query Guide": query/guide.md
+  - "Batch":
+      - "Batch Guide": batch/guide.md
+  - "Streaming":
+      - "Streaming Guide": streaming/guide.md
   - "Community":
       - "Mailing List": community/mailing-list.md
-  - "Use Cases":
-      - "Batch ETL: S3 Parquet + Iceberg": use-cases/batch-etl.md
-      - "Interactive SQL: Iceberg via JDBC": use-cases/interactive-sql.md
-      - "Streaming: Kafka to Iceberg": use-cases/streaming.md
-      - "Remote Pipeline: S3 → Transform → Iceberg": use-cases/remote-pipeline.md
-      - "UDF Tutorial: TEMPORARY → USER → GLOBAL": use-cases/udf-tutorial.md
 
 
 
@@ -74,6 +71,9 @@ extra:
     provider: mike
     default: 2.2.0
 
+
+extra_css:
+  - stylesheets/extra.css
 
 extra_javascript:
   - javascripts/extra.js
