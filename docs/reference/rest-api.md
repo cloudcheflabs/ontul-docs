@@ -231,7 +231,7 @@ Authorization: Bearer <accessToken>
 }
 ```
 
-**Streaming job:**
+**Streaming job (by connection ID — recommended):**
 
 ```json
 {
@@ -239,7 +239,7 @@ Authorization: Bearer <accessToken>
   "type": "STREAMING",
   "config": {
     "source.type": "kafka",
-    "source.kafka.bootstrap.servers": "kafka:9092",
+    "source.connectionId": "events-kafka",
     "source.kafka.topic": "events",
     "source.kafka.group.id": "ontul-group",
     "source.kafka.auto.offset.reset": "earliest",
@@ -254,6 +254,8 @@ Authorization: Bearer <accessToken>
   ]
 }
 ```
+
+`source.connectionId` and `sink.connectionId` resolve credentials from the encrypted ConnectionStore. Per-property overrides (e.g., `source.kafka.group.id`) are merged on top of the stored connection. Inline credentials in the job payload are supported for development but should be avoided in production. See [Connection ID](../features/connection-id.md).
 
 ### Job Status
 

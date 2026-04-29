@@ -73,14 +73,35 @@ session.source("SELECT * FROM tpch.tiny.customer") \
     .sink("iceberg.warehouse.customers")
 ```
 
+## Source/Sink by Connection ID
+
+Reference a registered connection (`POST /admin/connections`) by ID instead of repeating endpoints and credentials:
+
+```python
+# S3 source/sink by connection ID
+(session.source_s3("s3://warehouse/raw/sales", "parquet", connection="warehouse-s3")
+    .filter("quantity > 0")
+    .with_column("total", "quantity * unit_price")
+    .sink_s3("s3://warehouse/curated/sales", "parquet", connection="warehouse-s3"))
+
+# JDBC by connection ID
+(session.source_jdbc("analytics-pg", "SELECT * FROM public.orders WHERE dt = CURRENT_DATE")
+    .sink("ice.staging.orders"))
+
+session.source("SELECT * FROM ice.warehouse.daily_summary") \
+    .sink_jdbc("analytics-pg", "public.daily_summary")
+```
+
+See the [Connection ID feature reference](../features/connection-id.md) for the full reference, including overriding stored properties per job.
+
 ## Streaming
 
 ```python
 import time
 
-# Submit streaming job: Kafka → Iceberg
+# Submit streaming job: Kafka → Iceberg, by connection ID
 job_id = (session.stream_source("user-events",
-              bootstrap_servers="kafka:9092",
+              connection="events-kafka",
               format="json",
               auto_offset_reset="earliest")
     .filter("event_type <> 'logout'")

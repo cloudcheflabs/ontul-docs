@@ -42,6 +42,7 @@ nav:
       - "Unified Data Engine": features/unified-engine.md
       - "Arrow-Native Execution": features/arrow-native-execution.md
       - "Connector Architecture": features/connector-architecture.md
+      - "Connection ID (Source/Sink by Reference)": features/connection-id.md
       - "Federation Queries": features/federation.md
       - "Iceberg Integration": features/iceberg-integration.md
       - "Remote Mode": features/remote-mode.md
