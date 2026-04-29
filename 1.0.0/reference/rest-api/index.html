@@ -797,6 +797,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/connection-id/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connection ID (Source/Sink by Reference)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/federation/" class="md-nav__link">
         
   
@@ -2185,13 +2213,13 @@
 <a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="w">  </span><span class="nt">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INSERT INTO iceberg.db.target SELECT * FROM tpch.tiny.customer&quot;</span>
 <a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="p">}</span>
 </code></pre></div>
-<p><strong>Streaming job:</strong></p>
+<p><strong>Streaming job (by connection ID — recommended):</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="p">{</span>
 <a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka-to-iceberg&quot;</span><span class="p">,</span>
 <a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;STREAMING&quot;</span><span class="p">,</span>
 <a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">  </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="w">    </span><span class="nt">&quot;source.type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka&quot;</span><span class="p">,</span>
-<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="w">    </span><span class="nt">&quot;source.kafka.bootstrap.servers&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka:9092&quot;</span><span class="p">,</span>
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="w">    </span><span class="nt">&quot;source.connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events-kafka&quot;</span><span class="p">,</span>
 <a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="w">    </span><span class="nt">&quot;source.kafka.topic&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">,</span>
 <a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a><span class="w">    </span><span class="nt">&quot;source.kafka.group.id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontul-group&quot;</span><span class="p">,</span>
 <a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a><span class="w">    </span><span class="nt">&quot;source.kafka.auto.offset.reset&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;earliest&quot;</span><span class="p">,</span>
@@ -2206,6 +2234,7 @@
 <a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a><span class="w">  </span><span class="p">]</span>
 <a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a><span class="p">}</span>
 </code></pre></div>
+<p><code>source.connectionId</code> and <code>sink.connectionId</code> resolve credentials from the encrypted ConnectionStore. Per-property overrides (e.g., <code>source.kafka.group.id</code>) are merged on top of the stored connection. Inline credentials in the job payload are supported for development but should be avoided in production. See <a href="../../features/connection-id/">Connection ID</a>.</p>
 <h3 id="job-status">Job Status</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>GET /v1/api/job/status/{jobId}
 <a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>Authorization: Bearer &lt;accessToken&gt;
