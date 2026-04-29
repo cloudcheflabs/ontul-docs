@@ -120,3 +120,5 @@ Connections are managed through the Admin UI or REST API:
 - Create, update, delete, and list connections
 - Credentials are encrypted at rest via KMS (envelope encryption)
 - Jobs and catalogs reference connections by ID — no credentials in code or configuration files
+
+See [Connection ID (Source/Sink by Reference)](connection-id.md) for the full reference: registering connections, using IDs from Java/Python SDKs and the REST API, overriding stored properties, and rotation.

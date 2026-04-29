@@ -307,6 +307,31 @@ curl http://localhost:8080/admin/jobs \
 
 ---
 
+## Source/Sink by Connection ID
+
+Production batch jobs should reference a registered connection by ID instead of repeating endpoints and credentials in every call. Register once via `POST /admin/connections`, then use the ID anywhere a source or sink is built.
+
+```java
+// S3 source/sink driven by a stored connection — no credentials in code
+session.source(Source.s3("s3://warehouse/raw/sales", "parquet")
+        .connection("warehouse-s3"))
+    .filter("quantity > 0")
+    .withColumn("total", "quantity * unit_price")
+    .sink(Sink.s3("s3://warehouse/curated/sales", "parquet")
+        .connection("warehouse-s3"));
+
+// JDBC source / sink
+session.source(Source.jdbc("analytics-pg", "SELECT * FROM public.orders WHERE dt = CURRENT_DATE"))
+    .sink(Sink.table("ice.staging.orders"));
+
+session.source(Source.sql("SELECT * FROM ice.warehouse.daily_summary"))
+    .sink(Sink.jdbc("analytics-pg", "public.daily_summary"));
+```
+
+Inline `.property(...)` values supplied alongside `.connection(id)` are merged on top of the stored connection — handy for per-job overrides (consumer group, query timeout, batch size) without forking the connection. See [Connection ID](../features/connection-id.md) for the full reference.
+
+---
+
 ## DataFrame API
 
 ### Source Types
@@ -314,7 +339,8 @@ curl http://localhost:8080/admin/jobs \
 | Source | Description | Example |
 |--------|-------------|---------|
 | `Source.sql(query)` | SQL query | `Source.sql("SELECT * FROM tpch.tiny.customer")` |
-| `Source.s3(path, format)` | S3 files | `Source.s3("s3://bucket/data", "parquet")` |
+| `Source.s3(path, format)` | S3 files (inline or by connection ID) | `Source.s3("s3://bucket/data", "parquet").connection("warehouse-s3")` |
+| `Source.jdbc(connId, query)` | JDBC query by connection ID | `Source.jdbc("analytics-pg", "SELECT * FROM orders")` |
 | `Source.data(list)` | In-memory data | `Source.data(List.of(Map.of("id", 1, "name", "a")))` |
 
 ### Transformations
@@ -355,7 +381,8 @@ var summary = joined
 | Sink | Description | Example |
 |------|-------------|---------|
 | `Sink.table(name)` | Iceberg/catalog table | `Sink.table("ice.warehouse.results")` |
-| `Sink.s3(path, format)` | S3 output | `Sink.s3("s3://bucket/output", "parquet")` |
+| `Sink.s3(path, format)` | S3 output (inline or by connection ID) | `Sink.s3("s3://bucket/output", "parquet").connection("warehouse-s3")` |
+| `Sink.jdbc(connId, table)` | JDBC table by connection ID | `Sink.jdbc("analytics-pg", "public.daily_summary")` |
 
 ---
 

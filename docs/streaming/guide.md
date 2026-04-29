@@ -133,6 +133,44 @@ print(f"Streaming job started: {job_id}")
 
 ---
 
+## Source/Sink by Connection ID
+
+Streaming jobs should reference a registered connection by ID instead of restating bootstrap servers and SASL credentials in every payload. The first argument to `Source.kafka(...)` and `Sink.kafka(...)` is the connection ID; pass `"inline"` only when supplying credentials directly via `.property(...)`.
+
+```java
+// Kafka → Iceberg, both endpoints driven by a stored connection
+session.streamSource(
+        Source.kafka("events-kafka", "user-events")
+            .groupId("ontul-stream-1")
+            .property("auto.offset.reset", "earliest")
+            .format("json"))
+    .filter("event_type <> 'logout'")
+    .sink(Sink.kafka("events-kafka", "filtered-events").keyField("event_id"))
+    .commitInterval(5_000)
+    .start(Duration.ofMinutes(30));
+```
+
+REST equivalent — `source.connectionId` / `sink.connectionId` keep secrets out of the job payload:
+
+```json
+{
+  "config": {
+    "source.type": "kafka",
+    "source.connectionId": "events-kafka",
+    "source.kafka.topic": "user-events",
+    "source.kafka.group.id": "ontul-stream-1",
+
+    "sink.type": "jdbc",
+    "sink.connectionId": "analytics-pg",
+    "sink.tableName": "events"
+  }
+}
+```
+
+Per-property values (`group.id`, `auto.offset.reset`, `batchSize`, …) supplied alongside `connectionId` are merged on top of the stored connection. See [Connection ID](../features/connection-id.md) for the full reference.
+
+---
+
 ## Kafka Source Formats
 
 | Format | Description | Schema |
@@ -268,12 +306,15 @@ Writes Parquet files, commits via `AppendFiles`. Exactly-once with barrier check
 ### Kafka
 
 ```java
-// SDK
-.sink(Sink.kafka("connectionId", "output-topic").keyField("event_id"))
+// SDK — first argument is the connection ID
+.sink(Sink.kafka("events-kafka", "output-topic").keyField("event_id"))
 ```
 
 ```json
-// REST config
+// REST config — recommended: reference a stored connection
+"sink": {"type": "kafka", "connectionId": "events-kafka", "topic": "output-topic", "keyField": "event_id", "transactional": true}
+
+// REST config — inline credentials (development only)
 "sink": {"type": "kafka", "bootstrapServers": "kafka:9092", "topic": "output-topic", "keyField": "event_id", "transactional": true}
 ```
 
@@ -282,6 +323,10 @@ With `transactional=true`, uses Kafka Transactions for exactly-once.
 ### JDBC
 
 ```json
+// Recommended: by connection ID
+"sink": {"type": "jdbc", "connectionId": "analytics-pg", "tableName": "events", "batchSize": 500}
+
+// Inline (development only)
 "sink": {"type": "jdbc", "jdbcUrl": "jdbc:postgresql://host:5432/db", "tableName": "events", "username": "user", "password": "pass", "batchSize": 500}
 ```
 
@@ -290,28 +335,28 @@ Transactional — exactly-once with barrier checkpoint.
 ### NeorunBase
 
 ```json
-// REST mode (high throughput, at-least-once)
-"sink": {"type": "neorunbase", "mode": "rest", "endpoint": "http://neorunbase:8080", "tableName": "events", "username": "admin", "password": "admin", "batchSize": 500}
+// REST mode by connection ID (high throughput, at-least-once)
+"sink": {"type": "neorunbase", "mode": "rest", "connectionId": "neorunbase-prod", "tableName": "events", "batchSize": 500}
 
-// JDBC mode (transactional, exactly-once)
-"sink": {"type": "neorunbase", "mode": "jdbc", "jdbcUrl": "jdbc:postgresql://neorunbase:5432/db", "tableName": "events"}
+// JDBC mode by connection ID (transactional, exactly-once)
+"sink": {"type": "neorunbase", "mode": "jdbc", "connectionId": "neorunbase-prod", "tableName": "events"}
 ```
 
 ### Elasticsearch
 
 ```json
-"sink": {"type": "elasticsearch", "index": "events", "endpoint": "http://es:9200", "idField": "event_id", "bulkSize": 1000}
+"sink": {"type": "elasticsearch", "connectionId": "search-es", "index": "events", "idField": "event_id", "bulkSize": 1000}
 ```
 
-Also accepts `"es"` as type alias. Non-transactional (at-least-once).
+Also accepts `"es"` as type alias. Non-transactional (at-least-once). `connectionId` resolves the endpoint and any auth headers from the stored connection.
 
 ### HTTP / Webhook
 
 ```json
-"sink": {"type": "http", "url": "https://api.example.com/events", "batchSize": 100, "headers": {"Authorization": "Bearer token123"}}
+"sink": {"type": "http", "connectionId": "alerts-webhook", "batchSize": 100}
 ```
 
-Also accepts `"webhook"` as type alias. Non-transactional (at-least-once).
+Also accepts `"webhook"` as type alias. Non-transactional (at-least-once). The stored connection holds the URL and any `Authorization` headers — no secrets in the job payload.
 
 ### Console (Debug)
 

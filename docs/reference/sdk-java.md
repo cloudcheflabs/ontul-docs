@@ -67,12 +67,47 @@ result.show();     // formatted table output
 // SQL query
 Source.sql("SELECT * FROM catalog.schema.table")
 
-// S3 files
-Source.s3("s3://bucket/path", "parquet").connection("my-s3-conn")
+// S3 files — by connection ID (recommended)
+Source.s3("s3://bucket/path", "parquet").connection("warehouse-s3")
 
-// Kafka (for streaming)
-Source.kafka("connectionId", "topic").format("json").groupId("my-group")
+// S3 files — inline credentials (development only)
+Source.s3("s3://bucket/path", "parquet")
+    .property("endpoint", "http://minio:9000")
+    .property("accessKey", "ACCESS_KEY")
+    .property("secretKey", "SECRET_KEY")
+    .property("pathStyle", "true")
+
+// JDBC by connection ID
+Source.jdbc("analytics-pg", "SELECT * FROM public.orders WHERE dt = CURRENT_DATE")
+
+// Kafka by connection ID (streaming) — first arg is the connection ID
+Source.kafka("events-kafka", "user-events").format("json").groupId("my-group")
 ```
+
+### Source/Sink by Connection ID
+
+Connection IDs are the recommended way to reference external systems. They come from `POST /admin/connections` and keep credentials out of code, REST payloads, and job logs:
+
+```java
+// Read from S3, write to JDBC — both endpoints by connection ID
+session.source(Source.s3("s3://warehouse/raw/sales", "parquet")
+        .connection("warehouse-s3"))
+    .filter("quantity > 0")
+    .sink(Sink.jdbc("analytics-pg", "public.sales"));
+
+// Streaming: Kafka source + Kafka sink, same stored connection
+session.streamSource(
+        Source.kafka("events-kafka", "user-events")
+            .groupId("ontul-stream-1")
+            .property("auto.offset.reset", "earliest")
+            .format("json"))
+    .filter("event_type <> 'logout'")
+    .sink(Sink.kafka("events-kafka", "filtered-events").keyField("event_id"))
+    .commitInterval(5_000)
+    .start(Duration.ofMinutes(30));
+```
+
+`.property(...)` values supplied alongside `.connection(id)` override the corresponding stored property — useful for per-job tuning (consumer group, batch size) without forking the connection. See the [Connection ID feature reference](../features/connection-id.md) for details.
 
 ## Write to Sink
 
@@ -139,10 +174,19 @@ StreamDataFrame.WindowSpec.session(Duration.ofSeconds(30))
 // Iceberg table
 Sink.table("iceberg.schema.table")
 
-// Kafka topic
-Sink.kafka("connectionId", "output-topic").keyField("id")
+// Kafka topic — first arg is the connection ID
+Sink.kafka("events-kafka", "output-topic").keyField("id")
 
-// NeorunBase (REST bulk-insert)
+// JDBC by connection ID
+Sink.jdbc("analytics-pg", "public.daily_summary")
+
+// S3 output by connection ID
+Sink.s3("s3://bucket/output", "parquet").connection("warehouse-s3")
+
+// NeorunBase by connection ID (recommended)
+Sink.neorunBase("neorunbase-prod", "table_name").batchSize(500)
+
+// NeorunBase inline (development only)
 Sink.neorunBase("http://neorunbase:8080", "table_name")
     .username("admin").password("password").batchSize(500)
 ```
