@@ -42,9 +42,6 @@ POST /admin/catalogs
     "catalog-type": "rest",
     "uri": "http://polaris:8181/api/catalog",
     "warehouse": "my_catalog",
-    "credential": "root:secret",
-    "scope": "PRINCIPAL_ROLE:ALL",
-    "io-impl": "org.apache.iceberg.aws.s3.S3FileIO",
     "s3.endpoint": "http://s3-host:9000",
     "s3.path-style-access": "true",
     "s3.accessKey": "ACCESS_KEY",
@@ -52,6 +49,8 @@ POST /admin/catalogs
   }
 }
 ```
+
+If the REST catalog requires OAuth2 `client_credentials`, add `credential` and `scope` (Admin UI: "OAuth / Polaris auth (advanced)" toggle). Polaris-side table IAM is bypassed — Ontul IAM is the access-control boundary; see [Iceberg Integration](iceberg-integration.md#access-control).
 
 **NeorunBase catalog:**
 ```json
