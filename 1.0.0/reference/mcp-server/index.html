@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/architecture/architecture/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/reference/mcp-server/">
       
       
-        <link rel="prev" href="../..">
+        <link rel="prev" href="../sdk-python/">
       
       
-        <link rel="next" href="../../installation/installation/">
+        <link rel="next" href="../../query/guide/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Ontul Architecture - Ontul</title>
+        <title>MCP Server - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#architecture" class="md-skip">
+        <a href="#mcp-server" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Ontul Architecture
+              MCP Server
             
           </span>
         </div>
@@ -233,13 +233,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../architecture/architecture/" class="md-tabs__link">
           
   
   
@@ -295,11 +293,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../reference/rest-api/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../rest-api/" class="md-tabs__link">
           
   
   
@@ -456,31 +456,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -498,7 +493,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -513,37 +508,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Ontul Architecture
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../architecture/architecture/" class="md-nav__link">
         
   
   
@@ -559,153 +527,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#ontul-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Ontul Architecture
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Ontul Architecture">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#master" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Master
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#worker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Worker
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#execution-modes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Execution Modes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#communication-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Communication Architecture
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cluster-coordination" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cluster Coordination
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#connector-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Connector Architecture
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#security" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#geospatial-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Geospatial Support
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#client-interfaces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Client Interfaces
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-design-principles" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Design Principles
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1232,26 +1053,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -1269,7 +1095,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1287,7 +1113,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/rest-api/" class="md-nav__link">
+      <a href="../rest-api/" class="md-nav__link">
         
   
   
@@ -1315,7 +1141,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/sdk-java/" class="md-nav__link">
+      <a href="../sdk-java/" class="md-nav__link">
         
   
   
@@ -1343,7 +1169,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/sdk-python/" class="md-nav__link">
+      <a href="../sdk-python/" class="md-nav__link">
         
   
   
@@ -1368,10 +1194,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/mcp-server/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1387,6 +1240,103 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#issuing-a-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issuing a token
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wiring-into-an-mcp-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring into an MCP client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-smoke-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual smoke test
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#result-formatting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Result formatting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#behind-a-load-balancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behind a load balancer
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1764,146 +1714,153 @@
 
 
 
-<h1 id="architecture">Architecture</h1>
-<p>Ontul is a <strong>distributed unified data engine</strong> that combines a processing engine and a query engine into a single system. Instead of operating separate clusters for batch processing, stream processing, and interactive SQL queries, Ontul provides all three capabilities in one engine — reducing operational complexity and eliminating redundant infrastructure.</p>
-<ul>
-<li><strong>Processing Engine</strong>: Distributed batch and stream processing with a programmatic SDK (Java, Python). Submit batch ETL jobs, run continuous streaming pipelines (Kafka → Iceberg), and execute complex data transformations — all within the same cluster.</li>
-<li><strong>Query Engine</strong>: Interactive SQL queries with federation across multiple data sources. Connect from any JDBC tool (DBeaver, DataGrip) or BI platform via Arrow Flight SQL, and query Iceberg, JDBC databases, files on S3, and more through a unified SQL interface.</li>
-</ul>
-<p>Both modes share the same distributed execution engine, the same Arrow-native operator pipeline, and the same cluster infrastructure. A single Ontul deployment replaces what traditionally requires three or more separate systems.</p>
-<h2 id="ontul-architecture">Ontul Architecture</h2>
-<p><img width="1200" src="../../images/architecture/ontul-architecture.png" align="center"/></p>
-<p>Ontul consists of two main deployable components: <strong>Master</strong> and <strong>Worker</strong>.</p>
-<h3 id="master">Master</h3>
-<p>The Master is the entry point for all client interactions — SQL queries, job submissions, and administrative operations.</p>
-<ul>
-<li><strong>SQL Parsing &amp; Planning</strong>: Parses SQL using Apache Calcite with a rule-based optimizer. Supports standard DML (INSERT, UPDATE, DELETE, MERGE INTO), DDL (CREATE TABLE, DROP, ALTER, CREATE VIEW), metadata commands (SHOW CATALOGS/SCHEMAS/TABLES, DESCRIBE, EXPLAIN), and full SELECT queries including JOINs, aggregations, window functions, CTEs, and subqueries.</li>
-<li><strong>Distributed Planning</strong>: Generates physical execution plans with an operator tree, resolves data splits from connectors, and distributes per-worker plans with split assignments. Supports predicate pushdown to connectors and plan caching (SHA-256 based LRU cache) for repeated queries.</li>
-<li><strong>Job Management</strong>: Manages batch and streaming jobs submitted via the SDK or REST API. Small batch jobs run with the Master as driver; large batch and streaming jobs are delegated to a Worker as driver, keeping the Master lightweight. Tracks job lifecycle (SUBMITTED → RUNNING → COMPLETED/FAILED/KILLED) with history stored locally or on S3.</li>
-<li><strong>Multi-Catalog Management</strong>: Manages multiple data source catalogs with a 3-level Calcite schema hierarchy (Catalog → Schema → Table). Catalogs can be dynamically registered and unregistered at runtime without restarts.</li>
-<li><strong>Arrow Flight SQL Server</strong>: Provides the Flight SQL endpoint for JDBC and Arrow-native client connections. Supports multiple authentication methods: JWT bearer tokens, access key pairs, STS temporary credentials, and basic auth.</li>
-<li><strong>Admin API &amp; UI</strong>: Exposes a Netty HTTP/2 REST API and serves the React-based Admin UI for cluster management, catalog browsing, SQL query editor, job monitoring, IAM, KMS, backup/restore, and Prometheus metrics.</li>
-<li><strong>Cluster State Management</strong>: The leader Master maintains all cluster state — catalog metadata, IAM policies, KMS keys, sessions, and connection credentials — in RocksDB, and synchronizes to follower Masters via the internal NIO protocol.</li>
-</ul>
-<h3 id="worker">Worker</h3>
-<p>The Worker is the execution engine that processes both query plans and long-running jobs.</p>
-<ul>
-<li><strong>Operator Pipeline Execution</strong>: Executes physical plans as a pull-based streaming operator pipeline: Scan → Filter → Project → HashJoin / SortMergeJoin → HashAggregate → Sort → TopN → Window → Exchange. All operators process data in Apache Arrow columnar format for vectorized execution.</li>
-<li><strong>Split-Based Data Reading</strong>: Reads data splits independently via connector-specific RecordBatchReaders. Each Worker processes only its assigned splits, enabling parallel data ingestion across the cluster.</li>
-<li><strong>Memory Management &amp; Disk Spill</strong>: Worker local disk is used exclusively for temporary spill storage, not permanent data. When operators (Sort, HashJoin, HashAggregate) exceed the memory threshold, intermediate results spill to disk via SpillStore with automatic cleanup.</li>
-<li><strong>Data Shuffling</strong>: Transfers intermediate results between Workers via Arrow Flight for operations requiring data redistribution (joins, aggregations across partitions).</li>
-<li><strong>Streaming Job Execution</strong>: Runs long-lived streaming pipelines (e.g., Kafka → processing → Iceberg/Kafka) with watermark and window support. Streaming jobs are always assigned to Workers as drivers.</li>
-<li><strong>SQL UDF Execution</strong>: Executes user-defined scalar functions registered via the Ontul SDK as first-class Calcite functions. Java method-reference UDFs run in-process under a cached deps <code>URLClassLoader</code> (so static state — caches, ML models — survives across queries). Python UDFs execute in a long-lived per-worker subprocess with batch-level Arrow IPC, isolating Python dependencies from the JVM. UDFs support primitive, <code>byte[]</code>, <code>List&lt;X&gt;</code>, and POJO <code>struct</code> return types — POJOs are materialised directly into Arrow <code>StructVector</code> without any JSON detour.</li>
-</ul>
-<h3 id="execution-modes">Execution Modes</h3>
-<p>Ontul supports two execution modes within the same cluster:</p>
-<p><strong>Query Mode (Interactive SQL)</strong></p>
-<p>Clients connect via Arrow Flight SQL (JDBC, Python <code>pyarrow.flight</code>, Ontul Python SDK) and submit SQL queries. The Master parses and plans the query, then distributes execution plans to Workers. After planning, Workers communicate directly with each other (W2W) for shuffles — the Master is not a bottleneck during execution. Results stream back to the client via Arrow Flight.</p>
-<p><strong>Job Mode (Batch &amp; Streaming)</strong></p>
-<p>Clients submit jobs programmatically using the Ontul SDK:</p>
-<ul>
-<li><em>Client mode</em> (<code>session.source()</code> / <code>df.sink()</code>): Interactive, no dependency upload needed. Results return to the client directly.</li>
-<li><em>Server mode</em> (<code>session.submit(MyJob.class)</code>): Upload JARs with custom dependencies to the server. Jobs run asynchronously; the client can disconnect after submission. Suitable for scheduled batch ETL (e.g., via Airflow) and long-running streaming pipelines.</li>
-</ul>
-<p>SQL and code can be mixed freely in both modes. Execution is lazy — the full plan is optimized at <code>.execute()</code> time.</p>
-<h3 id="communication-architecture">Communication Architecture</h3>
-<p>Ontul uses a strict two-channel communication design:</p>
-<p><strong>Control Plane — Custom NIO Protocol</strong></p>
-<p>A lightweight binary protocol for all non-data communication between nodes:</p>
-<ul>
-<li>Wire format: <code>[4B length][4B correlationId][2B opCode][1B flags][payload]</code></li>
-<li>Health checks, readiness checks, heartbeats</li>
-<li>Metadata, IAM, KMS, session, and connection state synchronization (Master → Master)</li>
-<li>Task assignment and cancellation signals (Master → Worker)</li>
-<li>Catalog configuration sync (Master → Worker)</li>
-</ul>
-<p><strong>Data Plane — Apache Arrow Flight</strong></p>
-<p>Arrow Flight is used exclusively for bulk data transfer:</p>
-<ul>
-<li>Query results (Worker → Master → Client)</li>
-<li>Shuffle data between Workers (W2W)</li>
-<li>Source/Sink data transfers for jobs</li>
-<li>All data stays in Arrow IPC binary format — no JSON serialization, no base64 encoding</li>
-</ul>
-<h3 id="cluster-coordination">Cluster Coordination</h3>
-<p>Ontul uses Apache ZooKeeper (via Curator) for:</p>
-<ul>
-<li><strong>Service Discovery</strong>: Masters and Workers register as ephemeral nodes, enabling automatic detection of node joins and failures.</li>
-<li><strong>Leader Election</strong>: ZooKeeper leader latch elects a primary Master that owns all write operations to the state store (RocksDB). On leader failure, a new leader is automatically elected and reloads persisted state.</li>
-<li><strong>State Replication</strong>: The leader Master replicates state to follower Masters via NIO sync messages (METADATA_SYNC_PUSH, KMS_SYNC_PUSH, IAM_SYNC_PUSH, SESSION_SYNC_PUSH, CONN_SYNC_PUSH).</li>
-<li><strong>Worker Health Monitoring</strong>: Scheduled health checks from Master to Workers with configurable intervals, timeouts, and failure thresholds. Unhealthy Workers are automatically detected and excluded from query planning.</li>
-</ul>
-<h3 id="connector-architecture">Connector Architecture</h3>
-<p>Ontul is a processing engine, not a storage engine. Data lives in external systems accessed through a plugin-based connector architecture with three distinct concepts:</p>
-<p><strong>Connectors</strong> (physical connections): S3, JDBC, Kafka — credentials stored in the encrypted ConnectionStore.</p>
-<p><strong>Catalogs</strong> (table metadata): Iceberg (REST/JDBC/Hadoop), JDBC, TPC-H, TPC-DS, File, CDC, Delta Lake, Elasticsearch — registered at runtime, referencing Connectors by connection ID.</p>
-<p><strong>Formats</strong> (data serialization): Parquet, ORC, CSV, JSON, Avro.</p>
-<p>Built-in connectors:</p>
-<ul>
-<li><strong>Iceberg</strong>: Read/write via REST catalog (e.g., Polaris, Nessie). Parquet and ORC formats. Snapshot isolation, schema evolution, streaming writes, and automated maintenance (snapshot expiration, data compaction, manifest rewrite, orphan file cleanup).</li>
-<li><strong>File</strong>: Read Parquet, ORC, CSV, JSON, Avro files from S3-compatible storage or local filesystem. Recursive directory scan with hidden file filtering.</li>
-<li><strong>JDBC</strong>: Query external databases with HikariCP connection pooling and configurable split sizes for parallel reads.</li>
-<li><strong>Kafka</strong>: Streaming source (JSON, Avro with Schema Registry, raw format) and sink (JSON with optional partitioning).</li>
-<li><strong>CDC (Debezium)</strong>: Consume Debezium change events from Kafka for CDC pipelines.</li>
-<li><strong>Delta Lake</strong>: Read Delta tables by parsing the transaction log.</li>
-<li><strong>Elasticsearch</strong>: Query Elasticsearch indices via the scroll API.</li>
-<li><strong>TPC-H / TPC-DS</strong>: Built-in benchmark data generators with configurable scale factors.</li>
-</ul>
-<p>External connectors can be loaded as plugins via <code>URLClassLoader</code> with dependency isolation.</p>
-<h3 id="security">Security</h3>
-<ul>
-<li><strong>KMS (Envelope Encryption)</strong>: AES-256-GCM encryption with PBKDF2-SHA256 master key derivation (200K iterations). Per-key DEKs encrypted by the master key. RocksDB keystore replicated from leader to all nodes. Connection credentials, IAM secrets, and sensitive metadata are encrypted at rest.</li>
-<li><strong>IAM</strong>: AWS-style JSON policy-based access control with users, groups, and policies. Supports catalog-level, table-level, column-level (column deny), and row-level (row filter conditions) security. Password authentication (PBKDF2 hashed), long-lived access keys (AKIA prefix), and STS temporary credentials (ASIA prefix) with configurable expiration.</li>
-<li><strong>Audit Logging</strong>: All administrative and data access operations logged to RocksDB with 90-day retention.</li>
-<li><strong>TLS</strong>: Optional TLS for both Arrow Flight SQL and Admin HTTP endpoints.</li>
-</ul>
-<h3 id="geospatial-support">Geospatial Support</h3>
-<p>PostGIS-compatible SQL functions powered by JTS (Java Topology Suite), registered as Calcite UDFs:</p>
-<ul>
-<li><strong>Construction</strong>: <code>ST_GeomFromText</code>, <code>ST_Point</code>, <code>ST_MakePoint</code>, <code>ST_GeomFromGeoJSON</code></li>
-<li><strong>Output</strong>: <code>ST_AsText</code>, <code>ST_AsGeoJSON</code></li>
-<li><strong>Spatial Relationships</strong>: <code>ST_Distance</code>, <code>ST_Contains</code>, <code>ST_Within</code>, <code>ST_Intersects</code>, <code>ST_Overlaps</code>, <code>ST_Touches</code></li>
-<li><strong>Processing</strong>: <code>ST_Area</code>, <code>ST_Buffer</code>, <code>ST_Centroid</code>, <code>ST_Union</code>, <code>ST_Intersection</code>, <code>ST_Envelope</code>, <code>ST_Length</code></li>
-<li><strong>Accessors</strong>: <code>ST_X</code>, <code>ST_Y</code>, <code>ST_SRID</code>, <code>ST_SetSRID</code>, <code>ST_GeometryType</code>, <code>ST_NumPoints</code>, <code>ST_IsValid</code></li>
-</ul>
-<h3 id="client-interfaces">Client Interfaces</h3>
+<h1 id="mcp-server">MCP Server</h1>
+<p><code>ontul-mcp</code> is a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL, and exposes five read-side tools.</p>
+<p>Authorization is enforced server-side by Ontul IAM using the access token configured at startup. The MCP layer adds no additional access control — anything the token's policies allow, the LLM can run; anything they deny, the master rejects with an error that the LLM sees verbatim.</p>
+<p>The <code>ontul-mcp</code> launcher is shipped as part of the Ontul community-edition distribution. After unpacking the release archive it is available at <code>bin/ontul-mcp</code> alongside the master / worker / ZooKeeper launchers.</p>
+<h2 id="tools">Tools</h2>
 <table>
 <thead>
 <tr>
-<th>Port</th>
-<th>Protocol</th>
+<th>Tool</th>
+<th>Equivalent SQL</th>
 <th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>8080</td>
-<td>HTTP/2 (Netty)</td>
-<td>Admin UI, REST API (<code>/v1/api/sql</code>, <code>/v1/api/job/*</code>, <code>/admin/*</code>), Prometheus metrics (<code>/metrics</code>)</td>
+<td><code>ontul_query</code></td>
+<td><em>arbitrary</em></td>
+<td>Run any SQL the IAM token is authorized for. Result returned as a markdown table; row count capped by the <code>max_rows</code> argument (default 100, hard ceiling 1000).</td>
 </tr>
 <tr>
-<td>47470</td>
-<td>Arrow Flight SQL</td>
-<td>JDBC connections (DBeaver, DataGrip, etc.), Python SDK, programmatic Arrow clients</td>
+<td><code>ontul_list_catalogs</code></td>
+<td><code>SHOW CATALOGS</code></td>
+<td>List every registered catalog.</td>
 </tr>
 <tr>
-<td>19999</td>
-<td>Custom NIO</td>
-<td>Internal cluster communication only (Master↔Master, Master↔Worker, Worker↔Worker)</td>
+<td><code>ontul_list_schemas</code></td>
+<td><code>SHOW SCHEMAS FROM &lt;catalog&gt;</code></td>
+<td>List schemas in a catalog.</td>
+</tr>
+<tr>
+<td><code>ontul_list_tables</code></td>
+<td><code>SHOW TABLES FROM &lt;catalog&gt;.&lt;schema&gt;</code></td>
+<td>List tables in a schema.</td>
+</tr>
+<tr>
+<td><code>ontul_describe_table</code></td>
+<td><code>DESCRIBE &lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td>Show columns and Arrow types.</td>
 </tr>
 </tbody>
 </table>
-<h3 id="key-design-principles">Key Design Principles</h3>
-<ol>
-<li><strong>Single engine</strong> — One Ontul cluster handles batch processing, stream processing, and interactive SQL. No need for separate clusters for each workload.</li>
-<li><strong>Arrow-native</strong> — One conversion in, one conversion out, zero-copy in the middle. All internal data processing in Arrow columnar format.</li>
-<li><strong>Processing engine, not storage engine</strong> — Data lives in external systems (S3, Iceberg, JDBC, Kafka). Workers use local disk only for temporary spill.</li>
-<li><strong>Lazy execution</strong> — Full plan optimization at <code>.execute()</code> time, enabling cross-operation optimization.</li>
-<li><strong>SQL everywhere</strong> — SQL usable in both Query and Job modes. SQL and code can be mixed freely.</li>
-<li><strong>Dynamic catalogs</strong> — Register and unregister data sources at runtime without cluster restarts.</li>
-<li><strong>Minimal external dependencies</strong> — Java-native execution engine (no JNI, no Velox, no DataFusion). ZooKeeper + RocksDB for coordination and state (no etcd). Custom NIO protocol for control plane (no gRPC dependency for internal communication).</li>
-<li><strong>Strict channel separation</strong> — Arrow Flight for data, custom NIO for control. Never mixed.</li>
-</ol>
+<p>The four shortcut tools are thin wrappers around <code>ontul_query</code> for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. <code>ontul_query</code> itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.</p>
+<h2 id="configuration">Configuration</h2>
+<p>The server reads the same environment variables the Java SDK already honors so a single token can be reused across SDK clients and the MCP server.</p>
+<table>
+<thead>
+<tr>
+<th>Env var</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ONTUL_HOST</code></td>
+<td><code>localhost</code></td>
+<td>Master host — or whichever endpoint your reverse proxy fronts.</td>
+</tr>
+<tr>
+<td><code>ONTUL_PORT</code> (or <code>ONTUL_MASTER_FLIGHT_PORT</code>)</td>
+<td><code>47470</code></td>
+<td>Arrow Flight SQL port.</td>
+</tr>
+<tr>
+<td><code>ONTUL_USER_TOKEN</code></td>
+<td><em>unset</em></td>
+<td>IAM token attached as the <code>Authorization</code> header on every Flight call. <strong>Required.</strong> Without it the master rejects every call. Issue tokens via the Admin UI ("IAM → Access Keys") or <code>POST /admin/iam/keys</code>.</td>
+</tr>
+<tr>
+<td><code>ONTUL_USE_TLS</code></td>
+<td><code>false</code></td>
+<td>Set to <code>true</code> for <code>grpc+tls</code> transport.</td>
+</tr>
+</tbody>
+</table>
+<p>Logs are pinned to <strong>stderr</strong> by the bundled logback config. <code>stdout</code> is reserved for the MCP JSON-RPC stream — never log there.</p>
+<h2 id="issuing-a-token">Issuing a token</h2>
+<p>The MCP server uses Ontul's existing IAM token (one of the three IAM credential forms — Access Key, Secret Key, Token). Issue a token from the Admin UI's IAM page or directly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">JWT</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sX<span class="w"> </span>POST<span class="w"> </span>http://&lt;admin&gt;:8090/admin/auth/login<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;&lt;your-password&gt;&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.accessToken<span class="k">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>curl<span class="w"> </span>-sX<span class="w"> </span>POST<span class="w"> </span>http://&lt;admin&gt;:8090/admin/iam/keys<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$JWT</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;&lt;the-iam-user&gt;&quot;}&#39;</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># → {&quot;accessKeyId&quot;:&quot;AKIA...&quot;,&quot;secretAccessKey&quot;:&quot;...&quot;,&quot;token&quot;:&quot;OTOK...&quot;}</span>
+</code></pre></div>
+<p>Use the returned <code>token</code> as <code>ONTUL_USER_TOKEN</code>. Whatever IAM policies attach to that user — column masks, row filters, catalog allow-lists — apply automatically when the LLM issues queries through the MCP server. No separate authorization layer.</p>
+<h2 id="wiring-into-an-mcp-client">Wiring into an MCP client</h2>
+<p><code>ontul-mcp</code> follows the standard MCP stdio convention, so any MCP-aware AI agent or IDE plugin can use it. The integration boils down to telling the client three things:</p>
+<ul>
+<li>the <strong>command</strong> to launch (<code>/abs/path/to/ontul/bin/ontul-mcp</code>)</li>
+<li>the <strong>environment variables</strong> to inject (<code>ONTUL_HOST</code>, <code>ONTUL_PORT</code>, <code>ONTUL_USER_TOKEN</code>, optionally <code>ONTUL_USE_TLS</code>)</li>
+<li>the <strong>transport</strong>: stdio (no HTTP, no SSE, no socket configuration)</li>
+</ul>
+<p>Most clients accept this configuration as a JSON entry under an <code>mcpServers</code> (or similarly named) object. A representative shape:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">&quot;ontul&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/abs/path/to/ontul/bin/ontul-mcp&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">        </span><span class="nt">&quot;ONTUL_HOST&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">        </span><span class="nt">&quot;ONTUL_PORT&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;47470&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">        </span><span class="nt">&quot;ONTUL_USER_TOKEN&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OTOK...&quot;</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">}</span>
+</code></pre></div>
+<p>Refer to your specific client's MCP integration guide for the exact configuration file path and field names. Once registered the five tools become available and the agent can issue queries like:</p>
+<blockquote>
+<p>Show me the top 10 product categories by sales count across <code>iceberg.warehouse.store_sales</code> and <code>iceberg.warehouse.item</code>.</p>
+</blockquote>
+<h2 id="manual-smoke-test">Manual smoke test</h2>
+<p>The protocol is line-delimited JSON-RPC, so a stdio test does not need any client at all:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ONTUL_USER_TOKEN</span><span class="o">=</span>OTOK...
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="o">(</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;initialize&quot;,&quot;params&quot;:{}}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;method&quot;:&quot;notifications/initialized&quot;}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:2,&quot;method&quot;:&quot;tools/list&quot;}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:3,&quot;method&quot;:&quot;tools/call&quot;,\</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="s1">&quot;params&quot;:{&quot;name&quot;:&quot;ontul_list_catalogs&quot;}}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="o">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bin/ontul-mcp
+</code></pre></div>
+<p>Three responses arrive (the notification produces no reply): the <code>initialize</code> result with <code>serverInfo</code>, the <code>tools/list</code> array, and a markdown rendering of <code>SHOW CATALOGS</code>.</p>
+<h2 id="result-formatting">Result formatting</h2>
+<p><code>ontul_query</code> and the four shortcut tools return a single text payload — a markdown table — so the LLM sees the same column-aligned view a human would in the SQL Runner. NULL cells render as <code>NULL</code>, byte-array cells render as a short hex preview followed by the total byte length, and very wide cells are ellipsized at 200 characters. When the result exceeds <code>max_rows</code> the table is truncated and a footer line tells the LLM how to widen the cap or tighten the query:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>| i_category  | sales_count |
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>|-------------|-------------|
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>| Toys        | 4132        |
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>| Garden      | 3721        |
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>…
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>(showing 100 of ≥ 4127 rows; tighten the query or raise max_rows)
+</code></pre></div>
+<h2 id="behind-a-load-balancer">Behind a load balancer</h2>
+<p>When Ontul Master runs HA with multiple instances behind NGINX, the Flight SQL upstream block must use <strong>sticky load balancing</strong> for the MCP server (and for any Flight SQL client). A single Flight query is two RPCs — <code>GetFlightInfo</code> followed by <code>DoGet</code> — and round-robin sends them to different masters. The second master cannot resolve the result handle minted by the first and the client sees <code>No results for handle: &lt;uuid&gt;</code>.</p>
+<p>Pin every gRPC connection from one client to one master with <code>hash $remote_addr consistent;</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">upstream</span><span class="w"> </span><span class="no">on</span><span class="s">tul_flight</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="no">on</span><span class="n">tul-master-1</span><span class="p">:</span><span class="mi">47470</span><span class="p">;</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="no">on</span><span class="n">tul-master-2</span><span class="p">:</span><span class="mi">47470</span><span class="p">;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>For the Admin REST upstream the same caveat applies for stateful flows (catalog registration, IAM mutations) — the simplest pattern is to also hash by client there.</p>
 
 
 
