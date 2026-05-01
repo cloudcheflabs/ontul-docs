@@ -52,7 +52,6 @@ nav:
       - "Geospatial Support": features/geospatial.md
       - "High Availability": features/high-availability.md
   - "Reference":
-      - "REST API": reference/rest-api.md
       - "Java SDK": reference/sdk-java.md
       - "Python SDK": reference/sdk-python.md
       - "MCP Server": reference/mcp-server.md
