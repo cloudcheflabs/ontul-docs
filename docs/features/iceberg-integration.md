@@ -4,7 +4,7 @@ Ontul integrates with Apache Iceberg as a first-class catalog, supporting both r
 
 ## Catalog Type
 
-Ontul supports the Iceberg **REST Catalog only**, connecting to REST catalog servers such as Polaris with OAuth2 authentication. S3 storage is accessed directly using credentials from the catalog configuration (no credential vending/STS dependency).
+Ontul supports the Iceberg **REST Catalog only**, connecting to REST catalog servers such as Polaris. S3 storage is accessed directly using credentials from the catalog configuration — Ontul does not request vended credentials from the catalog (the `X-Iceberg-Access-Delegation` header is suppressed), so Polaris-side table-level IAM is bypassed.
 
 Multiple Iceberg catalogs can be registered simultaneously, each with independent REST catalog and S3 configurations.
 
@@ -17,14 +17,22 @@ POST /admin/catalogs
     "catalog-type": "rest",
     "uri": "http://polaris:8181/api/catalog",
     "warehouse": "my_catalog",
-    "credential": "root:secret",
-    "scope": "PRINCIPAL_ROLE:ALL",
-    "io-impl": "org.apache.iceberg.aws.s3.S3FileIO",
     "s3.endpoint": "http://s3-host:9000",
     "s3.path-style-access": "true",
     "s3.accessKey": "ACCESS_KEY",
     "s3.secretKey": "SECRET_KEY"
   }
+}
+```
+
+### Optional: OAuth client credentials
+
+If the REST catalog itself requires OAuth2 `client_credentials` to authenticate the Catalog API (Polaris with auth enabled), add `credential` and `scope`. These are exposed in the Admin UI under the "OAuth / Polaris auth (advanced)" toggle.
+
+```json
+{
+  "credential": "client_id:client_secret",
+  "scope": "PRINCIPAL_ROLE:ALL"
 }
 ```
 
@@ -73,3 +81,7 @@ Maintenance can be configured per table through the Admin UI or triggered manual
 ## S3-Compatible Storage
 
 Iceberg data files are stored in S3-compatible object storage. Ontul supports ShannonStore, AWS S3, MinIO, and other S3-compatible services. S3 credentials are part of the catalog configuration — Polaris is used for metadata only (no credential vending).
+
+## Access Control
+
+Ontul IAM is the authoritative access-control layer for Iceberg data. Polaris-side table IAM is bypassed because Ontul IAM enforces a richer policy surface across multiple data sources, job submission, and source-read / sink-write actions — far beyond Polaris's catalog-level schema/table permissions. See [IAM](iam.md) for policy details.
