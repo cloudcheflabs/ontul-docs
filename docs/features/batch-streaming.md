@@ -508,5 +508,4 @@ This keeps the Master responsive for query planning and administrative operation
 
 - [Java SDK](../reference/sdk-java.md) — Full Java API documentation
 - [Python SDK](../reference/sdk-python.md) — Full Python API documentation
-- [REST API](../reference/rest-api.md) — REST API reference
 - [Remote Mode](../features/remote-mode.md) — DataFrame API for pipelines

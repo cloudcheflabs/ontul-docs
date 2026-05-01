@@ -206,5 +206,4 @@ Properties: useEncryption=true
 
 - [Getting Started](../intro/intro.md) — Run your first query and example
 - [Admin UI](../features/admin-ui.md) — Explore the web console
-- [REST API Reference](../reference/rest-api.md) — API documentation
 - [Ontul SDK](../reference/sdk-java.md) — Java and Python SDK guide
