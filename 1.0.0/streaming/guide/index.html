@@ -1607,6 +1607,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#iceberg-sink-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Iceberg Sink Modes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Iceberg Sink Modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#append-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Append (default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upsert-equality-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upsert (equality-delete)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tuning-commit-cadence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning commit cadence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sourcesink-by-connection-id" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2179,32 +2229,83 @@
 <h3 id="4-shell-script">4. Shell Script</h3>
 <p><code>bin/submit.sh</code> is designed for CLASS and PYTHON jobs. Streaming jobs are submitted via REST API or SDK.</p>
 <hr />
+<h2 id="iceberg-sink-modes">Iceberg Sink Modes</h2>
+<p>The Iceberg streaming sink (<code>Sink.table("...")</code>) writes to a v2 table in one of two modes.</p>
+<h3 id="append-default">Append (default)</h3>
+<p>Each commit window produces a single <code>AppendFiles</code> snapshot containing the new data files. No deletes, no scan of the target — best throughput per commit, suitable for event/audit logs and any workload where rows are immutable.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">df</span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.analytics.events&quot;</span><span class="p">))</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="p">.</span><span class="na">commitInterval</span><span class="p">(</span><span class="mi">5_000</span><span class="p">)</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="p">.</span><span class="na">start</span><span class="p">();</span>
+</code></pre></div>
+<h3 id="upsert-equality-delete">Upsert (equality-delete)</h3>
+<p>Pass an <code>upsertKeys(...)</code> column list and the sink switches to merge-on-read upsert. Per commit, the sink emits a <code>RowDelta</code> of (new data file + small key-only equality-delete file). Iceberg's MOR rules then hide any prior copy of a key in earlier-sequence data files at read time — same end-state as <code>MERGE INTO</code>, but the per-batch cost is <strong>append + tiny delete file</strong> rather than a target rescan.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">df</span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.cdc.users&quot;</span><span class="p">).</span><span class="na">upsertKeys</span><span class="p">(</span><span class="s">&quot;user_id&quot;</span><span class="p">))</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="p">.</span><span class="na">commitInterval</span><span class="p">(</span><span class="mi">5_000</span><span class="p">)</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="p">.</span><span class="na">start</span><span class="p">();</span>
+</code></pre></div>
+<p>REST equivalent:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;kafka&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.cdc.users&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;upsertKeys&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="p">}</span>
+</code></pre></div>
+<p>Notes:</p>
+<ul>
+<li>Works on both unpartitioned and partitioned Iceberg tables. Partitioned mode opens one equality-delete file per partition per commit, scoped to that partition.</li>
+<li>Multi-column keys are supported (<code>upsertKeys("tenant_id", "user_id")</code>).</li>
+<li>Standard barrier-checkpoint exactly-once semantics still apply: the data file + delete file commit together as one snapshot.</li>
+<li>For best read performance, run periodic <code>OPTIMIZE</code> on the table — compaction folds applied deletes into a smaller set of data files (see the <a href="../../features/iceberg-integration/#maintenance">Iceberg Maintenance</a> section).</li>
+</ul>
+<h3 id="tuning-commit-cadence">Tuning commit cadence</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.streaming.commit.interval.ms</code></td>
+<td>10000</td>
+<td>Force a commit when this much wall-clock time elapses since the previous commit.</td>
+</tr>
+<tr>
+<td><code>ontul.streaming.commit.row.threshold</code></td>
+<td>10000</td>
+<td>Force a commit when this many rows have accumulated since the previous commit.</td>
+</tr>
+</tbody>
+</table>
+<p>Per-job overrides win over server defaults: <code>.commitInterval(...)</code> on the SDK builder, or <code>commitIntervalMs</code> / <code>commitRowThreshold</code> in the SUBMIT STREAMING JSON.</p>
+<hr />
 <h2 id="sourcesink-by-connection-id">Source/Sink by Connection ID</h2>
 <p>Streaming jobs should reference a registered connection by ID instead of restating bootstrap servers and SASL credentials in every payload. The first argument to <code>Source.kafka(...)</code> and <code>Sink.kafka(...)</code> is the connection ID; pass <code>"inline"</code> only when supplying credentials directly via <code>.property(...)</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1">// Kafka → Iceberg, both endpoints driven by a stored connection</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">session</span><span class="p">.</span><span class="na">streamSource</span><span class="p">(</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">        </span><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;events-kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;user-events&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">            </span><span class="p">.</span><span class="na">groupId</span><span class="p">(</span><span class="s">&quot;ontul-stream-1&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">            </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;auto.offset.reset&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;earliest&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">            </span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;json&quot;</span><span class="p">))</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;event_type &lt;&gt; &#39;logout&#39;&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;events-kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;filtered-events&quot;</span><span class="p">).</span><span class="na">keyField</span><span class="p">(</span><span class="s">&quot;event_id&quot;</span><span class="p">))</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span><span class="p">.</span><span class="na">commitInterval</span><span class="p">(</span><span class="mi">5_000</span><span class="p">)</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMinutes</span><span class="p">(</span><span class="mi">30</span><span class="p">));</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1">// Kafka → Iceberg, both endpoints driven by a stored connection</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">session</span><span class="p">.</span><span class="na">streamSource</span><span class="p">(</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">        </span><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;events-kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;user-events&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">            </span><span class="p">.</span><span class="na">groupId</span><span class="p">(</span><span class="s">&quot;ontul-stream-1&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">            </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;auto.offset.reset&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;earliest&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">            </span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;json&quot;</span><span class="p">))</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;event_type &lt;&gt; &#39;logout&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;events-kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;filtered-events&quot;</span><span class="p">).</span><span class="na">keyField</span><span class="p">(</span><span class="s">&quot;event_id&quot;</span><span class="p">))</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">    </span><span class="p">.</span><span class="na">commitInterval</span><span class="p">(</span><span class="mi">5_000</span><span class="p">)</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">    </span><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMinutes</span><span class="p">(</span><span class="mi">30</span><span class="p">));</span>
 </code></pre></div>
 <p>REST equivalent — <code>source.connectionId</code> / <code>sink.connectionId</code> keep secrets out of the job payload:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="p">{</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="nt">&quot;source.type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="nt">&quot;source.connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events-kafka&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="nt">&quot;source.kafka.topic&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-events&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="nt">&quot;source.kafka.group.id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontul-stream-1&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span><span class="nt">&quot;sink.type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">    </span><span class="nt">&quot;sink.connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;analytics-pg&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">    </span><span class="nt">&quot;sink.tableName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span>
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">&quot;source.type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="nt">&quot;source.connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events-kafka&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="nt">&quot;source.kafka.topic&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-events&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span><span class="nt">&quot;source.kafka.group.id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontul-stream-1&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span><span class="nt">&quot;sink.type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">    </span><span class="nt">&quot;sink.connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;analytics-pg&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">    </span><span class="nt">&quot;sink.tableName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="p">}</span>
 </code></pre></div>
 <p>Per-property values (<code>group.id</code>, <code>auto.offset.reset</code>, <code>batchSize</code>, …) supplied alongside <code>connectionId</code> are merged on top of the stored connection. See <a href="../../features/connection-id/">Connection ID</a> for the full reference.</p>
 <hr />
@@ -2235,15 +2336,15 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1">// JSON (default)</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;inline&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;events&quot;</span><span class="p">).</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;json&quot;</span><span class="p">)</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1">// AVRO with Schema Registry</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;inline&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;events&quot;</span><span class="p">).</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;avro&quot;</span><span class="p">)</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;schema.registry.url&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;http://schema-registry:8081&quot;</span><span class="p">)</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1">// RAW (no parsing)</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;inline&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;events&quot;</span><span class="p">).</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;raw&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1">// JSON (default)</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;inline&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;events&quot;</span><span class="p">).</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;json&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1">// AVRO with Schema Registry</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;inline&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;events&quot;</span><span class="p">).</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;avro&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;schema.registry.url&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;http://schema-registry:8081&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="c1">// RAW (no parsing)</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;inline&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;events&quot;</span><span class="p">).</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;raw&quot;</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="operations">Operations</h2>
@@ -2317,10 +2418,10 @@
 </tbody>
 </table>
 <p>AGG expressions with aliases are auto-generated if not specified:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w">          </span><span class="err">→</span><span class="w"> </span><span class="n">sum_amount</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">             </span><span class="err">→</span><span class="w"> </span><span class="n">count_star</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="k">AVG</span><span class="p">(</span><span class="n">price</span><span class="p">)</span><span class="w">           </span><span class="err">→</span><span class="w"> </span><span class="n">avg_price</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">total</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w">          </span><span class="err">→</span><span class="w"> </span><span class="n">sum_amount</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">             </span><span class="err">→</span><span class="w"> </span><span class="n">count_star</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="k">AVG</span><span class="p">(</span><span class="n">price</span><span class="p">)</span><span class="w">           </span><span class="err">→</span><span class="w"> </span><span class="n">avg_price</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">total</span>
 </code></pre></div>
 <hr />
 <h2 id="multi-worker-distribution">Multi-Worker Distribution</h2>
@@ -2331,22 +2432,22 @@
 <li>If partition count &lt; Worker count, idle Workers receive no data</li>
 </ul>
 <p>Example: 4 Kafka partitions, 2 Workers → each Worker gets 2 partitions.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1">// Default: use all available Workers</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMinutes</span><span class="p">(</span><span class="mi">30</span><span class="p">));</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1">// Limit to specific Worker count</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">.</span><span class="na">workers</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMinutes</span><span class="p">(</span><span class="mi">30</span><span class="p">));</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1">// Default: use all available Workers</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMinutes</span><span class="p">(</span><span class="mi">30</span><span class="p">));</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1">// Limit to specific Worker count</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="p">.</span><span class="na">workers</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMinutes</span><span class="p">(</span><span class="mi">30</span><span class="p">));</span>
 </code></pre></div>
 <hr />
 <h2 id="exactly-once-semantics">Exactly-Once Semantics</h2>
 <p>For transactional sinks, Ontul guarantees exactly-once delivery through barrier checkpoint:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>1. Master triggers CHECKPOINT_TRIGGER → all Workers
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>2. Each Worker: flush sink → commit sink transaction
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>3. Snapshot state (Kafka offsets + window state) to Exchange Manager
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>4. Commit Kafka consumer offsets (AFTER sink commit — ordering matters)
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>5. Report CHECKPOINT_COMPLETE → Master
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>6. Master: all Workers acked → checkpoint globally complete
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>1. Master triggers CHECKPOINT_TRIGGER → all Workers
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>2. Each Worker: flush sink → commit sink transaction
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>3. Snapshot state (Kafka offsets + window state) to Exchange Manager
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>4. Commit Kafka consumer offsets (AFTER sink commit — ordering matters)
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>5. Report CHECKPOINT_COMPLETE → Master
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>6. Master: all Workers acked → checkpoint globally complete
 </code></pre></div>
 <p>If a Worker fails and restarts, it resumes from the last committed checkpoint — no duplicates, no data loss.</p>
 <table>
@@ -2396,58 +2497,58 @@
 </tbody>
 </table>
 <p>Checkpoint interval is configurable:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">.</span><span class="na">commitInterval</span><span class="p">(</span><span class="mi">10_000</span><span class="p">)</span><span class="w">  </span><span class="c1">// 10 seconds (SDK)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">.</span><span class="na">commitInterval</span><span class="p">(</span><span class="mi">10_000</span><span class="p">)</span><span class="w">  </span><span class="c1">// 10 seconds (SDK)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># conf/ontul.properties</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="na">ontul.streaming.checkpoint.interval.ms</span><span class="o">=</span><span class="s">10000</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># conf/ontul.properties</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="na">ontul.streaming.checkpoint.interval.ms</span><span class="o">=</span><span class="s">10000</span>
 </code></pre></div>
 <hr />
 <h2 id="sink-types">Sink Types</h2>
 <p>7 sink types are supported (from <code>StreamSinkFactory</code>):</p>
 <h3 id="iceberg-table">Iceberg (table)</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1">// SDK</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.analytics.stream_events&quot;</span><span class="p">))</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1">// SDK</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.analytics.stream_events&quot;</span><span class="p">))</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1">// REST config</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.analytics.stream_events&quot;</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1">// REST config</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.analytics.stream_events&quot;</span><span class="p">}</span>
 </code></pre></div>
 <p>Writes Parquet files, commits via <code>AppendFiles</code>. Exactly-once with barrier checkpoint.</p>
 <h3 id="kafka">Kafka</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1">// SDK — first argument is the connection ID</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;events-kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output-topic&quot;</span><span class="p">).</span><span class="na">keyField</span><span class="p">(</span><span class="s">&quot;event_id&quot;</span><span class="p">))</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1">// SDK — first argument is the connection ID</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;events-kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output-topic&quot;</span><span class="p">).</span><span class="na">keyField</span><span class="p">(</span><span class="s">&quot;event_id&quot;</span><span class="p">))</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1">// REST config — recommended: reference a stored connection</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events-kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;topic&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output-topic&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;keyField&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;transactional&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="c1">// REST config — inline credentials (development only)</span>
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;bootstrapServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka:9092&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;topic&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output-topic&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;keyField&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;transactional&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1">// REST config — recommended: reference a stored connection</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events-kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;topic&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output-topic&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;keyField&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;transactional&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="c1">// REST config — inline credentials (development only)</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;bootstrapServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka:9092&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;topic&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output-topic&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;keyField&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;transactional&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
 </code></pre></div>
 <p>With <code>transactional=true</code>, uses Kafka Transactions for exactly-once.</p>
 <h3 id="jdbc">JDBC</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1">// Recommended: by connection ID</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;analytics-pg&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tableName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;batchSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">}</span>
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="c1">// Inline (development only)</span>
-<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;jdbcUrl&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc:postgresql://host:5432/db&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tableName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pass&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;batchSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1">// Recommended: by connection ID</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;analytics-pg&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tableName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;batchSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">}</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1">// Inline (development only)</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;jdbcUrl&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc:postgresql://host:5432/db&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tableName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pass&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;batchSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">}</span>
 </code></pre></div>
 <p>Transactional — exactly-once with barrier checkpoint.</p>
 <h3 id="neorunbase">NeorunBase</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1">// REST mode by connection ID (high throughput, at-least-once)</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neorunbase&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rest&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neorunbase-prod&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tableName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;batchSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">}</span>
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
-<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="c1">// JDBC mode by connection ID (transactional, exactly-once)</span>
-<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neorunbase&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neorunbase-prod&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tableName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1">// REST mode by connection ID (high throughput, at-least-once)</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neorunbase&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rest&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neorunbase-prod&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tableName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;batchSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">}</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="c1">// JDBC mode by connection ID (transactional, exactly-once)</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neorunbase&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;jdbc&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neorunbase-prod&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tableName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">}</span>
 </code></pre></div>
 <h3 id="elasticsearch">Elasticsearch</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elasticsearch&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;search-es&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;index&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;idField&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;bulkSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elasticsearch&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;search-es&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;index&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;idField&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;bulkSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">}</span>
 </code></pre></div>
 <p>Also accepts <code>"es"</code> as type alias. Non-transactional (at-least-once). <code>connectionId</code> resolves the endpoint and any auth headers from the stored connection.</p>
 <h3 id="http-webhook">HTTP / Webhook</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alerts-webhook&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;batchSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alerts-webhook&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;batchSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">}</span>
 </code></pre></div>
 <p>Also accepts <code>"webhook"</code> as type alias. Non-transactional (at-least-once). The stored connection holds the URL and any <code>Authorization</code> headers — no secrets in the job payload.</p>
 <h3 id="console-debug">Console (Debug)</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;console&quot;</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;console&quot;</span><span class="p">}</span>
 </code></pre></div>
 <p>Prints each batch to stdout. Useful for debugging pipelines.</p>
 <h3 id="exactly-once-summary">Exactly-Once Summary</h3>
@@ -2510,133 +2611,133 @@
 <hr />
 <h2 id="job-management">Job Management</h2>
 <h3 id="get-status">Get Status</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>curl<span class="w"> </span>http://localhost:8080/v1/api/job/status/<span class="o">{</span>jobId<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>curl<span class="w"> </span>http://localhost:8080/v1/api/job/status/<span class="o">{</span>jobId<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
 </code></pre></div>
 <h3 id="stream-logs">Stream Logs</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>curl<span class="w"> </span><span class="s2">&quot;http://localhost:8080/v1/api/job/{jobId}/log?from=0&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>curl<span class="w"> </span><span class="s2">&quot;http://localhost:8080/v1/api/job/{jobId}/log?from=0&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
 </code></pre></div>
 <h3 id="kill-a-running-job">Kill a Running Job</h3>
 <p>Streaming jobs run indefinitely (or until duration expires). Kill manually:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/v1/api/job/kill/<span class="o">{</span>jobId<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/v1/api/job/kill/<span class="o">{</span>jobId<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
 </code></pre></div>
 <p>Java SDK:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">JobHandle</span><span class="w"> </span><span class="n">job</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span><span class="w"> </span><span class="c1">// from submit</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="n">job</span><span class="p">.</span><span class="na">kill</span><span class="p">();</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="n">JobHandle</span><span class="w"> </span><span class="n">job</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span><span class="w"> </span><span class="c1">// from submit</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="n">job</span><span class="p">.</span><span class="na">kill</span><span class="p">();</span>
 </code></pre></div>
 <hr />
 <h2 id="complete-example-kafka-iceberg">Complete Example: Kafka → Iceberg</h2>
 <h3 id="setup">Setup</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="nb">cd</span><span class="w"> </span>ontul-1.0.0-SNAPSHOT
-<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>
-<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="c1"># Start MinIO + Polaris + Kafka (4 partitions for user-events topic)</span>
-<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>examples/docker-compose-iceberg.yml<span class="w"> </span>up<span class="w"> </span>-d
-<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>
-<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="c1"># Start Ontul cluster + register catalogs</span>
-<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>examples/bin/setup-iceberg.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nb">cd</span><span class="w"> </span>ontul-1.0.0-SNAPSHOT
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="c1"># Start MinIO + Polaris + Kafka (4 partitions for user-events topic)</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>examples/docker-compose-iceberg.yml<span class="w"> </span>up<span class="w"> </span>-d
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="c1"># Start Ontul cluster + register catalogs</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>examples/bin/setup-iceberg.sh
 </code></pre></div>
 <h3 id="run">Run</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>examples/bin/run-iceberg-streaming.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>examples/bin/run-iceberg-streaming.sh
 </code></pre></div>
 <h3 id="what-happens">What Happens</h3>
 <ol>
 <li><strong>Produce 100 JSON events</strong> to Kafka topic <code>user-events</code>:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="p">{</span><span class="nt">&quot;event_id&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="s2">&quot;click&quot;</span><span class="p">,</span><span class="nt">&quot;user_name&quot;</span><span class="p">:</span><span class="s2">&quot;diana&quot;</span><span class="p">,</span><span class="nt">&quot;amount&quot;</span><span class="p">:</span><span class="mf">68.32</span><span class="p">,</span><span class="nt">&quot;event_time&quot;</span><span class="p">:</span><span class="mi">1712345678100</span><span class="p">}</span>
-<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="p">{</span><span class="nt">&quot;event_id&quot;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="s2">&quot;click&quot;</span><span class="p">,</span><span class="nt">&quot;user_name&quot;</span><span class="p">:</span><span class="s2">&quot;alice&quot;</span><span class="p">,</span><span class="nt">&quot;amount&quot;</span><span class="p">:</span><span class="mf">27.71</span><span class="p">,</span><span class="nt">&quot;event_time&quot;</span><span class="p">:</span><span class="mi">1712345678200</span><span class="p">}</span>
-<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="p">{</span><span class="nt">&quot;event_id&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="s2">&quot;logout&quot;</span><span class="p">,</span><span class="nt">&quot;user_name&quot;</span><span class="p">:</span><span class="s2">&quot;eve&quot;</span><span class="p">,</span><span class="nt">&quot;amount&quot;</span><span class="p">:</span><span class="mf">8.69</span><span class="p">,</span><span class="nt">&quot;event_time&quot;</span><span class="p">:</span><span class="mi">1712345678300</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="p">{</span><span class="nt">&quot;event_id&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="s2">&quot;click&quot;</span><span class="p">,</span><span class="nt">&quot;user_name&quot;</span><span class="p">:</span><span class="s2">&quot;diana&quot;</span><span class="p">,</span><span class="nt">&quot;amount&quot;</span><span class="p">:</span><span class="mf">68.32</span><span class="p">,</span><span class="nt">&quot;event_time&quot;</span><span class="p">:</span><span class="mi">1712345678100</span><span class="p">}</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="p">{</span><span class="nt">&quot;event_id&quot;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="s2">&quot;click&quot;</span><span class="p">,</span><span class="nt">&quot;user_name&quot;</span><span class="p">:</span><span class="s2">&quot;alice&quot;</span><span class="p">,</span><span class="nt">&quot;amount&quot;</span><span class="p">:</span><span class="mf">27.71</span><span class="p">,</span><span class="nt">&quot;event_time&quot;</span><span class="p">:</span><span class="mi">1712345678200</span><span class="p">}</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="p">{</span><span class="nt">&quot;event_id&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="s2">&quot;logout&quot;</span><span class="p">,</span><span class="nt">&quot;user_name&quot;</span><span class="p">:</span><span class="s2">&quot;eve&quot;</span><span class="p">,</span><span class="nt">&quot;amount&quot;</span><span class="p">:</span><span class="mf">8.69</span><span class="p">,</span><span class="nt">&quot;event_time&quot;</span><span class="p">:</span><span class="mi">1712345678300</span><span class="p">}</span>
 </code></pre></div>
 <ol>
 <li><strong>Submit streaming job</strong> (Kafka → filter → select → Iceberg):</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="n">session</span><span class="p">.</span><span class="na">streamSource</span><span class="p">(</span>
-<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">        </span><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;inline&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;user-events&quot;</span><span class="p">)</span>
-<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">            </span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;json&quot;</span><span class="p">)</span>
-<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="w">            </span><span class="p">.</span><span class="na">groupId</span><span class="p">(</span><span class="s">&quot;ontul-stream-&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">())</span>
-<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="w">            </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;bootstrap.servers&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;localhost:9092&quot;</span><span class="p">)</span>
-<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">            </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;auto.offset.reset&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;earliest&quot;</span><span class="p">))</span>
-<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;event_type &lt;&gt; &#39;logout&#39;&quot;</span><span class="p">)</span>
-<a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a><span class="w">    </span><span class="p">.</span><span class="na">select</span><span class="p">(</span><span class="s">&quot;event_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;event_type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;user_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;amount&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;event_time&quot;</span><span class="p">)</span>
-<a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.examples.stream_events&quot;</span><span class="p">))</span>
-<a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a><span class="w">    </span><span class="p">.</span><span class="na">commitInterval</span><span class="p">(</span><span class="mi">5_000</span><span class="p">)</span>
-<a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a><span class="w">    </span><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">20</span><span class="p">));</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="n">session</span><span class="p">.</span><span class="na">streamSource</span><span class="p">(</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="w">        </span><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;inline&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;user-events&quot;</span><span class="p">)</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="w">            </span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;json&quot;</span><span class="p">)</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="w">            </span><span class="p">.</span><span class="na">groupId</span><span class="p">(</span><span class="s">&quot;ontul-stream-&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">currentTimeMillis</span><span class="p">())</span>
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a><span class="w">            </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;bootstrap.servers&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;localhost:9092&quot;</span><span class="p">)</span>
+<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a><span class="w">            </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;auto.offset.reset&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;earliest&quot;</span><span class="p">))</span>
+<a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;event_type &lt;&gt; &#39;logout&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a><span class="w">    </span><span class="p">.</span><span class="na">select</span><span class="p">(</span><span class="s">&quot;event_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;event_type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;user_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;amount&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;event_time&quot;</span><span class="p">)</span>
+<a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.examples.stream_events&quot;</span><span class="p">))</span>
+<a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a><span class="w">    </span><span class="p">.</span><span class="na">commitInterval</span><span class="p">(</span><span class="mi">5_000</span><span class="p">)</span>
+<a id="__codelineno-34-11" name="__codelineno-34-11" href="#__codelineno-34-11"></a><span class="w">    </span><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">20</span><span class="p">));</span>
 </code></pre></div>
 <ol>
 <li><strong>Verify ingested data</strong> — query Iceberg:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_events</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">stream_events</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_events</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">stream_events</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>total_events
-<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>-----------
-<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>78
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>total_events
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>-----------
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>78
 </code></pre></div>
 <p>100 events produced, ~22 <code>logout</code> events filtered = 78 events ingested.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cnt</span><span class="p">,</span>
-<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="w">       </span><span class="k">CAST</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_amount</span>
-<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">stream_events</span>
-<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">event_type</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">cnt</span><span class="w"> </span><span class="k">DESC</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cnt</span><span class="p">,</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="w">       </span><span class="k">CAST</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_amount</span>
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">stream_events</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">event_type</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">cnt</span><span class="w"> </span><span class="k">DESC</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>event_type | cnt | total_amount
-<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>-----------+-----+-------------
-<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>login      |  21 |      1088.72
-<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>view       |  20 |       961.83
-<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>click      |  19 |       966.52
-<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>purchase   |  18 |      1052.12
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>event_type | cnt | total_amount
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>-----------+-----+-------------
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>login      |  21 |      1088.72
+<a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>view       |  20 |       961.83
+<a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>click      |  19 |       966.52
+<a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>purchase   |  18 |      1052.12
 </code></pre></div>
 <p>No <code>logout</code> — filter works correctly.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">user_name</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">events</span><span class="p">,</span>
-<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="w">       </span><span class="k">CAST</span><span class="p">(</span><span class="k">AVG</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">avg_amount</span>
-<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">stream_events</span>
-<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">user_name</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="k">DESC</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">user_name</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">events</span><span class="p">,</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="w">       </span><span class="k">CAST</span><span class="p">(</span><span class="k">AVG</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">avg_amount</span>
+<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">stream_events</span>
+<a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">user_name</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="k">DESC</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>user_name | events | avg_amount
-<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>----------+--------+-----------
-<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>bob       |     19 |      58.44
-<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>alice     |     16 |      48.52
-<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>charlie   |     15 |      43.06
-<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>diana     |     14 |      53.41
-<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>eve       |     14 |      56.34
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>user_name | events | avg_amount
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>----------+--------+-----------
+<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>bob       |     19 |      58.44
+<a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a>alice     |     16 |      48.52
+<a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>charlie   |     15 |      43.06
+<a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a>diana     |     14 |      53.41
+<a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a>eve       |     14 |      56.34
 </code></pre></div>
 <h3 id="python-version">Python Version</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ontul.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">OntulSession</span>
-<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>
-<a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a><span class="n">session</span> <span class="o">=</span> <span class="n">OntulSession</span><span class="p">()</span>
-<a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>
-<a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a><span class="n">job_id</span> <span class="o">=</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">stream_source</span><span class="p">(</span><span class="s2">&quot;user-events&quot;</span><span class="p">,</span>
-<a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a>              <span class="n">bootstrap_servers</span><span class="o">=</span><span class="s2">&quot;localhost:9092&quot;</span><span class="p">,</span>
-<a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>              <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-<a id="__codelineno-38-9" name="__codelineno-38-9" href="#__codelineno-38-9"></a>              <span class="n">auto_offset_reset</span><span class="o">=</span><span class="s2">&quot;earliest&quot;</span><span class="p">)</span>
-<a id="__codelineno-38-10" name="__codelineno-38-10" href="#__codelineno-38-10"></a>    <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s2">&quot;event_type &lt;&gt; &#39;logout&#39;&quot;</span><span class="p">)</span>
-<a id="__codelineno-38-11" name="__codelineno-38-11" href="#__codelineno-38-11"></a>    <span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span> <span class="s2">&quot;event_type&quot;</span><span class="p">,</span> <span class="s2">&quot;user_name&quot;</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="s2">&quot;event_time&quot;</span><span class="p">)</span>
-<a id="__codelineno-38-12" name="__codelineno-38-12" href="#__codelineno-38-12"></a>    <span class="o">.</span><span class="n">sink</span><span class="p">(</span><span class="s2">&quot;ice.examples.stream_events_py&quot;</span><span class="p">)</span>
-<a id="__codelineno-38-13" name="__codelineno-38-13" href="#__codelineno-38-13"></a>    <span class="o">.</span><span class="n">commit_interval</span><span class="p">(</span><span class="mi">5000</span><span class="p">)</span>
-<a id="__codelineno-38-14" name="__codelineno-38-14" href="#__codelineno-38-14"></a>    <span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">duration_sec</span><span class="o">=</span><span class="mi">20</span><span class="p">))</span>
-<a id="__codelineno-38-15" name="__codelineno-38-15" href="#__codelineno-38-15"></a>
-<a id="__codelineno-38-16" name="__codelineno-38-16" href="#__codelineno-38-16"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
-<a id="__codelineno-38-17" name="__codelineno-38-17" href="#__codelineno-38-17"></a>
-<a id="__codelineno-38-18" name="__codelineno-38-18" href="#__codelineno-38-18"></a><span class="n">df</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">sql_pandas</span><span class="p">(</span><span class="s2">&quot;SELECT count(*) AS total FROM ice.examples.stream_events_py&quot;</span><span class="p">)</span>
-<a id="__codelineno-38-19" name="__codelineno-38-19" href="#__codelineno-38-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ontul.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">OntulSession</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>
+<a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a><span class="n">session</span> <span class="o">=</span> <span class="n">OntulSession</span><span class="p">()</span>
+<a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a>
+<a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a><span class="n">job_id</span> <span class="o">=</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">stream_source</span><span class="p">(</span><span class="s2">&quot;user-events&quot;</span><span class="p">,</span>
+<a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a>              <span class="n">bootstrap_servers</span><span class="o">=</span><span class="s2">&quot;localhost:9092&quot;</span><span class="p">,</span>
+<a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a>              <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+<a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a>              <span class="n">auto_offset_reset</span><span class="o">=</span><span class="s2">&quot;earliest&quot;</span><span class="p">)</span>
+<a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a>    <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s2">&quot;event_type &lt;&gt; &#39;logout&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-41-11" name="__codelineno-41-11" href="#__codelineno-41-11"></a>    <span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span> <span class="s2">&quot;event_type&quot;</span><span class="p">,</span> <span class="s2">&quot;user_name&quot;</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="s2">&quot;event_time&quot;</span><span class="p">)</span>
+<a id="__codelineno-41-12" name="__codelineno-41-12" href="#__codelineno-41-12"></a>    <span class="o">.</span><span class="n">sink</span><span class="p">(</span><span class="s2">&quot;ice.examples.stream_events_py&quot;</span><span class="p">)</span>
+<a id="__codelineno-41-13" name="__codelineno-41-13" href="#__codelineno-41-13"></a>    <span class="o">.</span><span class="n">commit_interval</span><span class="p">(</span><span class="mi">5000</span><span class="p">)</span>
+<a id="__codelineno-41-14" name="__codelineno-41-14" href="#__codelineno-41-14"></a>    <span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">duration_sec</span><span class="o">=</span><span class="mi">20</span><span class="p">))</span>
+<a id="__codelineno-41-15" name="__codelineno-41-15" href="#__codelineno-41-15"></a>
+<a id="__codelineno-41-16" name="__codelineno-41-16" href="#__codelineno-41-16"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
+<a id="__codelineno-41-17" name="__codelineno-41-17" href="#__codelineno-41-17"></a>
+<a id="__codelineno-41-18" name="__codelineno-41-18" href="#__codelineno-41-18"></a><span class="n">df</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">sql_pandas</span><span class="p">(</span><span class="s2">&quot;SELECT count(*) AS total FROM ice.examples.stream_events_py&quot;</span><span class="p">)</span>
+<a id="__codelineno-41-19" name="__codelineno-41-19" href="#__codelineno-41-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="windowed-aggregation-example">Windowed Aggregation Example</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="c1">// Kafka → 30s tumbling window → category revenue → Iceberg</span>
-<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="n">session</span><span class="p">.</span><span class="na">streamSource</span><span class="p">(</span>
-<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="w">        </span><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;inline&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;order-events&quot;</span><span class="p">)</span>
-<a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="w">            </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;bootstrap.servers&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;kafka:9092&quot;</span><span class="p">)</span>
-<a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a><span class="w">            </span><span class="p">.</span><span class="na">groupId</span><span class="p">(</span><span class="s">&quot;window-group&quot;</span><span class="p">)</span>
-<a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a><span class="w">            </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;auto.offset.reset&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;earliest&quot;</span><span class="p">)</span>
-<a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a><span class="w">            </span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;json&quot;</span><span class="p">))</span>
-<a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;amount &gt; 0&quot;</span><span class="p">)</span>
-<a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a><span class="w">    </span><span class="p">.</span><span class="na">window</span><span class="p">(</span><span class="n">StreamDataFrame</span><span class="p">.</span><span class="na">WindowSpec</span><span class="p">.</span><span class="na">tumbling</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">30</span><span class="p">)),</span><span class="w"> </span><span class="s">&quot;event_time&quot;</span><span class="p">)</span>
-<a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a><span class="w">    </span><span class="p">.</span><span class="na">groupBy</span><span class="p">(</span><span class="s">&quot;category&quot;</span><span class="p">)</span>
-<a id="__codelineno-39-11" name="__codelineno-39-11" href="#__codelineno-39-11"></a><span class="w">    </span><span class="p">.</span><span class="na">agg</span><span class="p">(</span><span class="s">&quot;SUM(amount) AS total_revenue&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;COUNT(*) AS order_count&quot;</span><span class="p">,</span>
-<a id="__codelineno-39-12" name="__codelineno-39-12" href="#__codelineno-39-12"></a><span class="w">         </span><span class="s">&quot;CAST(AVG(amount) AS DECIMAL(10,2)) AS avg_amount&quot;</span><span class="p">)</span>
-<a id="__codelineno-39-13" name="__codelineno-39-13" href="#__codelineno-39-13"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.analytics.category_revenue_30s&quot;</span><span class="p">))</span>
-<a id="__codelineno-39-14" name="__codelineno-39-14" href="#__codelineno-39-14"></a><span class="w">    </span><span class="p">.</span><span class="na">commitInterval</span><span class="p">(</span><span class="mi">10_000</span><span class="p">)</span>
-<a id="__codelineno-39-15" name="__codelineno-39-15" href="#__codelineno-39-15"></a><span class="w">    </span><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofHours</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="c1">// Kafka → 30s tumbling window → category revenue → Iceberg</span>
+<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="n">session</span><span class="p">.</span><span class="na">streamSource</span><span class="p">(</span>
+<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="w">        </span><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;inline&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;order-events&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="w">            </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;bootstrap.servers&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;kafka:9092&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a><span class="w">            </span><span class="p">.</span><span class="na">groupId</span><span class="p">(</span><span class="s">&quot;window-group&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a><span class="w">            </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;auto.offset.reset&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;earliest&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a><span class="w">            </span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&quot;json&quot;</span><span class="p">))</span>
+<a id="__codelineno-42-8" name="__codelineno-42-8" href="#__codelineno-42-8"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;amount &gt; 0&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-9" name="__codelineno-42-9" href="#__codelineno-42-9"></a><span class="w">    </span><span class="p">.</span><span class="na">window</span><span class="p">(</span><span class="n">StreamDataFrame</span><span class="p">.</span><span class="na">WindowSpec</span><span class="p">.</span><span class="na">tumbling</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">30</span><span class="p">)),</span><span class="w"> </span><span class="s">&quot;event_time&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-10" name="__codelineno-42-10" href="#__codelineno-42-10"></a><span class="w">    </span><span class="p">.</span><span class="na">groupBy</span><span class="p">(</span><span class="s">&quot;category&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-11" name="__codelineno-42-11" href="#__codelineno-42-11"></a><span class="w">    </span><span class="p">.</span><span class="na">agg</span><span class="p">(</span><span class="s">&quot;SUM(amount) AS total_revenue&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;COUNT(*) AS order_count&quot;</span><span class="p">,</span>
+<a id="__codelineno-42-12" name="__codelineno-42-12" href="#__codelineno-42-12"></a><span class="w">         </span><span class="s">&quot;CAST(AVG(amount) AS DECIMAL(10,2)) AS avg_amount&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-13" name="__codelineno-42-13" href="#__codelineno-42-13"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.analytics.category_revenue_30s&quot;</span><span class="p">))</span>
+<a id="__codelineno-42-14" name="__codelineno-42-14" href="#__codelineno-42-14"></a><span class="w">    </span><span class="p">.</span><span class="na">commitInterval</span><span class="p">(</span><span class="mi">10_000</span><span class="p">)</span>
+<a id="__codelineno-42-15" name="__codelineno-42-15" href="#__codelineno-42-15"></a><span class="w">    </span><span class="p">.</span><span class="na">start</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofHours</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
 </code></pre></div>
 <hr />
 <h2 id="exchange-manager">Exchange Manager</h2>
@@ -2649,8 +2750,8 @@
 </ul>
 <hr />
 <h2 id="cleanup">Cleanup</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>bin/stop-example-servers.sh
-<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>examples/docker-compose-iceberg.yml<span class="w"> </span>down<span class="w"> </span>-v
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>bin/stop-example-servers.sh
+<a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>examples/docker-compose-iceberg.yml<span class="w"> </span>down<span class="w"> </span>-v
 </code></pre></div>
 
 
