@@ -126,6 +126,29 @@ Both forms are stripped by a SQL preprocessor and routed through `TableScan.useS
 
 Ontul streaming jobs can write directly into Iceberg tables. Barrier checkpoints align with snapshot boundaries; each barrier produces one Iceberg snapshot with exactly-once semantics on the source side and atomic visibility on the read side. See [Streaming Guide](../streaming/guide.md).
 
+### Streaming upsert (equality-delete)
+
+Append-only is the default streaming sink mode. For sources whose rows can be re-emitted with the same key (CDC, "latest snapshot per id" feeds, late-arriving corrections), Ontul also supports v2 **equality-delete upsert** keyed on a user-supplied column list:
+
+```java
+df.sink(Sink.table("ice.ns.users").upsertKeys("id"))
+  .commitInterval(5_000)
+  .start();
+```
+
+Or via SUBMIT STREAMING JSON:
+
+```json
+{
+  "kafka": { ... },
+  "sink": { "type": "table", "table": "ice.ns.users", "upsertKeys": ["id"] }
+}
+```
+
+Per commit window the sink emits a single `RowDelta` containing the new data file plus a small key-only equality-delete file. Iceberg's MOR rules apply the delete to all earlier-sequence data files in the same partition spec, so a row with a previously-seen key is hidden at read time without scanning the target — same effect as `MERGE INTO`, but the cost is **one append + one tiny delete file** rather than a full target rescan.
+
+Supported on both unpartitioned and partitioned tables (one per-partition equality-delete file per commit). Partition columns and equality-key columns can differ; standard Iceberg semantics apply.
+
 ## Schema evolution
 
 | Statement | Behavior |

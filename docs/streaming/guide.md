@@ -133,6 +133,57 @@ print(f"Streaming job started: {job_id}")
 
 ---
 
+## Iceberg Sink Modes
+
+The Iceberg streaming sink (`Sink.table("...")`) writes to a v2 table in one of two modes.
+
+### Append (default)
+
+Each commit window produces a single `AppendFiles` snapshot containing the new data files. No deletes, no scan of the target — best throughput per commit, suitable for event/audit logs and any workload where rows are immutable.
+
+```java
+df.sink(Sink.table("ice.analytics.events"))
+  .commitInterval(5_000)
+  .start();
+```
+
+### Upsert (equality-delete)
+
+Pass an `upsertKeys(...)` column list and the sink switches to merge-on-read upsert. Per commit, the sink emits a `RowDelta` of (new data file + small key-only equality-delete file). Iceberg's MOR rules then hide any prior copy of a key in earlier-sequence data files at read time — same end-state as `MERGE INTO`, but the per-batch cost is **append + tiny delete file** rather than a target rescan.
+
+```java
+df.sink(Sink.table("ice.cdc.users").upsertKeys("user_id"))
+  .commitInterval(5_000)
+  .start();
+```
+
+REST equivalent:
+
+```json
+{
+  "kafka": { ... },
+  "sink": { "type": "table", "table": "ice.cdc.users", "upsertKeys": ["user_id"] }
+}
+```
+
+Notes:
+
+- Works on both unpartitioned and partitioned Iceberg tables. Partitioned mode opens one equality-delete file per partition per commit, scoped to that partition.
+- Multi-column keys are supported (`upsertKeys("tenant_id", "user_id")`).
+- Standard barrier-checkpoint exactly-once semantics still apply: the data file + delete file commit together as one snapshot.
+- For best read performance, run periodic `OPTIMIZE` on the table — compaction folds applied deletes into a smaller set of data files (see the [Iceberg Maintenance](../features/iceberg-integration.md#maintenance) section).
+
+### Tuning commit cadence
+
+| Property | Default | Description |
+|---|---|---|
+| `ontul.streaming.commit.interval.ms` | 10000 | Force a commit when this much wall-clock time elapses since the previous commit. |
+| `ontul.streaming.commit.row.threshold` | 10000 | Force a commit when this many rows have accumulated since the previous commit. |
+
+Per-job overrides win over server defaults: `.commitInterval(...)` on the SDK builder, or `commitIntervalMs` / `commitRowThreshold` in the SUBMIT STREAMING JSON.
+
+---
+
 ## Source/Sink by Connection ID
 
 Streaming jobs should reference a registered connection by ID instead of restating bootstrap servers and SASL credentials in every payload. The first argument to `Source.kafka(...)` and `Sink.kafka(...)` is the connection ID; pass `"inline"` only when supplying credentials directly via `.property(...)`.
