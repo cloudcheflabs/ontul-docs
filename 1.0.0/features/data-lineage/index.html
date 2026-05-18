@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/federation/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/data-lineage/">
       
       
-        <link rel="prev" href="../connection-id/">
+        <link rel="prev" href="../iam/">
       
       
-        <link rel="next" href="../iceberg-integration/">
+        <link rel="next" href="../encryption/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Federation Queries - Ontul</title>
+        <title>Data Lineage - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#federation-queries" class="md-skip">
+        <a href="#data-lineage" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Federation Queries
+              Data Lineage
             
           </span>
         </div>
@@ -827,37 +827,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Queries
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../federation/" class="md-nav__link">
         
   
   
@@ -873,81 +846,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#multi-catalog-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Catalog Architecture
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cross-source-joins" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cross-Source Joins
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#supported-catalog-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Supported Catalog Types
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dynamic-registration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dynamic Registration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#schema-introspection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Schema Introspection
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1069,10 +967,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../data-lineage/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Lineage
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1088,6 +1013,136 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-capture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Capture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#table-level-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table-Level Lineage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#column-level-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Column-Level Lineage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sql-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQL Commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rest-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REST API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admin-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admin UI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pii-flow-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PII Flow Detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-catalog-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-Catalog Lineage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openlineage-emission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenLineage Emission
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1692,55 +1747,103 @@
 
 
 
-<h1 id="federation-queries">Federation Queries</h1>
-<p>Ontul supports federated queries across multiple data sources through its multi-catalog architecture powered by Apache Calcite.</p>
-<h2 id="multi-catalog-architecture">Multi-Catalog Architecture</h2>
-<p>Ontul uses a 3-level schema hierarchy for table resolution:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>catalog.schema.table
+<h1 id="data-lineage">Data Lineage</h1>
+<p>Ontul automatically tracks <strong>data lineage</strong> — which tables and columns a table was derived from — at both table and column granularity. Lineage is extracted from the actual Calcite query plan, not from heuristic SQL parsing, so joins, sub-queries, CTEs, and aggregations are resolved accurately.</p>
+<h2 id="automatic-capture">Automatic Capture</h2>
+<p>When a table is created or populated, Ontul records its lineage — no configuration, no annotations. Capture happens on:</p>
+<ul>
+<li><code>CREATE TABLE ... AS SELECT</code> (CTAS)</li>
+<li><code>INSERT INTO ... SELECT</code></li>
+<li><code>MERGE INTO</code></li>
+<li><code>CREATE VIEW</code></li>
+</ul>
+<p>Capture is <strong>best-effort</strong>: it runs after the statement succeeds and never blocks or fails the query.</p>
+<h2 id="table-level-lineage">Table-Level Lineage</h2>
+<p>Table-level lineage records the set of source tables a table was built from — every table scanned by the defining query, across joins and unions.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">demo</span><span class="p">.</span><span class="n">cust_orders</span><span class="w"> </span><span class="k">AS</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">       </span><span class="k">count</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">o_orderkey</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">order_count</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">       </span><span class="k">sum</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">o_totalprice</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_spend</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="k">c</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_custkey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">o_custkey</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span><span class="p">;</span>
 </code></pre></div>
-<p>Each catalog represents a separate data source. Multiple catalogs can be registered simultaneously, and a single SQL query can reference tables from different catalogs.</p>
-<h2 id="cross-source-joins">Cross-Source Joins</h2>
-<p>Join data across different data sources in a single query:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">jdbc_catalog</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">customers</span><span class="w"> </span><span class="k">c</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">INNER</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="n">o</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">customer_id</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;completed&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">LINEAGE</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">demo</span><span class="p">.</span><span class="n">cust_orders</span><span class="p">;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1">-- tpch.tiny.customer</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1">-- tpch.tiny.orders</span>
 </code></pre></div>
-<p>In this example, <code>customers</code> comes from a JDBC database and <code>orders</code> comes from an Iceberg table — Ontul handles the distributed execution transparently.</p>
-<h2 id="supported-catalog-types">Supported Catalog Types</h2>
+<h2 id="column-level-lineage">Column-Level Lineage</h2>
+<p>For each output column, Ontul records the source <code>(table, column)</code> it derives from. A column that passed through an expression — <code>SUM(...)</code>, <code>CAST(...)</code>, an aggregate — is flagged <strong><code>derived</code></strong>; a straight projection of a base column is not. Column origins come from Calcite column-origin metadata, so they are tracked correctly through joins and <code>GROUP BY</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">LINEAGE</span><span class="w"> </span><span class="n">COLUMNS</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">demo</span><span class="p">.</span><span class="n">cust_orders</span><span class="p">;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1">-- c_name       ←  tpch.tiny.customer.c_name</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1">-- order_count  ←  tpch.tiny.orders.o_orderkey      [derived]</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1">-- total_spend  ←  tpch.tiny.orders.o_totalprice    [derived]</span>
+</code></pre></div>
+<h2 id="sql-commands">SQL Commands</h2>
 <table>
 <thead>
 <tr>
-<th>Catalog Type</th>
-<th>Description</th>
+<th>Command</th>
+<th>Result</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Iceberg</td>
-<td>REST catalog (e.g., Polaris, Nessie) for Iceberg tables</td>
+<td><code>SHOW LINEAGE &lt;table&gt;</code></td>
+<td>Upstream source tables</td>
 </tr>
 <tr>
-<td>JDBC</td>
-<td>Any relational database accessible via JDBC</td>
+<td><code>SHOW LINEAGE COLUMNS &lt;table&gt;</code></td>
+<td>Column-level lineage edges</td>
 </tr>
 <tr>
-<td>TPC-H / TPC-DS</td>
-<td>Built-in benchmark data</td>
+<td><code>SHOW LINEAGE DOWNSTREAM &lt;table&gt;</code></td>
+<td>Tables built from this one</td>
 </tr>
 </tbody>
 </table>
-<h2 id="dynamic-registration">Dynamic Registration</h2>
-<p>Catalogs are registered at runtime through the Admin API or Admin UI. No cluster restart is required. Once registered, all tables within the catalog are immediately discoverable and queryable.</p>
-<h2 id="schema-introspection">Schema Introspection</h2>
-<p>Standard metadata commands work across all catalog types:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">CATALOGS</span><span class="p">;</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">SCHEMAS</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">my_catalog</span><span class="p">;</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">TABLES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">my_catalog</span><span class="p">.</span><span class="n">my_schema</span><span class="p">;</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">DESCRIBE</span><span class="w"> </span><span class="n">my_catalog</span><span class="p">.</span><span class="n">my_schema</span><span class="p">.</span><span class="n">my_table</span><span class="p">;</span>
+<h2 id="rest-api">REST API</h2>
+<p>Read-only lineage endpoints (any authenticated user):</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /admin/lineage/graph?root=&lt;table&gt;&amp;depth=&lt;n&gt;&amp;direction=&lt;up\|down\|both&gt;</code></td>
+<td>Lineage graph <code>{nodes, edges}</code></td>
+</tr>
+<tr>
+<td><code>GET /admin/lineage/columns?table=&lt;table&gt;</code></td>
+<td>Column-level lineage</td>
+</tr>
+<tr>
+<td><code>GET /admin/lineage/impact?table=&lt;table&gt;</code></td>
+<td>Transitive downstream tables</td>
+</tr>
+<tr>
+<td><code>GET /admin/lineage/pii-flow?table=&lt;table&gt;&amp;column=&lt;col&gt;</code></td>
+<td>Downstream flow of a column</td>
+</tr>
+</tbody>
+</table>
+<h2 id="admin-ui">Admin UI</h2>
+<p>The <strong>Data Lineage</strong> page renders an interactive graph (sources on the left, derived tables on the right). Enter a table, choose direction and depth, and trace its lineage. Click any node to open a side panel showing its column-level lineage — with the <code>derived</code> flag — and its downstream impact.</p>
+<h2 id="pii-flow-detection">PII Flow Detection</h2>
+<p>Given a sensitive column, Ontul traces every downstream <code>(table, column)</code> it transitively flows into, via column-level lineage:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>GET /admin/lineage/pii-flow?table=pg.public.users&amp;column=ssn
 </code></pre></div>
-<p>Ontul also provides <code>information_schema</code> virtual tables (<code>tables</code>, <code>columns</code>, <code>schemata</code>) for programmatic introspection.</p>
+<p>This answers "where did this PII go?" — for example, finding that <code>users.ssn</code> was copied by an ETL job into a table that has no access policy. Ontul <strong>surfaces the flow for an operator to review</strong>; it does not automatically modify IAM policies, since lineage is not exhaustive (opaque UDFs, dynamic SQL) and silent policy changes would be surprising.</p>
+<h2 id="cross-catalog-lineage">Cross-Catalog Lineage</h2>
+<p>Because every catalog's tables — Iceberg, JDBC, Kafka, TPC-H — are first-class scan sources, lineage <strong>crosses systems automatically</strong>. A table built <code>FROM jdbc_catalog.public.users JOIN kafka_catalog.events.clicks</code> records both as upstream sources, giving cross-system lineage with no extra configuration.</p>
+<h2 id="openlineage-emission">OpenLineage Emission</h2>
+<p>Ontul can emit <a href="https://openlineage.io">OpenLineage</a>-spec events so external catalogs (Marquez, DataHub, Atlan, …) ingest Ontul lineage through the industry-standard wire format.</p>
+<p>Set <code>ontul.lineage.openlineage.url</code> to an HTTP endpoint; each CTAS/INSERT/MERGE/VIEW then emits a <code>COMPLETE</code> RunEvent with <code>inputs</code>, <code>outputs</code>, and a standard <code>columnLineage</code> facet. When unset, emission is disabled.</p>
+<h2 id="storage">Storage</h2>
+<p>Lineage is persisted in the leader's metadata store and replicated to followers — the same mechanism used for catalogs and IAM — so it survives restarts and leadership changes.</p>
 
 
 
