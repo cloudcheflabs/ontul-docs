@@ -48,6 +48,7 @@ nav:
       - "Remote Mode": features/remote-mode.md
       - "User-Defined Functions": features/udf.md
       - "IAM": features/iam.md
+      - "Data Lineage": features/data-lineage.md
       - "Encryption & KMS": features/encryption.md
       - "Geospatial Support": features/geospatial.md
       - "High Availability": features/high-availability.md
