@@ -54,9 +54,6 @@ admin's next login (the `requirePasswordChange` flag is set automatically).
 ```bash
 # Inside the master host or container:
 bin/ontul-cli.sh iam:reset-password
-
-# Or with the packaged docker image:
-docker exec ontul-master /app/bin/ontul-cli.sh iam:reset-password
 ```
 
 Sample output (TTY):
@@ -69,14 +66,6 @@ Sample output (TTY):
   │                                                            │
   │  Must be changed on next login (requirePasswordChange).    │
   └────────────────────────────────────────────────────────────┘
-```
-
-When stdout is piped or redirected, the password alone is printed — suitable
-for capturing in automation:
-
-```bash
-NEW_PW=$(docker exec ontul-master /app/bin/ontul-cli.sh iam:reset-password)
-echo "$NEW_PW" | aws secretsmanager put-secret-value --secret-id ontul/admin --secret-string file:///dev/stdin
 ```
 
 ## Input modes
