@@ -19,30 +19,36 @@ Ontul supports multiple authentication methods:
 
 ## Policy-Based Access Control
 
-Ontul uses AWS-style JSON policies to manage permissions:
+Ontul uses AWS-style JSON policies to manage permissions. Actions live in the
+`data:` namespace (table/DML/admin) and `UDF:` namespace; table resources are
+addressed as `data:table:<catalog>.<schema>.<table>` and accept wildcards.
 
 ```json
 {
-  "statements": [
+  "Version": "2024-01-01",
+  "Statement": [
     {
-      "effect": "ALLOW",
-      "actions": ["SELECT", "INSERT"],
-      "resources": ["iceberg_catalog.sales.*"]
+      "Sid": "SalesReadWrite",
+      "Effect": "Allow",
+      "Action": ["data:Select", "data:Insert"],
+      "Resource": "data:table:ice.sales.*"
     },
     {
-      "effect": "DENY",
-      "actions": ["SELECT"],
-      "resources": ["iceberg_catalog.hr.salaries"],
-      "columns": ["salary", "ssn"]
+      "Sid": "HideSalarySsn",
+      "Effect": "Deny",
+      "Action": "data:Select",
+      "Resource": "data:table:ice.hr.salaries",
+      "Columns": ["salary", "ssn"]
     }
   ]
 }
 ```
 
-- Policies define allowed or denied actions on specific resources (catalogs, schemas, tables)
-- Policies can be attached to users or groups
-- Deny rules take precedence over allow rules
-- Deny-by-default: no matching policies means access is denied
+- Action verbs in the `data:` namespace: `data:Select`, `data:Insert`, `data:Update`, `data:Delete`, `data:Merge`, `data:CreateTable`, `data:DropTable`, `data:AlterTable`, `data:KillJob`, `data:CancelQuery`. UDF actions stay in the `UDF:` namespace (see below).
+- Resources: `data:table:<catalog>.<schema>.<table>`, `data:schema:<catalog>.<schema>`, `data:job:*`, `data:query:*`, `udf:<name>`. Wildcards `*` and `?` are supported.
+- Policies can be attached to users or groups.
+- Deny rules take precedence over allow rules.
+- Deny-by-default: no matching policies means access is denied.
 
 ## Column-Level Security
 
@@ -54,14 +60,15 @@ Apply row filter conditions to restrict which rows a user can see:
 
 ```json
 {
-  "effect": "ALLOW",
-  "actions": ["SELECT"],
-  "resources": ["iceberg_catalog.sales.orders"],
-  "rowFilter": "region = 'APAC'"
+  "Sid": "ApacOnly",
+  "Effect": "Allow",
+  "Action": "data:Select",
+  "Resource": "data:table:ice.sales.orders",
+  "Condition": "region = 'APAC'"
 }
 ```
 
-Row filters are injected into the query plan automatically, ensuring users only see data they are authorized to access.
+Row filters are injected into the query plan automatically, ensuring users only see data they are authorized to access. The expression supports `${user.userId}` substitution for per-user scoping.
 
 ## UDF Permissions
 
