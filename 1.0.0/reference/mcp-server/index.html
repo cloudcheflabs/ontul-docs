@@ -909,6 +909,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/bi-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BI Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/remote-mode/" class="md-nav__link">
         
   
@@ -1320,6 +1348,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-ontul_describe_semantic_view-returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What ontul_describe_semantic_view returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1773,6 +1818,7 @@
 <h1 id="mcp-server">MCP Server</h1>
 <p><code>ontul-mcp</code> is a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL (for queries and catalog introspection) and the admin REST port (for the semantic layer), and exposes eight read-side tools.</p>
 <p>Authorization is enforced server-side by Ontul IAM using the access token configured at startup. The MCP layer adds no additional access control — anything the token's policies allow, the LLM can run; anything they deny, the master rejects with an error that the LLM sees verbatim.</p>
+<p>The semantic layer rewriting kicks in transparently: an LLM can issue <code>SELECT revenue, customer.region FROM saas.core.sales</code> and the master expands the metric, injects the conformed-dimension JOIN, applies the user's mandatory filters, and derives the GROUP BY before execution. The LLM doesn't need to inline the aggregation formula — though it still can, and Phase 1 LLM-expanded SQL keeps working. See <a href="../../features/semantic-layer/">Semantic Layer</a> for the full rewrite pipeline.</p>
 <p>The <code>ontul-mcp</code> launcher is shipped as part of the Ontul community-edition distribution. After unpacking the release archive it is available at <code>bin/ontul-mcp</code> alongside the master / worker / ZooKeeper launchers.</p>
 <h2 id="tools">Tools</h2>
 <table>
@@ -1817,7 +1863,7 @@
 <tr>
 <td><code>ontul_describe_semantic_view</code></td>
 <td><code>GET /api/v1/semantic-views/{fqn}</code></td>
-<td>Fetch one semantic view's full definition — <code>baseSql</code>, metric expressions, dimensions, synonyms, description.</td>
+<td>Fetch one semantic view's full definition — <code>baseSql</code>, metrics (with <code>expr</code>, <code>allowedRoles</code>, <code>mandatoryFilters</code>), dimensions, synonyms, description, governance metadata (<code>status</code>, <code>certifiedBy</code>, <code>certifiedAt</code>, <code>tags</code>, <code>owner</code>), conformed-dimension <code>joins[]</code>, view-level <code>mandatoryFilters</code>.</td>
 </tr>
 <tr>
 <td><code>ontul_search_metrics</code></td>
@@ -1827,7 +1873,44 @@
 </tbody>
 </table>
 <p>The four <code>_list/_describe_table</code> tools are thin wrappers around <code>ontul_query</code> for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. <code>ontul_query</code> itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.</p>
-<p>The three <code>_semantic_*</code> tools talk to the master's admin HTTP port instead of Flight SQL, because Phase 1 of the semantic layer is REST-only. The same <code>ONTUL_USER_TOKEN</code> is reused (sent as <code>Authorization: Token &lt;token&gt;</code>), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from <code>ONTUL_HOST</code> (or <code>ONTUL_ADMIN_URL</code> to override).</p>
+<p>The three <code>_semantic_*</code> tools talk to the master's admin HTTP port instead of Flight SQL because the semantic CRUD surface is REST. Read-side semantic <em>consumption</em> — the actual <code>SELECT</code> against a semantic view — flows through Flight SQL like any other query and benefits from the master-side rewriting. The same <code>ONTUL_USER_TOKEN</code> is reused (sent as <code>Authorization: Token &lt;token&gt;</code> on REST), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from <code>ONTUL_HOST</code> (or <code>ONTUL_ADMIN_URL</code> to override).</p>
+<h3 id="what-ontul_describe_semantic_view-returns">What <code>ontul_describe_semantic_view</code> returns</h3>
+<p>The full definition is exposed verbatim so the LLM can decide how to use a metric. A representative response shape:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;catalog&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;saas&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;schema&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;core&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;sales&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w">     </span><span class="s2">&quot;saas.core.sales&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Per-tenant sales facts — multi-tenant row-scoping enforced.&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">&quot;owner&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;admin&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CERTIFIED&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">&quot;certifiedBy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;admin&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="nt">&quot;certifiedAt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1779999999999</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="nt">&quot;tags&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;finance&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;gold-tier&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="nt">&quot;baseSql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT order_id, tenant_id, customer_id, amount, status, ship_date FROM saas.core.raw_orders&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUM(amount)&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">     </span><span class="nt">&quot;synonyms&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;매출&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;net_revenue&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">     </span><span class="nt">&quot;mandatoryFilters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;status = &#39;COMPLETED&#39;&quot;</span><span class="p">]},</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;profit_margin&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;(revenue - cost) / revenue&quot;</span><span class="p">},</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;vip_revenue&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUM(amount) FILTER (WHERE tier=&#39;VIP&#39;)&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">     </span><span class="nt">&quot;allowedRoles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;finance&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;analyst&quot;</span><span class="p">]}</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">  </span><span class="nt">&quot;dimensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ship_date&quot;</span><span class="p">}],</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">  </span><span class="nt">&quot;joins&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;customer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;target&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;saas.core.customer&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">     </span><span class="nt">&quot;onTemplate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${this}.customer_id = ${customer}.id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;LEFT&quot;</span><span class="p">}</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">  </span><span class="nt">&quot;mandatoryFilters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;tenant_id = ${user.attr.tenant_id}&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="p">}</span>
+</code></pre></div>
+<p>LLM guidance derived from this payload:</p>
+<ul>
+<li><strong>Prefer <code>status: CERTIFIED</code> over <code>DRAFT</code></strong> when multiple views could answer the question — certified definitions have been reviewed.</li>
+<li><strong>Avoid metrics where <code>allowedRoles</code> excludes the caller</strong>; the rewriter will reject the query with <code>Forbidden: &lt;metric&gt;</code> and an unhelpful trace.</li>
+<li><strong>Expand metrics inline only when the engine rewriter can't help</strong> (e.g. the LLM is generating a query for a non-Ontul engine). For Ontul targets, <code>SELECT &lt;metric&gt; FROM &lt;fqn&gt;</code> is enough — the rewriter handles it.</li>
+<li><strong>Cite tags and certifiedBy in narrative answers</strong> ("revenue is the CERTIFIED measure on saas.core.sales, owned by ‘finance‘") — improves user trust in the LLM's output.</li>
+</ul>
 <h2 id="configuration">Configuration</h2>
 <p>The server reads the same environment variables the Java SDK already honors so a single token can be reused across SDK clients and the MCP server.</p>
 <table>
@@ -1869,16 +1952,16 @@
 <p>Logs are pinned to <strong>stderr</strong> by the bundled logback config. <code>stdout</code> is reserved for the MCP JSON-RPC stream — never log there.</p>
 <h2 id="issuing-a-token">Issuing a token</h2>
 <p>The MCP server uses Ontul's existing IAM token (one of the three IAM credential forms — Access Key, Secret Key, Token). Issue a token from the Admin UI's IAM page or directly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">JWT</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sX<span class="w"> </span>POST<span class="w"> </span>http://&lt;admin&gt;:8090/admin/auth/login<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;&lt;your-password&gt;&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.accessToken<span class="k">)</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>curl<span class="w"> </span>-sX<span class="w"> </span>POST<span class="w"> </span>http://&lt;admin&gt;:8090/admin/iam/keys<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$JWT</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;&lt;the-iam-user&gt;&quot;}&#39;</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># → {&quot;accessKeyId&quot;:&quot;AKIA...&quot;,&quot;secretAccessKey&quot;:&quot;...&quot;,&quot;token&quot;:&quot;OTOK...&quot;}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">JWT</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sX<span class="w"> </span>POST<span class="w"> </span>http://&lt;admin&gt;:8090/admin/auth/login<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;&lt;your-password&gt;&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.accessToken<span class="k">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>curl<span class="w"> </span>-sX<span class="w"> </span>POST<span class="w"> </span>http://&lt;admin&gt;:8090/admin/iam/keys<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$JWT</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;&lt;the-iam-user&gt;&quot;}&#39;</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># → {&quot;accessKeyId&quot;:&quot;AKIA...&quot;,&quot;secretAccessKey&quot;:&quot;...&quot;,&quot;token&quot;:&quot;OTOK...&quot;}</span>
 </code></pre></div>
 <p>Use the returned <code>token</code> as <code>ONTUL_USER_TOKEN</code>. Whatever IAM policies attach to that user — column masks, row filters, catalog allow-lists — apply automatically when the LLM issues queries through the MCP server. No separate authorization layer.</p>
 <h2 id="wiring-into-an-mcp-client">Wiring into an MCP client</h2>
@@ -1889,18 +1972,18 @@
 <li>the <strong>transport</strong>: stdio (no HTTP, no SSE, no socket configuration)</li>
 </ul>
 <p>Most clients accept this configuration as a JSON entry under an <code>mcpServers</code> (or similarly named) object. A representative shape:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">&quot;ontul&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/abs/path/to/ontul/bin/ontul-mcp&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">        </span><span class="nt">&quot;ONTUL_HOST&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">        </span><span class="nt">&quot;ONTUL_PORT&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;47470&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">        </span><span class="nt">&quot;ONTUL_USER_TOKEN&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OTOK...&quot;</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span><span class="p">}</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">&quot;ontul&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/abs/path/to/ontul/bin/ontul-mcp&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">        </span><span class="nt">&quot;ONTUL_HOST&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">        </span><span class="nt">&quot;ONTUL_PORT&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;47470&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">        </span><span class="nt">&quot;ONTUL_USER_TOKEN&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OTOK...&quot;</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">}</span>
 </code></pre></div>
 <p>Refer to your specific client's MCP integration guide for the exact configuration file path and field names. Once registered the eight tools become available and the agent can issue queries like:</p>
 <blockquote>
@@ -1908,34 +1991,34 @@
 </blockquote>
 <h2 id="manual-smoke-test">Manual smoke test</h2>
 <p>The protocol is line-delimited JSON-RPC, so a stdio test does not need any client at all:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ONTUL_USER_TOKEN</span><span class="o">=</span>OTOK...
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="o">(</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;initialize&quot;,&quot;params&quot;:{}}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;method&quot;:&quot;notifications/initialized&quot;}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:2,&quot;method&quot;:&quot;tools/list&quot;}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:3,&quot;method&quot;:&quot;tools/call&quot;,\</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="s1">&quot;params&quot;:{&quot;name&quot;:&quot;ontul_list_catalogs&quot;}}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="o">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bin/ontul-mcp
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ONTUL_USER_TOKEN</span><span class="o">=</span>OTOK...
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="o">(</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;initialize&quot;,&quot;params&quot;:{}}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;method&quot;:&quot;notifications/initialized&quot;}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:2,&quot;method&quot;:&quot;tools/list&quot;}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:3,&quot;method&quot;:&quot;tools/call&quot;,\</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="s1">&quot;params&quot;:{&quot;name&quot;:&quot;ontul_list_catalogs&quot;}}&#39;</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="o">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bin/ontul-mcp
 </code></pre></div>
 <p>Three responses arrive (the notification produces no reply): the <code>initialize</code> result with <code>serverInfo</code>, the <code>tools/list</code> array, and a markdown rendering of <code>SHOW CATALOGS</code>.</p>
 <h2 id="result-formatting">Result formatting</h2>
 <p><code>ontul_query</code> and the four shortcut tools return a single text payload — a markdown table — so the LLM sees the same column-aligned view a human would in the SQL Runner. NULL cells render as <code>NULL</code>, byte-array cells render as a short hex preview followed by the total byte length, and very wide cells are ellipsized at 200 characters. When the result exceeds <code>max_rows</code> the table is truncated and a footer line tells the LLM how to widen the cap or tighten the query:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>| i_category  | sales_count |
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>|-------------|-------------|
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>| Toys        | 4132        |
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>| Garden      | 3721        |
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>…
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>(showing 100 of ≥ 4127 rows; tighten the query or raise max_rows)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>| i_category  | sales_count |
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>|-------------|-------------|
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>| Toys        | 4132        |
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>| Garden      | 3721        |
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>…
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>(showing 100 of ≥ 4127 rows; tighten the query or raise max_rows)
 </code></pre></div>
 <h2 id="behind-a-load-balancer">Behind a load balancer</h2>
 <p>When Ontul Master runs HA with multiple instances behind NGINX, the Flight SQL upstream block must use <strong>sticky load balancing</strong> for the MCP server (and for any Flight SQL client). A single Flight query is two RPCs — <code>GetFlightInfo</code> followed by <code>DoGet</code> — and round-robin sends them to different masters. The second master cannot resolve the result handle minted by the first and the client sees <code>No results for handle: &lt;uuid&gt;</code>.</p>
 <p>Pin every gRPC connection from one client to one master with <code>hash $remote_addr consistent;</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">upstream</span><span class="w"> </span><span class="no">on</span><span class="s">tul_flight</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="no">on</span><span class="n">tul-master-1</span><span class="p">:</span><span class="mi">47470</span><span class="p">;</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="no">on</span><span class="n">tul-master-2</span><span class="p">:</span><span class="mi">47470</span><span class="p">;</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">upstream</span><span class="w"> </span><span class="no">on</span><span class="s">tul_flight</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="no">on</span><span class="n">tul-master-1</span><span class="p">:</span><span class="mi">47470</span><span class="p">;</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="no">on</span><span class="n">tul-master-2</span><span class="p">:</span><span class="mi">47470</span><span class="p">;</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">}</span>
 </code></pre></div>
 <p>For the Admin REST upstream the same caveat applies for stateful flows (catalog registration, IAM mutations) — the simplest pattern is to also hash by client there.</p>
 

@@ -14,7 +14,7 @@
         <link rel="prev" href="../iceberg-integration/">
       
       
-        <link rel="next" href="../remote-mode/">
+        <link rel="next" href="../bi-integration/">
       
       
         
@@ -946,10 +946,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-a-semantic-view-looks-like" class="md-nav__link">
+  <a href="#what-a-semantic-view-binds" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What a semantic view looks like
+        What a semantic view binds
       
     </span>
   </a>
@@ -957,10 +957,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-its-stored-and-synced" class="md-nav__link">
+  <a href="#what-the-engine-does-at-query-time" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it's stored and synced
+        What the engine does at query time
       
     </span>
   </a>
@@ -968,72 +968,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rest-api" class="md-nav__link">
+  <a href="#quick-walkthrough-define-and-query-a-view" class="md-nav__link">
     <span class="md-ellipsis">
       
-        REST API
+        Quick walkthrough: define and query a view
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="REST API">
+    <nav class="md-nav" aria-label="Quick walkthrough: define and query a view">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#search-ranking" class="md-nav__link">
+  <a href="#1-acquire-a-token" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Search ranking
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#mcp-tools" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MCP tools
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#authentication-and-iam" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Authentication and IAM
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-register-and-query-a-sales-view" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example: register and query a sales view
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Example: register and query a sales view">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-acquire-a-jwt" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Acquire a JWT
+        1. Acquire a token
       
     </span>
   </a>
@@ -1052,10 +1002,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-register-a-semantic-view-over-tpchtinylineitem" class="md-nav__link">
+  <a href="#3-register-a-semantic-view" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Register a semantic view over tpch.tiny.lineitem
+        3. Register a semantic view
       
     </span>
   </a>
@@ -1063,10 +1013,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-fetch-it-back" class="md-nav__link">
+  <a href="#4-query-with-the-metrics-name-directly" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Fetch it back
+        4. Query with the metric's name directly
       
     </span>
   </a>
@@ -1074,10 +1024,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-find-a-metric-by-korean-synonym" class="md-nav__link">
+  <a href="#5-select-returns-the-curated-columns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Find a metric by Korean synonym
+        5. SELECT * returns the curated columns
       
     </span>
   </a>
@@ -1085,21 +1035,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#6-query-the-auto-registered-view" class="md-nav__link">
+  <a href="#6-find-the-metric-by-korean-synonym" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. Query the auto-registered view
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-delete" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Delete
+        6. Find the metric by Korean synonym
       
     </span>
   </a>
@@ -1112,10 +1051,265 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-mcp-discovery-flow" class="md-nav__link">
+  <a href="#query-rewriting-in-detail" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example: MCP discovery flow
+        Query rewriting in detail
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Query rewriting in detail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bare-metric-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bare metric reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualified-metric-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Qualified metric reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#having-on-a-metric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HAVING on a metric
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user-supplied-alias-is-preserved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User-supplied alias is preserved
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mixed-metric-raw-column-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mixed metric + raw column reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3 capabilities
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 3 capabilities">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mandatory-filters-with-user-context-templating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mandatory filters with user-context templating
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#derived-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Derived metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conformed-dimension-joins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conformed-dimension joins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metric-level-rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metric-level RBAC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#governance-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Governance metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lineage-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lineage integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#discovery-synonyms-search-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Discovery: synonyms, search, MCP
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Discovery: synonyms, search, MCP">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mcp-discovery-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP discovery flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bi-tool-exposure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BI tool exposure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#end-to-end-example-tenant-scoped-sales-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End-to-end example: tenant-scoped sales dashboard
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="End-to-end example: tenant-scoped sales dashboard">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#define-the-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Define the view
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#certify-it-for-production-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certify it for production use
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#one-query-touches-every-phase-3-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One query touches every Phase-3 feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storage-and-replication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage and replication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication-and-iam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication and IAM
       
     </span>
   </a>
@@ -1155,10 +1349,49 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bi-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BI Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1904,11 +2137,14 @@
 
 
 <h1 id="semantic-layer">Semantic Layer</h1>
-<p>Ontul's semantic layer is a thin metadata wrapper that lives on top of a regular Calcite view. It pairs the view's SELECT statement (<code>baseSql</code>) with business-meaning metadata — <strong>metrics</strong>, <strong>dimensions</strong>, <strong>descriptions</strong>, and <strong>synonyms</strong> — and persists everything in the master's MetadataStore so that REST clients, the Admin UI, and the MCP server all read from the same authoritative definition.</p>
-<p>The goal is to give LLM consumers a curated, IAM-aware "menu" of business measures <em>before</em> a query is built — what numbers exist, what they mean, and what they're called in plain language — without forcing every team to re-derive the same <code>SUM(amount * (1 - discount))</code> for the tenth time.</p>
-<p>This page describes Phase 1 of the implementation. See <a href="#scope-and-roadmap">Scope and roadmap</a> for what is intentionally deferred.</p>
-<h2 id="what-a-semantic-view-looks-like">What a semantic view looks like</h2>
-<p>A semantic view binds five pieces of information to one fully-qualified name (<code>catalog.schema.name</code>):</p>
+<p>Ontul's semantic layer turns a regular Calcite view into a curated business surface. The view's <code>baseSql</code> is paired with metric definitions, dimension annotations, multilingual synonyms, governance metadata, mandatory filters, and conformed-dimension joins. The engine then rewrites queries on the fly so callers — Tableau dashboards, LLM agents, SQL Runner — can write the names they already know (<code>revenue</code>, <code>profit_margin</code>, <code>customer.region</code>) and the planner expands them into the right aggregation, filter, and JOIN.</p>
+<p>The goal is one definition of truth per measure, enforced server-side, consumable through SQL / JDBC / Arrow Flight / MCP / REST without any of those clients duplicating the formula.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>LLM       ─┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Tableau   ─┼─►  Ontul semantic layer  ─►  Calcite planner  ─►  Iceberg / JDBC / NeorunBase ...
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>DBeaver   ─┘    (rewrite + RBAC +
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                 filter injection)
+</code></pre></div>
+<h2 id="what-a-semantic-view-binds">What a semantic view binds</h2>
 <table>
 <thead>
 <tr>
@@ -1919,7 +2155,7 @@
 <tbody>
 <tr>
 <td><code>baseSql</code></td>
-<td>The plain SELECT that the view exposes. Cross-catalog joins are allowed — federation is one of Ontul's strengths.</td>
+<td>The plain SELECT the view exposes. Cross-catalog joins are allowed — federation is one of Ontul's strengths.</td>
 </tr>
 <tr>
 <td><code>description</code></td>
@@ -1927,92 +2163,316 @@
 </tr>
 <tr>
 <td><code>metrics[]</code></td>
-<td>Aggregations defined against <code>baseSql</code>. Each has a <code>name</code>, an <code>expr</code> (the actual SQL fragment), a <code>description</code>, and a list of <code>synonyms</code>.</td>
+<td>Aggregations defined against <code>baseSql</code>. Each has a <code>name</code>, <code>expr</code> (the SQL fragment), <code>description</code>, <code>synonyms[]</code>, and optionally <code>allowedRoles[]</code> (metric-level RBAC) and <code>mandatoryFilters[]</code> (per-metric row scoping).</td>
 </tr>
 <tr>
 <td><code>dimensions[]</code></td>
-<td>"Slice-by" columns already present in <code>baseSql</code>'s result schema. Carries <code>name</code>, <code>description</code>, and <code>synonyms</code> — the column itself already exists, so the engine has nothing extra to do here.</td>
+<td>"Slice-by" columns from <code>baseSql</code>. Names + descriptions + synonyms feed BI / MCP / search.</td>
+</tr>
+<tr>
+<td><code>joins[]</code></td>
+<td>Conformed-dimension joins — declared once, auto-injected only when their columns are referenced.</td>
+</tr>
+<tr>
+<td><code>mandatoryFilters[]</code></td>
+<td>View-level row-scoping predicates with <code>${user.id}</code> / <code>${user.roles}</code> / <code>${user.attr.X}</code> templating.</td>
+</tr>
+<tr>
+<td><code>tags[]</code>, <code>status</code>, <code>certifiedBy</code>, <code>certifiedAt</code>, <code>owner</code></td>
+<td>Governance metadata surfaced through the Admin UI, MCP, and BI tools.</td>
+</tr>
+</tbody>
+</table>
+<p>The store keeps every definition verbatim. The engine takes responsibility for expansion at query time: <code>SELECT revenue, customer.region FROM tpch.tiny.lineitem_sales</code> becomes an aggregated, joined, filtered query that the validator and the workers actually execute.</p>
+<h2 id="what-the-engine-does-at-query-time">What the engine does at query time</h2>
+<p>When a SELECT references a semantic view, the rewriter runs <strong>before</strong> validation and applies these passes in order:</p>
+<ol>
+<li><strong>Scope discovery</strong> — every FROM-clause table is checked against the semantic catalog. Plain tables stay untouched; semantic views contribute their metric / dimension / join metadata to a per-query scope.</li>
+<li><strong><code>SELECT *</code> expansion</strong> — for a single in-scope semantic view, <code>*</code> is expanded to its explicit metric + dimension list. <code>&lt;alias&gt;.*</code> works the same way. Mixed <code>*</code> across a semantic view and a plain table is left alone (the validator handles the plain part).</li>
+<li><strong>Conformed-dimension join injection</strong> — any reference of the form <code>&lt;joinName&gt;.&lt;column&gt;</code> is matched against declared joins. Each used join becomes a <code>LEFT JOIN &lt;target&gt; AS &lt;joinName&gt; ON &lt;resolved-template&gt;</code> appended to FROM. Unused joins stay out of the plan.</li>
+<li><strong>Metric expansion</strong> — bare or qualified metric identifiers in the SELECT list and HAVING clause are replaced with their parsed <code>expr</code>, recursively (derived metrics expand fully, with cycle detection capped at 16 hops).</li>
+<li><strong>RBAC</strong> — any metric whose <code>allowedRoles</code> excludes the caller raises a denial before the expression is parsed, so the formula doesn't leak via error messages.</li>
+<li><strong>HAVING rewrite</strong> — metric references inside <code>HAVING revenue &gt; 100</code> get the same expansion as the SELECT list. <code>WHERE</code> is intentionally not touched (aggregations in WHERE are illegal anyway).</li>
+<li><strong>Mandatory filter injection</strong> — view-level and per-metric mandatory predicates are AND'd into the WHERE clause, with <code>${user.id}</code> / <code>${user.roles}</code> / <code>${user.attr.X}</code> substitution from the authenticated session. Anonymous (system) queries skip this step.</li>
+<li><strong>Auto <code>GROUP BY</code></strong> — when at least one metric was injected and the user didn't supply a GROUP BY, every non-metric expression in the SELECT list becomes a grouping key.</li>
+</ol>
+<p>The pass order matters: star expansion fires first so its identifiers go through normal metric resolution; join injection fires next so the FROM clause is final by the time auto-grouping inspects column references.</p>
+<h2 id="quick-walkthrough-define-and-query-a-view">Quick walkthrough: define and query a view</h2>
+<p>This is the minimum surface needed to register, see, and query a semantic view. The full Phase 3 capabilities — joins, derived metrics, mandatory filters, RBAC — are layered on top later in the page.</p>
+<h3 id="1-acquire-a-token">1. Acquire a token</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/admin/auth/login<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;Admin123!&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json; print(json.load(sys.stdin)[&#39;accessToken&#39;])&quot;</span><span class="k">)</span>
+</code></pre></div>
+<h3 id="2-register-the-built-in-tpc-h-catalog">2. Register the built-in TPC-H catalog</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/admin/catalogs<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;name&quot;:&quot;tpch&quot;,&quot;config&quot;:{&quot;connector&quot;:&quot;tpch&quot;,&quot;scale.factor&quot;:&quot;0.01&quot;}}&#39;</span>
+</code></pre></div>
+<h3 id="3-register-a-semantic-view">3. Register a semantic view</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="s1">      &quot;catalog&quot;: &quot;tpch&quot;, &quot;schema&quot;: &quot;tiny&quot;, &quot;name&quot;: &quot;lineitem_sales&quot;,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="s1">      &quot;description&quot;: &quot;Per-line sales facts for analytics.&quot;,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="s1">      &quot;baseSql&quot;: &quot;SELECT l_orderkey, l_extendedprice, l_discount, l_quantity, l_shipdate FROM tpch.tiny.lineitem&quot;,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="s1">      &quot;metrics&quot;: [</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="s1">        {</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="s1">          &quot;name&quot;: &quot;revenue&quot;,</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="s1">          &quot;expr&quot;: &quot;SUM(l_extendedprice * (1 - l_discount))&quot;,</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="s1">          &quot;description&quot;: &quot;Total net revenue&quot;,</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="s1">          &quot;synonyms&quot;: [&quot;매출&quot;, &quot;net_revenue&quot;, &quot;sales_amount&quot;]</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="s1">        },</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="s1">        {</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="s1">          &quot;name&quot;: &quot;units&quot;,</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="s1">          &quot;expr&quot;: &quot;SUM(l_quantity)&quot;,</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="s1">          &quot;description&quot;: &quot;Units shipped&quot;,</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="s1">          &quot;synonyms&quot;: [&quot;quantity&quot;, &quot;수량&quot;]</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="s1">        }</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="s1">      ],</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="s1">      &quot;dimensions&quot;: [</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="s1">        {&quot;name&quot;: &quot;l_shipdate&quot;, &quot;description&quot;: &quot;Ship date&quot;, &quot;synonyms&quot;: [&quot;ship_date&quot;, &quot;출하일&quot;]}</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="s1">      ]</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="s1">    }&#39;</span>
+</code></pre></div>
+<p>The response is <code>201 Created</code> with <code>{"status":"ok","fqn":"tpch.tiny.lineitem_sales"}</code>.</p>
+<h3 id="4-query-with-the-metrics-name-directly">4. Query with the metric's name directly</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">l_shipdate</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="s1">&#39;1995-01-01&#39;</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">;</span>
+</code></pre></div>
+<p>The planner expands <code>revenue</code> to <code>SUM(l_extendedprice * (1 - l_discount))</code>, adds <code>GROUP BY l_shipdate</code>, and returns one row per ship date. No client-side templating needed.</p>
+<h3 id="5-select-returns-the-curated-columns">5. <code>SELECT *</code> returns the curated columns</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span><span class="p">;</span>
+</code></pre></div>
+<p>Equivalent to <code>SELECT revenue, units, l_shipdate FROM tpch.tiny.lineitem_sales</code> — measures first, dimensions next, all aggregated and grouped automatically. The raw <code>baseSql</code> columns are not exposed; the semantic abstraction is the API.</p>
+<h3 id="6-find-the-metric-by-korean-synonym">6. Find the metric by Korean synonym</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span><span class="s2">&quot;http://localhost:8090/api/v1/semantic-metrics/search?q=%EB%A7%A4%EC%B6%9C&amp;limit=5&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">[</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="s2">&quot;tpch.tiny.lineitem_sales&quot;</span><span class="p">,</span><span class="nt">&quot;metricName&quot;</span><span class="p">:</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="nt">&quot;matchedOn&quot;</span><span class="p">:</span><span class="s2">&quot;synonym:매출&quot;</span><span class="p">}</span><span class="w"> </span><span class="p">]</span>
+</code></pre></div>
+<h2 id="query-rewriting-in-detail">Query rewriting in detail</h2>
+<h3 id="bare-metric-reference">Bare metric reference</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span><span class="p">;</span>
+</code></pre></div>
+<p>is rewritten to</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">,</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">       </span><span class="k">SUM</span><span class="p">(</span><span class="n">l_extendedprice</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">l_discount</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">;</span>
+</code></pre></div>
+<p>The output column keeps the user-typed name (<code>revenue</code>), so a downstream BI tool sees the column it expects.</p>
+<h3 id="qualified-metric-reference">Qualified metric reference</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">l_shipdate</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span><span class="w"> </span><span class="n">s</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">l_shipdate</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="s1">&#39;2024-01-01&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p>The qualifier <code>s</code> is preserved in the rewritten SQL. Multiple views in one query can disambiguate their metrics with their own aliases.</p>
+<h3 id="having-on-a-metric"><code>HAVING</code> on a metric</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">l_shipdate</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="k">HAVING</span><span class="w"> </span><span class="n">revenue</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1000000</span><span class="p">;</span>
+</code></pre></div>
+<p>becomes</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">,</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">       </span><span class="k">SUM</span><span class="p">(</span><span class="n">l_extendedprice</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">l_discount</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">l_shipdate</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">HAVING</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">l_extendedprice</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">l_discount</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1000000</span><span class="p">;</span>
+</code></pre></div>
+<p>Metric filters belong in <code>HAVING</code>; using them in <code>WHERE</code> is an aggregation-in-WHERE error from Calcite, which is the standard SQL behavior — the semantic layer doesn't try to be cleverer than the language.</p>
+<h3 id="user-supplied-alias-is-preserved">User-supplied alias is preserved</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">daily_total</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span><span class="p">;</span>
+</code></pre></div>
+<p>→ <code>... SUM(...) AS daily_total</code>. The user's alias wins over the metric's name.</p>
+<h3 id="mixed-metric-raw-column-reference">Mixed metric + raw column reference</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">c_nation</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span><span class="p">;</span>
+</code></pre></div>
+<p>Here <code>customer.c_nation</code> is a conformed-dimension reference (covered below). <code>c_nation</code> becomes a group-by column; <code>revenue</code> becomes the aggregated measure. The planner handles both in one pass.</p>
+<h2 id="phase-3-capabilities">Phase 3 capabilities</h2>
+<h3 id="mandatory-filters-with-user-context-templating">Mandatory filters with user-context templating</h3>
+<p>Mandatory filters are predicate templates AND'd into every query against the view. They support three substitution tokens:</p>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Resolves to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>${user.id}</code></td>
+<td>The authenticated caller's user id, single-quoted.</td>
+</tr>
+<tr>
+<td><code>${user.roles}</code></td>
+<td>Comma-separated quoted role list, suitable for <code>role IN (${user.roles})</code>.</td>
+</tr>
+<tr>
+<td><code>${user.attr.&lt;key&gt;}</code></td>
+<td>The named attribute from the IAM user record. Missing keys render as <code>''</code> — fail-closed.</td>
+</tr>
+</tbody>
+</table>
+<p>A multi-tenant view definition might look like</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">&quot;catalog&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;saas&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;schema&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;core&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;orders&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">&quot;baseSql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT order_id, tenant_id, total, status, ship_date FROM saas.core.raw_orders&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUM(total)&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">     </span><span class="nt">&quot;mandatoryFilters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;status = &#39;COMPLETED&#39;&quot;</span><span class="p">]}</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span><span class="nt">&quot;dimensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ship_date&quot;</span><span class="p">}],</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span><span class="nt">&quot;mandatoryFilters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">    </span><span class="s2">&quot;tenant_id = ${user.attr.tenant_id}&quot;</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="p">}</span>
+</code></pre></div>
+<p>For a caller whose IAM record has <code>attributes.tenant_id = 'acme-co'</code>, the query</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">ship_date</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">orders</span><span class="p">;</span>
+</code></pre></div>
+<p>becomes</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">ship_date</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">orders</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;acme-co&#39;</span><span class="w">      </span><span class="c1">-- view-level</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">   </span><span class="k">AND</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;COMPLETED&#39;</span><span class="w">        </span><span class="c1">-- per-metric, applied because revenue is referenced</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">ship_date</span><span class="p">;</span>
+</code></pre></div>
+<p>The per-metric filter only fires when <code>revenue</code> is part of the SELECT. A query that asks for <code>attempts</code> (a metric without the COMPLETED scope) wouldn't get the status filter — measures stay independent.</p>
+<p>Anonymous / system-internal contexts (no user id) skip the entire injection pass — internal admin queries are trusted to know what they read.</p>
+<h3 id="derived-metrics">Derived metrics</h3>
+<p>A metric expression may reference other metrics from the same view. The rewriter walks the parsed expression tree and recursively splices the referenced metric's own expansion, with cycle detection.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span><span class="w">        </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUM(amount)&quot;</span><span class="p">},</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cost&quot;</span><span class="p">,</span><span class="w">           </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUM(unit_cost * quantity)&quot;</span><span class="p">},</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;profit&quot;</span><span class="p">,</span><span class="w">         </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;revenue - cost&quot;</span><span class="p">},</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;profit_margin&quot;</span><span class="p">,</span><span class="w">  </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;(revenue - cost) / revenue&quot;</span><span class="p">}</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="p">]</span>
+</code></pre></div>
+<p>A query like</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">profit_margin</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">sales</span><span class="p">;</span>
+</code></pre></div>
+<p>expands to</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">       </span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">unit_cost</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">quantity</span><span class="p">))</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">         </span><span class="o">/</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">profit_margin</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">sales</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">region</span><span class="p">;</span>
+</code></pre></div>
+<p>Cycles (<code>a → b → a</code>) raise a <code>DerivedMetricCycleException</code> with the chain so the operator can see exactly which metrics loop. Recursion is capped at depth 16 as a belt-and-braces safeguard.</p>
+<h3 id="conformed-dimension-joins">Conformed-dimension joins</h3>
+<p>A <code>joins[]</code> entry declares "if a query references columns prefixed by <code>&lt;name&gt;</code>, auto-add this JOIN":</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="p">{</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="nt">&quot;catalog&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tpch&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;schema&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tiny&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;lineitem_sales&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span><span class="nt">&quot;baseSql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT l_orderkey, l_partkey, l_custkey, l_extendedprice, l_discount, l_shipdate FROM tpch.tiny.lineitem&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">  </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUM(l_extendedprice * (1 - l_discount))&quot;</span><span class="p">}</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="w">  </span><span class="nt">&quot;dimensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;l_shipdate&quot;</span><span class="p">}],</span>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="w">  </span><span class="nt">&quot;joins&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;customer&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="w">      </span><span class="nt">&quot;target&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tpch.tiny.customer&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="w">      </span><span class="nt">&quot;onTemplate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${this}.l_custkey = ${customer}.c_custkey&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;LEFT&quot;</span>
+<a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a><span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;part&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a><span class="w">      </span><span class="nt">&quot;target&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tpch.tiny.part&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a><span class="w">      </span><span class="nt">&quot;onTemplate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${this}.l_partkey = ${part}.p_partkey&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-19" name="__codelineno-21-19" href="#__codelineno-21-19"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;LEFT&quot;</span>
+<a id="__codelineno-21-20" name="__codelineno-21-20" href="#__codelineno-21-20"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-21-21" name="__codelineno-21-21" href="#__codelineno-21-21"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-21-22" name="__codelineno-21-22" href="#__codelineno-21-22"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>${this}</code> resolves to the source view's alias (the alias the caller wrote in FROM, or the bare view name if unaliased), and <code>${customer}</code> / <code>${part}</code> resolve to the join's local name. The templating means the same declaration works whether the caller writes <code>FROM lineitem_sales</code> or <code>FROM tpch.tiny.lineitem_sales AS ls</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">c_nation</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">p_brand</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span><span class="p">;</span>
+</code></pre></div>
+<p>becomes (LEFT JOINs added in declaration order, only for joins actually referenced)</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">c_nation</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">p_brand</span><span class="p">,</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">       </span><span class="k">SUM</span><span class="p">(</span><span class="n">l_extendedprice</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">l_discount</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="n">customer</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">lineitem_sales</span><span class="p">.</span><span class="n">l_custkey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">c_custkey</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">  </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">part</span><span class="w"> </span><span class="n">part</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">lineitem_sales</span><span class="p">.</span><span class="n">l_partkey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">p_partkey</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">c_nation</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">p_brand</span><span class="p">;</span>
+</code></pre></div>
+<p>Joins that aren't referenced never get added — declaring ten possible joins doesn't cost ten table scans if the user only touches one. <code>LEFT</code> is the default; <code>INNER</code> is available when you want fact rows dropped on dimension misses.</p>
+<h3 id="metric-level-rbac">Metric-level RBAC</h3>
+<p>Each metric carries an optional <code>allowedRoles[]</code> set. Empty (the default) means the metric is visible to every authenticated user. Non-empty means the caller's group set must intersect.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span><span class="w">      </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUM(amount)&quot;</span><span class="p">},</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;vip_revenue&quot;</span><span class="p">,</span><span class="w">  </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUM(amount) FILTER (WHERE tier=&#39;VIP&#39;)&quot;</span><span class="p">,</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">   </span><span class="nt">&quot;allowedRoles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;analyst&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;finance&quot;</span><span class="p">]}</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="p">]</span>
+</code></pre></div>
+<p>A user in the <code>viewer</code> group running <code>SELECT vip_revenue FROM ...</code> is denied before the formula is parsed, so the error message never leaks <code>tier='VIP'</code> to an unauthorized user. RBAC is also applied to <code>SELECT *</code> expansions — a user without access to <code>vip_revenue</code> triggers the denial even when they didn't type the metric name explicitly.</p>
+<p>System-internal queries (no authenticated user — the planner's anonymous context) bypass RBAC. This is the intentional escape hatch for internal admin work that legitimately bypasses IAM.</p>
+<h3 id="governance-metadata">Governance metadata</h3>
+<p>Each semantic view carries lifecycle, ownership, and labeling fields used by the Admin UI, MCP, and BI tools to surface trust signals.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>status</code></td>
+<td><code>DRAFT</code> (default) / <code>CERTIFIED</code> / <code>DEPRECATED</code>. BI clients can filter by this; LLMs should prefer CERTIFIED.</td>
+</tr>
+<tr>
+<td><code>certifiedBy</code></td>
+<td>User id stamped when a view is certified via <code>POST /certify</code>.</td>
+</tr>
+<tr>
+<td><code>certifiedAt</code></td>
+<td>Epoch-ms instant of certification.</td>
 </tr>
 <tr>
 <td><code>owner</code></td>
-<td>Who registered it. Stamped from the IAM identity on the POST.</td>
+<td>User id that registered the view; auto-stamped on POST.</td>
+</tr>
+<tr>
+<td><code>tags[]</code></td>
+<td>Free-form labels — <code>["finance", "gold-tier", "pii"]</code>. Used by UI filtering.</td>
 </tr>
 </tbody>
 </table>
-<p>The store keeps the definitions verbatim. The engine does <strong>not</strong> rewrite <code>SELECT revenue FROM lineitem_sales</code> into <code>SELECT SUM(l_extendedprice * (1 - l_discount)) FROM …</code> at query time. LLM consumers receive the metric expressions through the MCP tools and generate already-expanded SQL themselves. This trade-off keeps Phase 1 dependency-free of Calcite RelOpt rules; full server-side metric rewriting is a Phase 2 concern.</p>
-<h2 id="how-its-stored-and-synced">How it's stored and synced</h2>
-<table>
-<thead>
-<tr>
-<th>Concern</th>
-<th>Implementation</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Persistence</td>
-<td>RocksDB-backed <code>MetadataStore</code> with key prefix <code>semantic:</code>. The same store that holds catalog configs and dynamic settings.</td>
-</tr>
-<tr>
-<td>Master replication</td>
-<td>Rides the standard <code>exportSnapshot</code> / <code>importSnapshot</code> path — every <code>semantic:*</code> key syncs to follower masters with the rest of the cluster metadata.</td>
-</tr>
-<tr>
-<td>Calcite view registration</td>
-<td>On POST, the master auto-registers an in-memory <code>OntulViewTable</code> so <code>SELECT * FROM &lt;fqn&gt;</code> plans immediately. On every catalog reload (including follower <code>METADATA_SYNC_PUSH</code>), <code>MasterServer.reregisterSemanticViews()</code> re-walks the store and puts each view back into Calcite — necessary because catalog reload rebuilds the registry from connectors, and semantic views aren't connector-derived.</td>
-</tr>
-<tr>
-<td>Rolling-upgrade safety</td>
-<td><code>SemanticViewDef</code> and its nested <code>Metric</code> / <code>Dimension</code> records are annotated <code>@JsonIgnoreProperties(ignoreUnknown=true)</code>, so a future field addition stays readable by older masters.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="rest-api">REST API</h2>
-<p>Admin HTTP server on the master exposes five endpoints, all returning JSON. Reads (GET) succeed for any authenticated user whose IAM token allows <code>data:SelectTable</code> on the view's FQN. Writes (POST / DELETE) require an administrator.</p>
-<table>
-<thead>
-<tr>
-<th>Method</th>
-<th>Path</th>
-<th>Body</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>POST</code></td>
-<td><code>/api/v1/semantic-views</code></td>
-<td><code>SemanticViewDef</code> JSON</td>
-<td>Register a new semantic view. Parses <code>baseSql</code> and every metric expression to catch malformed SQL up-front (returns 400 with the parser's message); does <strong>not</strong> plan, so a reference to a not-yet-existing table doesn't block registration. On success, auto-registers the underlying Calcite view and notifies workers.</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/api/v1/semantic-views</code></td>
-<td>—</td>
-<td>List every visible semantic view. Optional <code>?catalog=…&amp;schema=…</code> filter. IAM-filtered: entries the caller cannot SELECT are hidden.</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/api/v1/semantic-views/{catalog}.{schema}.{name}</code></td>
-<td>—</td>
-<td>Fetch one definition. 404 if it doesn't exist, 403 if IAM denies SELECT on the FQN.</td>
-</tr>
-<tr>
-<td><code>DELETE</code></td>
-<td><code>/api/v1/semantic-views/{catalog}.{schema}.{name}</code></td>
-<td>—</td>
-<td>Remove the definition. (Calcite has no remove-view API, so the in-memory <code>ViewTable</code> lingers until the next catalog refresh; the metadata that callers actually consume is gone immediately.)</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/api/v1/semantic-metrics/search</code></td>
-<td><code>?q=&lt;query&gt;&amp;limit=&lt;n&gt;</code></td>
-<td>Natural-language metric search. Matches against metric names, synonyms, and descriptions across every semantic view the caller can see. Returns ranked hits with <code>fqn</code>, <code>metricName</code>, <code>score</code>, and <code>matchedOn</code>.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="search-ranking">Search ranking</h3>
-<p>The Phase 1 matcher is intentionally simple. Scoring:</p>
+<p>Two endpoints manage governance independently of schema changes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Patch tags / status / description in one call</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>PATCH<span class="w"> </span>http://localhost:8090/api/v1/semantic-views/tpch.tiny.lineitem_sales<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;tags&quot;:[&quot;finance&quot;,&quot;gold-tier&quot;],&quot;status&quot;:&quot;DRAFT&quot;}&#39;</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="c1"># Stamp certification audit</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views/tpch.tiny.lineitem_sales/certify<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+</code></pre></div>
+<p>The <code>/certify</code> endpoint is separate from the generic PATCH so audit trails treat certification as a distinct event — the caller's id becomes <code>certifiedBy</code>, not a free-text field.</p>
+<h3 id="lineage-integration">Lineage integration</h3>
+<p>When a semantic view is registered, the master synthesizes <code>SELECT &lt;every metric expr&gt;, &lt;every dim&gt; FROM (baseSql) t</code>, plans it, and feeds the result through both:</p>
+<ul>
+<li><strong>Table-level lineage</strong> — every SCAN node's source table is recorded against the view's FQN (<code>semantic-view</code> operation type).</li>
+<li><strong>Column-level lineage</strong> — each metric / dimension output column is traced back to its <code>(table, column)</code> origin via Calcite's column-origin metadata, with <code>derived=true</code> flagged when the value passes through an expression.</li>
+</ul>
+<p>So <code>/admin/lineage/columns?table=tpch.tiny.lineitem_sales&amp;column=revenue</code> returns the underlying <code>l_extendedprice</code> and <code>l_discount</code> columns. The same OpenLineage emission path that handles CTAS / INSERT INTO covers semantic views — no extra integration needed for downstream catalogs like DataHub or OpenMetadata.</p>
+<h2 id="discovery-synonyms-search-mcp">Discovery: synonyms, search, MCP</h2>
+<p>The same metric is often called different things — "revenue" / "net revenue" / "매출" / "sales_amount" — and BI users / LLM agents need to find it by whatever name they thought of.</p>
+<p>The Phase 1 ranker is intentionally simple, fast, and dependency-free:</p>
 <table>
 <thead>
 <tr>
@@ -2039,36 +2499,123 @@
 </tr>
 </tbody>
 </table>
-<p>Smarter ranking (TF-IDF, embedding) is deferred until Phase 1 usage data tells us what queries users actually issue.</p>
-<h2 id="mcp-tools">MCP tools</h2>
-<p>The Ontul MCP server registers three semantic-layer tools alongside its existing read-side wrappers (<code>ontul_query</code>, <code>ontul_list_catalogs</code>, etc.):</p>
+<p>The same ranker powers <code>GET /api/v1/semantic-metrics/search</code> and the MCP <code>ontul_search_metrics</code> tool. Results are IAM-filtered server-side — entries the caller can't SELECT never appear in search results.</p>
+<h3 id="mcp-discovery-flow">MCP discovery flow</h3>
+<p>When an LLM agent receives <em>"show me revenue by ship date"</em>:</p>
+<ol>
+<li><code>ontul_search_metrics({"query":"revenue"})</code> → <code>[{fqn:"tpch.tiny.lineitem_sales", metricName:"revenue", score:100, matchedOn:"synonym:매출"}]</code></li>
+<li><code>ontul_describe_semantic_view({"fqn":"tpch.tiny.lineitem_sales"})</code> → full definition including <code>expr</code>, dimensions, status, certifiedBy, joins, mandatoryFilters.</li>
+<li><code>ontul_query({"sql":"SELECT l_shipdate, revenue FROM tpch.tiny.lineitem_sales"})</code> → the rewriter expands the metric and adds GROUP BY. The agent never has to re-derive the formula.</li>
+</ol>
+<p>See <a href="../../reference/mcp-server/">MCP Server</a> for full tool surface, env vars, and BI tool integration via Flight SQL is covered in <a href="../bi-integration/">BI Integration</a>.</p>
+<h2 id="bi-tool-exposure">BI tool exposure</h2>
+<p>A semantic view appears to JDBC / ODBC introspection as if it were a regular VIEW whose columns are the metrics and dimensions. Tableau, Power BI, Looker, DBeaver, JetBrains DataGrip can browse and query without ever seeing the underlying <code>baseSql</code> schema.</p>
+<p><code>DESCRIBE tpch.tiny.lineitem_sales</code> returns the logical column list with a <code>Kind</code> discriminator:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>| Column     | Type      | Nullable | Kind     |
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>|------------|-----------|----------|----------|
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>| revenue    | AGGREGATE | YES      | MEASURE  |
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>| units      | AGGREGATE | YES      | MEASURE  |
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>| l_shipdate | DIMENSION | YES      | DIMENSION|
+</code></pre></div>
+<p>Flight SQL <code>CommandGetTables</code> marks the view as <code>VIEW</code> type (vs. <code>TABLE</code> for plain Iceberg / JDBC / NeorunBase tables) so BI tools render the correct icon and pull the column list from the semantic surface.</p>
+<p>See <a href="../bi-integration/">BI Integration</a> for end-to-end Tableau / DBeaver / Power BI setup.</p>
+<h2 id="end-to-end-example-tenant-scoped-sales-dashboard">End-to-end example: tenant-scoped sales dashboard</h2>
+<p>A more realistic Phase-3 view that exercises mandatory filters, derived metrics, conformed dimensions, and governance simultaneously.</p>
+<h3 id="define-the-view">Define the view</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="s1">      &quot;catalog&quot;: &quot;saas&quot;, &quot;schema&quot;: &quot;core&quot;, &quot;name&quot;: &quot;sales&quot;,</span>
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="s1">      &quot;description&quot;: &quot;Per-tenant sales facts — multi-tenant row-scoping enforced.&quot;,</span>
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="s1">      &quot;baseSql&quot;: &quot;SELECT order_id, tenant_id, customer_id, part_id, amount, unit_cost, quantity, status, ship_date FROM saas.core.raw_orders&quot;,</span>
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a><span class="s1">      &quot;metrics&quot;: [</span>
+<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a><span class="s1">        {&quot;name&quot;:&quot;revenue&quot;, &quot;expr&quot;:&quot;SUM(amount)&quot;,</span>
+<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a><span class="s1">         &quot;description&quot;:&quot;Total net revenue&quot;,</span>
+<a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a><span class="s1">         &quot;synonyms&quot;:[&quot;매출&quot;,&quot;net_revenue&quot;],</span>
+<a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a><span class="s1">         &quot;mandatoryFilters&quot;:[&quot;status = &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;COMPLETED&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;&quot;]</span>
+<a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a><span class="s1">        },</span>
+<a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a><span class="s1">        {&quot;name&quot;:&quot;cost&quot;,    &quot;expr&quot;:&quot;SUM(unit_cost * quantity)&quot;,</span>
+<a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a><span class="s1">         &quot;description&quot;:&quot;Total cost&quot;},</span>
+<a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a><span class="s1">        {&quot;name&quot;:&quot;profit&quot;,         &quot;expr&quot;:&quot;revenue - cost&quot;,</span>
+<a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a><span class="s1">         &quot;description&quot;:&quot;Net profit (derived)&quot;},</span>
+<a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a><span class="s1">        {&quot;name&quot;:&quot;profit_margin&quot;,  &quot;expr&quot;:&quot;(revenue - cost) / revenue&quot;,</span>
+<a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a><span class="s1">         &quot;description&quot;:&quot;Profit / revenue ratio&quot;},</span>
+<a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a><span class="s1">        {&quot;name&quot;:&quot;vip_revenue&quot;,    &quot;expr&quot;:&quot;SUM(amount) FILTER (WHERE status = &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;VIP&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;)&quot;,</span>
+<a id="__codelineno-27-21" name="__codelineno-27-21" href="#__codelineno-27-21"></a><span class="s1">         &quot;description&quot;:&quot;Revenue from VIP segment&quot;,</span>
+<a id="__codelineno-27-22" name="__codelineno-27-22" href="#__codelineno-27-22"></a><span class="s1">         &quot;allowedRoles&quot;:[&quot;finance&quot;,&quot;analyst&quot;]</span>
+<a id="__codelineno-27-23" name="__codelineno-27-23" href="#__codelineno-27-23"></a><span class="s1">        }</span>
+<a id="__codelineno-27-24" name="__codelineno-27-24" href="#__codelineno-27-24"></a><span class="s1">      ],</span>
+<a id="__codelineno-27-25" name="__codelineno-27-25" href="#__codelineno-27-25"></a><span class="s1">      &quot;dimensions&quot;:[</span>
+<a id="__codelineno-27-26" name="__codelineno-27-26" href="#__codelineno-27-26"></a><span class="s1">        {&quot;name&quot;:&quot;ship_date&quot;,&quot;synonyms&quot;:[&quot;출하일&quot;]}</span>
+<a id="__codelineno-27-27" name="__codelineno-27-27" href="#__codelineno-27-27"></a><span class="s1">      ],</span>
+<a id="__codelineno-27-28" name="__codelineno-27-28" href="#__codelineno-27-28"></a><span class="s1">      &quot;joins&quot;:[</span>
+<a id="__codelineno-27-29" name="__codelineno-27-29" href="#__codelineno-27-29"></a><span class="s1">        {&quot;name&quot;:&quot;customer&quot;,&quot;target&quot;:&quot;saas.core.customer&quot;,</span>
+<a id="__codelineno-27-30" name="__codelineno-27-30" href="#__codelineno-27-30"></a><span class="s1">         &quot;onTemplate&quot;:&quot;${this}.customer_id = ${customer}.id&quot;,&quot;type&quot;:&quot;LEFT&quot;},</span>
+<a id="__codelineno-27-31" name="__codelineno-27-31" href="#__codelineno-27-31"></a><span class="s1">        {&quot;name&quot;:&quot;part&quot;,&quot;target&quot;:&quot;saas.core.part&quot;,</span>
+<a id="__codelineno-27-32" name="__codelineno-27-32" href="#__codelineno-27-32"></a><span class="s1">         &quot;onTemplate&quot;:&quot;${this}.part_id = ${part}.id&quot;,&quot;type&quot;:&quot;LEFT&quot;}</span>
+<a id="__codelineno-27-33" name="__codelineno-27-33" href="#__codelineno-27-33"></a><span class="s1">      ],</span>
+<a id="__codelineno-27-34" name="__codelineno-27-34" href="#__codelineno-27-34"></a><span class="s1">      &quot;mandatoryFilters&quot;:[&quot;tenant_id = ${user.attr.tenant_id}&quot;],</span>
+<a id="__codelineno-27-35" name="__codelineno-27-35" href="#__codelineno-27-35"></a><span class="s1">      &quot;tags&quot;:[&quot;finance&quot;,&quot;gold-tier&quot;]</span>
+<a id="__codelineno-27-36" name="__codelineno-27-36" href="#__codelineno-27-36"></a><span class="s1">    }&#39;</span>
+</code></pre></div>
+<h3 id="certify-it-for-production-use">Certify it for production use</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views/saas.core.sales/certify<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="c1"># → status: CERTIFIED, certifiedBy: admin, certifiedAt: 1779999999999</span>
+</code></pre></div>
+<h3 id="one-query-touches-every-phase-3-feature">One query touches every Phase-3 feature</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">profit_margin</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">sales</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ship_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="s1">&#39;2024-01-01&#39;</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">profit_margin</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
+<p>For caller <code>alice</code> whose IAM record has <code>attributes.tenant_id = 'acme-co'</code> and groups <code>[analyst]</code>, the rewriter produces</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">       </span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">unit_cost</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">quantity</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">profit_margin</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">sales</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">  </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="n">customer</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="w">  </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">part</span><span class="w">     </span><span class="n">part</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">part_id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ship_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="s1">&#39;2024-01-01&#39;</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a><span class="w">   </span><span class="k">AND</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;acme-co&#39;</span><span class="w">        </span><span class="c1">-- view-level mandatory filter</span>
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="w">   </span><span class="k">AND</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;COMPLETED&#39;</span><span class="w">          </span><span class="c1">-- per-metric filter (revenue is part of profit_margin)</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">category</span>
+<a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">profit_margin</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
+<p>If alice asks for <code>vip_revenue</code> she gets a result; the same query from a user in only the <code>viewer</code> group is denied at rewrite time with a <code>Forbidden: vip_revenue</code> error.</p>
+<h2 id="storage-and-replication">Storage and replication</h2>
 <table>
 <thead>
 <tr>
-<th>Tool</th>
-<th>Arguments</th>
-<th>Purpose</th>
+<th>Concern</th>
+<th>Implementation</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>ontul_list_semantic_views</code></td>
-<td><code>catalog?</code>, <code>schema?</code></td>
-<td>List every semantic view the caller can see. The LLM uses this to discover what curated business definitions exist before generating SQL.</td>
+<td>Persistence</td>
+<td>RocksDB-backed <code>MetadataStore</code> with key prefix <code>semantic:</code>. Same store as catalog configs and dynamic settings.</td>
 </tr>
 <tr>
-<td><code>ontul_describe_semantic_view</code></td>
-<td><code>fqn</code> (required)</td>
-<td>Return the full definition — <code>baseSql</code>, metric expressions, dimensions, synonyms, description. The LLM reads this to learn how to expand a metric reference inline.</td>
+<td>Master replication</td>
+<td>Rides standard <code>exportSnapshot</code> / <code>importSnapshot</code> — every <code>semantic:*</code> key syncs to follower masters with the rest of the cluster metadata.</td>
 </tr>
 <tr>
-<td><code>ontul_search_metrics</code></td>
-<td><code>query</code> (required), <code>limit?</code></td>
-<td>Natural-language metric finder. Useful when the user asks "show me revenue" — the LLM calls this to locate the right <code>fqn</code> + <code>metricName</code> first, then follows up with <code>ontul_describe_semantic_view</code> to grab the expression.</td>
+<td>Calcite view registration</td>
+<td>On POST, the master auto-registers an in-memory view. On catalog reload, <code>MasterServer.reregisterSemanticViews()</code> re-walks the store and puts each view back.</td>
+</tr>
+<tr>
+<td>Hot-path lookup</td>
+<td>The <code>SemanticViewStore</code> fronts RocksDB with an in-memory cache; a query that touches N tables pays one disk read per FQN, not N.</td>
+</tr>
+<tr>
+<td>Rolling-upgrade safety</td>
+<td><code>SemanticViewDef</code> and its nested records are <code>@JsonIgnoreProperties(ignoreUnknown=true)</code>; older masters silently ignore newer fields.</td>
 </tr>
 </tbody>
 </table>
-<p>These tools talk to the master's admin HTTP port over REST, not Flight SQL. The same <code>ONTUL_USER_TOKEN</code> that authenticates Flight is accepted as a <code>Token &lt;token&gt;</code> Authorization header, so no separate JWT is needed. The admin URL can be overridden with <code>ONTUL_ADMIN_URL</code> (default <code>http://${ONTUL_HOST}:8080</code>).</p>
 <h2 id="authentication-and-iam">Authentication and IAM</h2>
 <table>
 <thead>
@@ -2080,124 +2627,27 @@
 <tbody>
 <tr>
 <td><code>GET</code> list / get / search</td>
-<td>Authenticated user whose IAM policies grant <code>data:SelectTable</code> on the view's FQN. Entries the caller can't SELECT are filtered out of list and search results (not returned as 403 — invisible).</td>
+<td>Authenticated user whose IAM policies grant <code>data:SelectTable</code> on the view's FQN. Entries the caller can't SELECT are filtered out (invisible, not 403).</td>
 </tr>
 <tr>
-<td><code>POST</code> register</td>
-<td>Caller must be in the administrator group (<code>AuthManager.hasAdministratorAccess</code>). Phase 2 will introduce a finer-grained <code>semantic:Register</code> action so per-catalog ownership becomes possible.</td>
+<td><code>POST</code> register, <code>PATCH</code> governance, <code>DELETE</code></td>
+<td>Administrator group membership (<code>AuthManager.hasAdministratorAccess</code>).</td>
 </tr>
 <tr>
-<td><code>DELETE</code></td>
-<td>Same as POST.</td>
+<td><code>POST /certify</code></td>
+<td>Administrator. The caller's id becomes <code>certifiedBy</code>.</td>
+</tr>
+<tr>
+<td>Per-metric <code>allowedRoles</code></td>
+<td>Enforced by the rewriter against the planner's <code>SemanticContext</code>. The denial fires before parsing the metric expression.</td>
+</tr>
+<tr>
+<td>Mandatory filter templating</td>
+<td>The caller's <code>userId</code> / <code>groups</code> / <code>attributes</code> come from <code>AuthManager.getUser(...)</code> and are substituted into the WHERE clause server-side.</td>
 </tr>
 </tbody>
 </table>
-<p>The MCP server inherits IAM from the user token it's launched with. The MCP layer adds no extra access control — the master enforces every filter server-side.</p>
-<h2 id="example-register-and-query-a-sales-view">Example: register and query a sales view</h2>
-<p>The walkthrough below assumes a default local cluster (admin REST on <code>http://localhost:8090</code>, default admin password rotated to <code>Admin123!</code>) and the built-in TPC-H connector — no external storage is needed. The exact same flow is exercised by <code>tests/e2e-semantic-views.sh</code> in the Ontul source tree.</p>
-<h3 id="1-acquire-a-jwt">1. Acquire a JWT</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/admin/auth/login<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;Admin123!&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json; print(json.load(sys.stdin)[&#39;accessToken&#39;])&quot;</span><span class="k">)</span>
-</code></pre></div>
-<h3 id="2-register-the-built-in-tpc-h-catalog">2. Register the built-in TPC-H catalog</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/admin/catalogs<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="s1">      &quot;name&quot;: &quot;tpch&quot;,</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="s1">      &quot;config&quot;: {&quot;connector&quot;: &quot;tpch&quot;, &quot;scale.factor&quot;: &quot;0.01&quot;}</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="s1">    }&#39;</span>
-</code></pre></div>
-<h3 id="3-register-a-semantic-view-over-tpchtinylineitem">3. Register a semantic view over <code>tpch.tiny.lineitem</code></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="s1">      &quot;catalog&quot;: &quot;tpch&quot;,</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="s1">      &quot;schema&quot;:  &quot;tiny&quot;,</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="s1">      &quot;name&quot;:    &quot;lineitem_sales&quot;,</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="s1">      &quot;description&quot;: &quot;Per-line sales facts for analytics.&quot;,</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="s1">      &quot;baseSql&quot;: &quot;SELECT l_orderkey, l_extendedprice, l_discount, l_quantity, l_shipdate FROM tpch.tiny.lineitem&quot;,</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="s1">      &quot;metrics&quot;: [</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="s1">        {</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="s1">          &quot;name&quot;: &quot;revenue&quot;,</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="s1">          &quot;expr&quot;: &quot;SUM(l_extendedprice * (1 - l_discount))&quot;,</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="s1">          &quot;description&quot;: &quot;Total net revenue&quot;,</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="s1">          &quot;synonyms&quot;: [&quot;매출&quot;, &quot;net_revenue&quot;, &quot;sales_amount&quot;]</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="s1">        },</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="s1">        {</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="s1">          &quot;name&quot;: &quot;units&quot;,</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="s1">          &quot;expr&quot;: &quot;SUM(l_quantity)&quot;,</span>
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="s1">          &quot;description&quot;: &quot;Units shipped&quot;,</span>
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="s1">          &quot;synonyms&quot;: [&quot;quantity&quot;, &quot;수량&quot;]</span>
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="s1">        }</span>
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="s1">      ],</span>
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="s1">      &quot;dimensions&quot;: [</span>
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="s1">        {&quot;name&quot;: &quot;l_shipdate&quot;, &quot;description&quot;: &quot;Ship date&quot;, &quot;synonyms&quot;: [&quot;ship_date&quot;, &quot;출하일&quot;]}</span>
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="s1">      ]</span>
-<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="s1">    }&#39;</span>
-</code></pre></div>
-<p>The response is <code>201 Created</code> with <code>{"status":"ok","fqn":"tpch.tiny.lineitem_sales"}</code>.</p>
-<h3 id="4-fetch-it-back">4. Fetch it back</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span><span class="s2">&quot;http://localhost:8090/api/v1/semantic-views/tpch.tiny.lineitem_sales&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;catalog&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tpch&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;schema&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;tiny&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;lineitem_sales&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w">     </span><span class="s2">&quot;tpch.tiny.lineitem_sales&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">&quot;baseSql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT l_orderkey, l_extendedprice, l_discount, l_quantity, l_shipdate FROM tpch.tiny.lineitem&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Per-line sales facts for analytics.&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="s2">&quot;SUM(l_extendedprice * (1 - l_discount))&quot;</span><span class="p">,</span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="s2">&quot;Total net revenue&quot;</span><span class="p">,</span><span class="nt">&quot;synonyms&quot;</span><span class="p">:[</span><span class="s2">&quot;매출&quot;</span><span class="p">,</span><span class="s2">&quot;net_revenue&quot;</span><span class="p">,</span><span class="s2">&quot;sales_amount&quot;</span><span class="p">]},</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;units&quot;</span><span class="p">,</span><span class="w">  </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="s2">&quot;SUM(l_quantity)&quot;</span><span class="p">,</span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="s2">&quot;Units shipped&quot;</span><span class="p">,</span><span class="nt">&quot;synonyms&quot;</span><span class="p">:[</span><span class="s2">&quot;quantity&quot;</span><span class="p">,</span><span class="s2">&quot;수량&quot;</span><span class="p">]}</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="p">],</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span><span class="nt">&quot;dimensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;l_shipdate&quot;</span><span class="p">,</span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="s2">&quot;Ship date&quot;</span><span class="p">,</span><span class="nt">&quot;synonyms&quot;</span><span class="p">:[</span><span class="s2">&quot;ship_date&quot;</span><span class="p">,</span><span class="s2">&quot;출하일&quot;</span><span class="p">]}</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">  </span><span class="p">],</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">  </span><span class="nt">&quot;createdAt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1779880934424</span><span class="p">,</span>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span><span class="nt">&quot;updatedAt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1779880934424</span><span class="p">,</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">  </span><span class="nt">&quot;owner&quot;</span><span class="p">:</span><span class="w">     </span><span class="s2">&quot;admin&quot;</span>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="p">}</span>
-</code></pre></div>
-<h3 id="5-find-a-metric-by-korean-synonym">5. Find a metric by Korean synonym</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span><span class="s2">&quot;http://localhost:8090/api/v1/semantic-metrics/search?q=%EB%A7%A4%EC%B6%9C&amp;limit=5&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">[</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="p">{</span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="s2">&quot;tpch.tiny.lineitem_sales&quot;</span><span class="p">,</span><span class="nt">&quot;metricName&quot;</span><span class="p">:</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="nt">&quot;matchedOn&quot;</span><span class="p">:</span><span class="s2">&quot;synonym:매출&quot;</span><span class="p">}</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="p">]</span>
-</code></pre></div>
-<p>A substring lookup (<code>q=net_rev</code>) returns the same metric with <code>score: 80, matchedOn: "synonym:net_revenue"</code>.</p>
-<h3 id="6-query-the-auto-registered-view">6. Query the auto-registered view</h3>
-<p>The POST in step 3 already added an in-memory <code>OntulViewTable</code> for <code>tpch.tiny.lineitem_sales</code>. SELECT works immediately:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/admin/query/execute<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;sql&quot;:&quot;SELECT COUNT(*) AS c FROM tpch.tiny.lineitem_sales&quot;}&#39;</span>
-</code></pre></div>
-<p>To consume the metric, the caller inlines its <code>expr</code>. An LLM that just read the description via MCP would generate:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">,</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">       </span><span class="k">SUM</span><span class="p">(</span><span class="n">l_extendedprice</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">l_discount</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">l_shipdate</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">;</span>
-</code></pre></div>
-<h3 id="7-delete">7. Delete</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>http://localhost:8090/api/v1/semantic-views/tpch.tiny.lineitem_sales<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
-</code></pre></div>
-<h2 id="example-mcp-discovery-flow">Example: MCP discovery flow</h2>
-<p>When an LLM connected to Ontul MCP receives a user request like <em>"show me revenue by ship date"</em>:</p>
-<ol>
-<li><strong>Locate the metric.</strong> The LLM calls <code>ontul_search_metrics({"query":"revenue"})</code>. The server returns the ranked hit <code>{fqn:"tpch.tiny.lineitem_sales", metricName:"revenue", score:80, matchedOn:"synonym:net_revenue"}</code>.</li>
-<li><strong>Read the definition.</strong> The LLM calls <code>ontul_describe_semantic_view({"fqn":"tpch.tiny.lineitem_sales"})</code>. Response includes the <code>expr: "SUM(l_extendedprice * (1 - l_discount))"</code> and the available dimensions (<code>l_shipdate</code>).</li>
-<li><strong>Generate expanded SQL.</strong> Using the description, the LLM produces the GROUP BY query shown above and calls <code>ontul_query</code>. Standard IAM, lineage, and result formatting apply.</li>
-</ol>
-<p>The point of steps 1 and 2 is that the LLM never sees a raw connector table without the curated business context — what columns mean, what aggregations have already been agreed on, and what the same measure is called in different languages.</p>
+<p>The MCP server inherits IAM from the user token it's launched with — no extra access control layer at the MCP boundary.</p>
 <h2 id="validation-behavior">Validation behavior</h2>
 <table>
 <thead>
@@ -2229,42 +2679,62 @@
 <td>—</td>
 </tr>
 <tr>
-<td>Calcite view registration throws</td>
+<td>Invalid <code>status</code> on PATCH</td>
+<td>400</td>
+<td>Must be <code>DRAFT</code> / <code>CERTIFIED</code> / <code>DEPRECATED</code>.</td>
+</tr>
+<tr>
+<td>Derived-metric cycle at query time</td>
+<td>runtime error</td>
+<td><code>DerivedMetricCycleException</code> carries the chain.</td>
+</tr>
+<tr>
+<td>RBAC denial at query time</td>
+<td>runtime error</td>
+<td><code>MetricAccessDeniedException</code> — metric name only, no expression.</td>
+</tr>
+<tr>
+<td>Calcite view registration throws on POST</td>
 <td>logged warning, <strong>registration still succeeds</strong></td>
-<td>The metadata is already persisted; an operator can fix the underlying table and <code>refreshCatalog</code> to recover.</td>
+<td>Metadata is already persisted; operator can <code>refreshCatalog</code> later.</td>
 </tr>
 </tbody>
 </table>
 <p>Validation deliberately stops at parsing. Full semantic validation (column types, function signatures) would require planning against the live catalog and would block registration for tables that don't exist yet. That's left to query time, where errors surface naturally.</p>
 <h2 id="scope-and-roadmap">Scope and roadmap</h2>
-<p><strong>In Phase 1</strong> (this page):</p>
+<p><strong>Shipped:</strong></p>
 <ul>
-<li>Metric / dimension / synonym / description metadata, persisted in MetadataStore.</li>
-<li>REST CRUD + search endpoints with IAM filtering.</li>
-<li>MCP tools for list / describe / search.</li>
-<li>Auto-registration of the underlying view in Calcite so SELECT works immediately.</li>
-<li>Follower-master re-registration on every catalog reload.</li>
+<li>Phase 1: metric / dimension / synonym / description metadata, REST CRUD + IAM-filtered search, MCP tools (<code>ontul_list_semantic_views</code>, <code>ontul_describe_semantic_view</code>, <code>ontul_search_metrics</code>), auto-registration of the underlying Calcite view, follower re-registration on catalog reload.</li>
+<li>Phase 2: server-side query rewriting (metric expansion, auto <code>GROUP BY</code>, HAVING rewrite), <code>SELECT *</code> and <code>&lt;alias&gt;.*</code> expansion, metric-level RBAC, governance metadata (status, certify, tags, owner), lineage integration (table + column edges via OpenLineage), BI metadata exposure (Flight SQL <code>VIEW</code> type, <code>DESCRIBE</code> measure-first), <code>/api/v1/bi/connection-info</code> endpoint.</li>
+<li>Phase 3: mandatory filters with <code>${user.id}</code> / <code>${user.roles}</code> / <code>${user.attr.X}</code> templating (view-level + per-metric), derived metrics with recursive expansion and cycle detection, conformed-dimension joins with declarative ON templates (<code>${this}</code> / <code>${join-name}</code>), unused-join elimination.</li>
 </ul>
 <p><strong>Permanently excluded:</strong></p>
 <ul>
-<li>Streaming / batch-job "semantic" metadata. The industry concept is query-only — Airflow / dbt / Dagster model descriptions are documentation, not metrics — and inventing one here would be feature creep.</li>
-<li>Materialization of semantic views. They stay regular SQL views; consumers run the same query path as any other SELECT.</li>
+<li>Streaming / batch-job "semantic" metadata. The industry concept is query-only — Airflow / dbt / Dagster model descriptions are documentation, not metrics.</li>
+<li>Materialization of semantic views (reflections / pre-aggregations). Ontul's federated Iceberg + Arrow path is fast enough that the maintenance cost of materialization outweighs the gains; CTAS + lineage already exist if a specific dashboard ever proves the need.</li>
 </ul>
-<p><strong>Phase 2 (under consideration once Phase 1 has usage data):</strong></p>
+<p><strong>Under consideration when usage signals demand it:</strong></p>
 <ul>
-<li>Engine-side metric rewriting (<code>SELECT revenue FROM v</code> → expanded SUM), including cross-table joins and CTE caching. This is the bulk of the remaining work.</li>
-<li>Versioning and approval workflow (who owns "매출"?).</li>
-<li>Bidirectional sync with Iceberg column comments and partition specs.</li>
-<li>Cluster-wide on/off toggle for the semantic surface.</li>
-<li>Smarter natural-language matching (TF-IDF / embedding).</li>
-<li>Per-catalog ACLs (<code>semantic:Register</code> action) so semantic ownership can be delegated below the administrator role.</li>
+<li>Time intelligence DSL (<code>yoy</code>, <code>mtd</code>, <code>rolling_7d</code>) as first-class metric annotations rather than user-authored window functions.</li>
+<li>Hierarchies (<code>region → country → city</code>) as declarative drill paths surfaced through BI manifests.</li>
+<li>Definition-as-code CLI (<code>ontul semantic apply file.yaml</code>) over the existing REST API.</li>
+<li>Metric unit-test framework — <code>assertMetric("revenue","2024-01-01", expected=...)</code>.</li>
+<li>Smarter natural-language matching (TF-IDF / embedding) — Phase 1 substring ranking is intentionally minimal.</li>
 </ul>
 <h2 id="operational-notes">Operational notes</h2>
 <ul>
-<li>The <code>semantic:</code> keys in MetadataStore are tiny (one JSON document per view) and ride the same RocksDB encryption that catalog configs use. They are included in master backup / restore automatically.</li>
+<li><code>semantic:</code> keys in MetadataStore are tiny (one JSON document per view) and ride the same RocksDB encryption that catalog configs use. They are included in master backup / restore automatically.</li>
 <li>A corrupt JSON value at a <code>semantic:*</code> key is logged and skipped — it does not break <code>LIST</code>. Use <code>DELETE</code> on the malformed FQN to recover.</li>
-<li>On every catalog reload the master logs <code>Re-registered N semantic view(s) into Calcite</code>. Watch this line in the Master log to confirm propagation after a <code>loadPersistedCatalogs</code> event.</li>
-<li><code>notifyWorkersCatalogChanged</code> is called after each <code>POST</code> so workers refresh their cached catalog snapshot. Plan-time view resolution happens on the master, but the worker-side cache is kept consistent for any future planning that runs there.</li>
+<li>On every catalog reload the master logs <code>Re-registered N semantic view(s) into Calcite</code>. Watch this line to confirm propagation after a <code>loadPersistedCatalogs</code> event.</li>
+<li><code>notifyWorkersCatalogChanged</code> is called after each successful <code>POST</code> so workers refresh their cached catalog snapshot. Plan-time rewriting happens on the master, but the worker-side cache is kept consistent.</li>
+<li>Rewriting failure modes are conservative: if the rewriter hits an unexpected runtime error on a specific SELECT, the original tree is returned and the planner proceeds. Phase 1 behavior (LLM-expanded SQL) keeps working even if a Phase 2 / 3 edge case trips. RBAC denials and derived-metric cycles are the two exceptions — those always surface so admins notice them.</li>
+</ul>
+<h2 id="see-also">See also</h2>
+<ul>
+<li><a href="../bi-integration/">BI Integration</a> — Tableau / DBeaver / Power BI / Looker setup.</li>
+<li><a href="../../reference/mcp-server/">MCP Server</a> — semantic-discovery tools for LLM agents.</li>
+<li><a href="../iam/">IAM</a> — user attributes feed <code>${user.attr.X}</code> templating.</li>
+<li><a href="../data-lineage/">Data Lineage</a> — metric → base-column edges are recorded automatically.</li>
 </ul>
 
 
