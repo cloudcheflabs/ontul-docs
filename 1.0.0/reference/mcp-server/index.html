@@ -881,6 +881,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/semantic-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Semantic Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/remote-mode/" class="md-nav__link">
         
   
@@ -1743,7 +1771,7 @@
 
 
 <h1 id="mcp-server">MCP Server</h1>
-<p><code>ontul-mcp</code> is a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL, and exposes five read-side tools.</p>
+<p><code>ontul-mcp</code> is a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL (for queries and catalog introspection) and the admin REST port (for the semantic layer), and exposes eight read-side tools.</p>
 <p>Authorization is enforced server-side by Ontul IAM using the access token configured at startup. The MCP layer adds no additional access control — anything the token's policies allow, the LLM can run; anything they deny, the master rejects with an error that the LLM sees verbatim.</p>
 <p>The <code>ontul-mcp</code> launcher is shipped as part of the Ontul community-edition distribution. After unpacking the release archive it is available at <code>bin/ontul-mcp</code> alongside the master / worker / ZooKeeper launchers.</p>
 <h2 id="tools">Tools</h2>
@@ -1781,9 +1809,25 @@
 <td><code>DESCRIBE &lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
 <td>Show columns and Arrow types.</td>
 </tr>
+<tr>
+<td><code>ontul_list_semantic_views</code></td>
+<td><code>GET /api/v1/semantic-views</code></td>
+<td>List semantic views (curated business definitions on top of regular SQL views) the IAM token can SELECT from. Optional <code>catalog</code> / <code>schema</code> filter. See <a href="../../features/semantic-layer/">Semantic Layer</a>.</td>
+</tr>
+<tr>
+<td><code>ontul_describe_semantic_view</code></td>
+<td><code>GET /api/v1/semantic-views/{fqn}</code></td>
+<td>Fetch one semantic view's full definition — <code>baseSql</code>, metric expressions, dimensions, synonyms, description.</td>
+</tr>
+<tr>
+<td><code>ontul_search_metrics</code></td>
+<td><code>GET /api/v1/semantic-metrics/search</code></td>
+<td>Natural-language metric finder. Matches the query against metric names, synonyms and descriptions; returns ranked <code>{fqn, metricName, score, matchedOn}</code> hits.</td>
+</tr>
 </tbody>
 </table>
-<p>The four shortcut tools are thin wrappers around <code>ontul_query</code> for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. <code>ontul_query</code> itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.</p>
+<p>The four <code>_list/_describe_table</code> tools are thin wrappers around <code>ontul_query</code> for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. <code>ontul_query</code> itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.</p>
+<p>The three <code>_semantic_*</code> tools talk to the master's admin HTTP port instead of Flight SQL, because Phase 1 of the semantic layer is REST-only. The same <code>ONTUL_USER_TOKEN</code> is reused (sent as <code>Authorization: Token &lt;token&gt;</code>), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from <code>ONTUL_HOST</code> (or <code>ONTUL_ADMIN_URL</code> to override).</p>
 <h2 id="configuration">Configuration</h2>
 <p>The server reads the same environment variables the Java SDK already honors so a single token can be reused across SDK clients and the MCP server.</p>
 <table>
@@ -1806,9 +1850,14 @@
 <td>Arrow Flight SQL port.</td>
 </tr>
 <tr>
+<td><code>ONTUL_ADMIN_URL</code></td>
+<td><code>http://${ONTUL_HOST}:8080</code></td>
+<td>Admin REST base URL, used only by the three semantic-layer tools. Override when the admin port is fronted by a reverse proxy on a different host or port.</td>
+</tr>
+<tr>
 <td><code>ONTUL_USER_TOKEN</code></td>
 <td><em>unset</em></td>
-<td>IAM token attached as the <code>Authorization</code> header on every Flight call. <strong>Required.</strong> Without it the master rejects every call. Issue tokens via the Admin UI ("IAM → Access Keys") or <code>POST /admin/iam/keys</code>.</td>
+<td>IAM token attached as the <code>Authorization</code> header on every Flight call and as <code>Authorization: Token &lt;token&gt;</code> on the admin REST calls. <strong>Required.</strong> Without it the master rejects every call. Issue tokens via the Admin UI ("IAM → Access Keys") or <code>POST /admin/iam/keys</code>.</td>
 </tr>
 <tr>
 <td><code>ONTUL_USE_TLS</code></td>
@@ -1853,7 +1902,7 @@
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="p">}</span>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">}</span>
 </code></pre></div>
-<p>Refer to your specific client's MCP integration guide for the exact configuration file path and field names. Once registered the five tools become available and the agent can issue queries like:</p>
+<p>Refer to your specific client's MCP integration guide for the exact configuration file path and field names. Once registered the eight tools become available and the agent can issue queries like:</p>
 <blockquote>
 <p>Show me the top 10 product categories by sales count across <code>iceberg.warehouse.store_sales</code> and <code>iceberg.warehouse.item</code>.</p>
 </blockquote>

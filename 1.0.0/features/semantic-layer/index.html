@@ -1,0 +1,2334 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/semantic-layer/">
+      
+      
+        <link rel="prev" href="../iceberg-integration/">
+      
+      
+        <link rel="next" href="../remote-mode/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/logo/ontul-logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Semantic Layer - Ontul</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#semantic-layer" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Ontul" class="md-header__button md-logo" aria-label="Ontul" data-md-component="logo">
+      
+  <img src="../../images/logo/ontul-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ontul
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Semantic Layer
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../installation/installation/" class="md-tabs__link">
+          
+  
+  
+  Installation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../unified-engine/" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/sdk-java/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../query/guide/" class="md-tabs__link">
+          
+  
+  
+  Query
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../batch/guide/" class="md-tabs__link">
+          
+  
+  
+  Batch
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../streaming/guide/" class="md-tabs__link">
+          
+  
+  
+  Streaming
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../community/mailing-list/" class="md-tabs__link">
+          
+  
+  
+  Community
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Ontul" class="md-nav__button md-logo" aria-label="Ontul" data-md-component="logo">
+      
+  <img src="../../images/logo/ontul-logo.png" alt="logo">
+
+    </a>
+    Ontul
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontul Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Installation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Download & Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/intro/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../unified-engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Unified Data Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arrow-native-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow-Native Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../connector-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connector Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../connection-id/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connection ID (Source/Sink by Reference)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Queries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iceberg-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Iceberg Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Semantic Layer
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Semantic Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-semantic-view-looks-like" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a semantic view looks like
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-its-stored-and-synced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it's stored and synced
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rest-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REST API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="REST API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#search-ranking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search ranking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication-and-iam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication and IAM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-register-and-query-a-sales-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: register and query a sales view
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example: register and query a sales view">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-acquire-a-jwt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Acquire a JWT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-register-the-built-in-tpc-h-catalog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Register the built-in TPC-H catalog
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-register-a-semantic-view-over-tpchtinylineitem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Register a semantic view over tpch.tiny.lineitem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-fetch-it-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Fetch it back
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-find-a-metric-by-korean-synonym" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Find a metric by Korean synonym
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-query-the-auto-registered-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Query the auto-registered view
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Delete
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-mcp-discovery-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: MCP discovery flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scope-and-roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope and roadmap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operational notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remote Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../udf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User-Defined Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iam/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admin-password-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin Password Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Lineage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../encryption/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encryption & KMS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geospatial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geospatial Support
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../high-availability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    High Availability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/sdk-java/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/sdk-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Query
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../query/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Batch
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../batch/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Streaming
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../streaming/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../community/mailing-list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mailing List
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="semantic-layer">Semantic Layer</h1>
+<p>Ontul's semantic layer is a thin metadata wrapper that lives on top of a regular Calcite view. It pairs the view's SELECT statement (<code>baseSql</code>) with business-meaning metadata — <strong>metrics</strong>, <strong>dimensions</strong>, <strong>descriptions</strong>, and <strong>synonyms</strong> — and persists everything in the master's MetadataStore so that REST clients, the Admin UI, and the MCP server all read from the same authoritative definition.</p>
+<p>The goal is to give LLM consumers a curated, IAM-aware "menu" of business measures <em>before</em> a query is built — what numbers exist, what they mean, and what they're called in plain language — without forcing every team to re-derive the same <code>SUM(amount * (1 - discount))</code> for the tenth time.</p>
+<p>This page describes Phase 1 of the implementation. See <a href="#scope-and-roadmap">Scope and roadmap</a> for what is intentionally deferred.</p>
+<h2 id="what-a-semantic-view-looks-like">What a semantic view looks like</h2>
+<p>A semantic view binds five pieces of information to one fully-qualified name (<code>catalog.schema.name</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>baseSql</code></td>
+<td>The plain SELECT that the view exposes. Cross-catalog joins are allowed — federation is one of Ontul's strengths.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>One-paragraph human description of the view's subject area.</td>
+</tr>
+<tr>
+<td><code>metrics[]</code></td>
+<td>Aggregations defined against <code>baseSql</code>. Each has a <code>name</code>, an <code>expr</code> (the actual SQL fragment), a <code>description</code>, and a list of <code>synonyms</code>.</td>
+</tr>
+<tr>
+<td><code>dimensions[]</code></td>
+<td>"Slice-by" columns already present in <code>baseSql</code>'s result schema. Carries <code>name</code>, <code>description</code>, and <code>synonyms</code> — the column itself already exists, so the engine has nothing extra to do here.</td>
+</tr>
+<tr>
+<td><code>owner</code></td>
+<td>Who registered it. Stamped from the IAM identity on the POST.</td>
+</tr>
+</tbody>
+</table>
+<p>The store keeps the definitions verbatim. The engine does <strong>not</strong> rewrite <code>SELECT revenue FROM lineitem_sales</code> into <code>SELECT SUM(l_extendedprice * (1 - l_discount)) FROM …</code> at query time. LLM consumers receive the metric expressions through the MCP tools and generate already-expanded SQL themselves. This trade-off keeps Phase 1 dependency-free of Calcite RelOpt rules; full server-side metric rewriting is a Phase 2 concern.</p>
+<h2 id="how-its-stored-and-synced">How it's stored and synced</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Persistence</td>
+<td>RocksDB-backed <code>MetadataStore</code> with key prefix <code>semantic:</code>. The same store that holds catalog configs and dynamic settings.</td>
+</tr>
+<tr>
+<td>Master replication</td>
+<td>Rides the standard <code>exportSnapshot</code> / <code>importSnapshot</code> path — every <code>semantic:*</code> key syncs to follower masters with the rest of the cluster metadata.</td>
+</tr>
+<tr>
+<td>Calcite view registration</td>
+<td>On POST, the master auto-registers an in-memory <code>OntulViewTable</code> so <code>SELECT * FROM &lt;fqn&gt;</code> plans immediately. On every catalog reload (including follower <code>METADATA_SYNC_PUSH</code>), <code>MasterServer.reregisterSemanticViews()</code> re-walks the store and puts each view back into Calcite — necessary because catalog reload rebuilds the registry from connectors, and semantic views aren't connector-derived.</td>
+</tr>
+<tr>
+<td>Rolling-upgrade safety</td>
+<td><code>SemanticViewDef</code> and its nested <code>Metric</code> / <code>Dimension</code> records are annotated <code>@JsonIgnoreProperties(ignoreUnknown=true)</code>, so a future field addition stays readable by older masters.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rest-api">REST API</h2>
+<p>Admin HTTP server on the master exposes five endpoints, all returning JSON. Reads (GET) succeed for any authenticated user whose IAM token allows <code>data:SelectTable</code> on the view's FQN. Writes (POST / DELETE) require an administrator.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Body</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/semantic-views</code></td>
+<td><code>SemanticViewDef</code> JSON</td>
+<td>Register a new semantic view. Parses <code>baseSql</code> and every metric expression to catch malformed SQL up-front (returns 400 with the parser's message); does <strong>not</strong> plan, so a reference to a not-yet-existing table doesn't block registration. On success, auto-registers the underlying Calcite view and notifies workers.</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/semantic-views</code></td>
+<td>—</td>
+<td>List every visible semantic view. Optional <code>?catalog=…&amp;schema=…</code> filter. IAM-filtered: entries the caller cannot SELECT are hidden.</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/semantic-views/{catalog}.{schema}.{name}</code></td>
+<td>—</td>
+<td>Fetch one definition. 404 if it doesn't exist, 403 if IAM denies SELECT on the FQN.</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/semantic-views/{catalog}.{schema}.{name}</code></td>
+<td>—</td>
+<td>Remove the definition. (Calcite has no remove-view API, so the in-memory <code>ViewTable</code> lingers until the next catalog refresh; the metadata that callers actually consume is gone immediately.)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/semantic-metrics/search</code></td>
+<td><code>?q=&lt;query&gt;&amp;limit=&lt;n&gt;</code></td>
+<td>Natural-language metric search. Matches against metric names, synonyms, and descriptions across every semantic view the caller can see. Returns ranked hits with <code>fqn</code>, <code>metricName</code>, <code>score</code>, and <code>matchedOn</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="search-ranking">Search ranking</h3>
+<p>The Phase 1 matcher is intentionally simple. Scoring:</p>
+<table>
+<thead>
+<tr>
+<th>Match kind</th>
+<th>Score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Synonym exact (case-insensitive)</td>
+<td>100</td>
+</tr>
+<tr>
+<td>Synonym substring</td>
+<td>80</td>
+</tr>
+<tr>
+<td>Metric name substring</td>
+<td>60</td>
+</tr>
+<tr>
+<td>Description substring</td>
+<td>40</td>
+</tr>
+</tbody>
+</table>
+<p>Smarter ranking (TF-IDF, embedding) is deferred until Phase 1 usage data tells us what queries users actually issue.</p>
+<h2 id="mcp-tools">MCP tools</h2>
+<p>The Ontul MCP server registers three semantic-layer tools alongside its existing read-side wrappers (<code>ontul_query</code>, <code>ontul_list_catalogs</code>, etc.):</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Arguments</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul_list_semantic_views</code></td>
+<td><code>catalog?</code>, <code>schema?</code></td>
+<td>List every semantic view the caller can see. The LLM uses this to discover what curated business definitions exist before generating SQL.</td>
+</tr>
+<tr>
+<td><code>ontul_describe_semantic_view</code></td>
+<td><code>fqn</code> (required)</td>
+<td>Return the full definition — <code>baseSql</code>, metric expressions, dimensions, synonyms, description. The LLM reads this to learn how to expand a metric reference inline.</td>
+</tr>
+<tr>
+<td><code>ontul_search_metrics</code></td>
+<td><code>query</code> (required), <code>limit?</code></td>
+<td>Natural-language metric finder. Useful when the user asks "show me revenue" — the LLM calls this to locate the right <code>fqn</code> + <code>metricName</code> first, then follows up with <code>ontul_describe_semantic_view</code> to grab the expression.</td>
+</tr>
+</tbody>
+</table>
+<p>These tools talk to the master's admin HTTP port over REST, not Flight SQL. The same <code>ONTUL_USER_TOKEN</code> that authenticates Flight is accepted as a <code>Token &lt;token&gt;</code> Authorization header, so no separate JWT is needed. The admin URL can be overridden with <code>ONTUL_ADMIN_URL</code> (default <code>http://${ONTUL_HOST}:8080</code>).</p>
+<h2 id="authentication-and-iam">Authentication and IAM</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Required permission</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code> list / get / search</td>
+<td>Authenticated user whose IAM policies grant <code>data:SelectTable</code> on the view's FQN. Entries the caller can't SELECT are filtered out of list and search results (not returned as 403 — invisible).</td>
+</tr>
+<tr>
+<td><code>POST</code> register</td>
+<td>Caller must be in the administrator group (<code>AuthManager.hasAdministratorAccess</code>). Phase 2 will introduce a finer-grained <code>semantic:Register</code> action so per-catalog ownership becomes possible.</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td>Same as POST.</td>
+</tr>
+</tbody>
+</table>
+<p>The MCP server inherits IAM from the user token it's launched with. The MCP layer adds no extra access control — the master enforces every filter server-side.</p>
+<h2 id="example-register-and-query-a-sales-view">Example: register and query a sales view</h2>
+<p>The walkthrough below assumes a default local cluster (admin REST on <code>http://localhost:8090</code>, default admin password rotated to <code>Admin123!</code>) and the built-in TPC-H connector — no external storage is needed. The exact same flow is exercised by <code>tests/e2e-semantic-views.sh</code> in the Ontul source tree.</p>
+<h3 id="1-acquire-a-jwt">1. Acquire a JWT</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/admin/auth/login<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;Admin123!&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json; print(json.load(sys.stdin)[&#39;accessToken&#39;])&quot;</span><span class="k">)</span>
+</code></pre></div>
+<h3 id="2-register-the-built-in-tpc-h-catalog">2. Register the built-in TPC-H catalog</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/admin/catalogs<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="s1">      &quot;name&quot;: &quot;tpch&quot;,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="s1">      &quot;config&quot;: {&quot;connector&quot;: &quot;tpch&quot;, &quot;scale.factor&quot;: &quot;0.01&quot;}</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="s1">    }&#39;</span>
+</code></pre></div>
+<h3 id="3-register-a-semantic-view-over-tpchtinylineitem">3. Register a semantic view over <code>tpch.tiny.lineitem</code></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="s1">      &quot;catalog&quot;: &quot;tpch&quot;,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="s1">      &quot;schema&quot;:  &quot;tiny&quot;,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="s1">      &quot;name&quot;:    &quot;lineitem_sales&quot;,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="s1">      &quot;description&quot;: &quot;Per-line sales facts for analytics.&quot;,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="s1">      &quot;baseSql&quot;: &quot;SELECT l_orderkey, l_extendedprice, l_discount, l_quantity, l_shipdate FROM tpch.tiny.lineitem&quot;,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="s1">      &quot;metrics&quot;: [</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="s1">        {</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="s1">          &quot;name&quot;: &quot;revenue&quot;,</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="s1">          &quot;expr&quot;: &quot;SUM(l_extendedprice * (1 - l_discount))&quot;,</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="s1">          &quot;description&quot;: &quot;Total net revenue&quot;,</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="s1">          &quot;synonyms&quot;: [&quot;매출&quot;, &quot;net_revenue&quot;, &quot;sales_amount&quot;]</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="s1">        },</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="s1">        {</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="s1">          &quot;name&quot;: &quot;units&quot;,</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="s1">          &quot;expr&quot;: &quot;SUM(l_quantity)&quot;,</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="s1">          &quot;description&quot;: &quot;Units shipped&quot;,</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="s1">          &quot;synonyms&quot;: [&quot;quantity&quot;, &quot;수량&quot;]</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="s1">        }</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="s1">      ],</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="s1">      &quot;dimensions&quot;: [</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="s1">        {&quot;name&quot;: &quot;l_shipdate&quot;, &quot;description&quot;: &quot;Ship date&quot;, &quot;synonyms&quot;: [&quot;ship_date&quot;, &quot;출하일&quot;]}</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="s1">      ]</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="s1">    }&#39;</span>
+</code></pre></div>
+<p>The response is <code>201 Created</code> with <code>{"status":"ok","fqn":"tpch.tiny.lineitem_sales"}</code>.</p>
+<h3 id="4-fetch-it-back">4. Fetch it back</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span><span class="s2">&quot;http://localhost:8090/api/v1/semantic-views/tpch.tiny.lineitem_sales&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;catalog&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tpch&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;schema&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;tiny&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;lineitem_sales&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w">     </span><span class="s2">&quot;tpch.tiny.lineitem_sales&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">&quot;baseSql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT l_orderkey, l_extendedprice, l_discount, l_quantity, l_shipdate FROM tpch.tiny.lineitem&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Per-line sales facts for analytics.&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="s2">&quot;SUM(l_extendedprice * (1 - l_discount))&quot;</span><span class="p">,</span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="s2">&quot;Total net revenue&quot;</span><span class="p">,</span><span class="nt">&quot;synonyms&quot;</span><span class="p">:[</span><span class="s2">&quot;매출&quot;</span><span class="p">,</span><span class="s2">&quot;net_revenue&quot;</span><span class="p">,</span><span class="s2">&quot;sales_amount&quot;</span><span class="p">]},</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;units&quot;</span><span class="p">,</span><span class="w">  </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="s2">&quot;SUM(l_quantity)&quot;</span><span class="p">,</span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="s2">&quot;Units shipped&quot;</span><span class="p">,</span><span class="nt">&quot;synonyms&quot;</span><span class="p">:[</span><span class="s2">&quot;quantity&quot;</span><span class="p">,</span><span class="s2">&quot;수량&quot;</span><span class="p">]}</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span><span class="nt">&quot;dimensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;l_shipdate&quot;</span><span class="p">,</span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="s2">&quot;Ship date&quot;</span><span class="p">,</span><span class="nt">&quot;synonyms&quot;</span><span class="p">:[</span><span class="s2">&quot;ship_date&quot;</span><span class="p">,</span><span class="s2">&quot;출하일&quot;</span><span class="p">]}</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">  </span><span class="nt">&quot;createdAt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1779880934424</span><span class="p">,</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span><span class="nt">&quot;updatedAt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1779880934424</span><span class="p">,</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">  </span><span class="nt">&quot;owner&quot;</span><span class="p">:</span><span class="w">     </span><span class="s2">&quot;admin&quot;</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="5-find-a-metric-by-korean-synonym">5. Find a metric by Korean synonym</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span><span class="s2">&quot;http://localhost:8090/api/v1/semantic-metrics/search?q=%EB%A7%A4%EC%B6%9C&amp;limit=5&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">[</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="p">{</span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="s2">&quot;tpch.tiny.lineitem_sales&quot;</span><span class="p">,</span><span class="nt">&quot;metricName&quot;</span><span class="p">:</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="nt">&quot;matchedOn&quot;</span><span class="p">:</span><span class="s2">&quot;synonym:매출&quot;</span><span class="p">}</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="p">]</span>
+</code></pre></div>
+<p>A substring lookup (<code>q=net_rev</code>) returns the same metric with <code>score: 80, matchedOn: "synonym:net_revenue"</code>.</p>
+<h3 id="6-query-the-auto-registered-view">6. Query the auto-registered view</h3>
+<p>The POST in step 3 already added an in-memory <code>OntulViewTable</code> for <code>tpch.tiny.lineitem_sales</code>. SELECT works immediately:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/admin/query/execute<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;sql&quot;:&quot;SELECT COUNT(*) AS c FROM tpch.tiny.lineitem_sales&quot;}&#39;</span>
+</code></pre></div>
+<p>To consume the metric, the caller inlines its <code>expr</code>. An LLM that just read the description via MCP would generate:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">,</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">       </span><span class="k">SUM</span><span class="p">(</span><span class="n">l_extendedprice</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">l_discount</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem_sales</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">l_shipdate</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">l_shipdate</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="7-delete">7. Delete</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>http://localhost:8090/api/v1/semantic-views/tpch.tiny.lineitem_sales<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+</code></pre></div>
+<h2 id="example-mcp-discovery-flow">Example: MCP discovery flow</h2>
+<p>When an LLM connected to Ontul MCP receives a user request like <em>"show me revenue by ship date"</em>:</p>
+<ol>
+<li><strong>Locate the metric.</strong> The LLM calls <code>ontul_search_metrics({"query":"revenue"})</code>. The server returns the ranked hit <code>{fqn:"tpch.tiny.lineitem_sales", metricName:"revenue", score:80, matchedOn:"synonym:net_revenue"}</code>.</li>
+<li><strong>Read the definition.</strong> The LLM calls <code>ontul_describe_semantic_view({"fqn":"tpch.tiny.lineitem_sales"})</code>. Response includes the <code>expr: "SUM(l_extendedprice * (1 - l_discount))"</code> and the available dimensions (<code>l_shipdate</code>).</li>
+<li><strong>Generate expanded SQL.</strong> Using the description, the LLM produces the GROUP BY query shown above and calls <code>ontul_query</code>. Standard IAM, lineage, and result formatting apply.</li>
+</ol>
+<p>The point of steps 1 and 2 is that the LLM never sees a raw connector table without the curated business context — what columns mean, what aggregations have already been agreed on, and what the same measure is called in different languages.</p>
+<h2 id="validation-behavior">Validation behavior</h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Status</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Missing <code>catalog</code> / <code>schema</code> / <code>name</code> / <code>baseSql</code></td>
+<td>400</td>
+<td>Required fields.</td>
+</tr>
+<tr>
+<td><code>baseSql</code> fails Calcite parsing</td>
+<td>400</td>
+<td>Parse-only — table existence is not checked.</td>
+</tr>
+<tr>
+<td>Any <code>metric.expr</code> fails Calcite parsing</td>
+<td>400</td>
+<td>Wrapped as <code>SELECT &lt;expr&gt; FROM (&lt;baseSql&gt;) t</code> and parsed.</td>
+</tr>
+<tr>
+<td><code>metric.name</code> or <code>metric.expr</code> missing</td>
+<td>400</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Calcite view registration throws</td>
+<td>logged warning, <strong>registration still succeeds</strong></td>
+<td>The metadata is already persisted; an operator can fix the underlying table and <code>refreshCatalog</code> to recover.</td>
+</tr>
+</tbody>
+</table>
+<p>Validation deliberately stops at parsing. Full semantic validation (column types, function signatures) would require planning against the live catalog and would block registration for tables that don't exist yet. That's left to query time, where errors surface naturally.</p>
+<h2 id="scope-and-roadmap">Scope and roadmap</h2>
+<p><strong>In Phase 1</strong> (this page):</p>
+<ul>
+<li>Metric / dimension / synonym / description metadata, persisted in MetadataStore.</li>
+<li>REST CRUD + search endpoints with IAM filtering.</li>
+<li>MCP tools for list / describe / search.</li>
+<li>Auto-registration of the underlying view in Calcite so SELECT works immediately.</li>
+<li>Follower-master re-registration on every catalog reload.</li>
+</ul>
+<p><strong>Permanently excluded:</strong></p>
+<ul>
+<li>Streaming / batch-job "semantic" metadata. The industry concept is query-only — Airflow / dbt / Dagster model descriptions are documentation, not metrics — and inventing one here would be feature creep.</li>
+<li>Materialization of semantic views. They stay regular SQL views; consumers run the same query path as any other SELECT.</li>
+</ul>
+<p><strong>Phase 2 (under consideration once Phase 1 has usage data):</strong></p>
+<ul>
+<li>Engine-side metric rewriting (<code>SELECT revenue FROM v</code> → expanded SUM), including cross-table joins and CTE caching. This is the bulk of the remaining work.</li>
+<li>Versioning and approval workflow (who owns "매출"?).</li>
+<li>Bidirectional sync with Iceberg column comments and partition specs.</li>
+<li>Cluster-wide on/off toggle for the semantic surface.</li>
+<li>Smarter natural-language matching (TF-IDF / embedding).</li>
+<li>Per-catalog ACLs (<code>semantic:Register</code> action) so semantic ownership can be delegated below the administrator role.</li>
+</ul>
+<h2 id="operational-notes">Operational notes</h2>
+<ul>
+<li>The <code>semantic:</code> keys in MetadataStore are tiny (one JSON document per view) and ride the same RocksDB encryption that catalog configs use. They are included in master backup / restore automatically.</li>
+<li>A corrupt JSON value at a <code>semantic:*</code> key is logged and skipped — it does not break <code>LIST</code>. Use <code>DELETE</code> on the malformed FQN to recover.</li>
+<li>On every catalog reload the master logs <code>Re-registered N semantic view(s) into Calcite</code>. Watch this line in the Master log to confirm propagation after a <code>loadPersistedCatalogs</code> event.</li>
+<li><code>notifyWorkersCatalogChanged</code> is called after each <code>POST</code> so workers refresh their cached catalog snapshot. Plan-time view resolution happens on the master, but the worker-side cache is kept consistent for any future planning that runs there.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © <script>document.write(new Date().getFullYear())</script> Cloud Chef Labs, Inc. All rights reserved. <a href="mailto:admin@cloudchef-labs.com">admin@cloudchef-labs.com</a>
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "2.2.0", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/extra.js"></script>
+      
+    
+  </body>
+</html>
