@@ -4,6 +4,8 @@
 
 Authorization is enforced server-side by Ontul IAM using the access token configured at startup. The MCP layer adds no additional access control — anything the token's policies allow, the LLM can run; anything they deny, the master rejects with an error that the LLM sees verbatim.
 
+The semantic layer rewriting kicks in transparently: an LLM can issue `SELECT revenue, customer.region FROM saas.core.sales` and the master expands the metric, injects the conformed-dimension JOIN, applies the user's mandatory filters, and derives the GROUP BY before execution. The LLM doesn't need to inline the aggregation formula — though it still can, and Phase 1 LLM-expanded SQL keeps working. See [Semantic Layer](../features/semantic-layer.md) for the full rewrite pipeline.
+
 The `ontul-mcp` launcher is shipped as part of the Ontul community-edition distribution. After unpacking the release archive it is available at `bin/ontul-mcp` alongside the master / worker / ZooKeeper launchers.
 
 ## Tools
@@ -16,12 +18,53 @@ The `ontul-mcp` launcher is shipped as part of the Ontul community-edition distr
 | `ontul_list_tables` | `SHOW TABLES FROM <catalog>.<schema>` | List tables in a schema. |
 | `ontul_describe_table` | `DESCRIBE <catalog>.<schema>.<table>` | Show columns and Arrow types. |
 | `ontul_list_semantic_views` | `GET /api/v1/semantic-views` | List semantic views (curated business definitions on top of regular SQL views) the IAM token can SELECT from. Optional `catalog` / `schema` filter. See [Semantic Layer](../features/semantic-layer.md). |
-| `ontul_describe_semantic_view` | `GET /api/v1/semantic-views/{fqn}` | Fetch one semantic view's full definition — `baseSql`, metric expressions, dimensions, synonyms, description. |
+| `ontul_describe_semantic_view` | `GET /api/v1/semantic-views/{fqn}` | Fetch one semantic view's full definition — `baseSql`, metrics (with `expr`, `allowedRoles`, `mandatoryFilters`), dimensions, synonyms, description, governance metadata (`status`, `certifiedBy`, `certifiedAt`, `tags`, `owner`), conformed-dimension `joins[]`, view-level `mandatoryFilters`. |
 | `ontul_search_metrics` | `GET /api/v1/semantic-metrics/search` | Natural-language metric finder. Matches the query against metric names, synonyms and descriptions; returns ranked `{fqn, metricName, score, matchedOn}` hits. |
 
 The four `_list/_describe_table` tools are thin wrappers around `ontul_query` for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. `ontul_query` itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.
 
-The three `_semantic_*` tools talk to the master's admin HTTP port instead of Flight SQL, because Phase 1 of the semantic layer is REST-only. The same `ONTUL_USER_TOKEN` is reused (sent as `Authorization: Token <token>`), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from `ONTUL_HOST` (or `ONTUL_ADMIN_URL` to override).
+The three `_semantic_*` tools talk to the master's admin HTTP port instead of Flight SQL because the semantic CRUD surface is REST. Read-side semantic _consumption_ — the actual `SELECT` against a semantic view — flows through Flight SQL like any other query and benefits from the master-side rewriting. The same `ONTUL_USER_TOKEN` is reused (sent as `Authorization: Token <token>` on REST), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from `ONTUL_HOST` (or `ONTUL_ADMIN_URL` to override).
+
+### What `ontul_describe_semantic_view` returns
+
+The full definition is exposed verbatim so the LLM can decide how to use a metric. A representative response shape:
+
+```json
+{
+  "catalog": "saas",
+  "schema":  "core",
+  "name":    "sales",
+  "fqn":     "saas.core.sales",
+  "description": "Per-tenant sales facts — multi-tenant row-scoping enforced.",
+  "owner": "admin",
+  "status": "CERTIFIED",
+  "certifiedBy": "admin",
+  "certifiedAt": 1779999999999,
+  "tags": ["finance", "gold-tier"],
+  "baseSql": "SELECT order_id, tenant_id, customer_id, amount, status, ship_date FROM saas.core.raw_orders",
+  "metrics": [
+    {"name": "revenue", "expr": "SUM(amount)",
+     "synonyms": ["매출", "net_revenue"],
+     "mandatoryFilters": ["status = 'COMPLETED'"]},
+    {"name": "profit_margin", "expr": "(revenue - cost) / revenue"},
+    {"name": "vip_revenue", "expr": "SUM(amount) FILTER (WHERE tier='VIP')",
+     "allowedRoles": ["finance", "analyst"]}
+  ],
+  "dimensions": [{"name": "ship_date"}],
+  "joins": [
+    {"name": "customer", "target": "saas.core.customer",
+     "onTemplate": "${this}.customer_id = ${customer}.id", "type": "LEFT"}
+  ],
+  "mandatoryFilters": ["tenant_id = ${user.attr.tenant_id}"]
+}
+```
+
+LLM guidance derived from this payload:
+
+- **Prefer `status: CERTIFIED` over `DRAFT`** when multiple views could answer the question — certified definitions have been reviewed.
+- **Avoid metrics where `allowedRoles` excludes the caller**; the rewriter will reject the query with `Forbidden: <metric>` and an unhelpful trace.
+- **Expand metrics inline only when the engine rewriter can't help** (e.g. the LLM is generating a query for a non-Ontul engine). For Ontul targets, `SELECT <metric> FROM <fqn>` is enough — the rewriter handles it.
+- **Cite tags and certifiedBy in narrative answers** ("revenue is the CERTIFIED measure on saas.core.sales, owned by ‘finance‘") — improves user trust in the LLM's output.
 
 ## Configuration
 
