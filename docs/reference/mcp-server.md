@@ -1,6 +1,6 @@
 # MCP Server
 
-`ontul-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL, and exposes five read-side tools.
+`ontul-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL (for queries and catalog introspection) and the admin REST port (for the semantic layer), and exposes eight read-side tools.
 
 Authorization is enforced server-side by Ontul IAM using the access token configured at startup. The MCP layer adds no additional access control — anything the token's policies allow, the LLM can run; anything they deny, the master rejects with an error that the LLM sees verbatim.
 
@@ -15,8 +15,13 @@ The `ontul-mcp` launcher is shipped as part of the Ontul community-edition distr
 | `ontul_list_schemas` | `SHOW SCHEMAS FROM <catalog>` | List schemas in a catalog. |
 | `ontul_list_tables` | `SHOW TABLES FROM <catalog>.<schema>` | List tables in a schema. |
 | `ontul_describe_table` | `DESCRIBE <catalog>.<schema>.<table>` | Show columns and Arrow types. |
+| `ontul_list_semantic_views` | `GET /api/v1/semantic-views` | List semantic views (curated business definitions on top of regular SQL views) the IAM token can SELECT from. Optional `catalog` / `schema` filter. See [Semantic Layer](../features/semantic-layer.md). |
+| `ontul_describe_semantic_view` | `GET /api/v1/semantic-views/{fqn}` | Fetch one semantic view's full definition — `baseSql`, metric expressions, dimensions, synonyms, description. |
+| `ontul_search_metrics` | `GET /api/v1/semantic-metrics/search` | Natural-language metric finder. Matches the query against metric names, synonyms and descriptions; returns ranked `{fqn, metricName, score, matchedOn}` hits. |
 
-The four shortcut tools are thin wrappers around `ontul_query` for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. `ontul_query` itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.
+The four `_list/_describe_table` tools are thin wrappers around `ontul_query` for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. `ontul_query` itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.
+
+The three `_semantic_*` tools talk to the master's admin HTTP port instead of Flight SQL, because Phase 1 of the semantic layer is REST-only. The same `ONTUL_USER_TOKEN` is reused (sent as `Authorization: Token <token>`), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from `ONTUL_HOST` (or `ONTUL_ADMIN_URL` to override).
 
 ## Configuration
 
@@ -26,7 +31,8 @@ The server reads the same environment variables the Java SDK already honors so a
 | --- | --- | --- |
 | `ONTUL_HOST` | `localhost` | Master host — or whichever endpoint your reverse proxy fronts. |
 | `ONTUL_PORT` (or `ONTUL_MASTER_FLIGHT_PORT`) | `47470` | Arrow Flight SQL port. |
-| `ONTUL_USER_TOKEN` | _unset_ | IAM token attached as the `Authorization` header on every Flight call. **Required.** Without it the master rejects every call. Issue tokens via the Admin UI ("IAM → Access Keys") or `POST /admin/iam/keys`. |
+| `ONTUL_ADMIN_URL` | `http://${ONTUL_HOST}:8080` | Admin REST base URL, used only by the three semantic-layer tools. Override when the admin port is fronted by a reverse proxy on a different host or port. |
+| `ONTUL_USER_TOKEN` | _unset_ | IAM token attached as the `Authorization` header on every Flight call and as `Authorization: Token <token>` on the admin REST calls. **Required.** Without it the master rejects every call. Issue tokens via the Admin UI ("IAM → Access Keys") or `POST /admin/iam/keys`. |
 | `ONTUL_USE_TLS` | `false` | Set to `true` for `grpc+tls` transport. |
 
 Logs are pinned to **stderr** by the bundled logback config. `stdout` is reserved for the MCP JSON-RPC stream — never log there.
@@ -75,7 +81,7 @@ Most clients accept this configuration as a JSON entry under an `mcpServers` (or
 }
 ```
 
-Refer to your specific client's MCP integration guide for the exact configuration file path and field names. Once registered the five tools become available and the agent can issue queries like:
+Refer to your specific client's MCP integration guide for the exact configuration file path and field names. Once registered the eight tools become available and the agent can issue queries like:
 
 > Show me the top 10 product categories by sales count across `iceberg.warehouse.store_sales` and `iceberg.warehouse.item`.
 
