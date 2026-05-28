@@ -1066,6 +1066,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Authentication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-admin-and-password-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default admin and password rotation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1088,6 +1105,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Policy-Based Access Control">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-and-updating-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating and updating policies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1098,6 +1132,95 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Column-Level Security">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#column-deny" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Column Deny
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#column-masking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Column Masking
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Column Masking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-a-mask-query-looks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How a mask query looks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user-context-templating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User-context templating
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precedence-between-mask-statements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Precedence between Mask statements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1117,6 +1240,17 @@
     <span class="md-ellipsis">
       
         UDF Permissions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#end-to-end-example-tenant-scoped-masking-rls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End-to-end example: tenant-scoped masking + RLS
       
     </span>
   </a>
@@ -1799,25 +1933,86 @@
 
 
 <h1 id="identity-and-access-management">Identity and Access Management</h1>
-<p>Ontul includes a built-in IAM system that provides authentication, authorization, and fine-grained access control down to the column and row level.</p>
+<p>Ontul includes a built-in IAM system that provides authentication, authorization, and fine-grained access control down to the column and row level. Column masking, row-level filters, and metric-level RBAC (when the semantic layer is in use) all read from the same policy store, so a single statement governs what a user sees regardless of whether the query arrives over Arrow Flight SQL, REST, or the MCP server.</p>
 <h2 id="authentication">Authentication</h2>
-<p>Ontul supports multiple authentication methods:</p>
-<ul>
-<li><strong>Username / Password</strong>: Basic authentication with PBKDF2-hashed passwords</li>
-<li><strong>Access Keys</strong>: Long-lived credentials (AKIA prefix) with access key ID and secret key for programmatic access</li>
-<li><strong>STS Temporary Credentials</strong>: Short-lived credentials (ASIA prefix) with configurable expiration for temporary access</li>
-<li><strong>JWT Tokens</strong>: Bearer token authentication for Arrow Flight SQL and REST API</li>
-</ul>
+<p>Ontul supports four authentication methods that can co-exist on the same cluster:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>When to use</th>
+<th>Header / field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Username / Password</strong></td>
+<td>Interactive UI / SQL clients (Tableau, DBeaver) that only know Basic auth. PBKDF2-hashed passwords.</td>
+<td><code>authorization: Basic base64(user:pass)</code></td>
+</tr>
+<tr>
+<td><strong>JWT Bearer Token</strong></td>
+<td>Short-lived sessions (default 15 min). Issued by <code>POST /admin/auth/login</code>. Used by the Admin UI and Java SDK.</td>
+<td><code>authorization: Bearer &lt;jwt&gt;</code></td>
+</tr>
+<tr>
+<td><strong>Access Keys</strong> (<code>AKIA…</code>)</td>
+<td>Long-lived service-account credentials with separate <code>accessKeyId</code> + <code>secretAccessKey</code>. Issued via <code>POST /admin/iam/keys</code>.</td>
+<td><code>authorization: AccessKey AKIA…:&lt;secret&gt;</code></td>
+</tr>
+<tr>
+<td><strong>STS Temporary Credentials</strong> (<code>ASIA…</code>)</td>
+<td>Short-lived AKIA-style credentials with configurable expiry — used by transient workloads (CI runners, ETL jobs).</td>
+<td>Same as Access Keys, prefix differs.</td>
+</tr>
+</tbody>
+</table>
+<p>The MCP server and the SDK accept whichever credential is supplied via <code>ONTUL_USER_TOKEN</code>. Whatever IAM policies attach to that credential apply automatically — there is no separate authorization layer to configure on the client.</p>
+<h3 id="default-admin-and-password-rotation">Default admin and password rotation</h3>
+<p>The cluster is bootstrapped with a default <code>admin</code> user. When the master starts with the literal password <code>admin</code> (the out-of-the-box value), the user is flagged <code>requirePasswordChange=true</code> and <strong>every privileged REST and Flight SQL endpoint returns 403 until the password is rotated</strong>. This gate applies only to:</p>
+<ol>
+<li>The default admin (until first rotation), and</li>
+<li>Any user whose password was just reset by an administrator via the local admin-socket recovery channel.</li>
+</ol>
+<p>Users created normally with <code>POST /admin/iam/users</code> start with <code>requirePasswordChange=false</code> and can call the REST / Flight SQL APIs immediately. The flag never applies to access keys — those carry their own random secret and don't need rotation before use.</p>
 <h2 id="users-and-groups">Users and Groups</h2>
-<ul>
-<li>Create and manage database users with passwords and metadata</li>
-<li>Organize users into IAM groups</li>
-<li>Policies attached to a group apply to all members</li>
-</ul>
+<p>Users carry an opaque id, a hashed password, group memberships, access keys, and an optional <strong>attribute map</strong> that backs templated row filters and column masks (<code>${user.attr.tenant_id}</code>). Groups exist purely as a policy-attachment vehicle: a policy attached to a group applies to every member, and a user can belong to any number of groups.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Endpoint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create user</td>
+<td><code>POST /admin/iam/users</code> <code>{username, password}</code></td>
+</tr>
+<tr>
+<td>List users</td>
+<td><code>GET  /admin/iam/users</code></td>
+</tr>
+<tr>
+<td>Delete user</td>
+<td><code>DELETE /admin/iam/users/{username}</code></td>
+</tr>
+<tr>
+<td>Add to group</td>
+<td><code>POST /admin/iam/add-user-to-group</code> <code>{username, groupName}</code></td>
+</tr>
+<tr>
+<td>Create group</td>
+<td><code>POST /admin/iam/groups</code> <code>{groupName}</code></td>
+</tr>
+<tr>
+<td>Issue access key</td>
+<td><code>POST /admin/iam/keys</code> <code>{username, expiresAt?}</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="policy-based-access-control">Policy-Based Access Control</h2>
-<p>Ontul uses AWS-style JSON policies to manage permissions. Actions live in the
-<code>data:</code> namespace (table/DML/admin) and <code>UDF:</code> namespace; table resources are
-addressed as <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code> and accept wildcards.</p>
+<p>Ontul uses AWS-style JSON policies to manage permissions. Actions live in the <code>data:</code> namespace (table reads, DML, admin verbs) and <code>UDF:</code> namespace; table resources are addressed as <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code> and accept wildcards.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -1838,25 +2033,214 @@ addressed as <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code
 <a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="p">}</span>
 </code></pre></div>
 <ul>
-<li>Action verbs in the <code>data:</code> namespace: <code>data:Select</code>, <code>data:Insert</code>, <code>data:Update</code>, <code>data:Delete</code>, <code>data:Merge</code>, <code>data:CreateTable</code>, <code>data:DropTable</code>, <code>data:AlterTable</code>, <code>data:KillJob</code>, <code>data:CancelQuery</code>. UDF actions stay in the <code>UDF:</code> namespace (see below).</li>
-<li>Resources: <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code>, <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code>, <code>data:job:*</code>, <code>data:query:*</code>, <code>udf:&lt;name&gt;</code>. Wildcards <code>*</code> and <code>?</code> are supported.</li>
-<li>Policies can be attached to users or groups.</li>
-<li>Deny rules take precedence over allow rules.</li>
-<li>Deny-by-default: no matching policies means access is denied.</li>
+<li><strong>Action verbs in <code>data:</code> namespace</strong> — runtime SQL: <code>data:Select</code>, <code>data:Insert</code>, <code>data:Update</code>, <code>data:Delete</code>, <code>data:Merge</code>. Catalog DDL: <code>data:CreateTable</code>, <code>data:DropTable</code>, <code>data:AlterTable</code>. Operational: <code>data:KillJob</code>, <code>data:CancelQuery</code>. The metadata-only <code>data:SelectTable</code> verb gates discovery surfaces (e.g. semantic-view listing, table catalog browse) — distinct from the runtime <code>data:Select</code> that gates actual scans.</li>
+<li><strong>UDF actions</strong> stay in the <code>UDF:</code> namespace — see <a href="#udf-permissions">UDF Permissions</a>.</li>
+<li><strong>Resources</strong>: <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code>, <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code>, <code>data:job:*</code>, <code>data:query:*</code>, <code>udf:&lt;name&gt;</code>. Wildcards <code>*</code> and <code>?</code> are supported.</li>
+<li><strong>Attachment</strong>: policies attach to users (direct) or groups (via group membership).</li>
+<li><strong>Deny rules take precedence</strong> over allow rules.</li>
+<li><strong>Deny-by-default</strong>: no matching policies means access is denied.</li>
 </ul>
-<h2 id="column-level-security">Column-Level Security</h2>
-<p>Restrict access to specific columns within a table. Denied columns are automatically removed from query results — no changes to the query required.</p>
-<h2 id="row-level-security">Row-Level Security</h2>
-<p>Apply row filter conditions to restrict which rows a user can see:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ApacOnly&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:ice.sales.orders&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;region = &#39;APAC&#39;&quot;</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
+<h3 id="creating-and-updating-policies">Creating and updating policies</h3>
+<p>The same endpoint handles both — <code>POST /admin/iam/policies</code> is upsert. Re-posting with an existing <code>name</code> overwrites the document and propagates the new content to follower masters via <code>pushUpdate()</code>. The next query the affected user issues sees the new policy; no cache invalidation is needed because effective policies are computed per-query.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Initial creation</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="nv">$ADMIN_URL</span>/admin/iam/policies<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;name&quot;:&quot;AnalystAccess&quot;,&quot;document&quot;: { … v1 … }}&#39;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Update — same `name`, new document</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="nv">$ADMIN_URL</span>/admin/iam/policies<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;name&quot;:&quot;AnalystAccess&quot;,&quot;document&quot;: { … v2 … }}&#39;</span>
 </code></pre></div>
-<p>Row filters are injected into the query plan automatically, ensuring users only see data they are authorized to access. The expression supports <code>${user.userId}</code> substitution for per-user scoping.</p>
+<p>Both calls return <code>201 Created</code>. Distinguish create-vs-update on the client side by <code>GET /admin/iam/policies</code> first if needed; the server doesn't differentiate.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Endpoint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create / update policy</td>
+<td><code>POST   /admin/iam/policies</code></td>
+</tr>
+<tr>
+<td>List policies</td>
+<td><code>GET    /admin/iam/policies</code></td>
+</tr>
+<tr>
+<td>Delete policy</td>
+<td><code>DELETE /admin/iam/policies/{name}</code></td>
+</tr>
+<tr>
+<td>Attach policy to group</td>
+<td><code>POST   /admin/iam/attach-group-policy</code> <code>{groupName, policyName}</code></td>
+</tr>
+<tr>
+<td>Detach policy from group</td>
+<td><code>POST   /admin/iam/detach-group-policy</code> <code>{groupName, policyName}</code></td>
+</tr>
+</tbody>
+</table>
+<p>The <code>AdministratorAccess</code> policy is reserved — <code>deletePolicy</code> rejects attempts to remove it.</p>
+<h2 id="column-level-security">Column-Level Security</h2>
+<p>Ontul supports two distinct column-level controls. Both apply server-side inside the query plan; clients cannot bypass them.</p>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Effect</th>
+<th>Output schema</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Column Deny</strong></td>
+<td>Column is dropped from the SCAN output.</td>
+<td>Column disappears from result.</td>
+<td>The column should be inaccessible — analytics on the field aren't allowed at all.</td>
+</tr>
+<tr>
+<td><strong>Column Mask</strong></td>
+<td>Column value is replaced by a SQL expression.</td>
+<td>Column name and type preserved.</td>
+<td>The column structure stays useful (joins, group-by) but the raw value must not reach the caller — phone numbers, SSNs, salaries, emails.</td>
+</tr>
+</tbody>
+</table>
+<p>Precedence on conflict: <strong>Deny &gt; Mask &gt; Allow</strong>. A column listed in both a Deny and a Mask statement disappears entirely; the mask never fires.</p>
+<h3 id="column-deny">Column Deny</h3>
+<p>Denied columns vanish from the SCAN output via an injected <code>PROJECT</code> node. A <code>SELECT *</code> from a user with <code>Columns: ["ssn"]</code> in a Deny statement gets every column except <code>ssn</code>. An explicit <code>SELECT ssn FROM ...</code> planned by Calcite earlier in the pipeline will fail at validation; the deny mechanism is designed for the <code>SELECT *</code> and "show me everything" patterns that BI tools emit.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;HideSsnFromAnalysts&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:hr.core.employees&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">&quot;Columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;ssn&quot;</span><span class="p">]</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="column-masking">Column Masking</h3>
+<p>Mask statements replace each named column's value with a SQL expression evaluated at the worker. The output column keeps its original name and Arrow type — downstream operations (<code>WHERE</code>, joins, aggregations) work, just on the masked values.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MaskHrPii&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mask&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:hr.core.employees&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">&quot;MaskedColumns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">&quot;phone&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;&#39;***-***-XXXX&#39;&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;MD5(email)&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">&quot;salary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ROUND(salary, -3)&quot;</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="p">}</span>
+</code></pre></div>
+<p>Examples of what each pattern yields:</p>
+<table>
+<thead>
+<tr>
+<th>Mask expression</th>
+<th>Behavior</th>
+<th>Example output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'REDACTED'</code></td>
+<td>Literal — every row gets the constant. Cheapest, no leakage.</td>
+<td><code>REDACTED</code></td>
+</tr>
+<tr>
+<td><code>MD5(email)</code></td>
+<td>Stable hash — same input → same output, so joins and grouping still discriminate users.</td>
+<td><code>5d41402abc4b2a76…</code></td>
+</tr>
+<tr>
+<td><code>ROUND(salary, -3)</code></td>
+<td>Numeric bucketing — preserves order-of-magnitude utility for analytics while hiding exact value.</td>
+<td><code>75000</code></td>
+</tr>
+<tr>
+<td><code>'XXX-XXX-' \|\| RIGHT(phone, 4)</code></td>
+<td>Partial reveal — last 4 digits visible. <span style="color:#a06000">Requires worker support for the function — see "Limitations" below.</span></td>
+<td><code>XXX-XXX-1234</code></td>
+</tr>
+<tr>
+<td><code>CASE WHEN '${user.attr.role}' = 'compliance' THEN ssn ELSE '***-**-XXXX' END</code></td>
+<td>Conditional unmask — compliance users see raw, others see masked.</td>
+<td><code>***-**-XXXX</code> (most users), real value (compliance)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="how-a-mask-query-looks">How a mask query looks</h4>
+<p>A user in <code>analyst-group</code> running:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="n">salary</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">hr</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">employees</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">department</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Engineering&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p>receives the rewritten plan (conceptually):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">       </span><span class="s1">&#39;***-***-XXXX&#39;</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">       </span><span class="n">ROUND</span><span class="p">(</span><span class="n">salary</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="p">)</span><span class="w">   </span><span class="k">AS</span><span class="w"> </span><span class="n">salary</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">hr</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">employees</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">department</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Engineering&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p>Same query as an admin (no policies apply) returns the raw <code>name</code>, <code>phone</code>, and <code>salary</code>.</p>
+<h4 id="user-context-templating">User-context templating</h4>
+<p>The mask expression supports the same templating tokens as the <a href="../semantic-layer/#mandatory-filters-with-user-context-templating">semantic layer's mandatory filters</a> — <code>${user.id}</code>, <code>${user.roles}</code>, <code>${user.attr.&lt;key&gt;}</code>. The substitution happens after policy load and before SQL parsing, so a single policy can implement role-aware unmasking without one statement per role:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ConditionalSsnMask&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mask&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:hr.core.employees&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="nt">&quot;MaskedColumns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">&quot;ssn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CASE WHEN &#39;${user.id}&#39; = &#39;compliance_admin&#39; THEN ssn ELSE &#39;***-**-&#39; || RIGHT(ssn, 4) END&quot;</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="p">}</span>
+</code></pre></div>
+<p>Missing user attributes resolve to the empty string <code>''</code>. The substitution quotes values with embedded <code>'</code> escaping — basic SQL-injection defence for a feature whose inputs come from admin DDL, not user prompts.</p>
+<h4 id="precedence-between-mask-statements">Precedence between Mask statements</h4>
+<p>When multiple Mask statements target the same column (e.g. two groups both attach masks to <code>ssn</code>), the <strong>lexicographically smallest <code>Sid</code> wins</strong> — deterministic across cluster restarts and snapshot replays. Attach order, group join order, and policy creation time are intentionally not part of the precedence calculation.</p>
+<h4 id="validation">Validation</h4>
+<p>Mask expressions are parse-checked at policy-attach time. <code>POST /admin/iam/policies</code> with a syntactically broken expression returns <code>400 Bad Request</code> with the parser's message:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="nv">$ADMIN_URL</span>/admin/iam/policies<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;name&quot;:&quot;Bad&quot;,&quot;document&quot;:{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="s1">    &quot;Version&quot;:&quot;2024-01-01&quot;,&quot;Statement&quot;:[{</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="s1">      &quot;Sid&quot;:&quot;BadMask&quot;,&quot;Effect&quot;:&quot;Mask&quot;,&quot;Action&quot;:&quot;data:Select&quot;,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="s1">      &quot;Resource&quot;:&quot;data:table:x&quot;,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s1">      &quot;MaskedColumns&quot;:{&quot;c&quot;:&quot;SUBSTR(&quot;}</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s1">    }]}}&#39;</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="o">{</span><span class="s2">&quot;error&quot;</span>:<span class="s2">&quot;Mask expression for column &#39;c&#39; fails to parse: SUBSTR(&quot;</span><span class="o">}</span>
+</code></pre></div>
+<p>At query time, the master plans each mask through Calcite against the actual table schema, so a syntactically-valid expression that references a non-existent column or uses an unsupported function fails at the per-table compile step. The failure is logged and the column falls through unmasked — never silently aborts the whole query — but the master log surfaces it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>WARN  QueryService - [&lt;queryId&gt;] IAM mask compile failed for
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>      data:table:hr.core.employees.salary — leaving raw:
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>      No match found for function signature ROUND(&lt;NUMERIC&gt;, &lt;NUMERIC&gt;)
+</code></pre></div>
+<p>Watch for that line after attaching a new mask policy; it's the only signal that an expression looks valid SQL but the planner doesn't understand it.</p>
+<h4 id="limitations">Limitations</h4>
+<ul>
+<li><strong>Worker expression-engine coverage is partial</strong>. The mask expression is compiled to Calcite's positional <code>$N</code> form on the master, then evaluated by the worker's expression engine. Reliable functions include numeric (<code>ROUND</code>, <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, comparisons), string concat (<code>||</code>, <code>CONCAT</code>), <code>UPPER</code>, <code>LOWER</code>, <code>MD5</code>, <code>CASE WHEN</code>, and literal substitutions. Less reliable: 3-argument <code>SUBSTRING</code> with named offsets, <code>SUBSTR</code> with negative indices, advanced regex. When in doubt, keep the mask simple (literal replacement or a single function call) and verify by running a query as a masked user.</li>
+<li><strong>Semantic-view columns</strong>. Masks attach to the underlying physical table, not the semantic view that wraps it. If you mask <code>hr.core.employees.salary</code>, a query that goes through <code>hr.curated.employee_summary</code> (a semantic view) still sees the masked value because the SCAN node it reads from has the mask applied.</li>
+<li><strong><code>SELECT *</code> is the common path</strong>. Mixed-cardinality writes (a user explicitly selecting a denied column) are still planned by Calcite before IAM runs, so they may fail at validation rather than silently dropping the column.</li>
+</ul>
+<h2 id="row-level-security">Row-Level Security</h2>
+<p>Apply WHERE-condition filters to restrict which rows a user can see. The condition is AND'd into the query's existing WHERE inside an injected FILTER node, evaluated at the SCAN layer — before any user predicate, before any mask.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ApacOnly&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:ice.sales.orders&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;region = &#39;APAC&#39;&quot;</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>Condition</code> supports the <code>${user.userId}</code> substitution for per-user scoping. The semantic layer's mandatory filters use a richer token set (<code>${user.id}</code>, <code>${user.roles}</code>, <code>${user.attr.&lt;key&gt;}</code>) and are the recommended path for new policies — see <a href="../semantic-layer/#mandatory-filters-with-user-context-templating">Semantic Layer → Mandatory filters</a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OwnRowsOnly&quot;</span><span class="p">,</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:ice.app.user_events&quot;</span><span class="p">,</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">  </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user_id = &#39;${user.userId}&#39;&quot;</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="p">}</span>
+</code></pre></div>
+<p>Multiple matching Allow statements with conditions are joined with <code>AND</code> — every applicable row filter applies. The combined predicate evaluates against the raw column values, before any column masks, so row filters on PII columns (e.g. "tenant_id = X") work even when those columns are masked in the projection.</p>
 <h2 id="udf-permissions">UDF Permissions</h2>
 <p>User-defined functions are first-class IAM resources. Five action verbs control the UDF lifecycle:</p>
 <table>
@@ -1890,15 +2274,56 @@ addressed as <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code
 </tbody>
 </table>
 <p>UDF resources are addressed as <code>udf:&lt;name&gt;</code>, so policies can target an exact function or a wildcard family:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UDF:EXECUTE&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;udf:mask_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:hash_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:geohash&quot;</span><span class="p">]</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UDF:EXECUTE&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;udf:mask_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:hash_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:geohash&quot;</span><span class="p">]</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>The Admin UI policy editor ships with templates <em>UDF Execute Any</em>, <em>UDF Author</em>, <em>UDF Sandbox</em>, <em>UDF Deny Sensitive</em>, <em>UDF Global Admin</em>, and <em>UDF Global Read-Only</em>. See the <a href="../udf/">UDF feature page</a> and the <a href="../../use-cases/udf-tutorial/">UDF tutorial</a> for the full lifecycle.</p>
+<h2 id="end-to-end-example-tenant-scoped-masking-rls">End-to-end example: tenant-scoped masking + RLS</h2>
+<p>A complete policy that combines RBAC, masking, and row-level security for a multi-tenant SaaS application:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="p">{</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BaselineRead&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:saas.core.*&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">      </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tenant_id = &#39;${user.userId}&#39;&quot;</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MaskCustomerPii&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mask&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:saas.core.customers&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="w">      </span><span class="nt">&quot;MaskedColumns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="w">        </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;MD5(email)&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="w">        </span><span class="nt">&quot;phone&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;&#39;***-***-XXXX&#39;&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="w">        </span><span class="nt">&quot;ssn&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;&#39;***-**-XXXX&#39;&quot;</span>
+<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;HideInternalCols&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:saas.core.*&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a><span class="w">      </span><span class="nt">&quot;Columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;internal_notes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fraud_score&quot;</span><span class="p">]</span>
+<a id="__codelineno-12-28" name="__codelineno-12-28" href="#__codelineno-12-28"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-12-29" name="__codelineno-12-29" href="#__codelineno-12-29"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-12-30" name="__codelineno-12-30" href="#__codelineno-12-30"></a><span class="p">}</span>
+</code></pre></div>
+<p>For a user <code>tenant_acme</code> running <code>SELECT * FROM saas.core.customers</code>:</p>
+<ol>
+<li>The baseline Allow grants read access — gated by <code>tenant_id = 'tenant_acme'</code>.</li>
+<li>The Deny strips <code>internal_notes</code> and <code>fraud_score</code> from the SCAN output.</li>
+<li>The Mask replaces <code>email</code>, <code>phone</code>, <code>ssn</code> with their masked expressions.</li>
+<li>The result: every column except the two denied ones, with PII fields obfuscated, restricted to rows where <code>tenant_id = 'tenant_acme'</code>.</li>
+</ol>
+<p>A second tenant <code>tenant_globex</code> running the identical query sees only their rows, with the same masking applied. An admin running it sees everything raw — no policies attach to the default admin's effective policy set unless they're explicitly granted.</p>
 <h2 id="management">Management</h2>
-<p>Users, groups, and policies are managed through the Admin UI (with a visual policy editor) or the REST API.</p>
+<p>Users, groups, and policies are managed through the Admin UI (with a visual policy editor) or the REST API. The Admin UI's IAM page surfaces <code>requirePasswordChange</code>, attached policies, and mask/deny columns per resource so operators can audit a user's effective access without writing a query.</p>
 
 
 

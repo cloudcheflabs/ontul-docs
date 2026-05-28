@@ -2349,6 +2349,7 @@
 </code></pre></div>
 <p>The per-metric filter only fires when <code>revenue</code> is part of the SELECT. A query that asks for <code>attempts</code> (a metric without the COMPLETED scope) wouldn't get the status filter — measures stay independent.</p>
 <p>Anonymous / system-internal contexts (no user id) skip the entire injection pass — internal admin queries are trusted to know what they read.</p>
+<p>The same <code>${user.id}</code> / <code>${user.roles}</code> / <code>${user.attr.&lt;key&gt;}</code> substitution powers <a href="../iam/#column-masking">IAM column masking</a> — mandatory filters keep the row in or out, masking transforms the columns. Combining the two gives full multi-tenant + PII coverage in one policy stack.</p>
 <h3 id="derived-metrics">Derived metrics</h3>
 <p>A metric expression may reference other metrics from the same view. The rewriter walks the parsed expression tree and recursively splices the referenced metric's own expansion, with cycle detection.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -2733,7 +2734,7 @@
 <ul>
 <li><a href="../bi-integration/">BI Integration</a> — Tableau / DBeaver / Power BI / Looker setup.</li>
 <li><a href="../../reference/mcp-server/">MCP Server</a> — semantic-discovery tools for LLM agents.</li>
-<li><a href="../iam/">IAM</a> — user attributes feed <code>${user.attr.X}</code> templating.</li>
+<li><a href="../iam/">IAM</a> — user attributes feed <code>${user.attr.X}</code> templating; column masking and row-level filters are enforced server-side alongside metric RBAC.</li>
 <li><a href="../data-lineage/">Data Lineage</a> — metric → base-column edges are recorded automatically.</li>
 </ul>
 
