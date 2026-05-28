@@ -242,6 +242,8 @@ The per-metric filter only fires when `revenue` is part of the SELECT. A query t
 
 Anonymous / system-internal contexts (no user id) skip the entire injection pass — internal admin queries are trusted to know what they read.
 
+The same `${user.id}` / `${user.roles}` / `${user.attr.<key>}` substitution powers [IAM column masking](iam.md#column-masking) — mandatory filters keep the row in or out, masking transforms the columns. Combining the two gives full multi-tenant + PII coverage in one policy stack.
+
 ### Derived metrics
 
 A metric expression may reference other metrics from the same view. The rewriter walks the parsed expression tree and recursively splices the referenced metric's own expansion, with cycle detection.
@@ -571,5 +573,5 @@ Validation deliberately stops at parsing. Full semantic validation (column types
 
 - [BI Integration](bi-integration.md) — Tableau / DBeaver / Power BI / Looker setup.
 - [MCP Server](../reference/mcp-server.md) — semantic-discovery tools for LLM agents.
-- [IAM](iam.md) — user attributes feed `${user.attr.X}` templating.
+- [IAM](iam.md) — user attributes feed `${user.attr.X}` templating; column masking and row-level filters are enforced server-side alongside metric RBAC.
 - [Data Lineage](data-lineage.md) — metric → base-column edges are recorded automatically.

@@ -1,27 +1,45 @@
 # Identity and Access Management
 
-Ontul includes a built-in IAM system that provides authentication, authorization, and fine-grained access control down to the column and row level.
+Ontul includes a built-in IAM system that provides authentication, authorization, and fine-grained access control down to the column and row level. Column masking, row-level filters, and metric-level RBAC (when the semantic layer is in use) all read from the same policy store, so a single statement governs what a user sees regardless of whether the query arrives over Arrow Flight SQL, REST, or the MCP server.
 
 ## Authentication
 
-Ontul supports multiple authentication methods:
+Ontul supports four authentication methods that can co-exist on the same cluster:
 
-- **Username / Password**: Basic authentication with PBKDF2-hashed passwords
-- **Access Keys**: Long-lived credentials (AKIA prefix) with access key ID and secret key for programmatic access
-- **STS Temporary Credentials**: Short-lived credentials (ASIA prefix) with configurable expiration for temporary access
-- **JWT Tokens**: Bearer token authentication for Arrow Flight SQL and REST API
+| Method | When to use | Header / field |
+| --- | --- | --- |
+| **Username / Password** | Interactive UI / SQL clients (Tableau, DBeaver) that only know Basic auth. PBKDF2-hashed passwords. | `authorization: Basic base64(user:pass)` |
+| **JWT Bearer Token** | Short-lived sessions (default 15 min). Issued by `POST /admin/auth/login`. Used by the Admin UI and Java SDK. | `authorization: Bearer <jwt>` |
+| **Access Keys** (`AKIA…`) | Long-lived service-account credentials with separate `accessKeyId` + `secretAccessKey`. Issued via `POST /admin/iam/keys`. | `authorization: AccessKey AKIA…:<secret>` |
+| **STS Temporary Credentials** (`ASIA…`) | Short-lived AKIA-style credentials with configurable expiry — used by transient workloads (CI runners, ETL jobs). | Same as Access Keys, prefix differs. |
+
+The MCP server and the SDK accept whichever credential is supplied via `ONTUL_USER_TOKEN`. Whatever IAM policies attach to that credential apply automatically — there is no separate authorization layer to configure on the client.
+
+### Default admin and password rotation
+
+The cluster is bootstrapped with a default `admin` user. When the master starts with the literal password `admin` (the out-of-the-box value), the user is flagged `requirePasswordChange=true` and **every privileged REST and Flight SQL endpoint returns 403 until the password is rotated**. This gate applies only to:
+
+1. The default admin (until first rotation), and
+2. Any user whose password was just reset by an administrator via the local admin-socket recovery channel.
+
+Users created normally with `POST /admin/iam/users` start with `requirePasswordChange=false` and can call the REST / Flight SQL APIs immediately. The flag never applies to access keys — those carry their own random secret and don't need rotation before use.
 
 ## Users and Groups
 
-- Create and manage database users with passwords and metadata
-- Organize users into IAM groups
-- Policies attached to a group apply to all members
+Users carry an opaque id, a hashed password, group memberships, access keys, and an optional **attribute map** that backs templated row filters and column masks (`${user.attr.tenant_id}`). Groups exist purely as a policy-attachment vehicle: a policy attached to a group applies to every member, and a user can belong to any number of groups.
+
+| Operation | Endpoint |
+| --- | --- |
+| Create user | `POST /admin/iam/users` `{username, password}` |
+| List users | `GET  /admin/iam/users` |
+| Delete user | `DELETE /admin/iam/users/{username}` |
+| Add to group | `POST /admin/iam/add-user-to-group` `{username, groupName}` |
+| Create group | `POST /admin/iam/groups` `{groupName}` |
+| Issue access key | `POST /admin/iam/keys` `{username, expiresAt?}` |
 
 ## Policy-Based Access Control
 
-Ontul uses AWS-style JSON policies to manage permissions. Actions live in the
-`data:` namespace (table/DML/admin) and `UDF:` namespace; table resources are
-addressed as `data:table:<catalog>.<schema>.<table>` and accept wildcards.
+Ontul uses AWS-style JSON policies to manage permissions. Actions live in the `data:` namespace (table reads, DML, admin verbs) and `UDF:` namespace; table resources are addressed as `data:table:<catalog>.<schema>.<table>` and accept wildcards.
 
 ```json
 {
@@ -44,19 +62,169 @@ addressed as `data:table:<catalog>.<schema>.<table>` and accept wildcards.
 }
 ```
 
-- Action verbs in the `data:` namespace: `data:Select`, `data:Insert`, `data:Update`, `data:Delete`, `data:Merge`, `data:CreateTable`, `data:DropTable`, `data:AlterTable`, `data:KillJob`, `data:CancelQuery`. UDF actions stay in the `UDF:` namespace (see below).
-- Resources: `data:table:<catalog>.<schema>.<table>`, `data:schema:<catalog>.<schema>`, `data:job:*`, `data:query:*`, `udf:<name>`. Wildcards `*` and `?` are supported.
-- Policies can be attached to users or groups.
-- Deny rules take precedence over allow rules.
-- Deny-by-default: no matching policies means access is denied.
+- **Action verbs in `data:` namespace** — runtime SQL: `data:Select`, `data:Insert`, `data:Update`, `data:Delete`, `data:Merge`. Catalog DDL: `data:CreateTable`, `data:DropTable`, `data:AlterTable`. Operational: `data:KillJob`, `data:CancelQuery`. The metadata-only `data:SelectTable` verb gates discovery surfaces (e.g. semantic-view listing, table catalog browse) — distinct from the runtime `data:Select` that gates actual scans.
+- **UDF actions** stay in the `UDF:` namespace — see [UDF Permissions](#udf-permissions).
+- **Resources**: `data:table:<catalog>.<schema>.<table>`, `data:schema:<catalog>.<schema>`, `data:job:*`, `data:query:*`, `udf:<name>`. Wildcards `*` and `?` are supported.
+- **Attachment**: policies attach to users (direct) or groups (via group membership).
+- **Deny rules take precedence** over allow rules.
+- **Deny-by-default**: no matching policies means access is denied.
+
+### Creating and updating policies
+
+The same endpoint handles both — `POST /admin/iam/policies` is upsert. Re-posting with an existing `name` overwrites the document and propagates the new content to follower masters via `pushUpdate()`. The next query the affected user issues sees the new policy; no cache invalidation is needed because effective policies are computed per-query.
+
+```bash
+# Initial creation
+curl -X POST $ADMIN_URL/admin/iam/policies -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"name":"AnalystAccess","document": { … v1 … }}'
+
+# Update — same `name`, new document
+curl -X POST $ADMIN_URL/admin/iam/policies -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"name":"AnalystAccess","document": { … v2 … }}'
+```
+
+Both calls return `201 Created`. Distinguish create-vs-update on the client side by `GET /admin/iam/policies` first if needed; the server doesn't differentiate.
+
+| Operation | Endpoint |
+| --- | --- |
+| Create / update policy | `POST   /admin/iam/policies` |
+| List policies | `GET    /admin/iam/policies` |
+| Delete policy | `DELETE /admin/iam/policies/{name}` |
+| Attach policy to group | `POST   /admin/iam/attach-group-policy` `{groupName, policyName}` |
+| Detach policy from group | `POST   /admin/iam/detach-group-policy` `{groupName, policyName}` |
+
+The `AdministratorAccess` policy is reserved — `deletePolicy` rejects attempts to remove it.
 
 ## Column-Level Security
 
-Restrict access to specific columns within a table. Denied columns are automatically removed from query results — no changes to the query required.
+Ontul supports two distinct column-level controls. Both apply server-side inside the query plan; clients cannot bypass them.
+
+| Mechanism | Effect | Output schema | Use when |
+| --- | --- | --- | --- |
+| **Column Deny** | Column is dropped from the SCAN output. | Column disappears from result. | The column should be inaccessible — analytics on the field aren't allowed at all. |
+| **Column Mask** | Column value is replaced by a SQL expression. | Column name and type preserved. | The column structure stays useful (joins, group-by) but the raw value must not reach the caller — phone numbers, SSNs, salaries, emails. |
+
+Precedence on conflict: **Deny &gt; Mask &gt; Allow**. A column listed in both a Deny and a Mask statement disappears entirely; the mask never fires.
+
+### Column Deny
+
+Denied columns vanish from the SCAN output via an injected `PROJECT` node. A `SELECT *` from a user with `Columns: ["ssn"]` in a Deny statement gets every column except `ssn`. An explicit `SELECT ssn FROM ...` planned by Calcite earlier in the pipeline will fail at validation; the deny mechanism is designed for the `SELECT *` and "show me everything" patterns that BI tools emit.
+
+```json
+{
+  "Sid": "HideSsnFromAnalysts",
+  "Effect": "Deny",
+  "Action": "data:Select",
+  "Resource": "data:table:hr.core.employees",
+  "Columns": ["ssn"]
+}
+```
+
+### Column Masking
+
+Mask statements replace each named column's value with a SQL expression evaluated at the worker. The output column keeps its original name and Arrow type — downstream operations (`WHERE`, joins, aggregations) work, just on the masked values.
+
+```json
+{
+  "Sid": "MaskHrPii",
+  "Effect": "Mask",
+  "Action": "data:Select",
+  "Resource": "data:table:hr.core.employees",
+  "MaskedColumns": {
+    "phone":  "'***-***-XXXX'",
+    "email":  "MD5(email)",
+    "salary": "ROUND(salary, -3)"
+  }
+}
+```
+
+Examples of what each pattern yields:
+
+| Mask expression | Behavior | Example output |
+| --- | --- | --- |
+| `'REDACTED'` | Literal — every row gets the constant. Cheapest, no leakage. | `REDACTED` |
+| `MD5(email)` | Stable hash — same input → same output, so joins and grouping still discriminate users. | `5d41402abc4b2a76…` |
+| `ROUND(salary, -3)` | Numeric bucketing — preserves order-of-magnitude utility for analytics while hiding exact value. | `75000` |
+| `'XXX-XXX-' \|\| RIGHT(phone, 4)` | Partial reveal — last 4 digits visible. <span style="color:#a06000">Requires worker support for the function — see "Limitations" below.</span> | `XXX-XXX-1234` |
+| `CASE WHEN '${user.attr.role}' = 'compliance' THEN ssn ELSE '***-**-XXXX' END` | Conditional unmask — compliance users see raw, others see masked. | `***-**-XXXX` (most users), real value (compliance) |
+
+#### How a mask query looks
+
+A user in `analyst-group` running:
+
+```sql
+SELECT name, phone, salary FROM hr.core.employees WHERE department = 'Engineering';
+```
+
+receives the rewritten plan (conceptually):
+
+```sql
+SELECT name,
+       '***-***-XXXX'      AS phone,
+       ROUND(salary, -3)   AS salary
+  FROM hr.core.employees
+ WHERE department = 'Engineering';
+```
+
+Same query as an admin (no policies apply) returns the raw `name`, `phone`, and `salary`.
+
+#### User-context templating
+
+The mask expression supports the same templating tokens as the [semantic layer's mandatory filters](semantic-layer.md#mandatory-filters-with-user-context-templating) — `${user.id}`, `${user.roles}`, `${user.attr.<key>}`. The substitution happens after policy load and before SQL parsing, so a single policy can implement role-aware unmasking without one statement per role:
+
+```json
+{
+  "Sid": "ConditionalSsnMask",
+  "Effect": "Mask",
+  "Action": "data:Select",
+  "Resource": "data:table:hr.core.employees",
+  "MaskedColumns": {
+    "ssn": "CASE WHEN '${user.id}' = 'compliance_admin' THEN ssn ELSE '***-**-' || RIGHT(ssn, 4) END"
+  }
+}
+```
+
+Missing user attributes resolve to the empty string `''`. The substitution quotes values with embedded `'` escaping — basic SQL-injection defence for a feature whose inputs come from admin DDL, not user prompts.
+
+#### Precedence between Mask statements
+
+When multiple Mask statements target the same column (e.g. two groups both attach masks to `ssn`), the **lexicographically smallest `Sid` wins** — deterministic across cluster restarts and snapshot replays. Attach order, group join order, and policy creation time are intentionally not part of the precedence calculation.
+
+#### Validation
+
+Mask expressions are parse-checked at policy-attach time. `POST /admin/iam/policies` with a syntactically broken expression returns `400 Bad Request` with the parser's message:
+
+```bash
+$ curl -X POST $ADMIN_URL/admin/iam/policies -d '{"name":"Bad","document":{
+    "Version":"2024-01-01","Statement":[{
+      "Sid":"BadMask","Effect":"Mask","Action":"data:Select",
+      "Resource":"data:table:x",
+      "MaskedColumns":{"c":"SUBSTR("}
+    }]}}'
+{"error":"Mask expression for column 'c' fails to parse: SUBSTR("}
+```
+
+At query time, the master plans each mask through Calcite against the actual table schema, so a syntactically-valid expression that references a non-existent column or uses an unsupported function fails at the per-table compile step. The failure is logged and the column falls through unmasked — never silently aborts the whole query — but the master log surfaces it:
+
+```
+WARN  QueryService - [<queryId>] IAM mask compile failed for
+      data:table:hr.core.employees.salary — leaving raw:
+      No match found for function signature ROUND(<NUMERIC>, <NUMERIC>)
+```
+
+Watch for that line after attaching a new mask policy; it's the only signal that an expression looks valid SQL but the planner doesn't understand it.
+
+#### Limitations
+
+- **Worker expression-engine coverage is partial**. The mask expression is compiled to Calcite's positional `$N` form on the master, then evaluated by the worker's expression engine. Reliable functions include numeric (`ROUND`, `+`, `-`, `*`, `/`, comparisons), string concat (`||`, `CONCAT`), `UPPER`, `LOWER`, `MD5`, `CASE WHEN`, and literal substitutions. Less reliable: 3-argument `SUBSTRING` with named offsets, `SUBSTR` with negative indices, advanced regex. When in doubt, keep the mask simple (literal replacement or a single function call) and verify by running a query as a masked user.
+- **Semantic-view columns**. Masks attach to the underlying physical table, not the semantic view that wraps it. If you mask `hr.core.employees.salary`, a query that goes through `hr.curated.employee_summary` (a semantic view) still sees the masked value because the SCAN node it reads from has the mask applied.
+- **`SELECT *` is the common path**. Mixed-cardinality writes (a user explicitly selecting a denied column) are still planned by Calcite before IAM runs, so they may fail at validation rather than silently dropping the column.
 
 ## Row-Level Security
 
-Apply row filter conditions to restrict which rows a user can see:
+Apply WHERE-condition filters to restrict which rows a user can see. The condition is AND'd into the query's existing WHERE inside an injected FILTER node, evaluated at the SCAN layer — before any user predicate, before any mask.
 
 ```json
 {
@@ -68,14 +236,26 @@ Apply row filter conditions to restrict which rows a user can see:
 }
 ```
 
-Row filters are injected into the query plan automatically, ensuring users only see data they are authorized to access. The expression supports `${user.userId}` substitution for per-user scoping.
+`Condition` supports the `${user.userId}` substitution for per-user scoping. The semantic layer's mandatory filters use a richer token set (`${user.id}`, `${user.roles}`, `${user.attr.<key>}`) and are the recommended path for new policies — see [Semantic Layer → Mandatory filters](semantic-layer.md#mandatory-filters-with-user-context-templating).
+
+```json
+{
+  "Sid": "OwnRowsOnly",
+  "Effect": "Allow",
+  "Action": "data:Select",
+  "Resource": "data:table:ice.app.user_events",
+  "Condition": "user_id = '${user.userId}'"
+}
+```
+
+Multiple matching Allow statements with conditions are joined with `AND` — every applicable row filter applies. The combined predicate evaluates against the raw column values, before any column masks, so row filters on PII columns (e.g. "tenant_id = X") work even when those columns are masked in the projection.
 
 ## UDF Permissions
 
 User-defined functions are first-class IAM resources. Five action verbs control the UDF lifecycle:
 
 | Action | Required for |
-|---|---|
+| --- | --- |
 | `UDF:EXECUTE` | Calling a UDF in a query (planner enforces this against every UDF the query references) |
 | `UDF:CREATE` | Registering a TEMPORARY or USER-scoped UDF |
 | `UDF:DROP` | Dropping a USER-scoped UDF |
@@ -94,6 +274,52 @@ UDF resources are addressed as `udf:<name>`, so policies can target an exact fun
 
 The Admin UI policy editor ships with templates *UDF Execute Any*, *UDF Author*, *UDF Sandbox*, *UDF Deny Sensitive*, *UDF Global Admin*, and *UDF Global Read-Only*. See the [UDF feature page](udf.md) and the [UDF tutorial](../use-cases/udf-tutorial.md) for the full lifecycle.
 
+## End-to-end example: tenant-scoped masking + RLS
+
+A complete policy that combines RBAC, masking, and row-level security for a multi-tenant SaaS application:
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "BaselineRead",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:saas.core.*",
+      "Condition": "tenant_id = '${user.userId}'"
+    },
+    {
+      "Sid": "MaskCustomerPii",
+      "Effect": "Mask",
+      "Action": "data:Select",
+      "Resource": "data:table:saas.core.customers",
+      "MaskedColumns": {
+        "email":  "MD5(email)",
+        "phone":  "'***-***-XXXX'",
+        "ssn":    "'***-**-XXXX'"
+      }
+    },
+    {
+      "Sid": "HideInternalCols",
+      "Effect": "Deny",
+      "Action": "data:Select",
+      "Resource": "data:table:saas.core.*",
+      "Columns": ["internal_notes", "fraud_score"]
+    }
+  ]
+}
+```
+
+For a user `tenant_acme` running `SELECT * FROM saas.core.customers`:
+
+1. The baseline Allow grants read access — gated by `tenant_id = 'tenant_acme'`.
+2. The Deny strips `internal_notes` and `fraud_score` from the SCAN output.
+3. The Mask replaces `email`, `phone`, `ssn` with their masked expressions.
+4. The result: every column except the two denied ones, with PII fields obfuscated, restricted to rows where `tenant_id = 'tenant_acme'`.
+
+A second tenant `tenant_globex` running the identical query sees only their rows, with the same masking applied. An admin running it sees everything raw — no policies attach to the default admin's effective policy set unless they're explicitly granted.
+
 ## Management
 
-Users, groups, and policies are managed through the Admin UI (with a visual policy editor) or the REST API.
+Users, groups, and policies are managed through the Admin UI (with a visual policy editor) or the REST API. The Admin UI's IAM page surfaces `requirePasswordChange`, attached policies, and mask/deny columns per resource so operators can audit a user's effective access without writing a query.
