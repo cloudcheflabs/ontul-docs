@@ -45,8 +45,13 @@ Response:
 
 #### CLASS Job (Custom Java)
 
+`deps` accepts two kinds of paths interchangeably:
+
+- **Local-on-cluster paths** (e.g. `deps/my-etl-job.jar`) — files uploaded ahead of time via `POST /v1/api/deps` or shared filesystem.
+- **S3 URIs** (e.g. `s3://bucket/key`, `s3a://…`) — the worker downloads them on demand using a configured S3 connection. This is what the kiok ontul-operator and other Spark-style stagers produce.
+
 ```bash
-# Step 1: Upload dependency JARs
+# Step 1 (option A): upload the JAR through ontul's deps endpoint.
 curl -X POST http://localhost:8080/v1/api/deps \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-File-Name: my-etl-job.jar" \
@@ -70,10 +75,33 @@ curl -X POST http://localhost:8080/v1/api/job/submit \
   }'
 ```
 
+##### Referencing JARs already in S3
+
+To skip the upload step entirely — for example when an external pipeline (kiok, CI) has already staged the JAR — put the `s3://` URI directly in `deps` and tell the worker which Connection Store entry to use for credentials:
+
+```bash
+curl -X POST http://localhost:8080/v1/api/job/submit \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "custom-etl",
+    "type": "CLASS",
+    "className": "com.example.MyEtlJob",
+    "deps": ["s3://my-staging-bucket/jars/abc123-my-etl-job.jar"],
+    "config": {
+      "ontul.deps.s3.connectionId": "ontul-staging-s3"
+    },
+    "args": {"input": "s3://bucket/raw/data", "output": "ice.warehouse.processed"}
+  }'
+```
+
+The worker resolves `ontul.deps.s3.connectionId` against its synced Connection Store (so the same id must exist on every node), uses the connection's `endpoint`/`region`/`accessKey`/`secretKey`/`pathStyle` properties to build an S3 client, and caches the downloaded file under `<baseDataDir>/deps/`. A second job referencing the same `s3://…` URI reuses the cached file.
+
 #### PYTHON Job
 
 ```bash
-# Step 1: Upload Python script
+# Step 1: Upload Python script (or point scriptPath at an s3:// URI — same rules
+# as CLASS deps).
 curl -X POST http://localhost:8080/v1/api/deps \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-File-Name: etl_pipeline.py" \
@@ -94,6 +122,8 @@ curl -X POST http://localhost:8080/v1/api/job/submit \
     }
   }'
 ```
+
+Both `scriptPath` and any `deps` entries may be `s3://` URIs; the same `ontul.deps.s3.connectionId` config knob applies. A `requirements.txt` reached this way is downloaded once and then handed to `pip3 install` like a local file.
 
 ### 2. Shell Script (`bin/submit.sh`)
 

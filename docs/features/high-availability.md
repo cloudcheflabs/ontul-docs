@@ -37,8 +37,12 @@ All cluster state is stored in embedded RocksDB — no external database is need
 
 ## Backup & Restore
 
-Ontul supports cluster state backup and restore:
+Ontul exports the cluster's stateful stores (KMS keystore, IAM, catalog metadata) to S3 and restores them with a coordinated cluster-wide handover. Three triggers share the same code path:
 
-- Backup creates a RocksDB checkpoint as a compressed archive
-- Backups can be stored locally or on S3
-- Restore loads a backup archive and rebuilds the state store
+- **Manual** via the Admin UI or `POST /admin/backup/run`.
+- **Fixed-interval** ("every N hours") via `intervalHours` on `/admin/backup/configure`.
+- **Cron** via `/admin/backup/cron` for wall-clock schedules like `0 2 * * *` (daily at 02:00).
+
+Both automatic modes coexist; the cron expression survives leader handoffs and restarts via the metadata store. Restore is a three-phase operation that blocks requests, imports the snapshot, and waits for every follower to sync before re-accepting traffic.
+
+See **[Backup & Restore](backup-restore.md)** for the full endpoint reference and step-by-step setup.

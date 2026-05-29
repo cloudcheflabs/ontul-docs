@@ -181,12 +181,12 @@ The mask expression supports the same templating tokens as the [semantic layer's
   "Action": "data:Select",
   "Resource": "data:table:hr.core.employees",
   "MaskedColumns": {
-    "ssn": "CASE WHEN '${user.id}' = 'compliance_admin' THEN ssn ELSE '***-**-' || RIGHT(ssn, 4) END"
+    "ssn": "CASE WHEN ${user.id} = 'compliance_admin' THEN ssn ELSE '***-**-' || RIGHT(ssn, 4) END"
   }
 }
 ```
 
-Missing user attributes resolve to the empty string `''`. The substitution quotes values with embedded `'` escaping — basic SQL-injection defence for a feature whose inputs come from admin DDL, not user prompts.
+`${user.id}` substitutes to a single-quoted SQL literal — `'compliance_admin'` — so write it bare, **without** wrapping it in your own quotes. The same convention applies to `${user.attr.<key>}`: bare in the expression, the resolver adds the quotes. Missing user attributes resolve to the empty string `''`. The substitution escapes embedded `'` in values — basic SQL-injection defence for a feature whose inputs come from admin DDL, not user prompts.
 
 #### Precedence between Mask statements
 
