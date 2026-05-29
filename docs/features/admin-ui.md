@@ -50,7 +50,7 @@ Per-worker metrics with auto-refresh: heap usage, active tasks, and performance 
 
 ### Backup & Restore
 
-Backup the cluster state (RocksDB checkpoint) to local storage or S3, and restore from backups.
+Backup the cluster's KMS / IAM / metadata stores to S3 and restore from any prior backup. The page exposes manual *Backup Now*, a fixed-interval schedule, and a 5-field UNIX **cron schedule** (e.g. `0 2 * * *`); the next-fire timestamp is shown next to an active cron so you can see at a glance when the next run will land. See [Backup & Restore](backup-restore.md) for the full flow.
 
 ## REST API
 

@@ -55,6 +55,7 @@ nav:
       - "Encryption & KMS": features/encryption.md
       - "Geospatial Support": features/geospatial.md
       - "High Availability": features/high-availability.md
+      - "Backup & Restore": features/backup-restore.md
   - "Reference":
       - "Java SDK": reference/sdk-java.md
       - "Python SDK": reference/sdk-python.md
