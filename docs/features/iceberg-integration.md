@@ -65,7 +65,7 @@ Ontul sends `header.X-Iceberg-Access-Delegation: ""` on every catalog call so Po
 | Statement | Notes |
 |---|---|
 | `CREATE SCHEMA [IF NOT EXISTS] catalog.namespace` | Creates an Iceberg namespace. |
-| `CREATE TABLE [IF NOT EXISTS] catalog.ns.t (cols) [PARTITIONED BY (...)] [SORT BY (...)] [WITH (props)]` | Format v2, with optional hidden partitioning and sort order. |
+| `CREATE TABLE [IF NOT EXISTS] catalog.ns.t (cols) [USING iceberg] [PARTITIONED BY (...)] [SORT BY (...)] [WITH (props) \| TBLPROPERTIES (props)]` | Format v2, with optional hidden partitioning and sort order. `USING iceberg` (Spark style) is accepted and ignored; `WITH` and `TBLPROPERTIES` are interchangeable property clauses. |
 | `CREATE TABLE catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...` | CTAS, distributed across workers. |
 | `DROP TABLE [IF EXISTS] catalog.ns.t` | Honors Polaris `polaris.config.drop-with-purge.enabled` for actual S3 cleanup. |
 | `DROP SCHEMA [IF EXISTS] catalog.namespace` | Namespace must be empty. |
@@ -89,7 +89,25 @@ Predicates against the source columns are pushed into the Iceberg scan and used 
 
 ### Sort order
 
-`SORT BY (col [ASC|DESC] [NULLS FIRST|LAST], ...)` enforces a per-file sort. Rows are buffered per partition and sorted before the parquet writer flushes — useful for clustering on filter columns to improve later parquet column-filter predicate pushdown.
+`SORT BY (col [ASC|DESC] [NULLS FIRST|LAST], ...)` enforces a per-file sort. Rows are buffered per partition and sorted before the data file is flushed — useful for clustering on filter columns to improve later column-filter predicate pushdown.
+
+## File formats
+
+Iceberg data files can be **Parquet, ORC, or Avro**, and Ontul both reads and writes all three. A single table may even hold a mix of formats written by different engines.
+
+**Write.** The per-table `write.format.default` property chooses the data-file format for every write path — `INSERT`, CTAS, `MERGE`, `UPDATE`, and `OPTIMIZE` compaction. Parquet is the default when the property is absent.
+
+```sql
+CREATE TABLE ice.ns.events (id BIGINT, payload STRING) USING iceberg
+TBLPROPERTIES ('format-version'='2', 'write.format.default'='orc');
+```
+
+**Read.** Ontul reads Parquet, ORC and Avro data files regardless of which engine produced them, so a table created by Trino, Spark or Flink in any of these formats is queryable directly. The format is detected **per data file** from the Iceberg manifest — not from the table default — so reads work transparently across a format change or a mixed-format table.
+
+**Cross-engine interoperability.** Files Ontul writes are readable by other Iceberg engines and vice-versa (verified end-to-end against Trino on a Polaris catalog). Ontul records the true on-disk `file_size_in_bytes` on every data file, so engines that locate the Parquet footer from Iceberg metadata read it correctly; ORC/Avro files written elsewhere are read through Iceberg's generic readers with field-id projection.
+
+!!! note "Row-level deletes are Parquet-only"
+    Equality- and position-**delete** files are always written as Parquet (independent of `write.format.default`). Reading an ORC/Avro *data* file that has delete files attached is not yet supported and fails with a clear error rather than silently returning stale rows.
 
 ## Read
 
@@ -113,7 +131,7 @@ Both forms are stripped by a SQL preprocessor and routed through `TableScan.useS
 
 | Statement | Implementation |
 |---|---|
-| `INSERT INTO catalog.ns.t SELECT/VALUES ...` | Workers write parquet shards in parallel, master commits a single `AppendFiles` snapshot. Partition routing happens on the worker. |
+| `INSERT INTO catalog.ns.t SELECT/VALUES ...` | Workers write data-file shards (in the table's `write.format.default`, see [File formats](#file-formats)) in parallel, master commits a single `AppendFiles` snapshot. Partition routing happens on the worker. |
 | `CREATE TABLE catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...` | Same path as INSERT, plus catalog refresh so the new table is queryable immediately. |
 | `DELETE FROM catalog.ns.t WHERE <pred>` | Position-delete based MOR. Workers scan their assigned files, evaluate the predicate row-by-row, write per-file position-delete parquet, master commits one `RowDelta`. |
 | `UPDATE catalog.ns.t SET col = expr [WHERE <pred>]` | RowDelta — original rows marked as position-deletes plus a new data file with updated values. |
@@ -249,6 +267,12 @@ CREATE TABLE ice.sales.props_demo (
   write.format.default = 'parquet',
   custom.tag = 'ml-features'
 );
+
+-- Spark-style USING + TBLPROPERTIES, ORC data files
+CREATE TABLE ice.sales.orc_demo (
+  id INT, name VARCHAR, amount DOUBLE
+) USING iceberg
+TBLPROPERTIES ('format-version'='2', 'write.format.default'='orc');
 ```
 
 ### Insert
