@@ -8,9 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/interactive-sql/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/backup-restore/">
       
       
+        <link rel="prev" href="../high-availability/">
+      
+      
+        <link rel="next" href="../../reference/sdk-java/">
       
       
         
@@ -21,7 +25,7 @@
     
     
       
-        <title>Interactive SQL - Ontul</title>
+        <title>Backup & Restore - Ontul</title>
       
     
     
@@ -74,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#interactive-sql" class="md-skip">
+        <a href="#backup-restore" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Interactive SQL
+              Backup & Restore
             
           </span>
         </div>
@@ -269,10 +273,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../unified-engine/" class="md-tabs__link">
           
   
@@ -652,26 +658,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -689,7 +700,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1152,10 +1163,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../backup-restore/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup & Restore
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1171,6 +1209,81 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-s3-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up S3 storage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cron-driven-backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cron-driven backup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout-of-a-backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layout of a backup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpoint-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Endpoint reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1691,45 +1804,167 @@
 
 
 
-<h1 id="interactive-sql">Interactive SQL</h1>
-<p>Ontul provides an interactive SQL query engine with federation across multiple data sources. Clients connect via Arrow Flight SQL and execute standard SQL queries against any registered catalog.</p>
-<h2 id="arrow-flight-sql-interface">Arrow Flight SQL Interface</h2>
-<p>Ontul exposes an Arrow Flight SQL endpoint (default port 47470) that supports:</p>
-<ul>
-<li><strong>JDBC drivers</strong>: Connect from DBeaver, DataGrip, or any JDBC-compatible tool using the Arrow Flight SQL JDBC driver</li>
-<li><strong>Python</strong>: Connect via <code>pyarrow.flight</code> or the Ontul Python SDK</li>
-<li><strong>Programmatic clients</strong>: Any Arrow Flight SQL client library (Java, Go, Rust, Node.js, etc.)</li>
-</ul>
-<h2 id="sql-support">SQL Support</h2>
-<p>Ontul uses Apache Calcite for SQL parsing and query planning, supporting:</p>
-<ul>
-<li><strong>DML</strong>: <code>SELECT</code>, <code>INSERT INTO</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE INTO</code>, <code>CREATE TABLE AS SELECT</code></li>
-<li><strong>DDL</strong>: <code>CREATE TABLE</code>, <code>DROP TABLE</code>, <code>ALTER TABLE</code>, <code>CREATE VIEW</code>, <code>DROP VIEW</code>, <code>CREATE SCHEMA</code>, <code>DROP SCHEMA</code></li>
-<li><strong>Queries</strong>: <code>JOIN</code> (INNER, LEFT, RIGHT, FULL), <code>GROUP BY</code>, <code>ORDER BY</code>, <code>LIMIT</code>, <code>HAVING</code>, subqueries, CTEs (<code>WITH</code>), window functions, <code>CASE WHEN</code>, <code>CAST</code>, <code>LIKE</code>, <code>IS NULL</code></li>
-<li><strong>Aggregations</strong>: <code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code></li>
-<li><strong>Window Functions</strong>: <code>ROW_NUMBER</code>, <code>RANK</code>, <code>DENSE_RANK</code>, <code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> with <code>PARTITION BY</code> and <code>ORDER BY</code></li>
-<li><strong>Metadata</strong>: <code>SHOW CATALOGS</code>, <code>SHOW SCHEMAS</code>, <code>SHOW TABLES</code>, <code>DESCRIBE</code>, <code>EXPLAIN</code></li>
-<li><strong>Transactions</strong>: <code>BEGIN</code>, <code>COMMIT</code>, <code>ROLLBACK</code></li>
-<li><strong>Session</strong>: <code>SET</code> session variables</li>
-</ul>
-<h2 id="federation-queries">Federation Queries</h2>
-<p>Ontul supports cross-catalog queries using fully qualified table names (<code>catalog.schema.table</code>). A single SQL query can join data across different data sources — for example, joining an Iceberg table with a JDBC database table.</p>
-<h2 id="query-optimization">Query Optimization</h2>
-<ul>
-<li><strong>Predicate Pushdown</strong>: Filters are pushed down to connectors, reducing the amount of data read from sources</li>
-<li><strong>Plan Caching</strong>: Execution plans are cached (SHA-256 based LRU) to avoid re-planning repeated queries</li>
-<li><strong>Split Pruning</strong>: Only relevant data splits are assigned to Workers based on query predicates</li>
-<li><strong>Query Resource Management</strong>: Global and per-user concurrency control with timeout enforcement</li>
-</ul>
-<h2 id="distributed-execution">Distributed Execution</h2>
-<p>Queries are automatically distributed across the cluster:</p>
+<h1 id="backup-restore">Backup &amp; Restore</h1>
+<p>Ontul exports the cluster's stateful stores — <strong>KMS keystore</strong>, <strong>IAM</strong> (users, policies, access keys), and the <strong>catalog metadata store</strong> — to an S3 bucket of your choosing, and restores them in a coordinated way that blocks requests, broadcasts the recovered state to followers, and only marks the cluster ready once every node has caught up.</p>
+<p>Three trigger modes share the same backup/restore implementation:</p>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Where it's configured</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Manual</strong></td>
+<td>Admin UI → <em>Backup &amp; Restore</em> → <em>Backup Now</em>, or <code>POST /admin/backup/run</code></td>
+<td>Before destructive ops (schema migrations, KMS key rotation)</td>
+</tr>
+<tr>
+<td><strong>Fixed-interval</strong></td>
+<td><code>intervalHours</code> field on <code>/admin/backup/configure</code></td>
+<td>Safety net: "every N hours, no matter what"</td>
+</tr>
+<tr>
+<td><strong>Cron</strong></td>
+<td><code>/admin/backup/cron</code>, or the <em>Cron Schedule</em> card in the Admin UI</td>
+<td>Wall-clock schedules: "every night at 02:00"</td>
+</tr>
+</tbody>
+</table>
+<p>The two automatic modes coexist — if both are set, ontul fires both. Clear one (<code>intervalHours: 0</code> or empty cron) to use only the other.</p>
+<h2 id="setting-up-s3-storage">Setting up S3 storage</h2>
+<p>Backups go to an S3 bucket (or any S3-compatible store like shannonstore) accessed through an entry in the <strong>Connection Store</strong>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/connections<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s1">    &quot;connectionId&quot;: &quot;ontul-backup-s3&quot;,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s1">    &quot;type&quot;: &quot;S3&quot;,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="s1">    &quot;properties&quot;: {</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="s1">      &quot;endpoint&quot;: &quot;https://s3.us-east-1.amazonaws.com&quot;,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s1">      &quot;region&quot;: &quot;us-east-1&quot;,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="s1">      &quot;bucket&quot;: &quot;my-ontul-backups&quot;,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="s1">      &quot;accessKey&quot;: &quot;AKIA…&quot;,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s1">      &quot;secretKey&quot;: &quot;…&quot;,</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s1">      &quot;pathStyle&quot;: &quot;false&quot;</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s1">    }</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p>Then tell the backup service which connection + prefix to use:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/configure<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="s1">    &quot;connectionId&quot;: &quot;ontul-backup-s3&quot;,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="s1">    &quot;s3Prefix&quot;: &quot;s3://my-ontul-backups/cluster&quot;,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="s1">    &quot;intervalHours&quot;: 0</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p>The settings are persisted in the metadata store and survive restarts — a fresh leader picks up the same target without re-running <code>configure</code>.</p>
+<h2 id="cron-driven-backup">Cron-driven backup</h2>
+<p>Use a 5-field UNIX cron expression (same grammar as the kiok DAG scheduler):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/cron<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;cron&quot;: &quot;0 2 * * *&quot;}&#39;</span>
+</code></pre></div>
+<p>The leader-side scheduler ticks every 30 seconds and fires <code>backup()</code> once when the cron expression has a fire time in the window <code>(lastChecked, now]</code>. The first tick after the cron is set, or after a leader handoff, arms from "now" — ontul will <strong>not</strong> back-fire missed schedules on startup; recovering a missed nightly backup three days late tends to surprise more than skipping it does. Clear the schedule with an empty body:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/cron<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;cron&quot;: null}&#39;</span>
+</code></pre></div>
+<p>The cron expression persists under <code>backup.cron</code> in the metadata store, so a restart or leader change re-arms the same schedule.</p>
+<p>The combined-form endpoint also accepts cron, useful for setting everything in one round-trip from the Admin UI:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/configure<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="s1">    &quot;connectionId&quot;: &quot;ontul-backup-s3&quot;,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="s1">    &quot;s3Prefix&quot;: &quot;s3://my-ontul-backups/cluster&quot;,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="s1">    &quot;intervalHours&quot;: 0,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="s1">    &quot;cron&quot;: &quot;0 2 * * *&quot;</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<h2 id="layout-of-a-backup">Layout of a backup</h2>
+<p>Each run writes to <code>&lt;s3Prefix&gt;/&lt;timestamp&gt;/</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>s3://my-ontul-backups/cluster/20260529-120000/
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  ├── kms.bin            # encrypted KMS keystore
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  ├── iam.json           # users, policies, access keys
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  └── metadata.json      # catalog metadata snapshot
+</code></pre></div>
+<p>The history is exposed at <code>GET /admin/backup/history</code> (last 100 entries) and the available backup ids at <code>GET /admin/backup/list</code> (newest first).</p>
+<h2 id="restore">Restore</h2>
+<p>Restore is destructive — it overwrites the current stores. Ontul runs it in three phases on the leader:</p>
 <ol>
-<li>The Master parses and plans the query</li>
-<li>Data splits are resolved from connectors and assigned to Workers</li>
-<li>Each Worker executes its portion of the plan independently</li>
-<li>Workers communicate directly with each other for shuffles (no Master bottleneck)</li>
-<li>Results stream back to the client via Arrow Flight</li>
+<li><strong>Block requests.</strong> Marks the leader not-ready (<code>/admin/ready</code> returns 503) so clients fail fast instead of querying half-restored state.</li>
+<li><strong>Download + import.</strong> Pulls each store from S3 and imports it into KMS / IAM / Metadata in-process.</li>
+<li><strong>Broadcast + wait.</strong> Pushes the recovered KMS keystore, IAM snapshot, and metadata to every follower over the internal NIO protocol, then waits for the cluster-ready signal before re-accepting traffic.</li>
 </ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/restore<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;backupId&quot;: &quot;20260529-120000&quot;}&#39;</span>
+</code></pre></div>
+<p>The Admin UI exposes this as a <em>Restore</em> button on each entry in the <em>Available Backups</em> list, behind an explicit confirmation modal that names every store about to be overwritten.</p>
+<h2 id="endpoint-reference">Endpoint reference</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Body</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/admin/backup/config</code></td>
+<td>—</td>
+<td>Current config + scheduler state (<code>cron</code>, <code>cronScheduled</code>, <code>cronNextFireMillis</code>)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/admin/backup/configure</code></td>
+<td><code>{connectionId, s3Prefix, intervalHours, cron?}</code></td>
+<td>Set connection / prefix / fixed-interval / cron in one call</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/admin/backup/cron</code></td>
+<td><code>{cron: string \| null}</code></td>
+<td>Set or clear the cron schedule</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/admin/backup/run</code></td>
+<td>—</td>
+<td>Trigger a backup immediately</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/admin/backup/restore</code></td>
+<td><code>{backupId}</code></td>
+<td>Restore from a specific backup id</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/admin/backup/list</code></td>
+<td>—</td>
+<td>Backup ids in S3, newest first</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/admin/backup/history</code></td>
+<td>—</td>
+<td>Last 100 history entries (backup + restore)</td>
+</tr>
+</tbody>
+</table>
+<p>The Admin UI's <em>Backup &amp; Restore</em> page wires the same endpoints; the underlying state survives master restarts.</p>
 
 
 

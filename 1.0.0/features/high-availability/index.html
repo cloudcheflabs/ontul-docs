@@ -14,14 +14,14 @@
         <link rel="prev" href="../geospatial/">
       
       
-        <link rel="next" href="../../reference/sdk-java/">
+        <link rel="next" href="../backup-restore/">
       
       
         
       
       
       <link rel="icon" href="../../images/logo/ontul-logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1261,6 +1261,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backup-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup & Restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1806,12 +1834,14 @@
 <li>Job history and audit logs</li>
 </ul>
 <h2 id="backup-restore">Backup &amp; Restore</h2>
-<p>Ontul supports cluster state backup and restore:</p>
+<p>Ontul exports the cluster's stateful stores (KMS keystore, IAM, catalog metadata) to S3 and restores them with a coordinated cluster-wide handover. Three triggers share the same code path:</p>
 <ul>
-<li>Backup creates a RocksDB checkpoint as a compressed archive</li>
-<li>Backups can be stored locally or on S3</li>
-<li>Restore loads a backup archive and rebuilds the state store</li>
+<li><strong>Manual</strong> via the Admin UI or <code>POST /admin/backup/run</code>.</li>
+<li><strong>Fixed-interval</strong> ("every N hours") via <code>intervalHours</code> on <code>/admin/backup/configure</code>.</li>
+<li><strong>Cron</strong> via <code>/admin/backup/cron</code> for wall-clock schedules like <code>0 2 * * *</code> (daily at 02:00).</li>
 </ul>
+<p>Both automatic modes coexist; the cron expression survives leader handoffs and restarts via the metadata store. Restore is a three-phase operation that blocks requests, imports the snapshot, and waits for every follower to sync before re-accepting traffic.</p>
+<p>See <strong><a href="../backup-restore/">Backup &amp; Restore</a></strong> for the full endpoint reference and step-by-step setup.</p>
 
 
 

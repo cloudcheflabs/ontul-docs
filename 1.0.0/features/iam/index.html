@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../images/logo/ontul-logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1417,6 +1417,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backup-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup & Restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2192,11 +2220,11 @@
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
 <a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:hr.core.employees&quot;</span><span class="p">,</span>
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="nt">&quot;MaskedColumns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">&quot;ssn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CASE WHEN &#39;${user.id}&#39; = &#39;compliance_admin&#39; THEN ssn ELSE &#39;***-**-&#39; || RIGHT(ssn, 4) END&quot;</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">&quot;ssn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CASE WHEN ${user.id} = &#39;compliance_admin&#39; THEN ssn ELSE &#39;***-**-&#39; || RIGHT(ssn, 4) END&quot;</span>
 <a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="p">}</span>
 <a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="p">}</span>
 </code></pre></div>
-<p>Missing user attributes resolve to the empty string <code>''</code>. The substitution quotes values with embedded <code>'</code> escaping — basic SQL-injection defence for a feature whose inputs come from admin DDL, not user prompts.</p>
+<p><code>${user.id}</code> substitutes to a single-quoted SQL literal — <code>'compliance_admin'</code> — so write it bare, <strong>without</strong> wrapping it in your own quotes. The same convention applies to <code>${user.attr.&lt;key&gt;}</code>: bare in the expression, the resolver adds the quotes. Missing user attributes resolve to the empty string <code>''</code>. The substitution escapes embedded <code>'</code> in values — basic SQL-injection defence for a feature whose inputs come from admin DDL, not user prompts.</p>
 <h4 id="precedence-between-mask-statements">Precedence between Mask statements</h4>
 <p>When multiple Mask statements target the same column (e.g. two groups both attach masks to <code>ssn</code>), the <strong>lexicographically smallest <code>Sid</code> wins</strong> — deterministic across cluster restarts and snapshot replays. Attach order, group join order, and policy creation time are intentionally not part of the precedence calculation.</p>
 <h4 id="validation">Validation</h4>

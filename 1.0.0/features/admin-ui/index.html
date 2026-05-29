@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../images/logo/ontul-logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1148,6 +1148,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backup-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup & Restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1689,7 +1717,7 @@
 <h3 id="worker-dashboard">Worker Dashboard</h3>
 <p>Per-worker metrics with auto-refresh: heap usage, active tasks, and performance indicators.</p>
 <h3 id="backup-restore">Backup &amp; Restore</h3>
-<p>Backup the cluster state (RocksDB checkpoint) to local storage or S3, and restore from backups.</p>
+<p>Backup the cluster's KMS / IAM / metadata stores to S3 and restore from any prior backup. The page exposes manual <em>Backup Now</em>, a fixed-interval schedule, and a 5-field UNIX <strong>cron schedule</strong> (e.g. <code>0 2 * * *</code>); the next-fire timestamp is shown next to an active cron so you can see at a glance when the next run will land. See <a href="../backup-restore/">Backup &amp; Restore</a> for the full flow.</p>
 <h2 id="rest-api">REST API</h2>
 <p>All operations available in the Admin UI are also accessible via the REST API, enabling automation and integration with external tools. The full API is documented in OpenAPI 3.0 format.</p>
 <h2 id="prometheus-metrics">Prometheus Metrics</h2>
