@@ -219,6 +219,9 @@ POST /admin/catalogs
 
 Once registered, queries use fully qualified names (`ice.db.events`, `neorun.public.orders`) — the engine resolves the connection ID and decrypts credentials transparently.
 
+!!! note "Bare vs `s3.`-prefixed S3 keys are interchangeable"
+    An S3 connection stores **bare** keys (`accessKey`, `secretKey`, `endpoint`, `region`, `pathStyle`), while an Iceberg catalog config conventionally uses the **`s3.`-prefixed** spelling (`s3.accessKey`, …). The Iceberg connector normalizes both directions, filling in whichever spelling is missing without overwriting an explicit value. A catalog backed by an S3 connection (`"s3.connectionId": "warehouse-s3"`) therefore works even though the stored connection uses bare keys — no renaming required.
+
 ## Overriding Stored Properties
 
 Inline `.property(...)` values **win** over stored connection properties when both are supplied. Use this to override a single field per job (consumer group, fetch size, query timeout) without forking the connection:

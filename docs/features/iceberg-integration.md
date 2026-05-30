@@ -33,6 +33,12 @@ POST /admin/catalogs
 
 `catalog.rest.flavor: polaris` switches on Polaris-specific defaults (default scope `PRINCIPAL_ROLE:ALL`, OAuth2 client-credentials grant). Other REST catalogs work without it.
 
+The S3 credential keys accept either the `s3.`-prefixed spelling (`s3.accessKey`, `s3.secretKey`, `s3.endpoint`, `s3.region`, `s3.pathStyle`) or the bare spelling (`accessKey`, `secretKey`, …) used by [Connection IDs](connection-id.md), so a catalog can be backed by a stored S3 connection (`"connectionId": "..."`) without renaming keys.
+
+### Lookup-on-miss for externally created tables
+
+A table created in a shared REST catalog by **another engine** (for example Trino) is picked up automatically: when a query references `catalog.ns.table` and the planner does not yet have it cached, Ontul refreshes that catalog and re-plans once before failing. No manual `POST /admin/catalogs/<name>/refresh` is needed for the new table to become queryable. (The refresh endpoint still exists for forcing a full re-list on demand.)
+
 ### Polaris catalog: `stsUnavailable: true` is required
 
 When the Polaris catalog itself is created (a one-time admin step on the Polaris side), its `storageConfigInfo` **must** include `stsUnavailable: true`:
@@ -135,10 +141,22 @@ Both forms are stripped by a SQL preprocessor and routed through `TableScan.useS
 | `CREATE TABLE catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...` | Same path as INSERT, plus catalog refresh so the new table is queryable immediately. |
 | `DELETE FROM catalog.ns.t WHERE <pred>` | Position-delete based MOR. Workers scan their assigned files, evaluate the predicate row-by-row, write per-file position-delete parquet, master commits one `RowDelta`. |
 | `UPDATE catalog.ns.t SET col = expr [WHERE <pred>]` | RowDelta — original rows marked as position-deletes plus a new data file with updated values. |
-| `MERGE INTO catalog.ns.t USING (<source>) ON (<eq+non-equi>) WHEN MATCHED THEN UPDATE SET ... WHEN NOT MATCHED THEN INSERT (...) VALUES (...)` | Composite-key joins (multiple `AND`-connected equalities) and non-equi remainder predicates are supported. Single-RowDelta commit. |
+| `MERGE INTO catalog.ns.t USING (<source>) ON (<eq+non-equi>) WHEN MATCHED THEN UPDATE SET ... [WHEN NOT MATCHED THEN INSERT (...) VALUES (...)]` | Composite-key joins (multiple `AND`-connected equalities) and non-equi remainder predicates are supported. The `WHEN NOT MATCHED` branch is optional — a `MATCHED`-only MERGE is valid. Single-RowDelta commit. |
 | `OPTIMIZE catalog.ns.t` | Delete-aware compaction: small data files are read with their position-/equality-deletes applied, written as one or more compacted files, deletes dropped. |
 
 `MERGE INTO` parsing tolerates aliases without `AS` (`MERGE INTO t alias ...`), nested-paren source subqueries (`USING (SELECT * FROM (VALUES ...))`), and composite ON conditions like `t.id = s.id AND t.region = s.region`.
+
+The source relation may carry a **Trino-style column-alias list** so a bare `VALUES` block can be used directly as the MERGE source without an inner `SELECT ... AS`:
+
+```sql
+MERGE INTO ice.ns.events t
+USING (VALUES (1, 'US', 100), (2, 'EU', 200)) AS s (id, region, amount)
+ON t.id = s.id
+WHEN MATCHED THEN UPDATE SET amount = s.amount
+WHEN NOT MATCHED THEN INSERT (id, region, amount) VALUES (s.id, s.region, s.amount);
+```
+
+The alias column list (`s (id, region, amount)`) is applied positionally to the source columns, so `ON` / `SET` / `INSERT` can reference them by name. Both `AS s (...)` and `s (...)` spellings are accepted.
 
 ### Streaming ingestion
 
