@@ -2182,6 +2182,10 @@
 <a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="p">}</span>
 </code></pre></div>
 <p>Once registered, queries use fully qualified names (<code>ice.db.events</code>, <code>neorun.public.orders</code>) — the engine resolves the connection ID and decrypts credentials transparently.</p>
+<div class="admonition note">
+<p class="admonition-title">Bare vs <code>s3.</code>-prefixed S3 keys are interchangeable</p>
+<p>An S3 connection stores <strong>bare</strong> keys (<code>accessKey</code>, <code>secretKey</code>, <code>endpoint</code>, <code>region</code>, <code>pathStyle</code>), while an Iceberg catalog config conventionally uses the <strong><code>s3.</code>-prefixed</strong> spelling (<code>s3.accessKey</code>, …). The Iceberg connector normalizes both directions, filling in whichever spelling is missing without overwriting an explicit value. A catalog backed by an S3 connection (<code>"s3.connectionId": "warehouse-s3"</code>) therefore works even though the stored connection uses bare keys — no renaming required.</p>
+</div>
 <h2 id="overriding-stored-properties">Overriding Stored Properties</h2>
 <p>Inline <code>.property(...)</code> values <strong>win</strong> over stored connection properties when both are supplied. Use this to override a single field per job (consumer group, fetch size, query timeout) without forking the connection:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">Source</span><span class="p">.</span><span class="na">kafka</span><span class="p">(</span><span class="s">&quot;events-kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;user-events&quot;</span><span class="p">)</span>

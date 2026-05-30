@@ -2067,6 +2067,10 @@
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Field-name aliases</p>
+<p><code>POST /admin/auth/login</code> accepts the user identifier as either <code>username</code> or <code>user</code>, and <code>POST /admin/iam/keys</code> accepts either <code>username</code> or <code>userId</code>. The canonical field is <code>username</code> in both cases; the aliases exist so clients and SDKs that use a different field name interoperate without a mapping layer.</p>
+</div>
 <h2 id="policy-based-access-control">Policy-Based Access Control</h2>
 <p>Ontul uses AWS-style JSON policies to manage permissions. Actions live in the <code>data:</code> namespace (table reads, DML, admin verbs) and <code>UDF:</code> namespace; table resources are addressed as <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code> and accept wildcards.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>

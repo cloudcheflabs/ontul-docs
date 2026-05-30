@@ -2301,6 +2301,21 @@
 <td><code>admin</code></td>
 <td>Initial password for the bootstrap admin account (used only when the account is first created). Change this in production; afterwards rotate via the Admin UI or <code>bin/ontul-cli.sh iam:reset-password</code>.</td>
 </tr>
+<tr>
+<td><code>ontul.iam.audit.dir</code></td>
+<td><code>${ontul.base.data.dir}/iam-audit</code></td>
+<td>Directory for the append-only IAM/security audit log (authentication attempts, access-key and password changes, role/policy edits). Entries are pruned per <code>ontul.audit.log.retention.days</code>. Must persist across restarts.</td>
+</tr>
+<tr>
+<td><code>ontul.admin.socket.enabled</code></td>
+<td><code>true</code></td>
+<td>Whether the Master exposes the out-of-band Unix domain socket used for local admin recovery (<code>bin/ontul-cli.sh iam:reset-password</code>). The socket file's OS permission (mode 600) is the only authentication. Set <code>false</code> to remove the local recovery path. See <a href="../../features/admin-password-recovery/">Admin Password Recovery</a>.</td>
+</tr>
+<tr>
+<td><code>ontul.admin.socket.path</code></td>
+<td><code>${ontul.base.data.dir}/admin.sock</code></td>
+<td>Filesystem path of the admin recovery Unix domain socket. Must live on a local filesystem that supports Unix domain sockets (not a networked mount); recreated on each Master start.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="metadata">Metadata</h2>
