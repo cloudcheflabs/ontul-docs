@@ -84,6 +84,9 @@ Many path properties default to a subdirectory of `${ontul.base.data.dir}` (for 
 | `ontul.iam.rocksdb.path` | `${ontul.base.data.dir}/iam` | Filesystem path to the embedded RocksDB store for IAM state (users, access/secret keys, roles, policies). Must persist across restarts. |
 | `ontul.iam.admin.user` | `admin` | Username of the bootstrap admin account, created on first startup if no users exist. Used to log into the Admin UI/REST API initially. |
 | `ontul.iam.admin.password` | `admin` | Initial password for the bootstrap admin account (used only when the account is first created). Change this in production; afterwards rotate via the Admin UI or `bin/ontul-cli.sh iam:reset-password`. |
+| `ontul.iam.audit.dir` | `${ontul.base.data.dir}/iam-audit` | Directory for the append-only IAM/security audit log (authentication attempts, access-key and password changes, role/policy edits). Entries are pruned per `ontul.audit.log.retention.days`. Must persist across restarts. |
+| `ontul.admin.socket.enabled` | `true` | Whether the Master exposes the out-of-band Unix domain socket used for local admin recovery (`bin/ontul-cli.sh iam:reset-password`). The socket file's OS permission (mode 600) is the only authentication. Set `false` to remove the local recovery path. See [Admin Password Recovery](../features/admin-password-recovery.md). |
+| `ontul.admin.socket.path` | `${ontul.base.data.dir}/admin.sock` | Filesystem path of the admin recovery Unix domain socket. Must live on a local filesystem that supports Unix domain sockets (not a networked mount); recreated on each Master start. |
 
 ## Metadata
 

@@ -37,6 +37,9 @@ Users carry an opaque id, a hashed password, group memberships, access keys, and
 | Create group | `POST /admin/iam/groups` `{groupName}` |
 | Issue access key | `POST /admin/iam/keys` `{username, expiresAt?}` |
 
+!!! note "Field-name aliases"
+    `POST /admin/auth/login` accepts the user identifier as either `username` or `user`, and `POST /admin/iam/keys` accepts either `username` or `userId`. The canonical field is `username` in both cases; the aliases exist so clients and SDKs that use a different field name interoperate without a mapping layer.
+
 ## Policy-Based Access Control
 
 Ontul uses AWS-style JSON policies to manage permissions. Actions live in the `data:` namespace (table reads, DML, admin verbs) and `UDF:` namespace; table resources are addressed as `data:table:<catalog>.<schema>.<table>` and accept wildcards.
