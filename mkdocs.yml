@@ -60,6 +60,7 @@ nav:
       - "Java SDK": reference/sdk-java.md
       - "Python SDK": reference/sdk-python.md
       - "MCP Server": reference/mcp-server.md
+      - "Configuration": reference/configuration.md
   - "Query":
       - "Query Guide": query/guide.md
   - "Batch":
