@@ -2495,6 +2495,11 @@
 <td><code>true</code></td>
 <td>Suppress catalog-vended S3 credentials (Polaris STS-subscoped tokens / Glue Lake Formation) so Ontul reads and writes S3 directly with the configured static keys, keeping Ontul IAM the authoritative access boundary. Leave <code>true</code> (the only tested path; S3-compatible servers reject the STS temp keys Polaris would otherwise vend).</td>
 </tr>
+<tr>
+<td><code>ontul.iceberg.default.format.version</code></td>
+<td><code>2</code></td>
+<td>Default Iceberg table format version for newly created tables. <code>2</code> = position-delete files; <code>3</code> = deletion vectors (Puffin), row lineage, variant. Opt-in: existing tables keep their own version and the library reads/writes all versions. On <code>3</code>, <code>DELETE</code>/<code>UPDATE</code>/<code>MERGE</code> write deletion vectors instead of position-delete files. See <a href="../../features/iceberg-integration/#format-version-3-deletion-vectors">Iceberg Integration</a>.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="iceberg-maintenance">Iceberg Maintenance</h2>
