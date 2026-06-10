@@ -138,6 +138,7 @@ Server-wide defaults for Iceberg REST catalogs. Every value is a **default**: a 
 | `ontul.iceberg.glue.signing.name` | `glue` | AWS SigV4 signing service name for the AWS Glue Iceberg REST endpoint. Use `s3tables` when pointing at the Amazon S3 Tables REST endpoint. |
 | `ontul.iceberg.default.region` | `us-east-1` | Default AWS region used whenever none is otherwise specified — for S3 data access (when `s3.region` is absent) and for SigV4-signing Glue REST requests (when neither `catalog.rest.signing.region` nor `s3.region` is set). The single fallback for every Iceberg AWS region. |
 | `ontul.iceberg.rest.credential.vending.bypass` | `true` | Suppress catalog-vended S3 credentials (Polaris STS-subscoped tokens / Glue Lake Formation) so Ontul reads and writes S3 directly with the configured static keys, keeping Ontul IAM the authoritative access boundary. Leave `true` (the only tested path; S3-compatible servers reject the STS temp keys Polaris would otherwise vend). |
+| `ontul.iceberg.default.format.version` | `2` | Default Iceberg table format version for newly created tables. `2` = position-delete files; `3` = deletion vectors (Puffin), row lineage, variant. Opt-in: existing tables keep their own version and the library reads/writes all versions. On `3`, `DELETE`/`UPDATE`/`MERGE` write deletion vectors instead of position-delete files. See [Iceberg Integration](../features/iceberg-integration.md#format-version-3-deletion-vectors). |
 
 ## Iceberg Maintenance
 
