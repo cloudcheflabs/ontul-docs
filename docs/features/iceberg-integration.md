@@ -6,7 +6,7 @@ The data path is implemented in Ontul. The Apache Iceberg JAR is used only as a 
 
 ## Catalog Type
 
-Ontul supports the Iceberg **REST catalog** only. Storage is S3-compatible (ShannonStore, AWS S3, MinIO). Multiple Iceberg catalogs can be registered side-by-side, each with its own REST endpoint and S3 credentials.
+Ontul supports the Iceberg **REST catalog** only. Two REST catalog flavors are supported, selected with `catalog.rest.flavor`: **Apache Polaris** (OAuth2 client-credentials, the default) and the **AWS Glue Iceberg REST endpoint** (AWS SigV4 request signing). Storage is S3-compatible (ShannonStore, AWS S3, MinIO). Multiple Iceberg catalogs can be registered side-by-side, each with its own REST endpoint and credentials.
 
 ```json
 POST /admin/catalogs
@@ -32,6 +32,42 @@ POST /admin/catalogs
 ```
 
 `catalog.rest.flavor: polaris` switches on Polaris-specific defaults (default scope `PRINCIPAL_ROLE:ALL`, OAuth2 client-credentials grant). Other REST catalogs work without it.
+
+### AWS Glue REST catalog
+
+AWS Glue exposes an Iceberg REST catalog at `https://glue.<region>.amazonaws.com/iceberg`. Because it is a standard Iceberg REST catalog, Ontul reaches it through the same `RESTCatalog` path as Polaris — only the authentication differs: Glue requires **AWS SigV4** request signing instead of OAuth2. Set `catalog.rest.flavor: glue` (or `catalog.rest.auth: sigv4` on any REST endpoint) to switch the catalog client to SigV4 signing.
+
+```json
+POST /admin/catalogs
+{
+  "name": "glue_cat",
+  "config": {
+    "connector": "iceberg",
+    "catalog.type": "rest",
+    "catalog.rest.flavor": "glue",
+    "catalog.rest.uri": "https://glue.us-east-1.amazonaws.com/iceberg",
+    "catalog.warehouse": "123456789012",
+    "catalog.rest.signing.region": "us-east-1",
+    "catalog.rest.aws.accessKey": "AKIA...",
+    "catalog.rest.aws.secretKey": "SECRET",
+    "s3.accessKey": "AKIA...",
+    "s3.secretKey": "SECRET",
+    "s3.region": "us-east-1"
+  }
+}
+```
+
+Glue-specific keys:
+
+| Key | Meaning |
+| --- | --- |
+| `catalog.warehouse` | The AWS account id (or `<account-id>:s3tablescatalog/<bucket>` for [S3 Tables](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-tables.html)). |
+| `catalog.rest.uri` | `https://glue.<region>.amazonaws.com/iceberg`. |
+| `catalog.rest.signing.region` | SigV4 signing region. Falls back to `s3.region`, then to `ontul.iceberg.default.region`. |
+| `catalog.rest.signing.name` | SigV4 service name. Defaults to `ontul.iceberg.glue.signing.name` (`glue`); use `s3tables` for the S3 Tables endpoint. |
+| `catalog.rest.aws.accessKey` / `.secretKey` / `.sessionToken` | AWS credentials used to sign catalog requests. **Optional** — when absent they fall back to the `s3.*` keys, then to the default AWS provider chain (instance profile / environment / SSO), which is the usual case under an IAM role. |
+
+As with Polaris, table data is read and written directly with the `s3.*` credentials; Glue's Lake Formation credential vending is bypassed (`ontul.iceberg.rest.credential.vending.bypass`, default `true`) so Ontul IAM remains the authoritative policy boundary. See [Configuration](../reference/configuration.md) for the server-wide Iceberg catalog defaults.
 
 The S3 credential keys accept either the `s3.`-prefixed spelling (`s3.accessKey`, `s3.secretKey`, `s3.endpoint`, `s3.region`, `s3.pathStyle`) or the bare spelling (`accessKey`, `secretKey`, …) used by [Connection IDs](connection-id.md), so a catalog can be backed by a stored S3 connection (`"connectionId": "..."`) without renaming keys.
 
