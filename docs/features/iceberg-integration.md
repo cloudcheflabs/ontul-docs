@@ -175,8 +175,8 @@ Both forms are stripped by a SQL preprocessor and routed through `TableScan.useS
 |---|---|
 | `INSERT INTO catalog.ns.t SELECT/VALUES ...` | Workers write data-file shards (in the table's `write.format.default`, see [File formats](#file-formats)) in parallel, master commits a single `AppendFiles` snapshot. Partition routing happens on the worker. |
 | `CREATE TABLE catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...` | Same path as INSERT, plus catalog refresh so the new table is queryable immediately. |
-| `DELETE FROM catalog.ns.t WHERE <pred>` | Position-delete based MOR. Workers scan their assigned files, evaluate the predicate row-by-row, write per-file position-delete parquet, master commits one `RowDelta`. |
-| `UPDATE catalog.ns.t SET col = expr [WHERE <pred>]` | RowDelta — original rows marked as position-deletes plus a new data file with updated values. |
+| `DELETE FROM catalog.ns.t WHERE <pred>` | Merge-on-read. Workers scan their assigned files, evaluate the predicate row-by-row, and write deletes — position-delete parquet on v2 tables, **deletion vectors** on v3 (see [Format version 3](#format-version-3-deletion-vectors)); master commits one `RowDelta`. |
+| `UPDATE catalog.ns.t SET col = expr [WHERE <pred>]` | RowDelta — original rows marked deleted (position-delete on v2, deletion vector on v3) plus a new data file with updated values. |
 | `MERGE INTO catalog.ns.t USING (<source>) ON (<eq+non-equi>) WHEN MATCHED THEN UPDATE SET ... [WHEN NOT MATCHED THEN INSERT (...) VALUES (...)]` | Composite-key joins (multiple `AND`-connected equalities) and non-equi remainder predicates are supported. The `WHEN NOT MATCHED` branch is optional — a `MATCHED`-only MERGE is valid. Single-RowDelta commit. |
 | `OPTIMIZE catalog.ns.t` | Delete-aware compaction: small data files are read with their position-/equality-deletes applied, written as one or more compacted files, deletes dropped. |
 
@@ -193,6 +193,21 @@ WHEN NOT MATCHED THEN INSERT (id, region, amount) VALUES (s.id, s.region, s.amou
 ```
 
 The alias column list (`s (id, region, amount)`) is applied positionally to the source columns, so `ON` / `SET` / `INSERT` can reference them by name. Both `AS s (...)` and `s (...)` spellings are accepted.
+
+### Format version 3 — deletion vectors
+
+Ontul reads and writes Iceberg **format-version 3**. The headline v3 feature is the **deletion vector**, which replaces position-delete files: instead of writing a parquet file of `(file_path, pos)` rows, a v3 table stores a roaring bitmap of deleted row positions for each data file inside a [Puffin](https://iceberg.apache.org/puffin-spec/) file (`deletion-vector-v1` blob). Deletion vectors are more compact and far cheaper to apply at read time (a bitmap membership test instead of a join against delete rows).
+
+On a v3 table, `DELETE` / `UPDATE` / `MERGE` write deletion vectors (one per touched data file, packed into a Puffin file) and commit a `RowDelta`; the read path detects the `PUFFIN`-format delete files and applies the bitmap. A repeated row-level operation on the same data file reads the existing vector, unions the new positions, and supersedes the old vector (a data file carries at most one deletion vector). The deletion-vector codec is hand-rolled to the Iceberg/Delta byte layout and verified against Iceberg's own reference reader, so other v3 engines read Ontul-written vectors.
+
+Format version is **per-table** and **opt-in**: v2 (position-delete files) is the default. Set the server default to create new tables on v3:
+
+```properties
+# ontul.properties
+ontul.iceberg.default.format.version=3
+```
+
+Existing v2 tables keep their version, and the library reads/writes v1/v2/v3 regardless — upgrading the engine never drops v2 support. Equality deletes (used by streaming upsert) remain valid in v3.
 
 ### Streaming ingestion
 
