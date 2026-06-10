@@ -1540,6 +1540,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#iceberg-catalog-rest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Iceberg Catalog (REST)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#iceberg-maintenance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2450,6 +2461,39 @@
 <td><code>ontul.connector.batch.size</code></td>
 <td><code>4096</code></td>
 <td>Number of rows per Arrow record batch when connectors read from / write to external sources (the vector batch size). Larger batches improve throughput and vectorization but use more memory per in-flight batch.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="iceberg-catalog-rest">Iceberg Catalog (REST)</h2>
+<p>Server-wide defaults for Iceberg REST catalogs. Every value is a <strong>default</strong>: a catalog registered through the Admin UI / <code>POST /admin/catalogs</code> can override it with its own <code>catalog.rest.*</code> config. These apply on both the Master (interactive query) and Worker (job source/sink) code paths. See <a href="../../features/iceberg-integration/">Iceberg Integration</a> for per-catalog config.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.iceberg.polaris.default.scope</code></td>
+<td><code>PRINCIPAL_ROLE:ALL</code></td>
+<td>Default OAuth2 scope requested from a Polaris REST catalog when a catalog does not set <code>catalog.rest.scope</code>. Ignored for the <code>glue</code> flavor (not OAuth2).</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.glue.signing.name</code></td>
+<td><code>glue</code></td>
+<td>AWS SigV4 signing service name for the AWS Glue Iceberg REST endpoint. Use <code>s3tables</code> when pointing at the Amazon S3 Tables REST endpoint.</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.default.region</code></td>
+<td><code>us-east-1</code></td>
+<td>Default AWS region used whenever none is otherwise specified — for S3 data access (when <code>s3.region</code> is absent) and for SigV4-signing Glue REST requests (when neither <code>catalog.rest.signing.region</code> nor <code>s3.region</code> is set). The single fallback for every Iceberg AWS region.</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.rest.credential.vending.bypass</code></td>
+<td><code>true</code></td>
+<td>Suppress catalog-vended S3 credentials (Polaris STS-subscoped tokens / Glue Lake Formation) so Ontul reads and writes S3 directly with the configured static keys, keeping Ontul IAM the authoritative access boundary. Leave <code>true</code> (the only tested path; S3-compatible servers reject the STS temp keys Polaris would otherwise vend).</td>
 </tr>
 </tbody>
 </table>
