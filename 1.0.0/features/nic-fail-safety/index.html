@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/encryption/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/nic-fail-safety/">
       
       
-        <link rel="prev" href="../data-lineage/">
+        <link rel="prev" href="../backup-restore/">
       
       
-        <link rel="next" href="../geospatial/">
+        <link rel="next" href="../../reference/sdk-java/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Encryption & KMS - Ontul</title>
+        <title>NIC Silent-Fail Safety - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#encryption-kms" class="md-skip">
+        <a href="#nic-silent-fail-safety" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Encryption & KMS
+              NIC Silent-Fail Safety
             
           </span>
         </div>
@@ -1079,37 +1079,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Encryption & KMS
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../encryption/" class="md-nav__link">
         
   
   
@@ -1125,81 +1098,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#envelope-encryption" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Envelope Encryption
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-is-encrypted" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Is Encrypted
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#built-in-kms" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Built-in KMS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#key-distribution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Distribution
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tls" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TLS
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1293,10 +1191,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../nic-fail-safety/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NIC Silent-Fail Safety
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1312,6 +1237,92 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-the-legacy-nio-loop-is-dangerous" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the legacy NIO loop is dangerous
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-changed-in-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What changed in the client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-changed-in-the-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What changed in the server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#failure-handling-invariants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failure-handling invariants
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifying-it-on-your-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verifying it on your stack
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operational notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1860,42 +1871,84 @@
 
 
 
-<h1 id="encryption-kms">Encryption &amp; KMS</h1>
-<p>Ontul provides built-in encryption with a Key Management Service (KMS) to protect sensitive data at rest across the cluster.</p>
-<h2 id="envelope-encryption">Envelope Encryption</h2>
-<p>Ontul uses envelope encryption — each piece of sensitive data is encrypted with its own Data Encryption Key (DEK), and DEKs are encrypted with a master key:</p>
-<ul>
-<li><strong>Algorithm</strong>: AES-256-GCM</li>
-<li><strong>Master Key Derivation</strong>: PBKDF2-SHA256 with 200,000 iterations</li>
-<li><strong>Master Key Source</strong>: Environment variable <code>ONTUL_MASTER_KEY</code> (minimum 32 characters)</li>
-</ul>
-<h2 id="what-is-encrypted">What Is Encrypted</h2>
-<ul>
-<li><strong>Connection credentials</strong>: S3 access keys, JDBC passwords, Kafka credentials stored in the ConnectionStore</li>
-<li><strong>IAM secrets</strong>: User passwords, access key secrets, STS tokens</li>
-<li><strong>Cluster state metadata</strong>: Sensitive metadata in the RocksDB state store</li>
-<li><strong>Exchange Manager data</strong>: All data spill (query/batch/streaming) and state snapshots (streaming checkpoint) are KMS envelope-encrypted on disk</li>
-<li><strong>Streaming state store</strong>: RocksDB-backed window state and Kafka offset checkpoints</li>
-</ul>
-<h2 id="built-in-kms">Built-in KMS</h2>
-<p>Ontul includes a built-in KMS that:</p>
-<ul>
-<li>Generates and manages encryption keys in a RocksDB-backed keystore</li>
-<li>Distributes keys from the leader Master to all cluster nodes automatically</li>
-<li>Replicates the encrypted keystore to follower Masters for high availability</li>
-</ul>
-<p>No external KMS service is required.</p>
-<h2 id="key-distribution">Key Distribution</h2>
+<h1 id="nic-silent-fail-safety">NIC Silent-Fail Safety</h1>
+<p>Ontul's internal NIO plane survives the trickiest failure mode in distributed systems: <strong>a peer whose NIC dies after the socket was opened, but ZooKeeper hasn't expired the session yet</strong>. From ZooKeeper's POV the node is alive. From every neighbour's POV its TCP connection is also alive — the kernel does not surface a half-open peer for tens of seconds, sometimes minutes, while it exhausts its retransmit budget. RPCs that route to that peer hang. Membership-driven failover doesn't fire because membership is still healthy.</p>
+<p>The 1.0.0 release closes this gap on <strong>both ends</strong> of every internal RPC — <code>InternalNioClient</code> (used by every master → worker and worker → master call) and <code>InternalNioServer</code> (the response side).</p>
+<h2 id="why-the-legacy-nio-loop-is-dangerous">Why the legacy NIO loop is dangerous</h2>
+<p>A blocking <code>SocketChannel</code>-based loop in three places hangs on a silently-dead peer:</p>
 <ol>
-<li>The leader Master generates and stores DEKs in the local encrypted RocksDB keystore</li>
-<li>On leader election or key changes, the keystore is replicated to follower Masters via the internal NIO protocol</li>
-<li>Workers receive relevant keys for decrypting connection credentials needed during query execution</li>
+<li><strong><code>connect()</code></strong> in blocking mode parks the caller inside the TCP three-way handshake until the OS retransmit budget drains. On Linux this is dictated by <code>tcp_syn_retries</code> and runs ~60–130 seconds by default.</li>
+<li><strong><code>channel.write()</code></strong> parks the caller the instant the kernel send buffer fills. For a peer that stopped draining, the buffer never frees up until the OS gives up — which is the <em>retransmit</em> budget, not the SYN budget. Linux <code>tcp_retries2</code> ranges from 5 to 15 minutes depending on tuning.</li>
+<li><strong><code>channel.read()</code></strong> in blocking mode is similar — no application-visible deadline.</li>
 </ol>
-<h2 id="tls">TLS</h2>
-<p>Ontul supports optional TLS for external-facing endpoints:</p>
+<p>A single hung writer takes its calling thread out of service. If that thread is the master's heartbeat-sweep loop or a worker's coordinator-pull, the entire cluster appears wedged from outside even though only one peer is sick.</p>
+<h2 id="what-changed-in-the-client">What changed in the client</h2>
+<p><code>com.cloudcheflabs.ontul.protocol.internal.InternalNioClient</code>:</p>
 <ul>
-<li><strong>Arrow Flight SQL</strong>: Encrypted JDBC and SDK connections</li>
-<li><strong>Admin HTTP</strong>: HTTPS for the Admin UI and REST API</li>
+<li><strong>Non-blocking for its lifetime.</strong> <code>connect()</code> opens the channel in non-blocking mode, registers <code>OP_CONNECT</code> on a per-call <code>Selector</code>, and waits for completion bounded by a 10s deadline. Then the channel <strong>stays</strong> non-blocking — no <code>configureBlocking(true)</code> flip on return, which used to race the reader thread.</li>
+<li><strong>Selector-driven reader.</strong> <code>readLoop()</code> waits on <code>OP_READ</code> with a 200ms tick so an externally-set <code>connected=false</code> propagates within a tick. No more blocking <code>channel.read()</code> calls that the test harness can't shut down.</li>
+<li><strong>Bounded <code>sendRequest</code>.</strong> Writers serialise under a <code>writeLock</code>, open a per-call <code>Selector</code>, register <code>OP_WRITE</code>, and bound the write with a 10s deadline. On timeout, <code>connected.set(false)</code> flips so the pool re-mints the next time around. The same channel can sit in the reader's selector (<code>OP_READ</code>) while a per-call writer selector (<code>OP_WRITE</code>) is active — Java NIO supports multiple selector registrations per channel as long as each selector sees it at most once.</li>
+<li><strong>SO_KEEPALIVE + TCP_NODELAY</strong> enabled on every new socket so the OS itself eventually flags long-dead peers, independent of any application protocol.</li>
+</ul>
+<p>Both deadlines are overridable per JVM:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>-Dontul.protocol.internal.connect.timeout.seconds=10
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>-Dontul.protocol.internal.write.timeout.seconds=10
+</code></pre></div>
+<h2 id="what-changed-in-the-server">What changed in the server</h2>
+<p><code>com.cloudcheflabs.ontul.protocol.internal.InternalNioServer</code>:</p>
+<ul>
+<li>The accept path already left client channels non-blocking — the server uses a Selector reactor.</li>
+<li>The <strong>response write</strong> path previously did a bare <code>while (buf.hasRemaining()) channel.write(buf);</code> under a <code>synchronized(channel)</code> block. In non-blocking mode <code>channel.write()</code> returns 0 the moment the send buffer is full — the old loop <strong>busy-spun forever</strong> on a wedged peer because there was no <code>Selector</code> to wait on writability.</li>
+<li>The new path factors response and error-response into a single <code>writeBoundedResponse()</code> helper that opens a per-call <code>Selector(OP_WRITE)</code> and bounds the loop with the same 10s deadline as the client. On timeout it throws <code>IOException</code> and the worker thread frees up.</li>
+</ul>
+<p>Same override:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>-Dontul.protocol.internal.write.timeout.seconds=10
+</code></pre></div>
+<h2 id="failure-handling-invariants">Failure-handling invariants</h2>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Old behaviour</th>
+<th>1.0.0 behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Peer NIC dies mid-handshake</td>
+<td><code>connect()</code> hangs for OS SYN budget (~60–130s)</td>
+<td><code>SocketTimeoutException</code> raised at 10s</td>
+</tr>
+<tr>
+<td>Peer NIC dies after socket established, mid-write</td>
+<td><code>channel.write()</code> hangs for OS retransmit budget (5–15 min)</td>
+<td><code>SocketTimeoutException</code> raised at 10s; caller sees a fast failure and can fall back</td>
+</tr>
+<tr>
+<td>Peer process paused (kernel still ACKs but app doesn't drain)</td>
+<td>Same as above — kernel send buffer fills, then writer blocks indefinitely</td>
+<td><code>Selector.select()</code> wakes on the 10s deadline; writer fails out cleanly</td>
+</tr>
+<tr>
+<td>Reader thread in a long blocking <code>read()</code> during shutdown</td>
+<td>Reader could not be interrupted cleanly</td>
+<td>200ms select tick — next loop iteration sees <code>connected=false</code> and exits</td>
+</tr>
+</tbody>
+</table>
+<h2 id="verifying-it-on-your-stack">Verifying it on your stack</h2>
+<p><code>tests/test-nic-failure-channel-health.sh</code> (shipped with the 1.0.0 release) drives the failure on a 2-node compose:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>tests/docker-compose-ontul.yml<span class="w"> </span>up<span class="w"> </span>-d
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>pause<span class="w"> </span>ontul-worker-2<span class="w">          </span><span class="c1"># silent NIC sim</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>./tests/test-nic-failure-channel-health.sh<span class="w">    </span><span class="c1"># expect PASS</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>docker<span class="w"> </span>unpause<span class="w"> </span>ontul-worker-2
+</code></pre></div>
+<p>The test hammers the surviving master's admin endpoint while one peer is paused. With the fix the master returns <code>200 OK</code> for every call within sub-second latencies; without it the master would block, often for minutes, on the dead peer's internal RPC.</p>
+<h2 id="operational-notes">Operational notes</h2>
+<ul>
+<li><strong>Defaults are conservative</strong>. 10 seconds is far below any realistic peer-to-peer round trip on a healthy cluster but above the worst-case TCP retransmit on a busy network. If you run with very low-latency expectations, tighten the deadlines via the JVM flags above.</li>
+<li><strong>No backwards-compatible setting reverts to the old blocking behaviour</strong>. There is no safe value here — the old behaviour was always a hang.</li>
+<li>The fix changes only the <em>internal</em> RPC plane. External clients (Arrow Flight, Postgres wire, S3 wire, HTTP admin, etc.) keep their existing transport-specific timeouts.</li>
 </ul>
 
 
