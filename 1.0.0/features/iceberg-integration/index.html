@@ -2360,8 +2360,8 @@
 <p><strong>Read.</strong> Ontul reads Parquet, ORC and Avro data files regardless of which engine produced them, so a table created by Trino, Spark or Flink in any of these formats is queryable directly. The format is detected <strong>per data file</strong> from the Iceberg manifest — not from the table default — so reads work transparently across a format change or a mixed-format table.</p>
 <p><strong>Cross-engine interoperability.</strong> Files Ontul writes are readable by other Iceberg engines and vice-versa (verified end-to-end against Trino on a Polaris catalog). Ontul records the true on-disk <code>file_size_in_bytes</code> on every data file, so engines that locate the Parquet footer from Iceberg metadata read it correctly; ORC/Avro files written elsewhere are read through Iceberg's generic readers with field-id projection.</p>
 <div class="admonition note">
-<p class="admonition-title">Row-level deletes are Parquet-only</p>
-<p>Equality- and position-<strong>delete</strong> files are always written as Parquet (independent of <code>write.format.default</code>). Reading an ORC/Avro <em>data</em> file that has delete files attached is not yet supported and fails with a clear error rather than silently returning stale rows.</p>
+<p class="admonition-title">Delete files Ontul writes are always Parquet</p>
+<p>Ontul writes its own equality- and position-<strong>delete</strong> files as Parquet (independent of <code>write.format.default</code>), and its v3 deletion vectors as Puffin. On the <strong>read</strong> side, deletes are applied to data files of any format: a Parquet, <strong>ORC, or Avro</strong> data file with position deletes, equality deletes, or a deletion vector attached is read with those deletes applied — including delete files another engine wrote in ORC or Avro (the delete reader dispatches on the delete file's own format).</p>
 </div>
 <h2 id="read">Read</h2>
 <ul>
