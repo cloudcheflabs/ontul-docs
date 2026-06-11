@@ -148,8 +148,10 @@ TBLPROPERTIES ('format-version'='2', 'write.format.default'='orc');
 
 **Cross-engine interoperability.** Files Ontul writes are readable by other Iceberg engines and vice-versa (verified end-to-end against Trino on a Polaris catalog). Ontul records the true on-disk `file_size_in_bytes` on every data file, so engines that locate the Parquet footer from Iceberg metadata read it correctly; ORC/Avro files written elsewhere are read through Iceberg's generic readers with field-id projection.
 
+**Row-level DML across formats.** `DELETE`, `UPDATE`, and `MERGE` work on tables whose data files are Parquet, ORC, or Avro: the handlers scan the matched data file in its own format to find the rows, then write new data files in the table's `write.format.default` and the deletes. Reads apply deletes to any data-file format too — a Parquet, ORC, or Avro data file with position deletes, equality deletes, or a deletion vector attached is read with those deletes applied, including delete files another engine wrote in ORC or Avro (the delete reader dispatches on the delete file's own format).
+
 !!! note "Delete files Ontul writes are always Parquet"
-    Ontul writes its own equality- and position-**delete** files as Parquet (independent of `write.format.default`), and its v3 deletion vectors as Puffin. On the **read** side, deletes are applied to data files of any format: a Parquet, **ORC, or Avro** data file with position deletes, equality deletes, or a deletion vector attached is read with those deletes applied — including delete files another engine wrote in ORC or Avro (the delete reader dispatches on the delete file's own format).
+    Ontul writes its own equality- and position-**delete** files as Parquet (independent of `write.format.default`), and its v3 deletion vectors as Puffin. Other engines (e.g. Trino) write delete files in the table's data format — Ontul reads those in whatever format they are.
 
 ## Read
 
