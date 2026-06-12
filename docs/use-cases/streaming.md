@@ -19,7 +19,7 @@ This tutorial demonstrates real-time streaming ingestion from Kafka to Iceberg t
 Follow the [Installation Guide](../installation/installation.md) to download and set up Ontul, then:
 
 ```bash
-cd ontul-1.0.0-SNAPSHOT
+cd ontul-1.0.0
 
 # Start MinIO + Polaris + Kafka
 docker compose -f examples/docker-compose-iceberg.yml up -d

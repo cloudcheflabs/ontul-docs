@@ -17,5 +17,5 @@ title: " "
 </p>
 
 <p align="center" style="margin: 3rem 0;">
-  <a href="./installation/installation" style="background: #2563eb; color: white; padding: 14px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1.2rem;">Community Download</a>
+  <a href="./installation/installation" style="background: #2563eb; color: white; padding: 14px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1.2rem;">Download</a>
 </p>

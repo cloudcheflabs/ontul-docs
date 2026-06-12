@@ -6,7 +6,7 @@ Authorization is enforced server-side by Ontul IAM using the access token config
 
 The semantic layer rewriting kicks in transparently: an LLM can issue `SELECT revenue, customer.region FROM saas.core.sales` and the master expands the metric, injects the conformed-dimension JOIN, applies the user's mandatory filters, and derives the GROUP BY before execution. The LLM doesn't need to inline the aggregation formula — though it still can, and Phase 1 LLM-expanded SQL keeps working. See [Semantic Layer](../features/semantic-layer.md) for the full rewrite pipeline.
 
-The `ontul-mcp` launcher is shipped as part of the Ontul community-edition distribution. After unpacking the release archive it is available at `bin/ontul-mcp` alongside the master / worker / ZooKeeper launchers.
+The `ontul-mcp` launcher is shipped as part of the Ontul distribution. After unpacking the release archive it is available at `bin/ontul-mcp` alongside the master / worker / ZooKeeper launchers.
 
 ## Tools
 
