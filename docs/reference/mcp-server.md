@@ -1,6 +1,6 @@
 # MCP Server
 
-`ontul-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL (for queries and catalog introspection) and the admin REST port (for the semantic layer), and exposes eight read-side tools.
+`ontul-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL (for queries and catalog introspection) and the admin REST port (for the semantic layer and retrievers), and exposes eleven read-side tools.
 
 Authorization is enforced server-side by Ontul IAM using the access token configured at startup. The MCP layer adds no additional access control — anything the token's policies allow, the LLM can run; anything they deny, the master rejects with an error that the LLM sees verbatim.
 
@@ -20,10 +20,13 @@ The `ontul-mcp` launcher is shipped as part of the Ontul distribution. After unp
 | `ontul_list_semantic_views` | `GET /api/v1/semantic-views` | List semantic views (curated business definitions on top of regular SQL views) the IAM token can SELECT from. Optional `catalog` / `schema` filter. See [Semantic Layer](../features/semantic-layer.md). |
 | `ontul_describe_semantic_view` | `GET /api/v1/semantic-views/{fqn}` | Fetch one semantic view's full definition — `baseSql`, metrics (with `expr`, `allowedRoles`, `mandatoryFilters`), dimensions, synonyms, description, governance metadata (`status`, `certifiedBy`, `certifiedAt`, `tags`, `owner`), conformed-dimension `joins[]`, view-level `mandatoryFilters`. |
 | `ontul_search_metrics` | `GET /api/v1/semantic-metrics/search` | Natural-language metric finder. Matches the query against metric names, synonyms and descriptions; returns ranked `{fqn, metricName, score, matchedOn}` hits. |
+| `ontul_list_retrievers` | `GET /api/v1/retrievers` | List [retrievers](../features/retrievers.md) — governed multi-modal retrieval (NeorunBase vector / graph / full-text) pushed down through Ontul. Optional `catalog` / `schema` filter. |
+| `ontul_describe_retriever` | `GET /api/v1/retrievers/{fqn}` | Fetch one retriever's full definition — `kind`, `targetCatalog`, the declared param contract (`name` / `type` / `required` / `defaultValue` / `description`), output columns, and governance. |
+| `ontul_invoke_retriever` | `POST /api/v1/retrievers/{fqn}/invoke` | Run a retriever with structured `args` (and optional `max_rows`). The master renders the admin-authored template into injection-safe SQL and pushes it down to the backing NeorunBase catalog; returns the rendered SQL plus result rows. |
 
 The four `_list/_describe_table` tools are thin wrappers around `ontul_query` for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. `ontul_query` itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.
 
-The three `_semantic_*` tools talk to the master's admin HTTP port instead of Flight SQL because the semantic CRUD surface is REST. Read-side semantic _consumption_ — the actual `SELECT` against a semantic view — flows through Flight SQL like any other query and benefits from the master-side rewriting. The same `ONTUL_USER_TOKEN` is reused (sent as `Authorization: Token <token>` on REST), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from `ONTUL_HOST` (or `ONTUL_ADMIN_URL` to override).
+The three `_semantic_*` tools and the three `_retriever` tools talk to the master's admin HTTP port instead of Flight SQL because the semantic CRUD + retriever surface is REST. Read-side semantic _consumption_ — the actual `SELECT` against a semantic view — flows through Flight SQL like any other query and benefits from the master-side rewriting; retriever invocation instead renders an admin-authored template and pushes it down to the backing engine (see [Retrievers](../features/retrievers.md)). The same `ONTUL_USER_TOKEN` is reused (sent as `Authorization: Token <token>` on REST), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from `ONTUL_HOST` (or `ONTUL_ADMIN_URL` to override).
 
 ### What `ontul_describe_semantic_view` returns
 
@@ -124,7 +127,7 @@ Most clients accept this configuration as a JSON entry under an `mcpServers` (or
 }
 ```
 
-Refer to your specific client's MCP integration guide for the exact configuration file path and field names. Once registered the eight tools become available and the agent can issue queries like:
+Refer to your specific client's MCP integration guide for the exact configuration file path and field names. Once registered the eleven tools become available and the agent can issue queries like:
 
 > Show me the top 10 product categories by sales count across `iceberg.warehouse.store_sales` and `iceberg.warehouse.item`.
 

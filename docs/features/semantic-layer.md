@@ -569,8 +569,15 @@ Validation deliberately stops at parsing. Full semantic validation (column types
 - `notifyWorkersCatalogChanged` is called after each successful `POST` so workers refresh their cached catalog snapshot. Plan-time rewriting happens on the master, but the worker-side cache is kept consistent.
 - Rewriting failure modes are conservative: if the rewriter hits an unexpected runtime error on a specific SELECT, the original tree is returned and the planner proceeds. Phase 1 behavior (LLM-expanded SQL) keeps working even if a Phase 2 / 3 edge case trips. RBAC denials and derived-metric cycles are the two exceptions — those always surface so admins notice them.
 
+## Retrievers: multi-modal retrieval as a sibling object
+
+Semantic views curate *analytics* — measures the engine rewrites into Calcite SQL. Its sibling, the [**retriever**](retrievers.md), curates *retrieval* — vector similarity, graph traversal, and full-text search pushed down to a backing engine ([NeorunBase](retrievers.md)) that can execute them natively. Both share the same discovery + governance model (synonyms, RBAC, status, tags) and the same MCP/REST surface, so an agent queries semantic metrics *and* multi-modal retrieval through one governed control plane.
+
+The key difference: a retriever is **not** rewritten by Ontul's planner. It carries an admin-authored, backend-native `sqlTemplate` with a typed `${param}` contract, and at invoke time the master renders it into injection-safe SQL and ships it verbatim to the `neorunbase` connector — so NeorunBase's `HYBRID_SEARCH` / `GRAPH_NEIGHBORS` / vector / BM25 surface flows *through* Ontul instead of being stripped by the Calcite planner. See [Retrievers](retrievers.md) for the full model, REST API, MCP tools, and a worked HYBRID example.
+
 ## See also
 
+- [Retrievers](retrievers.md) — multi-modal retrieval (NeorunBase vector / graph / full-text) as a governed semantic object.
 - [BI Integration](bi-integration.md) — Tableau / DBeaver / Power BI / Looker setup.
 - [MCP Server](../reference/mcp-server.md) — semantic-discovery tools for LLM agents.
 - [IAM](iam.md) — user attributes feed `${user.attr.X}` templating; column masking and row-level filters are enforced server-side alongside metric RBAC.
