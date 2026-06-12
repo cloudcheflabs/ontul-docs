@@ -421,7 +421,7 @@ var summary = joined
 ### Setup
 
 ```bash
-cd ontul-1.0.0-SNAPSHOT
+cd ontul-1.0.0
 docker compose -f examples/docker-compose-iceberg.yml up -d
 examples/bin/setup-iceberg.sh
 ```

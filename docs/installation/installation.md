@@ -1,15 +1,11 @@
 # Installation
 
-## Community Edition Download
-
-Ontul Community Edition is free for any use, including commercial production.
-
-### Download
+## Download
 
 ```bash
-curl -L -O https://github.com/cloudcheflabs/ontul-pack/releases/download/ontul-archive/ontul-1.0.0-SNAPSHOT.tar.gz
-tar xzf ontul-1.0.0-SNAPSHOT.tar.gz
-cd ontul-1.0.0-SNAPSHOT
+curl -L -O https://github.com/cloudcheflabs/ontul-pack/releases/download/ontul-archive/ontul-1.0.0.tar.gz
+tar xzf ontul-1.0.0.tar.gz
+cd ontul-1.0.0
 ```
 
 ### Prerequisites

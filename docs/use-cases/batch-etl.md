@@ -21,7 +21,7 @@ This tutorial demonstrates how to build a batch ETL pipeline using Ontul with Ap
 Follow the [Installation Guide](../installation/installation.md) to download and set up Ontul, then:
 
 ```bash
-cd ontul-1.0.0-SNAPSHOT
+cd ontul-1.0.0
 ```
 
 ## 2. Start Infrastructure

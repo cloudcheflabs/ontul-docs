@@ -9,7 +9,7 @@ Follow the [Installation Guide](../installation/installation.md) to download and
 After installation:
 
 ```bash
-cd ontul-1.0.0-SNAPSHOT
+cd ontul-1.0.0
 ```
 
 ## Run Example Server and Run Examples
