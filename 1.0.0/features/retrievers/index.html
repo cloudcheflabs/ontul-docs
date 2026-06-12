@@ -1104,6 +1104,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configuring-in-the-admin-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring in the Admin UI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#storage-replication-governance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2158,6 +2169,14 @@
 <li><strong>Cluster-wide</strong> — <code>ontul.retriever.max.rows.ceiling</code> (default 1000) in <code>ontul.properties</code>, a hard cap an operator can lower globally regardless of any retriever's own ceiling. See <a href="../../reference/configuration/">Configuration</a>.</li>
 </ul>
 <p>A caller's requested <code>maxRows</code> is clamped to <code>min(requested, retriever.maxRowsCeiling, cluster.ceiling)</code>, floored at 1.</p>
+<h2 id="configuring-in-the-admin-ui">Configuring in the Admin UI</h2>
+<p>Retrievers can be managed without REST calls under <strong>Semantic &amp; AI → Retrievers</strong> in the Admin UI:</p>
+<ul>
+<li><strong>Register Retriever</strong> opens a side panel for <code>catalog</code> / <code>schema</code> / <code>name</code>, <code>kind</code>, the <strong>target catalog</strong> (a <code>neorunbase</code> catalog), the SQL template, repeatable <strong>parameter</strong> rows (name, type, required, default, description), synonyms, <code>allowedRoles</code>, and status.</li>
+<li>Each retriever card shows its kind badge, target catalog, a shield icon when role-gated, and its declared params (<code>name:type*</code>).</li>
+<li>The <strong>Invoke</strong> (▶) button opens a tester: fill the declared <code>args</code> as JSON, run it, and the panel shows the <strong>rendered SQL</strong> that was pushed to NeorunBase plus the returned rows — the same <code>POST /api/v1/retrievers/{fqn}/invoke</code> an agent calls. It's the fastest way to validate a template + param contract before agents use it.</li>
+</ul>
+<p>Metric / retriever <code>allowedRoles</code> map to IAM groups — see <a href="../iam/#semantic-layer-retriever-rbac">Semantic Layer &amp; Retriever RBAC</a>.</p>
 <h2 id="storage-replication-governance">Storage, replication, governance</h2>
 <p>Retriever definitions live in the cluster metadata store under <code>retriever:</code> and ride the standard <code>exportSnapshot</code> / <code>importSnapshot</code> replication to follower masters — exactly like semantic views. Unlike semantic views they are <strong>not</strong> registered as Calcite views (they are never planned by Ontul's optimizer); they are rendered and pushed down only at invoke time.</p>
 <p>Governance mirrors the semantic layer: <code>status</code> (<code>DRAFT</code> / <code>CERTIFIED</code> / <code>DEPRECATED</code>), <code>tags</code>, <code>certifiedBy</code> / <code>certifiedAt</code>, <code>owner</code>, and <code>allowedRoles</code> for invoke-time RBAC.</p>

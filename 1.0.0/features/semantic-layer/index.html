@@ -1275,6 +1275,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configuring-in-the-admin-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring in the Admin UI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#storage-and-replication" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2602,6 +2613,14 @@
 <a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">profit_margin</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 </code></pre></div>
 <p>If alice asks for <code>vip_revenue</code> she gets a result; the same query from a user in only the <code>viewer</code> group is denied at rewrite time with a <code>Forbidden: vip_revenue</code> error.</p>
+<h2 id="configuring-in-the-admin-ui">Configuring in the Admin UI</h2>
+<p>Everything above is also available without writing REST calls, under <strong>Semantic &amp; AI → Semantic Layer</strong> in the Admin UI:</p>
+<ul>
+<li><strong>Register View</strong> opens a side panel for <code>catalog</code> / <code>schema</code> / <code>name</code>, the base SQL, and repeatable <strong>metric</strong> rows (name, expr, synonyms, <code>allowedRoles</code>, per-metric mandatory filters) and <strong>dimension</strong> rows, plus view-level mandatory filters and tags.</li>
+<li>Each registered view shows its status badge (<code>DRAFT</code> / <code>CERTIFIED</code> / <code>DEPRECATED</code>), its metrics (a shield icon marks role-gated ones), dimensions, and tags.</li>
+<li>The <strong>Certify</strong> button flips <code>DRAFT → CERTIFIED</code> and stamps the certifier; <strong>Delete</strong> removes the metadata.</li>
+</ul>
+<p>The panel issues the same <code>POST /api/v1/semantic-views</code> / <code>certify</code> / <code>DELETE</code> calls documented above, so the UI and API are interchangeable. Metric-level <code>allowedRoles</code> map to IAM groups — see <a href="../iam/#semantic-layer-retriever-rbac">Semantic Layer &amp; Retriever RBAC</a> for configuring the backing group + member. Retrievers have a sibling <strong>Retrievers</strong> page (register + an invoke tester that shows the rendered SQL and rows); see <a href="../retrievers/">Retrievers</a>.</p>
 <h2 id="storage-and-replication">Storage and replication</h2>
 <table>
 <thead>
