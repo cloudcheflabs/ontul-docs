@@ -102,6 +102,12 @@ Many path properties default to a subdirectory of `${ontul.base.data.dir}` (for 
 | `ontul.query.rpc.timeout.ms` | `30000` | Timeout (ms) for query-related RPCs the Master issues to Workers (e.g. dispatching a query stage and awaiting its result). Raise for long-running stages over slow links. |
 | `ontul.internal.rpc.timeout.ms` | `10000` | Timeout (ms) for internal (non-query) control-plane RPCs, e.g. small master↔worker coordination calls. Keep relatively short. |
 
+## Semantic Layer / Retrievers
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.retriever.max.rows.ceiling` | `1000` | Hard cluster-wide cap on the number of rows a single [retriever](../features/retrievers.md) invocation (`POST /api/v1/retrievers/{fqn}/invoke`) may return. Applied on top of each retriever's own `maxRowsCeiling`, so the effective cap is the smaller of the two. Lets an operator bound retriever result size globally regardless of per-retriever definitions. |
+
 ## Worker Health Check
 
 | Property | Default | Description |
