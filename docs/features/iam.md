@@ -277,6 +277,61 @@ UDF resources are addressed as `udf:<name>`, so policies can target an exact fun
 
 The Admin UI policy editor ships with templates *UDF Execute Any*, *UDF Author*, *UDF Sandbox*, *UDF Deny Sensitive*, *UDF Global Admin*, and *UDF Global Read-Only*. See the [UDF feature page](udf.md) and the [UDF tutorial](../use-cases/udf-tutorial.md) for the full lifecycle.
 
+## Semantic Layer & Retriever RBAC
+
+The [semantic layer](semantic-layer.md) and [retrievers](retrievers.md) gate access through the same IAM system, on two axes:
+
+1. **Discovery / visibility** — the metadata-only `data:SelectTable` action on the object's fqn governs whether a caller can *list* or *describe* a semantic view or retriever (`ontul_list_semantic_views`, `ontul_list_retrievers`, and the REST `GET` routes are IAM-filtered with it).
+2. **Object-level role gating** — a metric's `allowedRoles[]` and a retriever's `allowedRoles[]` name **IAM groups**. Empty means public to any caller that passes axis 1; non-empty means the caller must additionally be a member of at least one listed group. A metric denial happens *at rewrite time*, before the formula is parsed, so the expression never leaks to an unauthorized user; a retriever denial happens before the template is rendered or pushed down.
+
+### Configure a metric with role gating (Admin UI)
+
+In the Admin UI, **Semantic & AI → Semantic Layer → Register View**:
+
+1. Fill `catalog` / `schema` / `name` and the base SQL.
+2. Add a metric (e.g. `revenue`) and, in its **allowedRoles** field, list the IAM group(s) allowed to use it — e.g. `finance, analyst`. Leave it empty for a public metric.
+3. Optionally set per-metric **mandatoryFilters** (row scoping that applies only when the metric is referenced) and view-level mandatory filters with `${user.attr.X}` templating.
+4. Save, then **Certify** (the badge button) to flip `DRAFT → CERTIFIED`.
+
+The equivalent REST call (what the UI issues under the hood — `POST /api/v1/semantic-views`):
+
+```bash
+curl -s -X POST "http://<master>:8080/api/v1/semantic-views" \
+  -H "Authorization: Token $TOKEN" -H "Content-Type: application/json" -d '{
+  "catalog": "tpch", "schema": "sales", "name": "region_sales",
+  "baseSql": "SELECT region, amount, discount, status FROM tpch.sales.orders",
+  "metrics": [
+    {"name": "revenue", "expr": "SUM(amount * (1 - discount))", "synonyms": ["매출"]},
+    {"name": "vip_revenue", "expr": "SUM(amount) FILTER (WHERE tier=''VIP'')",
+     "allowedRoles": ["finance"], "mandatoryFilters": ["status=''COMPLETED''"]}
+  ],
+  "dimensions": [{"name": "region"}]
+}'
+```
+
+A retriever's `allowedRoles` is configured the same way under **Semantic & AI → Retrievers → Register Retriever** (or `POST /api/v1/retrievers`).
+
+### Set up the IAM group that backs `allowedRoles`
+
+`allowedRoles: ["finance"]` only gates access if the `finance` group exists and the caller is a member. Create the group and add the user (Admin UI **IAM** page, or REST — see [Users and Groups](#users-and-groups)):
+
+```bash
+# Create the group named in allowedRoles
+curl -s -X POST "http://<master>:8080/admin/iam/groups" \
+  -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
+  -d '{"groupName": "finance"}'
+
+# Add the user to it — now `alice` satisfies the metric's allowedRoles
+curl -s -X POST "http://<master>:8080/admin/iam/add-user-to-group" \
+  -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
+  -d '{"username": "alice", "groupName": "finance"}'
+```
+
+Result: `alice` (in `finance`) can resolve `vip_revenue`; a user in only `viewer` is denied before the `tier='VIP'` formula is parsed — and the same `finance` membership lets `alice` invoke a retriever whose `allowedRoles` includes `finance`. One group membership governs both the analytics metric and the multi-modal retriever, consistently across SQL, BI, and MCP.
+
+!!! note "System-internal queries bypass RBAC"
+    The planner's anonymous context (no authenticated user) skips metric RBAC — the intentional escape hatch for internal admin work. Caller-issued queries and retriever invocations always carry the IAM identity and are always gated.
+
 ## End-to-end example: tenant-scoped masking + RLS
 
 A complete policy that combines RBAC, masking, and row-level security for a multi-tenant SaaS application:
