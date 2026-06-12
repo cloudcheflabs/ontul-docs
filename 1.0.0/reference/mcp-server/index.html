@@ -889,6 +889,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/retrievers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrievers (Multi-Modal Retrieval)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/bi-integration/" class="md-nav__link">
         
   
@@ -1793,7 +1821,7 @@
 
 
 <h1 id="mcp-server">MCP Server</h1>
-<p><code>ontul-mcp</code> is a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL (for queries and catalog introspection) and the admin REST port (for the semantic layer), and exposes eight read-side tools.</p>
+<p><code>ontul-mcp</code> is a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL (for queries and catalog introspection) and the admin REST port (for the semantic layer and retrievers), and exposes eleven read-side tools.</p>
 <p>Authorization is enforced server-side by Ontul IAM using the access token configured at startup. The MCP layer adds no additional access control — anything the token's policies allow, the LLM can run; anything they deny, the master rejects with an error that the LLM sees verbatim.</p>
 <p>The semantic layer rewriting kicks in transparently: an LLM can issue <code>SELECT revenue, customer.region FROM saas.core.sales</code> and the master expands the metric, injects the conformed-dimension JOIN, applies the user's mandatory filters, and derives the GROUP BY before execution. The LLM doesn't need to inline the aggregation formula — though it still can, and Phase 1 LLM-expanded SQL keeps working. See <a href="../../features/semantic-layer/">Semantic Layer</a> for the full rewrite pipeline.</p>
 <p>The <code>ontul-mcp</code> launcher is shipped as part of the Ontul distribution. After unpacking the release archive it is available at <code>bin/ontul-mcp</code> alongside the master / worker / ZooKeeper launchers.</p>
@@ -1847,10 +1875,25 @@
 <td><code>GET /api/v1/semantic-metrics/search</code></td>
 <td>Natural-language metric finder. Matches the query against metric names, synonyms and descriptions; returns ranked <code>{fqn, metricName, score, matchedOn}</code> hits.</td>
 </tr>
+<tr>
+<td><code>ontul_list_retrievers</code></td>
+<td><code>GET /api/v1/retrievers</code></td>
+<td>List <a href="../../features/retrievers/">retrievers</a> — governed multi-modal retrieval (NeorunBase vector / graph / full-text) pushed down through Ontul. Optional <code>catalog</code> / <code>schema</code> filter.</td>
+</tr>
+<tr>
+<td><code>ontul_describe_retriever</code></td>
+<td><code>GET /api/v1/retrievers/{fqn}</code></td>
+<td>Fetch one retriever's full definition — <code>kind</code>, <code>targetCatalog</code>, the declared param contract (<code>name</code> / <code>type</code> / <code>required</code> / <code>defaultValue</code> / <code>description</code>), output columns, and governance.</td>
+</tr>
+<tr>
+<td><code>ontul_invoke_retriever</code></td>
+<td><code>POST /api/v1/retrievers/{fqn}/invoke</code></td>
+<td>Run a retriever with structured <code>args</code> (and optional <code>max_rows</code>). The master renders the admin-authored template into injection-safe SQL and pushes it down to the backing NeorunBase catalog; returns the rendered SQL plus result rows.</td>
+</tr>
 </tbody>
 </table>
 <p>The four <code>_list/_describe_table</code> tools are thin wrappers around <code>ontul_query</code> for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. <code>ontul_query</code> itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.</p>
-<p>The three <code>_semantic_*</code> tools talk to the master's admin HTTP port instead of Flight SQL because the semantic CRUD surface is REST. Read-side semantic <em>consumption</em> — the actual <code>SELECT</code> against a semantic view — flows through Flight SQL like any other query and benefits from the master-side rewriting. The same <code>ONTUL_USER_TOKEN</code> is reused (sent as <code>Authorization: Token &lt;token&gt;</code> on REST), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from <code>ONTUL_HOST</code> (or <code>ONTUL_ADMIN_URL</code> to override).</p>
+<p>The three <code>_semantic_*</code> tools and the three <code>_retriever</code> tools talk to the master's admin HTTP port instead of Flight SQL because the semantic CRUD + retriever surface is REST. Read-side semantic <em>consumption</em> — the actual <code>SELECT</code> against a semantic view — flows through Flight SQL like any other query and benefits from the master-side rewriting; retriever invocation instead renders an admin-authored template and pushes it down to the backing engine (see <a href="../../features/retrievers/">Retrievers</a>). The same <code>ONTUL_USER_TOKEN</code> is reused (sent as <code>Authorization: Token &lt;token&gt;</code> on REST), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from <code>ONTUL_HOST</code> (or <code>ONTUL_ADMIN_URL</code> to override).</p>
 <h3 id="what-ontul_describe_semantic_view-returns">What <code>ontul_describe_semantic_view</code> returns</h3>
 <p>The full definition is exposed verbatim so the LLM can decide how to use a metric. A representative response shape:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
@@ -1962,7 +2005,7 @@
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="p">}</span>
 <a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">}</span>
 </code></pre></div>
-<p>Refer to your specific client's MCP integration guide for the exact configuration file path and field names. Once registered the eight tools become available and the agent can issue queries like:</p>
+<p>Refer to your specific client's MCP integration guide for the exact configuration file path and field names. Once registered the eleven tools become available and the agent can issue queries like:</p>
 <blockquote>
 <p>Show me the top 10 product categories by sales count across <code>iceberg.warehouse.store_sales</code> and <code>iceberg.warehouse.item</code>.</p>
 </blockquote>

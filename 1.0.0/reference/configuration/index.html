@@ -889,6 +889,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/retrievers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrievers (Multi-Modal Retrieval)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/bi-integration/" class="md-nav__link">
         
   
@@ -1508,6 +1536,17 @@
     <span class="md-ellipsis">
       
         RPC Timeouts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#semantic-layer-retrievers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Semantic Layer / Retrievers
       
     </span>
   </a>
@@ -2291,6 +2330,23 @@
 <td><code>ontul.internal.rpc.timeout.ms</code></td>
 <td><code>10000</code></td>
 <td>Timeout (ms) for internal (non-query) control-plane RPCs, e.g. small master↔worker coordination calls. Keep relatively short.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="semantic-layer-retrievers">Semantic Layer / Retrievers</h2>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.retriever.max.rows.ceiling</code></td>
+<td><code>1000</code></td>
+<td>Hard cluster-wide cap on the number of rows a single <a href="../../features/retrievers/">retriever</a> invocation (<code>POST /api/v1/retrievers/{fqn}/invoke</code>) may return. Applied on top of each retriever's own <code>maxRowsCeiling</code>, so the effective cap is the smaller of the two. Lets an operator bound retriever result size globally regardless of per-retriever definitions.</td>
 </tr>
 </tbody>
 </table>

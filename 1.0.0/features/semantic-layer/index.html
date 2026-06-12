@@ -14,7 +14,7 @@
         <link rel="prev" href="../iceberg-integration/">
       
       
-        <link rel="next" href="../bi-integration/">
+        <link rel="next" href="../retrievers/">
       
       
         
@@ -1330,6 +1330,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#retrievers-multi-modal-retrieval-as-a-sibling-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrievers: multi-modal retrieval as a sibling object
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1344,6 +1355,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retrievers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrievers (Multi-Modal Retrieval)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2707,8 +2746,12 @@
 <li><code>notifyWorkersCatalogChanged</code> is called after each successful <code>POST</code> so workers refresh their cached catalog snapshot. Plan-time rewriting happens on the master, but the worker-side cache is kept consistent.</li>
 <li>Rewriting failure modes are conservative: if the rewriter hits an unexpected runtime error on a specific SELECT, the original tree is returned and the planner proceeds. Phase 1 behavior (LLM-expanded SQL) keeps working even if a Phase 2 / 3 edge case trips. RBAC denials and derived-metric cycles are the two exceptions — those always surface so admins notice them.</li>
 </ul>
+<h2 id="retrievers-multi-modal-retrieval-as-a-sibling-object">Retrievers: multi-modal retrieval as a sibling object</h2>
+<p>Semantic views curate <em>analytics</em> — measures the engine rewrites into Calcite SQL. Its sibling, the <a href="../retrievers/"><strong>retriever</strong></a>, curates <em>retrieval</em> — vector similarity, graph traversal, and full-text search pushed down to a backing engine (<a href="../retrievers/">NeorunBase</a>) that can execute them natively. Both share the same discovery + governance model (synonyms, RBAC, status, tags) and the same MCP/REST surface, so an agent queries semantic metrics <em>and</em> multi-modal retrieval through one governed control plane.</p>
+<p>The key difference: a retriever is <strong>not</strong> rewritten by Ontul's planner. It carries an admin-authored, backend-native <code>sqlTemplate</code> with a typed <code>${param}</code> contract, and at invoke time the master renders it into injection-safe SQL and ships it verbatim to the <code>neorunbase</code> connector — so NeorunBase's <code>HYBRID_SEARCH</code> / <code>GRAPH_NEIGHBORS</code> / vector / BM25 surface flows <em>through</em> Ontul instead of being stripped by the Calcite planner. See <a href="../retrievers/">Retrievers</a> for the full model, REST API, MCP tools, and a worked HYBRID example.</p>
 <h2 id="see-also">See also</h2>
 <ul>
+<li><a href="../retrievers/">Retrievers</a> — multi-modal retrieval (NeorunBase vector / graph / full-text) as a governed semantic object.</li>
 <li><a href="../bi-integration/">BI Integration</a> — Tableau / DBeaver / Power BI / Looker setup.</li>
 <li><a href="../../reference/mcp-server/">MCP Server</a> — semantic-discovery tools for LLM agents.</li>
 <li><a href="../iam/">IAM</a> — user attributes feed <code>${user.attr.X}</code> templating; column masking and row-level filters are enforced server-side alongside metric RBAC.</li>

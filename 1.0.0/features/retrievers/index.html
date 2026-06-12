@@ -1,0 +1,2236 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/retrievers/">
+      
+      
+        <link rel="prev" href="../semantic-layer/">
+      
+      
+        <link rel="next" href="../bi-integration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/logo/ontul-logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Retrievers (Multi-Modal Retrieval) - Ontul</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#retrievers-multi-modal-retrieval" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Ontul" class="md-header__button md-logo" aria-label="Ontul" data-md-component="logo">
+      
+  <img src="../../images/logo/ontul-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ontul
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Retrievers (Multi-Modal Retrieval)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../installation/installation/" class="md-tabs__link">
+          
+  
+  
+  Installation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../unified-engine/" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/sdk-java/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../query/guide/" class="md-tabs__link">
+          
+  
+  
+  Query
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../batch/guide/" class="md-tabs__link">
+          
+  
+  
+  Batch
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../streaming/guide/" class="md-tabs__link">
+          
+  
+  
+  Streaming
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Ontul" class="md-nav__button md-logo" aria-label="Ontul" data-md-component="logo">
+      
+  <img src="../../images/logo/ontul-logo.png" alt="logo">
+
+    </a>
+    Ontul
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontul Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Installation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Download & Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/intro/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../unified-engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Unified Data Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arrow-native-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow-Native Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../connector-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connector Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../connection-id/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connection ID (Source/Sink by Reference)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Queries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iceberg-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Iceberg Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../semantic-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Semantic Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrievers (Multi-Modal Retrieval)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrievers (Multi-Modal Retrieval)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-retrievers-exist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why retrievers exist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anatomy-of-a-retriever" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anatomy of a retriever
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Anatomy of a retriever">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameter-types-and-injection-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter types and injection safety
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rest-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REST API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="REST API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authorization-on-invoke" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authorization on invoke
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#register-and-invoke-a-hybrid-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Register and invoke: a HYBRID example
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Register and invoke: a HYBRID example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-register" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Register
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-invoke" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Invoke
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#same-retriever-from-an-agent-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Same retriever from an agent (MCP)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentic-example-ontul-mcp-semantic-metrics-neorunbase-retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agentic example: Ontul MCP → semantic metrics + NeorunBase retrieval
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#row-caps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Row caps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storage-replication-governance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage, replication, governance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bi-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BI Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remote Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../udf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User-Defined Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iam/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admin-password-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin Password Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Lineage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../encryption/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encryption & KMS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geospatial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geospatial Support
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../high-availability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    High Availability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backup-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup & Restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nic-fail-safety/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NIC Silent-Fail Safety
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/sdk-java/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/sdk-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Query
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../query/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Batch
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../batch/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Streaming
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../streaming/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="retrievers-multi-modal-retrieval">Retrievers (Multi-Modal Retrieval)</h1>
+<p>A <strong>retriever</strong> is a first-class, governed object in Ontul's semantic layer that wraps a backend-native, multi-modal retrieval query and exposes it for safe, parameterized invocation. Where a <a href="../semantic-layer/">semantic view</a> curates <em>analytics</em> (metrics + dimensions the engine rewrites into Calcite SQL), a retriever curates <em>retrieval</em> — vector similarity, graph traversal, and full-text search — and pushes it down to a backing engine that can actually execute it.</p>
+<p>Today the backing engine is <strong><a href="https://github.com/cloudcheflabs">NeorunBase</a></strong>, whose single-SQL surface combines vector (ANN), full-text (BM25), and graph (PageRank / neighbor expansion) retrieval — purpose-built for graph-RAG. A retriever lets an agent on the <a href="../../reference/mcp-server/">Ontul MCP server</a> query <em>semantic metrics</em> and <em>NeorunBase's vector / graph / full-text retrieval</em> through one governed surface.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Agent (MCP) ─┬─►  ontul_search_metrics / ontul_query        ─►  semantic metrics  (Calcite rewrite)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>             └─►  ontul_list/describe/invoke_retriever       ─►  retriever pushdown ─►  NeorunBase
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                                                                  (HYBRID_SEARCH / GRAPH_NEIGHBORS / …)
+</code></pre></div>
+<h2 id="why-retrievers-exist">Why retrievers exist</h2>
+<p>Adding a NeorunBase catalog to Ontul lets you run plain relational <code>SELECT</code>s against NeorunBase tables. It does <strong>not</strong> let NeorunBase's special table-valued functions (<code>HYBRID_SEARCH</code>, <code>GRAPH_NEIGHBORS</code>, <code>PERSONALIZED_PAGERANK</code>) or operators (<code>&lt;=&gt;</code>, <code>@@</code>) flow through — Ontul's own Calcite planner does not recognize them and would strip or reject them.</p>
+<p>A retriever solves this by <strong>bypassing Ontul's planner for the retrieval query</strong>: the master renders an admin-authored, NeorunBase-native SQL template into a safe statement and ships it verbatim to the NeorunBase connector's JDBC (pg-wire) passthrough. NeorunBase's own pre-Calcite rewriters then see the TVFs intact and execute them server-side. Ontul contributes what it is good at — discovery, governance (IAM + role gating), injection-safe parameterization, and a uniform MCP/REST surface — without getting in the way of the backend dialect.</p>
+<h2 id="anatomy-of-a-retriever">Anatomy of a retriever</h2>
+<p>A retriever definition (<code>RetrieverDef</code>) is persisted in the cluster metadata store (key prefix <code>retriever:</code>) and replicates to follower masters with the rest of the cluster metadata.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>catalog</code>, <code>schema</code>, <code>name</code></td>
+<td>The retriever's identity in the semantic namespace (its FQN is <code>catalog.schema.name</code>). This is <em>not</em> where it executes.</td>
+</tr>
+<tr>
+<td><code>targetCatalog</code></td>
+<td>The Ontul catalog (registered with the <code>neorunbase</code> connector) the rendered SQL is pushed down to. This is where execution lands.</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td>A label for the modality — <code>HYBRID</code>, <code>VECTOR</code>, <code>FTS</code>, <code>GRAPH</code>, <code>PAGERANK</code>, <code>PATH_EXISTS</code>, or <code>CUSTOM</code>. Informational; the template is authoritative.</td>
+</tr>
+<tr>
+<td><code>sqlTemplate</code></td>
+<td>The backend-native SQL with <code>${param}</code> placeholders. <strong>Admin-authored and trusted.</strong></td>
+</tr>
+<tr>
+<td><code>params[]</code></td>
+<td>The declared parameter contract. Each has <code>name</code>, <code>type</code>, <code>required</code>, <code>defaultValue</code>, <code>description</code>. Callers may only supply declared names.</td>
+</tr>
+<tr>
+<td><code>outputColumns[]</code></td>
+<td>Documentation of the columns the rendered query returns.</td>
+</tr>
+<tr>
+<td><code>defaultMaxRows</code>, <code>maxRowsCeiling</code></td>
+<td>Per-retriever row defaults / cap (further bounded by a cluster-wide cap — see <a href="#row-caps">Row caps</a>).</td>
+</tr>
+<tr>
+<td><code>synonyms[]</code>, <code>description</code></td>
+<td>Natural-language discovery — what an agent matches against in <code>ontul_describe_retriever</code> / search.</td>
+</tr>
+<tr>
+<td><code>allowedRoles[]</code>, <code>tags[]</code>, <code>status</code>, <code>certifiedBy</code>, <code>certifiedAt</code>, <code>owner</code></td>
+<td>Governance — RBAC gating + the same lifecycle metadata semantic views carry.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="parameter-types-and-injection-safety">Parameter types and injection safety</h3>
+<p>The security model is explicit: <strong>the template is admin-authored and trusted; the args are caller-supplied and untrusted.</strong> The renderer never lets a caller inject raw SQL. Each declared parameter has a <code>type</code> that governs validation and how its value is rendered into the statement:</p>
+<table>
+<thead>
+<tr>
+<th><code>type</code></th>
+<th>Validation</th>
+<th>Rendered as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>STRING</code></td>
+<td>any text</td>
+<td>single-quote-escaped, quoted literal (<code>'…''…'</code>)</td>
+</tr>
+<tr>
+<td><code>INT</code></td>
+<td>parses as a Java <code>long</code></td>
+<td>bare number</td>
+</tr>
+<tr>
+<td><code>NUMBER</code></td>
+<td>parses as a finite <code>double</code></td>
+<td>bare number</td>
+</tr>
+<tr>
+<td><code>BOOL</code></td>
+<td><code>true</code>/<code>false</code>/<code>1</code>/<code>0</code></td>
+<td><code>TRUE</code> / <code>FALSE</code></td>
+</tr>
+<tr>
+<td><code>VECTOR</code></td>
+<td>matches <code>[n, n, …]</code> of numbers</td>
+<td>quoted literal <code>'[…]'</code></td>
+</tr>
+<tr>
+<td><code>IDENT</code></td>
+<td>matches <code>[A-Za-z0-9_.]+</code></td>
+<td>bare identifier</td>
+</tr>
+</tbody>
+</table>
+<p>After substitution the renderer asserts two more invariants before anything reaches the engine:</p>
+<ul>
+<li><strong>No unfilled placeholder</strong> — a <code>${…}</code> that has no value (undeclared, or optional with no default and no arg) is rejected.</li>
+<li><strong>Single statement only</strong> — a <code>;</code> <em>outside</em> any quoted string literal is rejected. A <code>;</code> <em>inside</em> an escaped string (e.g. a payload like <code>x'); DROP TABLE t; --</code>) stays one harmless literal, while an admin template typo such as <code>SELECT 1; DELETE …</code> is caught.</li>
+</ul>
+<p>Two context parameters are always bound for row-level scoping, regardless of the declared list: <code>${user.id}</code> (the caller's id) and <code>${user.roles}</code> (comma-joined roles). Use them in the template's <code>WHERE</code> to scope results per caller.</p>
+<h2 id="rest-api">REST API</h2>
+<p>All routes are under the master's admin HTTP port. Authentication reuses the same IAM token as the rest of the admin surface (<code>Authorization: Token &lt;token&gt;</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Method + path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /api/v1/retrievers</code></td>
+<td>List retrievers (IAM-filtered by <code>data:SelectTable</code> on the fqn). Optional <code>?catalog=&amp;schema=</code>.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/retrievers</code></td>
+<td>Register a retriever (admin-only). Validates that <code>targetCatalog</code> is a registered <code>neorunbase</code> connector.</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/retrievers/{fqn}</code></td>
+<td>Fetch one retriever's full definition.</td>
+</tr>
+<tr>
+<td><code>DELETE /api/v1/retrievers/{fqn}</code></td>
+<td>Delete a retriever (admin-only).</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/retrievers/search?q=&amp;limit=</code></td>
+<td>Natural-language search over name / synonyms / description.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/retrievers/{fqn}/invoke</code></td>
+<td>Render with the caller's args and push down to NeorunBase. Body: <code>{ "args": { … }, "maxRows": N }</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="authorization-on-invoke">Authorization on invoke</h3>
+<p><code>/invoke</code> is gated two ways:</p>
+<ol>
+<li>The IAM <code>data:SelectTable</code> check on the retriever's fqn (same as semantic-view visibility).</li>
+<li>If the definition lists <code>allowedRoles</code>, the caller must additionally be a member of at least one listed group.</li>
+</ol>
+<p>Only after both pass does the master render the template (binding <code>${user.id}</code> / <code>${user.roles}</code> from the authenticated caller) and execute the pushdown.</p>
+<h2 id="mcp-tools">MCP tools</h2>
+<p>The <a href="../../reference/mcp-server/">Ontul MCP server</a> exposes three retriever tools so an agent discovers and runs retrievers without ever writing SQL:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul_list_retrievers</code></td>
+<td>List retrievers (optional <code>catalog</code>/<code>schema</code> filter), with kind, target, declared params, and governance.</td>
+</tr>
+<tr>
+<td><code>ontul_describe_retriever</code></td>
+<td>Fetch one retriever's full definition — the param contract the agent must satisfy.</td>
+</tr>
+<tr>
+<td><code>ontul_invoke_retriever</code></td>
+<td>Run a retriever by fqn with structured <code>args</code> (and optional <code>max_rows</code>). Returns the rendered SQL plus the result rows.</td>
+</tr>
+</tbody>
+</table>
+<p>The agent flow mirrors the metric flow: discover (<code>list</code> / <code>describe</code>), then invoke with declared args. Passing an undeclared arg, a type-mismatched value, or omitting a required param is rejected by the server <em>before any SQL runs</em>.</p>
+<h2 id="register-and-invoke-a-hybrid-example">Register and invoke: a HYBRID example</h2>
+<p>The example registers a hybrid (FTS + vector) document retriever over a NeorunBase <code>docs</code> table, with a region/revenue hard filter, then invokes it. <code>nb</code> is an Ontul catalog already registered with the <code>neorunbase</code> connector.</p>
+<h3 id="1-register">1. Register</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/v1/retrievers&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="s1">  &quot;catalog&quot;: &quot;semantic&quot;, &quot;schema&quot;: &quot;rag&quot;, &quot;name&quot;: &quot;docs_hybrid&quot;,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="s1">  &quot;description&quot;: &quot;Hybrid (FTS+vector) document retrieval with a region/revenue hard filter.&quot;,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="s1">  &quot;kind&quot;: &quot;HYBRID&quot;, &quot;targetCatalog&quot;: &quot;nb&quot;,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="s1">  &quot;synonyms&quot;: [&quot;find documents&quot;, &quot;문서 검색&quot;, &quot;hybrid search&quot;],</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="s1">  &quot;sqlTemplate&quot;: &quot;SELECT d.id, d.description, h.score FROM HYBRID_SEARCH(table =&gt; &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;public.docs&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;, ts_query =&gt; ${q}, ts_index =&gt; &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;idx_docs_text&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;, vec_query =&gt; ${qvec}, vec_index =&gt; &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;idx_docs_emb&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;, alpha =&gt; 0.4, beta =&gt; 0.6, k =&gt; ${k}) h JOIN docs d ON d.id = h.id WHERE d.region = ${region} AND d.revenue &gt;= ${minRevenue} ORDER BY h.score DESC LIMIT ${k}&quot;,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="s1">  &quot;params&quot;: [</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="s1">    {&quot;name&quot;: &quot;q&quot;,          &quot;type&quot;: &quot;STRING&quot;, &quot;required&quot;: true,  &quot;description&quot;: &quot;keyword query&quot;},</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="s1">    {&quot;name&quot;: &quot;qvec&quot;,       &quot;type&quot;: &quot;VECTOR&quot;, &quot;required&quot;: true,  &quot;description&quot;: &quot;embedding&quot;},</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="s1">    {&quot;name&quot;: &quot;region&quot;,     &quot;type&quot;: &quot;STRING&quot;, &quot;required&quot;: false, &quot;defaultValue&quot;: &quot;경기도&quot;, &quot;description&quot;: &quot;region hard filter&quot;},</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="s1">    {&quot;name&quot;: &quot;minRevenue&quot;, &quot;type&quot;: &quot;INT&quot;,    &quot;required&quot;: false, &quot;defaultValue&quot;: &quot;100&quot;,   &quot;description&quot;: &quot;min revenue&quot;},</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="s1">    {&quot;name&quot;: &quot;k&quot;,          &quot;type&quot;: &quot;INT&quot;,    &quot;required&quot;: false, &quot;defaultValue&quot;: &quot;5&quot;,     &quot;description&quot;: &quot;top-k&quot;}</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="s1">  ],</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="s1">  &quot;outputColumns&quot;: [{&quot;name&quot;: &quot;id&quot;}, {&quot;name&quot;: &quot;description&quot;}, {&quot;name&quot;: &quot;score&quot;}],</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="s1">  &quot;status&quot;: &quot;CERTIFIED&quot;</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="s1">}&#39;</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="c1"># → {&quot;status&quot;:&quot;ok&quot;,&quot;fqn&quot;:&quot;semantic.rag.docs_hybrid&quot;}</span>
+</code></pre></div>
+<h3 id="2-invoke">2. Invoke</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/v1/retrievers/semantic.rag.docs_hybrid/invoke&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;args&quot;:{&quot;q&quot;:&quot;AI&quot;,&quot;qvec&quot;:&quot;[0.9, 0.1, 0.0, 0.0]&quot;,&quot;k&quot;:5},&quot;maxRows&quot;:10}&#39;</span>
+</code></pre></div>
+<p>Response (the rendered SQL is echoed so an operator can see exactly what ran):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;semantic.rag.docs_hybrid&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT d.id, d.description, h.score FROM HYBRID_SEARCH(table =&gt; &#39;public.docs&#39;, ts_query =&gt; &#39;AI&#39;, ts_index =&gt; &#39;idx_docs_text&#39;, vec_query =&gt; &#39;[0.9, 0.1, 0.0, 0.0]&#39;, vec_index =&gt; &#39;idx_docs_emb&#39;, alpha =&gt; 0.4, beta =&gt; 0.6, k =&gt; 5) h JOIN docs d ON d.id = h.id WHERE d.region = &#39;경기도&#39; AND d.revenue &gt;= 100 ORDER BY h.score DESC LIMIT 5&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">&quot;columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;description&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;score&quot;</span><span class="p">],</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">&quot;rows&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;AI R&amp;D innovation roadmap&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">0.83</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;AI artificial intelligence research&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">0.79</span><span class="p">]],</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">&quot;rowCount&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">}</span>
+</code></pre></div>
+<p>The <code>region</code> / <code>minRevenue</code> defaults apply because the caller omitted them; the <code>WHERE</code> hard-filter drops out-of-region and low-revenue rows; the FTS+vector blend ranks the rest. The injected <code>'AI'</code> string and <code>'[0.9, 0.1, 0.0, 0.0]'</code> vector are rendered as escaped literals — a caller cannot break out of them.</p>
+<h3 id="same-retriever-from-an-agent-mcp">Same retriever from an agent (MCP)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ontul_describe_retriever({ &quot;fqn&quot;: &quot;semantic.rag.docs_hybrid&quot; })
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>ontul_invoke_retriever({ &quot;fqn&quot;: &quot;semantic.rag.docs_hybrid&quot;,
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>                         &quot;args&quot;: { &quot;q&quot;: &quot;AI&quot;, &quot;qvec&quot;: &quot;[0.9, 0.1, 0.0, 0.0]&quot;, &quot;k&quot;: 5 } })
+</code></pre></div>
+<h2 id="agentic-example-ontul-mcp-semantic-metrics-neorunbase-retrieval">Agentic example: Ontul MCP → semantic metrics + NeorunBase retrieval</h2>
+<p>This is the payoff of the design: a single agent connected to the <a href="../../reference/mcp-server/">Ontul MCP server</a> answers a question that needs <em>both</em> governed analytics <em>and</em> graph-RAG retrieval — without leaving Ontul, and without writing raw SQL against NeorunBase's special functions. Ontul is the one control plane; the semantic metric lives in a <a href="../semantic-layer/">semantic view</a>, the retrieval lives in a retriever backed by NeorunBase.</p>
+<p><strong>User asks the agent:</strong> <em>"What's our 경기도 net revenue, and which documents back our top AI initiatives there?"</em></p>
+<p>The agent decomposes this into one analytics call and one retrieval call over MCP:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a># 1. Discover the metric by natural language (semantic layer)
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>ontul_search_metrics({ &quot;query&quot;: &quot;매출&quot; })
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a># → [{ &quot;fqn&quot;: &quot;tpch.sales.region_sales&quot;, &quot;metricName&quot;: &quot;revenue&quot;, &quot;score&quot;: 100, &quot;matchedOn&quot;: &quot;synonym:매출&quot; }]
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a># 2. Query the metric directly — the engine rewrites `revenue` into its aggregation,
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>#    injects GROUP BY, and enforces RBAC + mandatory filters server-side.
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>ontul_query({ &quot;sql&quot;: &quot;SELECT region, revenue FROM tpch.sales.region_sales WHERE region = &#39;경기도&#39;&quot; })
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a># → | region | revenue |
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>#   | 경기도  | 4820000 |
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a># 3. Discover the retriever and its param contract (semantic layer, retrieval side)
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>ontul_describe_retriever({ &quot;fqn&quot;: &quot;semantic.rag.docs_hybrid&quot; })
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a># → kind=HYBRID, targetCatalog=nb, params=[q:STRING*, qvec:VECTOR*, region:STRING=경기도, minRevenue:INT=100, k:INT=5]
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a># 4. Invoke it — Ontul renders the template into injection-safe SQL and pushes
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>#    HYBRID_SEARCH (FTS + vector) down to NeorunBase; results come back through Ontul.
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>ontul_invoke_retriever({
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>  &quot;fqn&quot;: &quot;semantic.rag.docs_hybrid&quot;,
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>  &quot;args&quot;: { &quot;q&quot;: &quot;AI&quot;, &quot;qvec&quot;: &quot;[0.9, 0.1, 0.0, 0.0]&quot;, &quot;region&quot;: &quot;경기도&quot;, &quot;k&quot;: 5 }
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>})
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a># → rows: [[1, &quot;AI R&amp;D innovation roadmap&quot;, 0.83],
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>#          [5, &quot;AI artificial intelligence research&quot;, 0.79]]
+</code></pre></div>
+<p>The agent then synthesizes one answer: <em>"경기도 net revenue is ₩4.82M. The top AI-related documents there are 'AI R&amp;D innovation roadmap' and 'AI artificial intelligence research' (hybrid FTS+vector match)."</em></p>
+<p>What made this work end-to-end:</p>
+<ul>
+<li><strong>One token, one surface.</strong> The same <code>ONTUL_USER_TOKEN</code> and the same MCP tool namespace cover both the metric and the retrieval; IAM (<code>data:SelectTable</code> + <code>allowedRoles</code>) is enforced server-side on both.</li>
+<li><strong>The metric stayed governed.</strong> <code>revenue</code> was never hand-formulated by the agent — the semantic layer expanded it, so the number matches every other consumer's.</li>
+<li><strong>The NeorunBase TVF actually ran.</strong> <code>HYBRID_SEARCH</code> (which Ontul's Calcite planner would otherwise reject) executed natively on NeorunBase because the retriever pushed it down verbatim; the agent only supplied typed, escaped args.</li>
+<li><strong>No raw SQL crossed the agent boundary for retrieval.</strong> The agent filled a declared param contract; the injection-safe renderer produced the SQL.</li>
+</ul>
+<p>The end-to-end flow is exercised by <code>tests/e2e-neorunbase-retriever.sh</code> in the Ontul repo (register a NeorunBase catalog + a HYBRID retriever, invoke, assert pushdown rows, hard-filter behavior, and injection safety).</p>
+<h2 id="row-caps">Row caps</h2>
+<p>Two layers bound the result size, smaller wins:</p>
+<ul>
+<li><strong>Per-retriever</strong> — <code>maxRowsCeiling</code> (default 1000) and <code>defaultMaxRows</code> (default 50) in the definition.</li>
+<li><strong>Cluster-wide</strong> — <code>ontul.retriever.max.rows.ceiling</code> (default 1000) in <code>ontul.properties</code>, a hard cap an operator can lower globally regardless of any retriever's own ceiling. See <a href="../../reference/configuration/">Configuration</a>.</li>
+</ul>
+<p>A caller's requested <code>maxRows</code> is clamped to <code>min(requested, retriever.maxRowsCeiling, cluster.ceiling)</code>, floored at 1.</p>
+<h2 id="storage-replication-governance">Storage, replication, governance</h2>
+<p>Retriever definitions live in the cluster metadata store under <code>retriever:</code> and ride the standard <code>exportSnapshot</code> / <code>importSnapshot</code> replication to follower masters — exactly like semantic views. Unlike semantic views they are <strong>not</strong> registered as Calcite views (they are never planned by Ontul's optimizer); they are rendered and pushed down only at invoke time.</p>
+<p>Governance mirrors the semantic layer: <code>status</code> (<code>DRAFT</code> / <code>CERTIFIED</code> / <code>DEPRECATED</code>), <code>tags</code>, <code>certifiedBy</code> / <code>certifiedAt</code>, <code>owner</code>, and <code>allowedRoles</code> for invoke-time RBAC.</p>
+<h2 id="see-also">See also</h2>
+<ul>
+<li><a href="../semantic-layer/">Semantic Layer</a> — metrics, dimensions, and query rewriting.</li>
+<li><a href="../../reference/mcp-server/">MCP Server</a> — the agent tool surface.</li>
+<li><a href="../connector-architecture/">Connector Architecture</a> — how the <code>neorunbase</code> connector and pushdown fit in.</li>
+<li><a href="../../reference/configuration/">Configuration</a> — <code>ontul.retriever.max.rows.ceiling</code>.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © <script>document.write(new Date().getFullYear())</script> Cloud Chef Labs, Inc. All rights reserved. <a href="mailto:admin@cloudchef-labs.com">admin@cloudchef-labs.com</a>
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "2.2.0", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/extra.js"></script>
+      
+    
+  </body>
+</html>
