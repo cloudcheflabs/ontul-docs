@@ -196,6 +196,16 @@ Two layers bound the result size, smaller wins:
 
 A caller's requested `maxRows` is clamped to `min(requested, retriever.maxRowsCeiling, cluster.ceiling)`, floored at 1.
 
+## Configuring in the Admin UI
+
+Retrievers can be managed without REST calls under **Semantic & AI → Retrievers** in the Admin UI:
+
+- **Register Retriever** opens a side panel for `catalog` / `schema` / `name`, `kind`, the **target catalog** (a `neorunbase` catalog), the SQL template, repeatable **parameter** rows (name, type, required, default, description), synonyms, `allowedRoles`, and status.
+- Each retriever card shows its kind badge, target catalog, a shield icon when role-gated, and its declared params (`name:type*`).
+- The **Invoke** (▶) button opens a tester: fill the declared `args` as JSON, run it, and the panel shows the **rendered SQL** that was pushed to NeorunBase plus the returned rows — the same `POST /api/v1/retrievers/{fqn}/invoke` an agent calls. It's the fastest way to validate a template + param contract before agents use it.
+
+Metric / retriever `allowedRoles` map to IAM groups — see [Semantic Layer & Retriever RBAC](iam.md#semantic-layer-retriever-rbac).
+
 ## Storage, replication, governance
 
 Retriever definitions live in the cluster metadata store under `retriever:` and ride the standard `exportSnapshot` / `importSnapshot` replication to follower masters — exactly like semantic views. Unlike semantic views they are **not** registered as Calcite views (they are never planned by Ontul's optimizer); they are rendered and pushed down only at invoke time.

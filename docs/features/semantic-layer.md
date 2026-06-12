@@ -503,6 +503,16 @@ SELECT customer.region, part.category,
 
 If alice asks for `vip_revenue` she gets a result; the same query from a user in only the `viewer` group is denied at rewrite time with a `Forbidden: vip_revenue` error.
 
+## Configuring in the Admin UI
+
+Everything above is also available without writing REST calls, under **Semantic & AI → Semantic Layer** in the Admin UI:
+
+- **Register View** opens a side panel for `catalog` / `schema` / `name`, the base SQL, and repeatable **metric** rows (name, expr, synonyms, `allowedRoles`, per-metric mandatory filters) and **dimension** rows, plus view-level mandatory filters and tags.
+- Each registered view shows its status badge (`DRAFT` / `CERTIFIED` / `DEPRECATED`), its metrics (a shield icon marks role-gated ones), dimensions, and tags.
+- The **Certify** button flips `DRAFT → CERTIFIED` and stamps the certifier; **Delete** removes the metadata.
+
+The panel issues the same `POST /api/v1/semantic-views` / `certify` / `DELETE` calls documented above, so the UI and API are interchangeable. Metric-level `allowedRoles` map to IAM groups — see [Semantic Layer & Retriever RBAC](iam.md#semantic-layer-retriever-rbac) for configuring the backing group + member. Retrievers have a sibling **Retrievers** page (register + an invoke tester that shows the rendered SQL and rows); see [Retrievers](retrievers.md).
+
 ## Storage and replication
 
 | Concern | Implementation |
