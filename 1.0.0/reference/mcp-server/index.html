@@ -371,26 +371,6 @@
   
 
       
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../community/mailing-list/" class="md-tabs__link">
-          
-  
-  
-  Community
-
-        </a>
-      </li>
-    
-  
-
-      
     </ul>
   </div>
 </nav>
@@ -1795,93 +1775,6 @@
   
 
     
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
-        
-          
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Community
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Community
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../community/mailing-list/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Mailing List
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
   </ul>
 </nav>
                   </div>
@@ -1903,7 +1796,7 @@
 <p><code>ontul-mcp</code> is a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server that lets an LLM run SQL against the Ontul Unified Data Engine. It speaks JSON-RPC 2.0 over stdio (the standard MCP transport), connects to Ontul Master via Arrow Flight SQL (for queries and catalog introspection) and the admin REST port (for the semantic layer), and exposes eight read-side tools.</p>
 <p>Authorization is enforced server-side by Ontul IAM using the access token configured at startup. The MCP layer adds no additional access control — anything the token's policies allow, the LLM can run; anything they deny, the master rejects with an error that the LLM sees verbatim.</p>
 <p>The semantic layer rewriting kicks in transparently: an LLM can issue <code>SELECT revenue, customer.region FROM saas.core.sales</code> and the master expands the metric, injects the conformed-dimension JOIN, applies the user's mandatory filters, and derives the GROUP BY before execution. The LLM doesn't need to inline the aggregation formula — though it still can, and Phase 1 LLM-expanded SQL keeps working. See <a href="../../features/semantic-layer/">Semantic Layer</a> for the full rewrite pipeline.</p>
-<p>The <code>ontul-mcp</code> launcher is shipped as part of the Ontul community-edition distribution. After unpacking the release archive it is available at <code>bin/ontul-mcp</code> alongside the master / worker / ZooKeeper launchers.</p>
+<p>The <code>ontul-mcp</code> launcher is shipped as part of the Ontul distribution. After unpacking the release archive it is available at <code>bin/ontul-mcp</code> alongside the master / worker / ZooKeeper launchers.</p>
 <h2 id="tools">Tools</h2>
 <table>
 <thead>
