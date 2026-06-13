@@ -979,6 +979,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Hidden partitioning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#distributed-write-partition-round-trip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Distributed-write partition round-trip
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2298,6 +2315,45 @@
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">PARTITIONED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="p">(</span><span class="k">day</span><span class="p">(</span><span class="n">ts</span><span class="p">),</span><span class="w"> </span><span class="n">bucket</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">));</span>
 </code></pre></div>
 <p>Predicates against the source columns are pushed into the Iceberg scan and used for partition pruning before the worker even opens a parquet file.</p>
+<h4 id="distributed-write-partition-round-trip">Distributed-write partition round-trip</h4>
+<p>Every Ontul write is distributed: each worker writes its own data files and ships per-file
+metadata — path, size, record count, and <strong>partition value</strong> — to the controller, which performs
+one atomic <code>AppendFiles</code> (or <code>RowDelta</code>) commit. Only the controller commits a given table, so
+no concurrent-writer <code>CommitFailedException</code> can occur regardless of parallelism.</p>
+<p>The partition value travels as a path string (<code>name=value/...</code>) that the controller re-parses
+with Iceberg's <code>Conversions.fromPartitionString(resultType, s)</code>. The encoding is therefore
+<strong>result-type dependent</strong>, not a single human-readable form:</p>
+<table>
+<thead>
+<tr>
+<th>Transform</th>
+<th>Partition result type</th>
+<th>Serialized form</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>year</code>, <code>month</code>, <code>hour</code>, <code>bucket(N,…)</code>, <code>truncate(L,int)</code></td>
+<td><code>int</code></td>
+<td>the raw ordinal value (e.g. <code>hour → 494822</code>) — <code>Integer.parseInt</code></td>
+</tr>
+<tr>
+<td><code>day</code>, identity on a <code>date</code> column</td>
+<td><code>date</code></td>
+<td>ISO date string (e.g. <code>2024-03-15</code>) — <code>LocalDate.parse</code></td>
+</tr>
+<tr>
+<td>identity / truncate on string</td>
+<td><code>string</code></td>
+<td>the value itself</td>
+</tr>
+</tbody>
+</table>
+<p>Using the wrong form breaks the commit silently per transform: the human form
+(<code>hour → "2026-06-13-22"</code>) fails <code>Integer.parseInt</code>, while the raw epoch-day int for <code>day</code> fails
+<code>LocalDate.parse</code>. Ontul encodes each field by its result type so <code>year/month/day/hour/bucket/
+truncate/identity</code> all round-trip correctly through the distributed commit, on both the
+<code>INSERT</code>/<code>CTAS</code> data-file path and the <code>MERGE</code>/<code>DELETE</code> delete-file path.</p>
 <h3 id="sort-order">Sort order</h3>
 <p><code>SORT BY (col [ASC|DESC] [NULLS FIRST|LAST], ...)</code> enforces a per-file sort. Rows are buffered per partition and sorted before the data file is flushed — useful for clustering on filter columns to improve later column-filter predicate pushdown.</p>
 <h2 id="file-formats">File formats</h2>
