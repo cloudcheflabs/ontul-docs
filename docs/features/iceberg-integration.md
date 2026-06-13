@@ -129,6 +129,29 @@ PARTITIONED BY (day(ts), bucket(8, region));
 
 Predicates against the source columns are pushed into the Iceberg scan and used for partition pruning before the worker even opens a parquet file.
 
+#### Distributed-write partition round-trip
+
+Every Ontul write is distributed: each worker writes its own data files and ships per-file
+metadata — path, size, record count, and **partition value** — to the controller, which performs
+one atomic `AppendFiles` (or `RowDelta`) commit. Only the controller commits a given table, so
+no concurrent-writer `CommitFailedException` can occur regardless of parallelism.
+
+The partition value travels as a path string (`name=value/...`) that the controller re-parses
+with Iceberg's `Conversions.fromPartitionString(resultType, s)`. The encoding is therefore
+**result-type dependent**, not a single human-readable form:
+
+| Transform | Partition result type | Serialized form |
+|---|---|---|
+| `year`, `month`, `hour`, `bucket(N,…)`, `truncate(L,int)` | `int` | the raw ordinal value (e.g. `hour → 494822`) — `Integer.parseInt` |
+| `day`, identity on a `date` column | `date` | ISO date string (e.g. `2024-03-15`) — `LocalDate.parse` |
+| identity / truncate on string | `string` | the value itself |
+
+Using the wrong form breaks the commit silently per transform: the human form
+(`hour → "2026-06-13-22"`) fails `Integer.parseInt`, while the raw epoch-day int for `day` fails
+`LocalDate.parse`. Ontul encodes each field by its result type so `year/month/day/hour/bucket/
+truncate/identity` all round-trip correctly through the distributed commit, on both the
+`INSERT`/`CTAS` data-file path and the `MERGE`/`DELETE` delete-file path.
+
 ### Sort order
 
 `SORT BY (col [ASC|DESC] [NULLS FIRST|LAST], ...)` enforces a per-file sort. Rows are buffered per partition and sorted before the data file is flushed — useful for clustering on filter columns to improve later column-filter predicate pushdown.
