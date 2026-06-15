@@ -41,8 +41,8 @@ Lookup precedence (most specific first; the first key that is set wins):
 -- Stage writes to ice.sales.orders on the 'audit' branch; everything else still hits main.
 SET ontul.iceberg.wap.branch.orders = 'audit';
 
-INSERT INTO ice.sales.orders SELECT * FROM staging.new_orders;   -- lands on 'audit'
-UPDATE ice.sales.orders SET status = 'review' WHERE amount > 1e6; -- lands on 'audit'
+INSERT INTO ice.sales.orders SELECT * FROM ice.staging.new_orders;  -- lands on 'audit'
+UPDATE ice.sales.orders SET status = 'review' WHERE amount > 1e6;   -- lands on 'audit'
 
 -- Turn WAP off again for this table (back to main):
 SET ontul.iceberg.wap.branch.orders = 'main';
