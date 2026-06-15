@@ -117,15 +117,14 @@ ALTER TABLE ice.sales.orders EXECUTE cherrypick(snapshot_id => 81234567890123456
 
 ## End-to-end example
 
-The complete `write → audit → publish` cycle ships as a runnable example in both Java (Ontul SDK)
-and Python (Arrow Flight SQL). Each one: seeds a baseline on `main` → sets the WAP branch →
-stages an `INSERT` + `UPDATE` on the branch → audits `main` (frozen) against the branch (staged) →
-fast-forward publishes → verifies `main` now reflects the published data.
+The complete `write → audit → publish` cycle ships as a runnable example. The Java example uses the
+**Ontul SDK DataFrame API** end to end: read a source table, `filter`, `withColumn`, then
+`sink(Sink.table(...))` — so the enriched table is *built directly on the `audit` branch*, never on
+`main`, until you publish. The audit is programmatic too: `DataFrame.count()` returns a Java `long`
+used straight in the publish gate.
 
-The **audit is programmable**: the Java example reads each branch with the SDK DataFrame
-(`session.source(Source.sql(...)).count()`), so the publish decision is a plain Java `if` on those
-counts — no SQL result-set parsing. The writes use SQL because WAP staging appends/updates an
-existing table, which the SDK's create-table sink does not express.
+This is a realistic WAP use case — building a derived/enriched table that consumers must not see
+until it has been validated.
 
 ### Java — `package/examples/java/IcebergWapExample.java`
 
@@ -133,6 +132,7 @@ Run with `examples/bin/run-iceberg-wap.sh` (token via `-Dontul.user.token` / `ON
 
 ```java
 import com.cloudcheflabs.ontul.sdk.OntulSession;
+import com.cloudcheflabs.ontul.sdk.Sink;
 import com.cloudcheflabs.ontul.sdk.Source;
 
 public class IcebergWapExample {
@@ -140,66 +140,59 @@ public class IcebergWapExample {
     public static void main(String[] args) throws Exception {
         String catalog = System.getProperty("ontul.catalog", "ice");
         String ns      = System.getProperty("ontul.namespace", "wap_demo");
-        String table   = "orders";
+        String raw     = catalog + "." + ns + ".raw_sales";
+        String table   = "enriched_sales";
         String fqn     = catalog + "." + ns + "." + table;
         String branch  = "audit";
 
-        System.out.println("=== Iceberg Write-Audit-Publish (WAP) Example (Ontul SDK) ===\n");
-
-        // Token is auto-loaded from -Dontul.user.token (ONTUL_USER_TOKEN).
         try (OntulSession session = OntulSession.builder()
                 .master(System.getProperty("ontul.host", "localhost"),
                         Integer.getInteger("ontul.port", 47470))
                 .build()) {
 
-            // 0. SEED — baseline rows committed to main
-            System.out.println("--- 0. Seed baseline on main ---");
+            // 0. SEED — a raw_sales source table (3 valid, 2 invalid rows). A bare VALUES
+            //    literal like 10.0 is inferred as DECIMAL; use an explicit DOUBLE column.
             session.execute("DROP TABLE IF EXISTS " + fqn);
+            session.execute("DROP TABLE IF EXISTS " + raw);
             session.execute("CREATE SCHEMA IF NOT EXISTS " + catalog + "." + ns);
-            session.execute("CREATE TABLE " + fqn + " (id INT, region VARCHAR, amount DOUBLE)");
-            session.execute("INSERT INTO " + fqn +
-                    " SELECT * FROM (VALUES (1,'us',100.0),(2,'eu',200.0)) AS t(id, region, amount)");
-            System.out.println("  main rows after seed = " + count(session, fqn, null) + "  (expect 2)");
+            session.execute("CREATE TABLE " + raw +
+                    " (sale_id INT, product_id VARCHAR, quantity INT, unit_price DOUBLE, region VARCHAR)");
+            session.execute("INSERT INTO " + raw + " SELECT * FROM (VALUES " +
+                    "(1,'p1',2,10.0,'us'), (2,'p2',3,20.0,'eu'), (3,'p3',0,15.0,'us'), " +
+                    "(4,'p4',1,0.0,'eu'), (5,'p5',4,25.0,'us')) " +
+                    "AS t(sale_id, product_id, quantity, unit_price, region)");
 
-            // 1. WRITE — stage inserts + an update on the audit branch.
-            // Per-table WAP: only `orders` writes are redirected; other tables in this session
-            // still go to main. Use ...wap.branch (no table suffix) for a session-wide default.
-            System.out.println("\n--- 1. Write to audit branch (main stays frozen) ---");
+            // 1. SET — the enriched table will be built on the 'audit' branch, not main.
             session.execute("SET ontul.iceberg.wap.branch." + table + " = '" + branch + "'");
-            session.execute("INSERT INTO " + fqn +
-                    " SELECT * FROM (VALUES (3,'us',300.0),(4,'eu',400.0)) AS t(id, region, amount)");
-            session.execute("UPDATE " + fqn + " SET amount = 999.0 WHERE id = 1");
-            System.out.println("  staged 2 inserts + 1 update on branch '" + branch + "'");
 
-            // 2. AUDIT — main unchanged; branch carries the staged state. Done PROGRAMMABLY
-            //    via the SDK DataFrame: count() returns a Java long used directly in the gate.
-            System.out.println("\n--- 2. Audit: main vs branch ---");
+            // 2. WRITE — programmatic DataFrame ETL: read source → filter invalid → enrich → sink.
+            //    Because WAP is set above, the resulting table is built on the 'audit' branch.
+            session.source(Source.sql("SELECT * FROM " + raw))
+                    .filter("quantity > 0 AND unit_price > 0")           // drop the 2 invalid rows
+                    .withColumn("total_amount", "quantity * unit_price")  // enrich
+                    .sink(Sink.table(fqn));                               // → 'audit' branch
+
+            // 3. AUDIT — programmatic via the SDK DataFrame.count(): branch has the rows, main empty.
             long mainCount   = count(session, fqn, null);
             long branchCount = count(session, fqn, branch);
-            System.out.println("  main   rows = " + mainCount   + "  (expect 2 — frozen)");
-            System.out.println("  branch rows = " + branchCount + "  (expect 4 — staged)");
-
-            if (mainCount != 2 || branchCount != 4) {                 // gate before publishing
-                throw new IllegalStateException("AUDIT FAILED: expected main=2, branch=4 but got main="
-                        + mainCount + ", branch=" + branchCount + " — NOT publishing");
+            System.out.println("  main rows = " + mainCount + " (expect 0)   branch rows = "
+                    + branchCount + " (expect 3)");
+            if (mainCount != 0 || branchCount != 3) {
+                throw new IllegalStateException("AUDIT FAILED: main=" + mainCount
+                        + " branch=" + branchCount + " — NOT publishing");
             }
-            System.out.println("  audit OK ✓");
 
-            // 3. PUBLISH — fast-forward main to the audited branch
-            System.out.println("\n--- 3. Publish: fast-forward main -> '" + branch + "' ---");
+            // 4. PUBLISH — fast-forward main to the audited branch.
             session.execute("ALTER TABLE " + fqn +
                     " EXECUTE fast_forward(branch => 'main', to => '" + branch + "')");
             long published = count(session, fqn, null);
-            System.out.println("  main rows after publish = " + published + "  (expect 4)");
-
-            if (published != 4) {
-                throw new IllegalStateException("PUBLISH FAILED: expected main=4, got " + published);
-            }
-            System.out.println("\n=== WAP cycle complete: write → audit → publish ✓ ===");
+            System.out.println("  main rows after publish = " + published + " (expect 3)");
+            if (published != 3) throw new IllegalStateException("PUBLISH FAILED: main=" + published);
+            System.out.println("=== WAP cycle complete: write → audit → publish ✓ ===");
         }
     }
 
-    /** Row count of a table, optionally as of a branch/tag (null = main). */
+    /** Row count of a table, optionally as of a branch/tag (null = main) — SDK DataFrame.count(). */
     private static long count(OntulSession session, String fqn, String branch) {
         String sql = "SELECT * FROM " + fqn
                 + (branch != null ? " FOR VERSION AS OF '" + branch + "'" : "");
@@ -220,8 +213,9 @@ import pyarrow.flight as flight
 
 CATALOG = os.environ.get("ONTUL_CATALOG", "ice")
 NS      = os.environ.get("ONTUL_NAMESPACE", "wap_demo")
-TABLE   = "orders"
+TABLE   = "enriched_sales"
 FQN     = f"{CATALOG}.{NS}.{TABLE}"
+RAW     = f"{CATALOG}.{NS}.raw_sales"
 BRANCH  = "audit"
 
 
@@ -260,58 +254,54 @@ def count(client, options, fqn, branch=None):
     return int(t.column(0)[0].as_py()) if t.num_rows else -1
 
 
-def show(client, options, sql):
-    t = query(client, options, sql)
-    cols = t.schema.names
-    print("    " + " | ".join(cols))
-    data = t.to_pydict()
-    for i in range(t.num_rows):
-        print("    " + " | ".join(str(data[c][i]) for c in cols))
-
-
 def main():
     client, options = create_client()
     print("=== Iceberg Write-Audit-Publish (WAP) Example (Python) ===\n")
 
-    # 0. SEED — baseline on main
-    print("--- 0. Seed baseline on main ---")
+    # 0. SEED — raw_sales source table (DOUBLE price; a bare 10.0 would be DECIMAL)
+    print("--- 0. Seed source table raw_sales ---")
     exec_sql(client, options, f"DROP TABLE IF EXISTS {FQN}")
+    exec_sql(client, options, f"DROP TABLE IF EXISTS {RAW}")
     exec_sql(client, options, f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{NS}")
-    exec_sql(client, options, f"CREATE TABLE {FQN} (id INT, region VARCHAR, amount DOUBLE)")
     exec_sql(client, options,
-             f"INSERT INTO {FQN} SELECT * FROM (VALUES (1,'us',100.0),(2,'eu',200.0)) AS t(id, region, amount)")
-    print(f"  main rows after seed = {count(client, options, FQN)}  (expect 2)")
+             f"CREATE TABLE {RAW} (sale_id INT, product_id VARCHAR, quantity INT, unit_price DOUBLE, region VARCHAR)")
+    exec_sql(client, options,
+             f"INSERT INTO {RAW} SELECT * FROM (VALUES "
+             "(1,'p1',2,10.0,'us'), (2,'p2',3,20.0,'eu'), (3,'p3',0,15.0,'us'), "
+             "(4,'p4',1,0.0,'eu'), (5,'p5',4,25.0,'us')) "
+             "AS t(sale_id, product_id, quantity, unit_price, region)")
+    print("  raw_sales seeded (5 rows: 3 valid, 2 invalid)")
 
-    # 1. WRITE — stage on the audit branch (per-table WAP key)
-    print("\n--- 1. Write to audit branch (main stays frozen) ---")
+    # 1. SET — the enriched table will be built on the 'audit' branch, not main
+    print(f"\n--- 1. SET WAP branch '{BRANCH}' for {TABLE} ---")
     exec_sql(client, options, f"SET ontul.iceberg.wap.branch.{TABLE} = '{BRANCH}'")
-    exec_sql(client, options,
-             f"INSERT INTO {FQN} SELECT * FROM (VALUES (3,'us',300.0),(4,'eu',400.0)) AS t(id, region, amount)")
-    exec_sql(client, options, f"UPDATE {FQN} SET amount = 999.0 WHERE id = 1")
-    print(f"  staged 2 inserts + 1 update on branch '{BRANCH}'")
 
-    # 2. AUDIT — main frozen, branch staged
-    print("\n--- 2. Audit: main vs branch ---")
+    # 2. WRITE — build the enriched table (filter invalid + enrich) → lands on 'audit'
+    print(f"\n--- 2. Build enriched table (→ branch '{BRANCH}') ---")
+    exec_sql(client, options,
+             f"CREATE TABLE {FQN} AS SELECT *, quantity * unit_price AS total_amount "
+             f"FROM {RAW} WHERE quantity > 0 AND unit_price > 0")
+    print(f"  enriched_sales built on branch '{BRANCH}'")
+
+    # 3. AUDIT — main empty, branch has the rows
+    print("\n--- 3. Audit: main vs branch ---")
     main_count = count(client, options, FQN)
     branch_count = count(client, options, FQN, BRANCH)
-    print(f"  main   rows = {main_count}  (expect 2 - frozen)")
-    print(f"  branch rows = {branch_count}  (expect 4 - staged)")
-    show(client, options,
-         f"SELECT id, region, amount FROM {FQN} FOR VERSION AS OF '{BRANCH}' ORDER BY id")
-    if main_count != 2 or branch_count != 4:
-        print("  AUDIT FAILED: expected main=2, branch=4 - NOT publishing")
+    print(f"  main   rows = {main_count}  (expect 0 - not published)")
+    print(f"  branch rows = {branch_count}  (expect 3 - valid enriched rows)")
+    if main_count != 0 or branch_count != 3:
+        print("  AUDIT FAILED: expected main=0, branch=3 - NOT publishing")
         sys.exit(1)
     print("  audit OK")
 
-    # 3. PUBLISH — fast-forward main to the audited branch
-    print(f"\n--- 3. Publish: fast-forward main -> '{BRANCH}' ---")
+    # 4. PUBLISH — fast-forward main to the audited branch
+    print(f"\n--- 4. Publish: fast-forward main -> '{BRANCH}' ---")
     exec_sql(client, options,
              f"ALTER TABLE {FQN} EXECUTE fast_forward(branch => 'main', to => '{BRANCH}')")
     published = count(client, options, FQN)
-    print(f"  main rows after publish = {published}  (expect 4)")
-    show(client, options, f"SELECT id, region, amount FROM {FQN} ORDER BY id")
-    if published != 4:
-        print(f"  PUBLISH FAILED: expected main=4, got {published}")
+    print(f"  main rows after publish = {published}  (expect 3)")
+    if published != 3:
+        print(f"  PUBLISH FAILED: expected main=3, got {published}")
         sys.exit(1)
     print("\n=== WAP cycle complete: write -> audit -> publish ===")
 
@@ -323,16 +313,17 @@ if __name__ == "__main__":
 Running either example prints the staged-vs-frozen audit and the published result:
 
 ```
---- 0. Seed baseline on main ---
-  main rows after seed = 2  (expect 2)
---- 1. Write to audit branch (main stays frozen) ---
-  staged 2 inserts + 1 update on branch 'audit'
---- 2. Audit: main vs branch ---
-  main   rows = 2  (expect 2 — frozen)
-  branch rows = 4  (expect 4 — staged)
+--- 0. Seed source table raw_sales ---
+  raw_sales seeded (5 rows: 3 valid, 2 invalid)
+--- 1. SET WAP branch 'audit' for enriched_sales ---
+--- 2. Build enriched table (→ branch 'audit') ---
+  enriched_sales built on branch 'audit'
+--- 3. Audit: main vs branch ---
+  main   rows = 0  (expect 0 — not published)
+  branch rows = 3  (expect 3 — valid enriched rows)
   audit OK
---- 3. Publish: fast-forward main -> 'audit' ---
-  main rows after publish = 4  (expect 4)
+--- 4. Publish: fast-forward main -> 'audit' ---
+  main rows after publish = 3  (expect 3)
 === WAP cycle complete: write → audit → publish ===
 ```
 
