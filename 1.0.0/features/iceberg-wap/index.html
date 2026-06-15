@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/encryption/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/iceberg-wap/">
       
       
-        <link rel="prev" href="../data-lineage/">
+        <link rel="prev" href="../iceberg-integration/">
       
       
-        <link rel="next" href="../geospatial/">
+        <link rel="next" href="../semantic-layer/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Encryption & KMS - Ontul</title>
+        <title>Iceberg Write-Audit-Publish (WAP) - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#encryption-kms" class="md-skip">
+        <a href="#iceberg-write-audit-publish-wap" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Encryption & KMS
+              Iceberg Write-Audit-Publish (WAP)
             
           </span>
         </div>
@@ -863,10 +863,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../iceberg-wap/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Iceberg Write-Audit-Publish (WAP)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -882,6 +909,154 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#selecting-the-write-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting the write branch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Selecting the write branch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interactive-batch-sql-session-property" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interactive / batch SQL — session property
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#streaming-sink-job-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming sink — job config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auditing-the-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auditing the branch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Publishing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Publishing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fast_forward-the-normal-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fast_forward (the normal path)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cherrypick-when-main-has-moved-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cherrypick (when main has moved on)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#end-to-end-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End-to-end example
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="End-to-end example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose-e2e-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker-compose E2E test
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes &amp; limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1115,37 +1290,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Encryption & KMS
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../encryption/" class="md-nav__link">
         
   
   
@@ -1161,81 +1309,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#envelope-encryption" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Envelope Encryption
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-is-encrypted" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Is Encrypted
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#built-in-kms" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Built-in KMS
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#key-distribution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Distribution
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tls" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TLS
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1809,42 +1882,157 @@
 
 
 
-<h1 id="encryption-kms">Encryption &amp; KMS</h1>
-<p>Ontul provides built-in encryption with a Key Management Service (KMS) to protect sensitive data at rest across the cluster.</p>
-<h2 id="envelope-encryption">Envelope Encryption</h2>
-<p>Ontul uses envelope encryption — each piece of sensitive data is encrypted with its own Data Encryption Key (DEK), and DEKs are encrypted with a master key:</p>
+<h1 id="iceberg-write-audit-publish-wap">Iceberg Write-Audit-Publish (WAP)</h1>
+<p>Write-Audit-Publish (WAP) lets you stage writes on a <strong>non-<code>main</code> branch</strong>, inspect that branch
+in isolation (<strong>audit</strong>), and then <strong>publish</strong> it to <code>main</code> in a single atomic fast-forward.
+Readers continue to see <code>main</code> the entire time, so un-audited data is never exposed to consumers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>            ┌─ write ──────────────┐   ┌─ audit ──────────┐   ┌─ publish ────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>main:  S0 ──┤                      │   │  main still S0    │   │  main fast-forwards   │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>            └─ audit branch: S0→S1→S2   (consumers see S0)     └─ main = S2            │
+</code></pre></div>
+<p>WAP works across <strong>all three write paths</strong> — batch (<code>INSERT</code>/<code>CTAS</code>), interactive DML
+(<code>UPDATE</code>/<code>DELETE</code>/<code>MERGE</code>), and streaming sinks — and defaults to off (writes go straight to
+<code>main</code>). It builds on Ontul's existing Iceberg branch support (branches/tags, <code>FOR VERSION AS OF</code>
+reads) — see <a href="../iceberg-integration/">Iceberg Integration</a>.</p>
+<h2 id="selecting-the-write-branch">Selecting the write branch</h2>
+<p>The target branch is selected with the property key <strong><code>ontul.iceberg.wap.branch</code></strong>. The key is
+namespaced (<code>ontul.iceberg.*</code>) so it never collides with other connector or catalog options.</p>
+<p>A blank value or the literal <code>main</code> means <strong>write directly to <code>main</code></strong> (WAP off — the default).</p>
+<h3 id="interactive-batch-sql-session-property">Interactive / batch SQL — session property</h3>
+<p>For SQL writes (<code>INSERT</code>, <code>CTAS</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code>) the branch is a <strong>session property</strong>
+set with <code>SET</code>. Because a session can touch several Iceberg tables, the branch is resolved
+<strong>per table</strong> — a session can stage some tables on a branch while others go straight to <code>main</code>.</p>
+<p>Lookup precedence (most specific first; the first key that is set wins):</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.iceberg.wap.branch.&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td>one fully-qualified table</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.wap.branch.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td>table by schema.table</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.wap.branch.&lt;table&gt;</code></td>
+<td>table by name</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.wap.branch</code></td>
+<td>session-wide default for every Iceberg write</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">-- Stage writes to ice.sales.orders on the &#39;audit&#39; branch; everything else still hits main.</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">SET</span><span class="w"> </span><span class="n">ontul</span><span class="p">.</span><span class="n">iceberg</span><span class="p">.</span><span class="n">wap</span><span class="p">.</span><span class="n">branch</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;audit&#39;</span><span class="p">;</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">staging</span><span class="p">.</span><span class="n">new_orders</span><span class="p">;</span><span class="w">   </span><span class="c1">-- lands on &#39;audit&#39;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">UPDATE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;review&#39;</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="n">e6</span><span class="p">;</span><span class="w"> </span><span class="c1">-- lands on &#39;audit&#39;</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1">-- Turn WAP off again for this table (back to main):</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">SET</span><span class="w"> </span><span class="n">ontul</span><span class="p">.</span><span class="n">iceberg</span><span class="p">.</span><span class="n">wap</span><span class="p">.</span><span class="n">branch</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;main&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p>The branch is <strong>created automatically</strong> from <code>main</code>'s current snapshot on first write, so the
+audit branch always reflects <code>main</code>'s data plus the staged changes — and a later
+<code>fast_forward</code> is always valid (the branch descends from <code>main</code>).</p>
+<h3 id="streaming-sink-job-config">Streaming sink — job config</h3>
+<p>For a streaming job, set the key inside the <strong>sink config</strong> of the <code>SUBMIT STREAMING</code> JSON:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="err">SUBMIT</span><span class="w"> </span><span class="err">STREAMING</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;kafka&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;topic&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;events&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;json&quot;</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.analytics.events&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">&quot;ontul.iceberg.wap.branch&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;audit&quot;</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">&quot;commitIntervalMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">&quot;durationMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60000</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">}</span>
+</code></pre></div>
+<p>Every streaming commit (append or upsert <code>RowDelta</code>) lands on the <code>audit</code> branch; <code>main</code> is
+untouched until you publish.</p>
+<h2 id="auditing-the-branch">Auditing the branch</h2>
+<p>Read the staged branch in isolation with <code>FOR VERSION AS OF '&lt;branch&gt;'</code> while normal queries keep
+seeing <code>main</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">-- main (frozen)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="p">;</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1">-- staged branch (write side)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">VERSION</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="s1">&#39;audit&#39;</span><span class="p">;</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">VERSION</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="s1">&#39;audit&#39;</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;review&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p>Both row scans and <code>count(*)</code> honor the branch reference, so you can run full data-quality checks
+against the branch before deciding to publish.</p>
+<h2 id="publishing">Publishing</h2>
+<p>Publishing is <strong>explicit</strong> — there is no auto-publish, which is the whole point of an audit gate.
+Two <code>ALTER TABLE ... EXECUTE</code> operations are available:</p>
+<h3 id="fast_forward-the-normal-path">fast_forward (the normal path)</h3>
+<p>Fast-forwards a branch (default <code>main</code>) to the head of another branch. Valid when the target is a
+descendant of the branch being moved — which is always true for a WAP branch created from <code>main</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">fast_forward</span><span class="p">(</span><span class="n">branch</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;main&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;audit&#39;</span><span class="p">);</span>
+</code></pre></div>
+<p>After this, <code>main</code> points at the audited snapshot and consumers see the published data. The <code>audit</code>
+branch still exists; drop it (<code>EXECUTE drop_branch(name =&gt; 'audit')</code>) or reuse it for the next cycle.</p>
+<h3 id="cherrypick-when-main-has-moved-on">cherrypick (when main has moved on)</h3>
+<p>If <code>main</code> advanced independently while you were auditing (so a fast-forward is no longer valid),
+apply a single staged snapshot onto <code>main</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">cherrypick</span><span class="p">(</span><span class="n">snapshot_id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">8123456789012345678</span><span class="p">);</span>
+</code></pre></div>
+<h2 id="end-to-end-example">End-to-end example</h2>
+<p>A complete <code>write → audit → publish</code> cycle is shipped as a runnable example in both Java and Python:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>File</th>
+<th>Run</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Java</td>
+<td><code>package/examples/java/IcebergWapExample.java</code></td>
+<td><code>examples/bin/run-iceberg-wap.sh</code></td>
+</tr>
+<tr>
+<td>Python</td>
+<td><code>package/examples/python/iceberg_wap_example.py</code></td>
+<td><code>examples/bin/run-iceberg-wap-python.sh</code></td>
+</tr>
+</tbody>
+</table>
+<p>Both connect over Arrow Flight SQL and perform: seed baseline on <code>main</code> → <code>SET</code> the WAP branch →
+<code>INSERT</code>/<code>UPDATE</code> (staged) → audit (<code>main</code> frozen vs branch staged) → <code>fast_forward</code> publish →
+verify <code>main</code> reflects the published data.</p>
+<h3 id="docker-compose-e2e-test">Docker-compose E2E test</h3>
+<p><code>tests/test-iceberg-wap-e2e.sh</code> runs the full cycle against a real stack — ShannonStore (S3) +
+Apache Polaris (Iceberg REST catalog) in docker, plus a local Ontul cluster:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>bash<span class="w"> </span>tests/test-iceberg-wap-e2e.sh
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># teardown: bash tests/stop-infra.sh &amp;&amp; bash tests/stop-cluster.sh</span>
+</code></pre></div>
+<p>Expected output (abridged):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>--- 0. Seed baseline on main ---            main rows after seed = 2
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>--- 1. Write to audit branch ---            staged 2 inserts + 1 update on branch &#39;audit&#39;
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>--- 2. Audit: main vs branch ---            main rows = 2 (frozen)   branch rows = 4 (staged)
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>                                            audit OK ✓
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>--- 3. Publish: fast-forward main -&gt; audit  main rows after publish = 4
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>=== WAP cycle complete: write → audit → publish ✓ ===
+</code></pre></div>
+<h2 id="notes-limitations">Notes &amp; limitations</h2>
 <ul>
-<li><strong>Algorithm</strong>: AES-256-GCM</li>
-<li><strong>Master Key Derivation</strong>: PBKDF2-SHA256 with 200,000 iterations</li>
-<li><strong>Master Key Source</strong>: Environment variable <code>ONTUL_MASTER_KEY</code> (minimum 32 characters)</li>
-</ul>
-<h2 id="what-is-encrypted">What Is Encrypted</h2>
-<ul>
-<li><strong>Connection credentials</strong>: S3 access keys, JDBC passwords, Kafka credentials stored in the ConnectionStore</li>
-<li><strong>IAM secrets</strong>: User passwords, access key secrets, STS tokens</li>
-<li><strong>Cluster state metadata</strong>: Sensitive metadata in the RocksDB state store</li>
-<li><strong>Exchange Manager data</strong>: All data spill (query/batch/streaming) and state snapshots (streaming checkpoint) are KMS envelope-encrypted on disk</li>
-<li><strong>Streaming state store</strong>: RocksDB-backed window state and Kafka offset checkpoints</li>
-</ul>
-<h2 id="built-in-kms">Built-in KMS</h2>
-<p>Ontul includes a built-in KMS that:</p>
-<ul>
-<li>Generates and manages encryption keys in a RocksDB-backed keystore</li>
-<li>Distributes keys from the leader Master to all cluster nodes automatically</li>
-<li>Replicates the encrypted keystore to follower Masters for high availability</li>
-</ul>
-<p>No external KMS service is required.</p>
-<h2 id="key-distribution">Key Distribution</h2>
-<ol>
-<li>The leader Master generates and stores DEKs in the local encrypted RocksDB keystore</li>
-<li>On leader election or key changes, the keystore is replicated to follower Masters via the internal NIO protocol</li>
-<li>Workers receive relevant keys for decrypting connection credentials needed during query execution</li>
-</ol>
-<h2 id="tls">TLS</h2>
-<p>Ontul supports optional TLS for external-facing endpoints:</p>
-<ul>
-<li><strong>Arrow Flight SQL</strong>: Encrypted JDBC and SDK connections</li>
-<li><strong>Admin HTTP</strong>: HTTPS for the Admin UI and REST API</li>
+<li>WAP is <strong>per table</strong> for SQL (keyed by table name) and <strong>per job</strong> for streaming (the sink config
+  belongs to one table). There is no accidental session-wide bleed across unrelated tables.</li>
+<li><code>UPDATE</code>/<code>DELETE</code>/<code>MERGE</code> on a branch validate from the <strong>branch head</strong>, so repeated row-level
+  operations on the branch merge correctly against the branch (not <code>main</code>).</li>
+<li>Publishing is explicit (<code>fast_forward</code> / <code>cherrypick</code>); streaming jobs keep accumulating on the
+  branch until you publish — there is no auto-publish.</li>
+<li>The same WAP model (<code>&lt;project&gt;.iceberg.wap.branch</code>, branch writes, fast-forward/cherrypick publish)
+  is implemented consistently in the sibling ItdaStream and NeorunBase products.</li>
 </ul>
 
 
