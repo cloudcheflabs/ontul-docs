@@ -59,6 +59,10 @@ nav:
       - "High Availability": features/high-availability.md
       - "Backup & Restore": features/backup-restore.md
       - "NIC Silent-Fail Safety": features/nic-fail-safety.md
+  - "Iceberg Integration":
+      - "Overview": iceberg/integration.md
+      - "Table Maintenance": iceberg/maintenance.md
+      - "Write-Audit-Publish (WAP)": iceberg/wap.md
   - "Reference":
       - "Java SDK": reference/sdk-java.md
       - "Python SDK": reference/sdk-python.md
