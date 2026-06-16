@@ -171,7 +171,7 @@ Notes:
 - Works on both unpartitioned and partitioned Iceberg tables. Partitioned mode opens one equality-delete file per partition per commit, scoped to that partition.
 - Multi-column keys are supported (`upsertKeys("tenant_id", "user_id")`).
 - Standard barrier-checkpoint exactly-once semantics still apply: the data file + delete file commit together as one snapshot.
-- For best read performance, run periodic `OPTIMIZE` on the table — compaction folds applied deletes into a smaller set of data files (see the [Iceberg Maintenance](../features/iceberg-integration.md#maintenance) section).
+- For best read performance, run periodic `OPTIMIZE` on the table — compaction folds applied deletes into a smaller set of data files (see the [Iceberg Maintenance](../iceberg/maintenance.md#auto-maintenance-scheduling) section).
 
 ### Tuning commit cadence
 

@@ -50,7 +50,7 @@ POST /admin/catalogs
 }
 ```
 
-If the REST catalog requires OAuth2 `client_credentials`, add `credential` and `scope` (Admin UI: "OAuth / Polaris auth (advanced)" toggle). Polaris-side table IAM is bypassed — Ontul IAM is the access-control boundary; see [Iceberg Integration](iceberg-integration.md#access-control).
+If the REST catalog requires OAuth2 `client_credentials`, add `credential` and `scope` (Admin UI: "OAuth / Polaris auth (advanced)" toggle). Polaris-side table IAM is bypassed — Ontul IAM is the access-control boundary; see [Iceberg Integration](../iceberg/integration.md#access-control).
 
 **NeorunBase catalog:**
 ```json

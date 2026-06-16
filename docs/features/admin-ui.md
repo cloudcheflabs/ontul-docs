@@ -42,7 +42,7 @@ Key management interface for viewing and managing encryption keys.
 
 ### Maintenance
 
-Configure and monitor Iceberg table maintenance — snapshot expiration, data compaction, manifest rewrite. Per-table configuration with job history.
+Configure and monitor Iceberg table maintenance — snapshot expiration, data compaction, manifest rewrite, orphan-file cleanup, and position-delete consolidation. Per-table configuration covers per-operation toggles plus Spark-aligned parameters (target file size, compaction `window_hours` and `min_input_files`, snapshot retention and `retain_last`, orphan safety window) and a **schedule** that is either a fixed interval or a 5-field UNIX **cron** (e.g. `0 */2 * * *`) which overrides the interval. A **Manual Trigger** runs any single operation (or all) on demand against a wildcard table pattern, with full job history.
 
 ### Worker Dashboard
 
