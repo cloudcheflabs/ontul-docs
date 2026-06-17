@@ -26,10 +26,15 @@ ALTER TABLE ice.ns.t EXECUTE remove_orphan_files(dry_run => true);
 
 **Auto-maintenance (Admin UI → Iceberg Maintenance).** Each table has a config — per-operation
 toggles, target file size, `window_hours`, `min_input_files`, snapshot retention + `retain_last`,
-and the orphan safety window — plus a **schedule**: either a fixed interval (hours) or, when set, a
-5-field **UNIX cron** expression that overrides the interval (e.g. `0 */2 * * *` = every 2 hours).
-This makes incremental, scheduled compaction practical for streaming tables: e.g. a cron of
-`0 * * * *` with `window_hours => 1` compacts just the last hour's small files every hour. The same
+the orphan safety window, and the compaction **concurrency-safety** controls (window cooldown
+minutes, sequence margin, skip-active-partitions, max commit retries) — plus a **schedule**: either
+a fixed interval (hours) or, when set, a 5-field **UNIX cron** expression that overrides the interval
+(e.g. `0 */2 * * *` = every 2 hours). This makes incremental, scheduled compaction practical for
+streaming tables: e.g. a cron of `0 * * * *` with `window_hours => 1` compacts just the last hour's
+small files every hour. Unlike ad-hoc `EXECUTE optimize` (safety filters OFF by default), scheduled
+auto-maintenance applies **safe defaults** (cooldown 10 min, seq_margin 1, skip-active on, retries 3)
+so it never conflicts with in-flight writes — see
+[Running compaction alongside live writes](#running-compaction-alongside-live-writes). The same
 finer-grained parameters can be set optionally per table, and a **Manual Trigger** runs any single
 operation (or all) on demand against a wildcard table pattern.
 
@@ -64,6 +69,10 @@ small-file problem caused by frequent commits (especially streaming).
 | `file_size_threshold_mb` | int | `128` | Target file size. Files smaller than half this are treated as "small" and eligible for compaction. |
 | `min_input_files` | int | `5` (`2` for the `OPTIMIZE` shorthand) | Skip compaction unless at least this many small files would be combined (Spark `min-input-files`). Avoids churning an already-optimized table. |
 | `window_hours` | int | — (whole table) | **ontul extension.** Compact only the append-only files added by commits in the last *N* hours. Delete-bearing files are skipped (run a full `optimize` for those). Ideal for streaming tables — you never rescan history. |
+| `window_cooldown_minutes` | int | `0` (ad-hoc) | **Concurrency-safety.** Exclude files added in the last *N* minutes — the "hot zone" an active writer is appending to. Pulls the window's upper bound back to `now − N min`. |
+| `seq_margin` | int | `0` (ad-hoc) | **Concurrency-safety.** Only rewrite files whose data sequence number is `≤ tip − margin`, i.e. committed strictly behind the live tip. Clock-independent "behind the writer". |
+| `skip_active_partitions` | bool | `false` (ad-hoc) | **Concurrency-safety.** Skip any partition written within the cooldown window, so compaction never touches a partition an active writer is appending to. |
+| `max_commit_retries` | int | `3` (always on) | Bounded re-plan + retry on a concurrent-commit conflict (`CommitFailedException`/`ValidationException`). Pure safety net; absorbs transient races so nothing surfaces to the caller. |
 
 ```sql
 -- Full-table compaction: combine small files into ~128 MB files, only if ≥5 small files exist
@@ -75,10 +84,39 @@ OPTIMIZE ice.sales.orders;
 -- Incremental compaction for a streaming table: only files written in the last hour / last day
 ALTER TABLE ice.sales.orders EXECUTE optimize(window_hours => 1,  min_input_files => 2);
 ALTER TABLE ice.sales.orders EXECUTE optimize(window_hours => 24);
+
+-- Concurrency-safe compaction while writers are active (single-committer-style avoidance)
+ALTER TABLE ice.sales.orders EXECUTE optimize(
+  window_cooldown_minutes => 10, seq_margin => 1, skip_active_partitions => true, max_commit_retries => 5);
 ```
 
+#### Running compaction alongside live writes
+
+Compaction commits a `RewriteFiles` that replaces existing data files. If that races with a concurrent
+append / `MERGE` / `UPDATE` / `DELETE`, Iceberg rejects the loser with `CommitFailedException` /
+`ValidationException`. ontul avoids the conflict instead of fighting it — a *single-committer-style*
+strategy that keeps compaction strictly **behind** the writer:
+
+- **Cooldown** (`window_cooldown_minutes`) and **active-partition skip** (`skip_active_partitions`) keep
+  the rewrite out of the time/partition region a writer is actively touching.
+- **Sequence margin** (`seq_margin`) only rewrites files at least *N* sequence numbers behind the live
+  tip — clock-independent, so it's robust even with clock skew or bursty commits.
+- **Bounded retry** (`max_commit_retries`) re-plans and retries on any residual conflict, so transient
+  races never surface to the caller.
+
+Defaults differ by caller: **ad-hoc `EXECUTE optimize` keeps the safety filters OFF** (predictable —
+rewrites the whole table just as before, but now with retry on), while **scheduled auto-maintenance
+passes SAFE defaults** (cooldown 10 min, seq_margin 1, skip-active on, retries 3) from the per-table
+`MaintenanceConfig`. With the filters ON, a full `optimize` becomes *selective* — it leaves hot/active
+files untouched rather than collapsing the whole table into one file.
+
 > Verified: 5 small files (10 rows) → 1 file with all 10 rows preserved; windowed run reports
-> `Optimized (window 1h): 3 recent small files → 1 file (6 rows)`.
+> `Optimized (window 1h): 3 recent small files → 1 file (6 rows)`. Concurrency-safety verified e2e
+> (`tests/test-compaction-concurrent-e2e.sh`): a writer appended continuously to a partitioned table
+> while safe-default compaction ran **38 rounds concurrently** — **no row loss** (final = baseline +
+> every appended row), **zero failures escaping to the client**, and **0 commit conflicts even arose**
+> (the cold-file / seq-margin selection kept compaction behind the live writer; the retry net was not
+> even needed).
 
 ---
 
