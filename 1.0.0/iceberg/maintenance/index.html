@@ -1456,6 +1456,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="optimize — compact small files (rewrite_data_files)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-compaction-alongside-live-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running compaction alongside live writes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2044,10 +2061,15 @@ rollback — available both as <strong>on-demand SQL procedures</strong> and as 
 </code></pre></div>
 <p><strong>Auto-maintenance (Admin UI → Iceberg Maintenance).</strong> Each table has a config — per-operation
 toggles, target file size, <code>window_hours</code>, <code>min_input_files</code>, snapshot retention + <code>retain_last</code>,
-and the orphan safety window — plus a <strong>schedule</strong>: either a fixed interval (hours) or, when set, a
-5-field <strong>UNIX cron</strong> expression that overrides the interval (e.g. <code>0 */2 * * *</code> = every 2 hours).
-This makes incremental, scheduled compaction practical for streaming tables: e.g. a cron of
-<code>0 * * * *</code> with <code>window_hours =&gt; 1</code> compacts just the last hour's small files every hour. The same
+the orphan safety window, and the compaction <strong>concurrency-safety</strong> controls (window cooldown
+minutes, sequence margin, skip-active-partitions, max commit retries) — plus a <strong>schedule</strong>: either
+a fixed interval (hours) or, when set, a 5-field <strong>UNIX cron</strong> expression that overrides the interval
+(e.g. <code>0 */2 * * *</code> = every 2 hours). This makes incremental, scheduled compaction practical for
+streaming tables: e.g. a cron of <code>0 * * * *</code> with <code>window_hours =&gt; 1</code> compacts just the last hour's
+small files every hour. Unlike ad-hoc <code>EXECUTE optimize</code> (safety filters OFF by default), scheduled
+auto-maintenance applies <strong>safe defaults</strong> (cooldown 10 min, seq_margin 1, skip-active on, retries 3)
+so it never conflicts with in-flight writes — see
+<a href="#running-compaction-alongside-live-writes">Running compaction alongside live writes</a>. The same
 finer-grained parameters can be set optionally per table, and a <strong>Manual Trigger</strong> runs any single
 operation (or all) on demand against a wildcard table pattern.</p>
 <p>For tests and quick teardown, set <code>polaris.config.drop-with-purge.enabled=true</code> on the Polaris catalog so <code>DROP TABLE</code> actually deletes the underlying S3 data.</p>
@@ -2096,6 +2118,30 @@ small-file problem caused by frequent commits (especially streaming).</p>
 <td>— (whole table)</td>
 <td><strong>ontul extension.</strong> Compact only the append-only files added by commits in the last <em>N</em> hours. Delete-bearing files are skipped (run a full <code>optimize</code> for those). Ideal for streaming tables — you never rescan history.</td>
 </tr>
+<tr>
+<td><code>window_cooldown_minutes</code></td>
+<td>int</td>
+<td><code>0</code> (ad-hoc)</td>
+<td><strong>Concurrency-safety.</strong> Exclude files added in the last <em>N</em> minutes — the "hot zone" an active writer is appending to. Pulls the window's upper bound back to <code>now − N min</code>.</td>
+</tr>
+<tr>
+<td><code>seq_margin</code></td>
+<td>int</td>
+<td><code>0</code> (ad-hoc)</td>
+<td><strong>Concurrency-safety.</strong> Only rewrite files whose data sequence number is <code>≤ tip − margin</code>, i.e. committed strictly behind the live tip. Clock-independent "behind the writer".</td>
+</tr>
+<tr>
+<td><code>skip_active_partitions</code></td>
+<td>bool</td>
+<td><code>false</code> (ad-hoc)</td>
+<td><strong>Concurrency-safety.</strong> Skip any partition written within the cooldown window, so compaction never touches a partition an active writer is appending to.</td>
+</tr>
+<tr>
+<td><code>max_commit_retries</code></td>
+<td>int</td>
+<td><code>3</code> (always on)</td>
+<td>Bounded re-plan + retry on a concurrent-commit conflict (<code>CommitFailedException</code>/<code>ValidationException</code>). Pure safety net; absorbs transient races so nothing surfaces to the caller.</td>
+</tr>
 </tbody>
 </table>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">-- Full-table compaction: combine small files into ~128 MB files, only if ≥5 small files exist</span>
@@ -2107,10 +2153,37 @@ small-file problem caused by frequent commits (especially streaming).</p>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1">-- Incremental compaction for a streaming table: only files written in the last hour / last day</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">optimize</span><span class="p">(</span><span class="n">window_hours</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">  </span><span class="n">min_input_files</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">optimize</span><span class="p">(</span><span class="n">window_hours</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">24</span><span class="p">);</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1">-- Concurrency-safe compaction while writers are active (single-committer-style avoidance)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">optimize</span><span class="p">(</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">  </span><span class="n">window_cooldown_minutes</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">seq_margin</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">skip_active_partitions</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="n">max_commit_retries</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">5</span><span class="p">);</span>
 </code></pre></div>
+<h4 id="running-compaction-alongside-live-writes">Running compaction alongside live writes</h4>
+<p>Compaction commits a <code>RewriteFiles</code> that replaces existing data files. If that races with a concurrent
+append / <code>MERGE</code> / <code>UPDATE</code> / <code>DELETE</code>, Iceberg rejects the loser with <code>CommitFailedException</code> /
+<code>ValidationException</code>. ontul avoids the conflict instead of fighting it — a <em>single-committer-style</em>
+strategy that keeps compaction strictly <strong>behind</strong> the writer:</p>
+<ul>
+<li><strong>Cooldown</strong> (<code>window_cooldown_minutes</code>) and <strong>active-partition skip</strong> (<code>skip_active_partitions</code>) keep
+  the rewrite out of the time/partition region a writer is actively touching.</li>
+<li><strong>Sequence margin</strong> (<code>seq_margin</code>) only rewrites files at least <em>N</em> sequence numbers behind the live
+  tip — clock-independent, so it's robust even with clock skew or bursty commits.</li>
+<li><strong>Bounded retry</strong> (<code>max_commit_retries</code>) re-plans and retries on any residual conflict, so transient
+  races never surface to the caller.</li>
+</ul>
+<p>Defaults differ by caller: <strong>ad-hoc <code>EXECUTE optimize</code> keeps the safety filters OFF</strong> (predictable —
+rewrites the whole table just as before, but now with retry on), while <strong>scheduled auto-maintenance
+passes SAFE defaults</strong> (cooldown 10 min, seq_margin 1, skip-active on, retries 3) from the per-table
+<code>MaintenanceConfig</code>. With the filters ON, a full <code>optimize</code> becomes <em>selective</em> — it leaves hot/active
+files untouched rather than collapsing the whole table into one file.</p>
 <blockquote>
 <p>Verified: 5 small files (10 rows) → 1 file with all 10 rows preserved; windowed run reports
-<code>Optimized (window 1h): 3 recent small files → 1 file (6 rows)</code>.</p>
+<code>Optimized (window 1h): 3 recent small files → 1 file (6 rows)</code>. Concurrency-safety verified e2e
+(<code>tests/test-compaction-concurrent-e2e.sh</code>): a writer appended continuously to a partitioned table
+while safe-default compaction ran <strong>38 rounds concurrently</strong> — <strong>no row loss</strong> (final = baseline +
+every appended row), <strong>zero failures escaping to the client</strong>, and <strong>0 commit conflicts even arose</strong>
+(the cold-file / seq-margin selection kept compaction behind the live writer; the retry net was not
+even needed).</p>
 </blockquote>
 <hr />
 <h3 id="expire_snapshots-drop-old-snapshots-and-their-files"><code>expire_snapshots</code> — drop old snapshots and their files</h3>
