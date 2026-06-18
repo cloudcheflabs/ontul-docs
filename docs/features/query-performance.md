@@ -1,9 +1,9 @@
 # Query Performance
 
 Ontul is a distributed, Arrow-native query engine for Apache Iceberg. Its performance strategy follows the
-same principles modern lakehouse engines (Trino, etc.) rely on: **skip data you don't need to read, decode
-the data you do need columnar, and keep per-query overhead low.** This page describes the concrete mechanisms
-and how to control them.
+same principles modern lakehouse engines rely on: **skip data you don't need to read, decode the data you do
+need columnar, and keep per-query overhead low.** This page describes the concrete mechanisms and how to
+control them. The Iceberg scan path reads **Parquet** data files (Ontul's Iceberg read/write is Parquet-based).
 
 ## Data Skipping
 
