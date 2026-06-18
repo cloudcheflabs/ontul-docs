@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/iceberg-integration/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/query-performance/">
       
       
-        <link rel="prev" href="../federation/">
+        <link rel="prev" href="../arrow-native-execution/">
       
       
-        <link rel="next" href="../iceberg-wap/">
+        <link rel="next" href="../connector-architecture/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Iceberg Integration - Ontul</title>
+        <title>Query Performance - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#iceberg-integration" class="md-skip">
+        <a href="#query-performance" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Iceberg Integration
+              Query Performance
             
           </span>
         </div>
@@ -771,10 +771,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../query-performance/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Performance
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -790,6 +817,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#data-skipping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Skipping
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Skipping">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#file-pruning-iceberg-column-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File pruning (Iceberg column metrics)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#row-group-skipping-parquet-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Row-group skipping (Parquet statistics)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#random-range-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Random / range reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#columnar-parquet-decode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Columnar Parquet Decode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#columnar-aggregation-bounded-top-n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Columnar Aggregation &amp; Bounded Top-N
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#low-per-query-overhead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Low Per-Query Overhead
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tuning-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -883,19 +1024,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../iceberg-integration/" class="md-nav__link">
         
   
   
@@ -911,7 +1043,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -1908,24 +2039,120 @@
 
 
 
-<h1 id="iceberg-integration">Iceberg Integration</h1>
-<p>Ontul integrates with Apache Iceberg as a first-class, <strong>format-version 2 native</strong> catalog: every
-write is a v2 snapshot, with hidden partitioning, position-delete <code>DELETE</code>, RowDelta <code>UPDATE</code>/<code>MERGE</code>,
-schema and partition evolution, snapshot rollback, branches/tags, time travel, and Iceberg-spec views.
-The data path (Parquet read/write, field-id resolution, partition transforms, predicate evaluation,
-snapshot commits) is Ontul code distributed across workers; the Iceberg JAR is used only as a metadata
-library, and Polaris-side credential vending is bypassed so Ontul IAM stays the policy boundary.</p>
-<p>Full documentation now lives in the dedicated <strong><a href="../../iceberg/integration/">Iceberg Integration</a></strong>
-section:</p>
+<h1 id="query-performance">Query Performance</h1>
+<p>Ontul is a distributed, Arrow-native query engine for Apache Iceberg. Its performance strategy follows the
+same principles modern lakehouse engines (Trino, etc.) rely on: <strong>skip data you don't need to read, decode
+the data you do need columnar, and keep per-query overhead low.</strong> This page describes the concrete mechanisms
+and how to control them.</p>
+<h2 id="data-skipping">Data Skipping</h2>
+<p>The single biggest lever for selective queries is reading fewer bytes. Ontul prunes at two levels.</p>
+<h3 id="file-pruning-iceberg-column-metrics">File pruning (Iceberg column metrics)</h3>
+<p>Every Parquet data file Ontul writes carries Iceberg <strong>column metrics</strong> — per-column lower/upper bounds, null
+counts, and value counts — recorded in the table's manifests at commit time
+(<code>ParquetUtil.fileMetrics(...)</code>). At scan-planning time Iceberg evaluates the query predicate against these
+bounds and prunes whole files whose range cannot contain a matching row, before any data is read.</p>
+<p>For a table clustered on a column, a selective predicate (<code>WHERE id &gt; 980000</code>) plans only the handful of
+files whose bounds overlap the range, skipping the rest entirely. On a 1,000,000-row / 25-file table this
+prunes 24 of 25 files and yields a <strong>5–13× speedup</strong> over a full scan, with exact results.</p>
+<h3 id="row-group-skipping-parquet-statistics">Row-group skipping (Parquet statistics)</h3>
+<p>Within a file, Ontul reads each Parquet row group's footer statistics (min/max per column) and skips an
+entire row group when its statistics prove no row can match the pushed-down predicate — no column data is
+decoded for skipped groups. This is correctness-safe: the <code>FILTER</code> operator re-applies the exact predicate,
+so a missed skip only costs I/O, never a wrong answer. Disabled automatically when delete files are present.</p>
+<p>Toggles: <code>-Dontul.scan.pushdown.enabled</code> (file/predicate pushdown), <code>-Dontul.scan.rowgroup.skip.enabled</code>
+(both default on).</p>
+<h3 id="random-range-reads">Random / range reads</h3>
+<p>Ontul reads Parquet over the object-store <code>InputFile</code> directly — only the footer, the non-skipped row groups,
+and (when projecting) the requested column chunks are fetched, rather than pre-fetching the whole file. This
+is what realizes the I/O savings from pruning and projection. Set
+<code>-Dontul.scan.prefetch.whole.file=true</code> to revert to whole-file pre-fetch.</p>
+<h2 id="columnar-parquet-decode">Columnar Parquet Decode</h2>
+<p>For scan- and compute-heavy queries (full-table aggregation, <code>GROUP BY</code>, sort), the dominant cost is decoding
+Parquet into the engine's in-memory format. Ontul decodes <strong>column-at-a-time, directly into Arrow vectors</strong>
+via Parquet's low-level <code>ColumnReader</code> API — no intermediate per-row object materialization and no value
+boxing. Type dispatch is hoisted out of the per-value loop so each column is decoded by a tight, JIT-friendly
+typed loop.</p>
+<p>The columnar decode path is used for the common analytical case — no delete files and a flat, all-primitive
+projection (integers, floating point, boolean, string/binary). Tables with nested types, decimals/temporals,
+or attached delete files fall back to the proven row-at-a-time reader, so results are always correct. It is
+Arrow-version-independent (built on <code>parquet-column</code>).</p>
+<p>Toggle: <code>-Dontul.scan.columnar.enabled</code>.</p>
+<h2 id="columnar-aggregation-bounded-top-n">Columnar Aggregation &amp; Bounded Top-N</h2>
+<p>The execution operators are tuned for the same column-oriented access:</p>
 <ul>
-<li><strong><a href="../../iceberg/integration/">Overview</a></strong> — REST catalog setup (Polaris / AWS Glue), DDL/DML, file
-  formats, time travel, views, federation, and access control.</li>
-<li><strong><a href="../../iceberg/maintenance/">Table Maintenance</a></strong> — on-demand <code>ALTER TABLE … EXECUTE</code> procedures
-  (<code>optimize</code>, <code>expire_snapshots</code>, <code>remove_orphan_files</code>, <code>rollback_to_timestamp</code>, …) and the
-  cron-schedulable auto-maintenance service.</li>
-<li><strong><a href="../../iceberg/wap/">Write-Audit-Publish (WAP)</a></strong> — stage writes on a branch, audit, then publish
-  to <code>main</code>.</li>
+<li><strong>Scalar aggregation</strong> (<code>SUM</code>/<code>AVG</code>/<code>MIN</code>/<code>MAX</code>/<code>COUNT</code> with no <code>GROUP BY</code>) reduces each input column with
+  typed Arrow vector access — no per-row group key, no hash map, no boxing. <code>COUNT</code> is computed in O(1) per
+  batch from the Arrow null count.</li>
+<li><strong><code>ORDER BY ... LIMIT k</code></strong> uses a bounded max-heap of the <code>k</code> best rows while scanning — <strong>O(n·log k)</strong> time
+  and <strong>O(k)</strong> memory — instead of materializing and fully sorting all <code>n</code> rows before taking <code>k</code>. Each worker
+  emits only its local top-<code>k</code>; the coordinator merges the small per-worker results into the global top-<code>k</code>.</li>
 </ul>
+<p>Together these turn what were the slowest query shapes into ones competitive with, or faster than, mature
+columnar engines. On a 600,000-row table (data cache off), the internal before/after is representative:
+full-table aggregation <code>938 → 169 ms</code>, <code>GROUP BY</code> <code>834 → 285 ms</code>, <code>ORDER BY ... LIMIT 10</code> <code>1063 → 328 ms</code>.</p>
+<h2 id="low-per-query-overhead">Low Per-Query Overhead</h2>
+<p>Ontul is designed for a low fixed cost per query, which matters for interactive and high-concurrency
+workloads:</p>
+<ul>
+<li><strong>Manifest content cache</strong> — Iceberg manifest files are immutable, so their content is cached by path
+  (<code>io.manifest.cache-enabled</code>, on by default); repeated planning over the same snapshot skips re-reading
+  manifests from object storage.</li>
+<li><strong>Persistent worker connections</strong> — the coordinator keeps warm, multiplexed connections to workers instead
+  of opening a fresh socket per query, removing handshake and thread-spawn churn under high QPS.</li>
+<li><strong>Distributed aggregate combine</strong> — single-row and grouped aggregates run a partial pass on each worker and
+  a final combine on the coordinator (correct <code>GROUP BY</code>, <code>AVG</code>, and <code>ORDER BY</code>/<code>LIMIT</code> across workers).</li>
+</ul>
+<p>A trivial cached query (e.g. <code>COUNT(*)</code> served from metadata) completes in single-digit milliseconds, giving
+Ontul a much lower latency floor than batch-oriented analytical engines.</p>
+<h2 id="tuning-reference">Tuning Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.scan.pushdown.enabled</code></td>
+<td><code>true</code></td>
+<td>Predicate/file pruning at scan planning</td>
+</tr>
+<tr>
+<td><code>ontul.scan.rowgroup.skip.enabled</code></td>
+<td><code>true</code></td>
+<td>Skip Parquet row groups by footer stats</td>
+</tr>
+<tr>
+<td><code>ontul.scan.columnar.enabled</code></td>
+<td><code>false</code></td>
+<td>Columnar <code>ColumnReader</code> decode (flat-primitive, no deletes)</td>
+</tr>
+<tr>
+<td><code>ontul.scan.prefetch.whole.file</code></td>
+<td><code>false</code></td>
+<td>Pre-fetch whole file instead of random/range reads</td>
+</tr>
+<tr>
+<td><code>ontul.scan.projection.enabled</code></td>
+<td><code>false</code></td>
+<td>Decode only referenced columns</td>
+</tr>
+<tr>
+<td><code>io.manifest.cache-enabled</code></td>
+<td><code>true</code></td>
+<td>Cache immutable Iceberg manifests</td>
+</tr>
+<tr>
+<td><code>ontul.cache.data.enabled</code></td>
+<td><code>false</code></td>
+<td>In-memory data cache for repeated scans</td>
+</tr>
+</tbody>
+</table>
+<p>All data-skipping and decode toggles are correctness-safe: when a fast path cannot apply, Ontul falls back to
+the reference path, so results are identical regardless of configuration.</p>
 
 
 

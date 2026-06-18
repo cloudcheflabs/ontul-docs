@@ -14,7 +14,7 @@
         <link rel="prev" href="../unified-engine/">
       
       
-        <link rel="next" href="../connector-architecture/">
+        <link rel="next" href="../query-performance/">
       
       
         
@@ -864,6 +864,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../query-performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1983,10 +2011,9 @@
 <li><strong>FilterOperator</strong>: Evaluates predicates on Arrow vectors</li>
 <li><strong>ProjectOperator</strong>: Computes expressions and selects columns</li>
 <li><strong>HashJoinOperator</strong>: Hash-based join with Arrow vector probing</li>
-<li><strong>SortMergeJoinOperator</strong>: Sort-merge join for large datasets</li>
-<li><strong>HashAggregateOperator</strong>: Hash-based aggregation on Arrow vectors</li>
-<li><strong>SortOperator</strong>: Sorts Arrow RecordBatches</li>
-<li><strong>TopNOperator</strong>: Efficient top-N selection without full sort</li>
+<li><strong>HashAggregateOperator</strong>: Hash-based aggregation on Arrow vectors; scalar aggregates (no <code>GROUP BY</code>) reduce each column with typed vector access — no per-row boxing</li>
+<li><strong>SortOperator</strong>: Sorts Arrow RecordBatches; <code>ORDER BY ... LIMIT k</code> uses a bounded heap (O(n·log k), O(k) memory) instead of a full sort</li>
+<li><strong>LimitOperator</strong>: Streaming row limit</li>
 <li><strong>WindowOperator</strong>: Window functions (ROW_NUMBER, RANK, DENSE_RANK, COUNT, SUM, AVG, MIN, MAX) with PARTITION BY and ORDER BY</li>
 <li><strong>ExchangeOperator</strong>: Shuffles data between Workers via Arrow Flight</li>
 </ul>
