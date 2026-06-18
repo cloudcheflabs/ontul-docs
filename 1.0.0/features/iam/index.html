@@ -1381,6 +1381,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#neorunbase-serving-policies-federation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NeorunBase serving policies (federation)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#management" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2634,6 +2645,30 @@
 <li>The result: every column except the two denied ones, with PII fields obfuscated, restricted to rows where <code>tenant_id = 'tenant_acme'</code>.</li>
 </ol>
 <p>A second tenant <code>tenant_globex</code> running the identical query sees only their rows, with the same masking applied. An admin running it sees everything raw — no policies attach to the default admin's effective policy set unless they're explicitly granted.</p>
+<h2 id="neorunbase-serving-policies-federation">NeorunBase serving policies (federation)</h2>
+<p>When <strong>NeorunBase</strong> is used alongside ontul as a low-latency serving layer over the lakehouse, external
+applications often connect <strong>directly to NeorunBase</strong> (PostgreSQL wire / JDBC), bypassing ontul. To keep ontul
+the single place where access is authored, NeorunBase runs in <em>federated</em> mode and <strong>pulls</strong> its IAM from ontul
+— ontul itself needs no changes.</p>
+<p>You author these policies in ontul exactly like any other, with two conventions so NeorunBase recognizes and
+enforces them:</p>
+<ul>
+<li><strong>Resource</strong> uses NeorunBase's native format: <code>db:table:&lt;catalog&gt;.&lt;ns&gt;.&lt;table&gt;</code> for an Iceberg catalog table,
+  or <code>db:table:&lt;schema&gt;.&lt;table&gt;</code> for a native table. (ontul's own policies use <code>data:table:…</code>; the <code>db:table:</code>
+  prefix is what marks a policy as NeorunBase-targeted, so the two never collide.)</li>
+<li><strong>Action</strong> uses <code>pg:Select</code> (or <code>SELECT</code>).</li>
+</ul>
+<p><code>Allow</code>/<code>Deny</code>, column <code>Columns</code>, <code>Condition</code> (row filters), and <code>MaskedColumns</code> all work exactly as documented
+above — NeorunBase imports the policy document verbatim and enforces masking, column deny, and row filtering on
+its serving path.</p>
+<div class="admonition tip">
+<p class="admonition-title">Policy editor template</p>
+<p>The Admin UI policy editor includes a <strong>"NeorunBase serving policy"</strong> template that pre-fills the
+<code>db:table:</code> / <code>pg:*</code> format and explains when to use it, so you don't have to remember the conventions.</p>
+</div>
+<p>The external client then authenticates to NeorunBase with an ontul-issued token (single sign-on); NeorunBase
+validates it locally with the shared master key and applies the synced policies. See the NeorunBase docs,
+<em>IAM Federation</em>, for the NeorunBase-side configuration.</p>
 <h2 id="management">Management</h2>
 <p>Users, groups, and policies are managed through the Admin UI (with a visual policy editor) or the REST API. The Admin UI's IAM page surfaces <code>requirePasswordChange</code>, attached policies, and mask/deny columns per resource so operators can audit a user's effective access without writing a query.</p>
 
