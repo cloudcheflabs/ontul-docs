@@ -2104,6 +2104,16 @@ workloads:</p>
   (<code>INSERT</code>/<code>DELETE</code>/<code>UPDATE</code>/<code>MERGE</code>) — splits are resolved at execution, so cached plans stay valid as data
   changes. This benefits every interactive path equally: Arrow Flight SQL / JDBC (BI tools), the REST API, and
   the MCP server.</li>
+<li><strong>Result cache (snapshot-keyed)</strong> — the layer above the plan cache: a repeated read over <strong>unchanged data</strong>
+  skips <em>execution itself</em> (scan + compute + worker dispatch) and returns the cached Arrow result. The key
+  includes each referenced Iceberg table's <strong>current snapshot id</strong>, so a write by <em>any</em> engine (Ontul, Trino,
+  Spark) advances the snapshot and the next read is an automatic miss — correct across external writers with no
+  manual invalidation. The semantic context is in the key (IAM-filtered results never leak across users) and
+  <code>checkPermissions</code> still runs on every hit. Read-only, Iceberg-only, with a TTL and size bounds. On by
+  default (<code>ontul.result.cache.enabled</code>). Measured: a repeated full-scan aggregate dropped from ~3.5 s to ~9 ms
+  (cache hit), while the same query after an <code>INSERT</code> correctly returned the new rows.</li>
+<li><strong>Semantic list cache</strong> — <code>list_semantic_views</code> / <code>search_metrics</code> (the agent hot path) cache the parsed view
+  set instead of re-reading it from the metadata store every call; invalidated on view create/delete.</li>
 <li><strong>Manifest content cache</strong> — Iceberg manifest files are immutable, so their content is cached by path
   (<code>io.manifest.cache-enabled</code>, on by default); repeated planning over the same snapshot skips re-reading
   manifests from object storage.</li>
@@ -2114,6 +2124,9 @@ workloads:</p>
 </ul>
 <p>A trivial cached query (e.g. <code>COUNT(*)</code> served from metadata) completes in single-digit milliseconds, giving
 Ontul a much lower latency floor than batch-oriented analytical engines.</p>
+<p>For agentic workloads, the <strong>MCP server</strong> also accepts a JSON-RPC 2.0 <strong>batch</strong> (an array of tool calls in one
+message) and services them concurrently, so an agent that issues several tool calls per step pays one
+round-trip instead of many.</p>
 <h2 id="tuning-reference">Tuning Reference</h2>
 <table>
 <thead>
@@ -2163,6 +2176,16 @@ Ontul a much lower latency floor than batch-oriented analytical engines.</p>
 <td><code>ontul.plan.cache.max</code></td>
 <td><code>5000</code></td>
 <td>Max cached plans</td>
+</tr>
+<tr>
+<td><code>ontul.result.cache.enabled</code></td>
+<td><code>true</code></td>
+<td>Snapshot-keyed result cache — skip execution for repeated reads over unchanged data</td>
+</tr>
+<tr>
+<td><code>ontul.result.cache.ttl.ms</code></td>
+<td><code>60000</code></td>
+<td>Result cache entry TTL</td>
 </tr>
 <tr>
 <td><code>ontul.cache.data.enabled</code></td>
