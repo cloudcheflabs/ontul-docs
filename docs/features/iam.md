@@ -378,6 +378,33 @@ For a user `tenant_acme` running `SELECT * FROM saas.core.customers`:
 
 A second tenant `tenant_globex` running the identical query sees only their rows, with the same masking applied. An admin running it sees everything raw — no policies attach to the default admin's effective policy set unless they're explicitly granted.
 
+## NeorunBase serving policies (federation)
+
+When **NeorunBase** is used alongside ontul as a low-latency serving layer over the lakehouse, external
+applications often connect **directly to NeorunBase** (PostgreSQL wire / JDBC), bypassing ontul. To keep ontul
+the single place where access is authored, NeorunBase runs in *federated* mode and **pulls** its IAM from ontul
+— ontul itself needs no changes.
+
+You author these policies in ontul exactly like any other, with two conventions so NeorunBase recognizes and
+enforces them:
+
+- **Resource** uses NeorunBase's native format: `db:table:<catalog>.<ns>.<table>` for an Iceberg catalog table,
+  or `db:table:<schema>.<table>` for a native table. (ontul's own policies use `data:table:…`; the `db:table:`
+  prefix is what marks a policy as NeorunBase-targeted, so the two never collide.)
+- **Action** uses `pg:Select` (or `SELECT`).
+
+`Allow`/`Deny`, column `Columns`, `Condition` (row filters), and `MaskedColumns` all work exactly as documented
+above — NeorunBase imports the policy document verbatim and enforces masking, column deny, and row filtering on
+its serving path.
+
+!!! tip "Policy editor template"
+    The Admin UI policy editor includes a **"NeorunBase serving policy"** template that pre-fills the
+    `db:table:` / `pg:*` format and explains when to use it, so you don't have to remember the conventions.
+
+The external client then authenticates to NeorunBase with an ontul-issued token (single sign-on); NeorunBase
+validates it locally with the shared master key and applies the synced policies. See the NeorunBase docs,
+*IAM Federation*, for the NeorunBase-side configuration.
+
 ## Management
 
 Users, groups, and policies are managed through the Admin UI (with a visual policy editor) or the REST API. The Admin UI's IAM page surfaces `requirePasswordChange`, attached policies, and mask/deny columns per resource so operators can audit a user's effective access without writing a query.
