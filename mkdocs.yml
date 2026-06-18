@@ -41,6 +41,7 @@ nav:
   - "Features":
       - "Unified Data Engine": features/unified-engine.md
       - "Arrow-Native Execution": features/arrow-native-execution.md
+      - "Query Performance": features/query-performance.md
       - "Connector Architecture": features/connector-architecture.md
       - "Connection ID (Source/Sink by Reference)": features/connection-id.md
       - "Federation Queries": features/federation.md

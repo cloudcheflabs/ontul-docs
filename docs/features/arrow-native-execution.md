@@ -14,10 +14,9 @@ The execution engine implements a pull-based streaming operator pipeline:
 - **FilterOperator**: Evaluates predicates on Arrow vectors
 - **ProjectOperator**: Computes expressions and selects columns
 - **HashJoinOperator**: Hash-based join with Arrow vector probing
-- **SortMergeJoinOperator**: Sort-merge join for large datasets
-- **HashAggregateOperator**: Hash-based aggregation on Arrow vectors
-- **SortOperator**: Sorts Arrow RecordBatches
-- **TopNOperator**: Efficient top-N selection without full sort
+- **HashAggregateOperator**: Hash-based aggregation on Arrow vectors; scalar aggregates (no `GROUP BY`) reduce each column with typed vector access — no per-row boxing
+- **SortOperator**: Sorts Arrow RecordBatches; `ORDER BY ... LIMIT k` uses a bounded heap (O(n·log k), O(k) memory) instead of a full sort
+- **LimitOperator**: Streaming row limit
 - **WindowOperator**: Window functions (ROW_NUMBER, RANK, DENSE_RANK, COUNT, SUM, AVG, MIN, MAX) with PARTITION BY and ORDER BY
 - **ExchangeOperator**: Shuffles data between Workers via Arrow Flight
 
