@@ -72,6 +72,16 @@ full-table aggregation `938 → 169 ms`, `GROUP BY` `834 → 285 ms`, `ORDER BY 
 Ontul is designed for a low fixed cost per query, which matters for interactive and high-concurrency
 workloads:
 
+- **Compiled-plan cache** — Calcite parse + validate + optimize is the dominant fixed cost per query
+  (~10–45 ms). Interactive, BI, and agentic workloads replay the same query shapes, so Ontul caches the
+  compiled physical plan keyed by *(catalog version + session UDFs + semantic context + normalized SQL)* and
+  reuses it on the next matching query — a repeated query is ~1.8× faster, lifting per-core QPS. On by
+  default (`ontul.plan.cache.enabled`). The full semantic context (user id / roles / attributes) is part of
+  the key, so a plan is never reused across security contexts; only read queries are cached. The cache is
+  invalidated on schema changes (DDL, catalog register/unregister/refresh) but **not** on data-only DML
+  (`INSERT`/`DELETE`/`UPDATE`/`MERGE`) — splits are resolved at execution, so cached plans stay valid as data
+  changes. This benefits every interactive path equally: Arrow Flight SQL / JDBC (BI tools), the REST API, and
+  the MCP server.
 - **Manifest content cache** — Iceberg manifest files are immutable, so their content is cached by path
   (`io.manifest.cache-enabled`, on by default); repeated planning over the same snapshot skips re-reading
   manifests from object storage.
@@ -93,6 +103,8 @@ Ontul a much lower latency floor than batch-oriented analytical engines.
 | `ontul.scan.prefetch.whole.file` | `false` | Pre-fetch whole file instead of random/range reads |
 | `ontul.scan.projection.enabled` | `false` | Decode only referenced columns |
 | `io.manifest.cache-enabled` | `true` | Cache immutable Iceberg manifests |
+| `ontul.plan.cache.enabled` | `true` | Reuse compiled plans for repeated query shapes (interactive/agentic QPS) |
+| `ontul.plan.cache.max` | `5000` | Max cached plans |
 | `ontul.cache.data.enabled` | `false` | In-memory data cache for repeated scans |
 
 All data-skipping and decode toggles are correctness-safe: when a fast path cannot apply, Ontul falls back to
