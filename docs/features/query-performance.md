@@ -82,6 +82,16 @@ workloads:
   (`INSERT`/`DELETE`/`UPDATE`/`MERGE`) — splits are resolved at execution, so cached plans stay valid as data
   changes. This benefits every interactive path equally: Arrow Flight SQL / JDBC (BI tools), the REST API, and
   the MCP server.
+- **Result cache (snapshot-keyed)** — the layer above the plan cache: a repeated read over **unchanged data**
+  skips *execution itself* (scan + compute + worker dispatch) and returns the cached Arrow result. The key
+  includes each referenced Iceberg table's **current snapshot id**, so a write by *any* engine (Ontul, Trino,
+  Spark) advances the snapshot and the next read is an automatic miss — correct across external writers with no
+  manual invalidation. The semantic context is in the key (IAM-filtered results never leak across users) and
+  `checkPermissions` still runs on every hit. Read-only, Iceberg-only, with a TTL and size bounds. On by
+  default (`ontul.result.cache.enabled`). Measured: a repeated full-scan aggregate dropped from ~3.5 s to ~9 ms
+  (cache hit), while the same query after an `INSERT` correctly returned the new rows.
+- **Semantic list cache** — `list_semantic_views` / `search_metrics` (the agent hot path) cache the parsed view
+  set instead of re-reading it from the metadata store every call; invalidated on view create/delete.
 - **Manifest content cache** — Iceberg manifest files are immutable, so their content is cached by path
   (`io.manifest.cache-enabled`, on by default); repeated planning over the same snapshot skips re-reading
   manifests from object storage.
@@ -92,6 +102,10 @@ workloads:
 
 A trivial cached query (e.g. `COUNT(*)` served from metadata) completes in single-digit milliseconds, giving
 Ontul a much lower latency floor than batch-oriented analytical engines.
+
+For agentic workloads, the **MCP server** also accepts a JSON-RPC 2.0 **batch** (an array of tool calls in one
+message) and services them concurrently, so an agent that issues several tool calls per step pays one
+round-trip instead of many.
 
 ## Tuning Reference
 
@@ -105,6 +119,8 @@ Ontul a much lower latency floor than batch-oriented analytical engines.
 | `io.manifest.cache-enabled` | `true` | Cache immutable Iceberg manifests |
 | `ontul.plan.cache.enabled` | `true` | Reuse compiled plans for repeated query shapes (interactive/agentic QPS) |
 | `ontul.plan.cache.max` | `5000` | Max cached plans |
+| `ontul.result.cache.enabled` | `true` | Snapshot-keyed result cache — skip execution for repeated reads over unchanged data |
+| `ontul.result.cache.ttl.ms` | `60000` | Result cache entry TTL |
 | `ontul.cache.data.enabled` | `false` | In-memory data cache for repeated scans |
 
 All data-skipping and decode toggles are correctness-safe: when a fast path cannot apply, Ontul falls back to
