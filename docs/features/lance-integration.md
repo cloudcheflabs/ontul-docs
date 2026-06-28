@@ -114,8 +114,24 @@ EXPIRE SNAPSHOTS lance.public.events;   -- alias of VACUUM for Lance
 ```
 
 `defer_index_remap` (Fragment Reuse Index) lets compaction skip the vector-index remap so it
-doesn't conflict with concurrent index builds on continuously-ingested tables. A manual
-**Lance Maintenance** page is also available in the Admin UI.
+doesn't conflict with concurrent index builds on continuously-ingested tables.
+
+**Streaming — compact only recent commits, not the whole table.** Lance has no hidden partitions,
+so a time window is resolved from version timestamps and the plan-based compaction reads the manifest
+(not the data), rewriting only the matching fragments:
+
+```sql
+OPTIMIZE lance.public.events WITH (
+  window_hours='2',              -- only fragments committed in the last N hours
+  window_cooldown_minutes='5',   -- exclude the freshest fragments (the hot zone a streaming
+                                 --   writer is appending to) → never races in-flight commits
+  min_input_files='2',           -- skip a task with fewer than N fragments
+  dry_run='true');               -- plan + report only, no rewrite
+VACUUM lance.public.events WITH (retain_last='1');   -- keep the last N versions
+```
+
+A manual **Lance Maintenance** page is also available in the Admin UI. Cross-engine verified:
+ontul `OPTIMIZE`/`VACUUM` produces a dataset Trino re-reads with identical data (no loss).
 
 ## Versioning and tag-based publish
 
