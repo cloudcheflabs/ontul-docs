@@ -153,6 +153,59 @@ A retriever's `targetCatalog` may be a Lance catalog; its template uses `match()
 
 See **[Retrievers](retrievers.md)**.
 
+## Python SDK
+
+Everything above is plain SQL, so it runs through the Python SDK (`OntulSession`) unchanged —
+`execute()` for DDL/DML (returns a status dict), `sql()` for reads (returns a PyArrow table).
+
+```python
+from ontul.session import OntulSession
+
+session = OntulSession(host="localhost", port=47470, token="your-jwt-token")
+
+# CTAS — create a Lance table from a query (distributed write: workers write fragments,
+# master single-commits)
+session.execute("""
+    CREATE TABLE lance.public.events AS
+    SELECT id, name, embedding FROM staging.raw_events
+""")
+
+# INSERT — append more rows
+session.execute("INSERT INTO lance.public.events SELECT id, name, embedding FROM staging.more")
+
+# MERGE INTO — native upsert on the ON key(s)
+session.execute("""
+    MERGE INTO lance.public.events USING (SELECT * FROM staging.updates) s
+      ON lance.public.events.id = s.id
+      WHEN MATCHED THEN UPDATE SET name = s.name
+      WHEN NOT MATCHED THEN INSERT (id, name, embedding) VALUES (s.id, s.name, s.embedding)
+""")
+
+# DELETE / UPDATE
+session.execute("DELETE FROM lance.public.events WHERE id < 100")
+session.execute("UPDATE lance.public.events SET name = upper(name) WHERE id = 1")
+
+# Search — read back as a PyArrow table
+hits = session.sql(
+    "SELECT id, name FROM vector_search('lance.public.events', 'embedding', '0.1,0.2,0.3', 5)")
+print(hits.to_pandas())
+
+fts = session.sql("SELECT * FROM match('lance.public.events', 'name', 'distributed systems', 10)")
+
+# Maintenance (streaming-friendly: only recent commits)
+session.execute("OPTIMIZE lance.public.events WITH (window_hours='2', defer_index_remap='true')")
+session.execute("VACUUM lance.public.events WITH (retain_last='5')")
+```
+
+Per-session WAP staging (the SDK session carries a session id, so `SET` scopes to it):
+
+```python
+session.execute("SET ontul.lance.wap.branch=stage_2024_06")     # stage writes on a branch
+session.execute("INSERT INTO lance.public.events SELECT * FROM staging.batch")
+audit = session.sql("SELECT count(*) FROM lance.public.events")  # main is unchanged until publish
+session.execute("PUBLISH WAP lance.public.events BRANCH 'stage_2024_06'")
+```
+
 ## Cross-engine interoperability
 
 Because Ontul uses the `org.lance` lineage, the Lance datasets it writes are readable by Spark
@@ -161,8 +214,13 @@ namespaces.
 
 ## Notes and current limits
 
-- Writes are master-side single-node today (distributed worker-side fragment writes are planned).
-- Streaming is at-least-once.
+- Writes are distributed (workers write Lance fragments, the master makes one commit), with an
+  automatic fallback to a master-side write if a distributed write fails.
+- Streaming is at-least-once (a coordinated exactly-once drain primitive exists; the full
+  checkpoint-barrier integration is in progress).
 - `UPDATE` is non-atomic (delete + re-append) and assumes the SET preserves column types; use
   `MERGE` for atomic new-value upserts.
-- Publish is tag-gated, not branch-isolated (the current Lance Java API has no branch-write/merge).
+- Branch-isolated WAP works on local/dir datasets; on S3/Polaris, branch operations are currently
+  blocked by a Lance Java binding (they don't thread storage credentials), so WAP there errors
+  clearly rather than writing to `main` — use tag-based publish on S3 until that is fixed.
+- Blob V2 read is supported (serve large binary); a SQL surface to declare/insert blob columns is planned.
