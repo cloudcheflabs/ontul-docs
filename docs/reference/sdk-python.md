@@ -73,6 +73,45 @@ session.source("SELECT * FROM tpch.tiny.customer") \
     .sink("iceberg.warehouse.customers")
 ```
 
+## Lance Blob V2 — governed read of unstructured data
+
+A Lance [Blob V2](../features/lance-integration.md#blob-v2-unstructured-data-as-a-first-class-column)
+column stores large unstructured values — video, audio, images, documents — *inside* the table
+alongside scalar columns and embeddings. The SDK reads the bytes back **through Ontul** (the fetch
+passes Ontul's IAM `data:SelectTable` check — the bytes never bypass governance) and the server
+streams them in bounded HTTP ranges, so neither side ever buffers the whole blob.
+
+A row is identified by a **stable key** (`key_column = key_value`), not a transient Lance row id.
+
+```python
+# Stream straight to a file — returns the number of bytes written.
+with open("clip.mp4", "wb") as f:
+    n = session.stream_blob("lance.public.videos", "id", 1, "video", sink=f)
+print(f"wrote {n} bytes")
+
+# Or iterate bounded chunks without materializing the whole blob (good for a decoder,
+# a re-upload, or a streaming hash).
+import hashlib
+h = hashlib.sha256()
+for chunk in session.stream_blob("lance.public.videos", "id", 1, "video",
+                                 chunk_size=4 * 1024 * 1024):
+    h.update(chunk)
+print(h.hexdigest())
+
+# Random access — read just a sub-range [offset, offset+length).
+header = session.read_blob("lance.public.videos", "id", 1, "video", offset=0, length=4096)
+```
+
+| Method | Returns | Use for |
+| --- | --- | --- |
+| `stream_blob(table, key_col, key_val, column, *, offset=0, length=None, chunk_size=4MiB, sink=None)` | byte count (with `sink`) or a `bytes` generator | streaming a whole/partial blob to a file or pipeline without buffering it |
+| `read_blob(table, key_col, key_val, column, *, offset=0, length=None)` | `bytes` | small ranges / random access (headers, thumbnails, a single frame) |
+
+The transport is HTTP ranges against the governed admin endpoint, so a client can seek, resume, or
+read only the header of a multi-GB asset, and an unauthenticated request is rejected. The per-call
+size limit and the hybrid "originals by external reference, derivatives in the table" pattern are
+covered in [Lance Integration → Blob V2](../features/lance-integration.md#blob-v2-unstructured-data-as-a-first-class-column).
+
 ## Source/Sink by Connection ID
 
 Reference a registered connection (`POST /admin/connections`) by ID instead of repeating endpoints and credentials:
