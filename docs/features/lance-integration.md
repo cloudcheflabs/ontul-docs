@@ -206,6 +206,91 @@ audit = session.sql("SELECT count(*) FROM lance.public.events")  # main is uncha
 session.execute("PUBLISH WAP lance.public.events BRANCH 'stage_2024_06'")
 ```
 
+## Blob V2 — unstructured data as a first-class column
+
+A Lance **Blob V2** column stores large unstructured values — video, audio, images, PDFs, raw
+documents — *inside the table*, alongside ordinary columns. The blob is an Arrow `LargeBinary`
+field tagged `lance-encoding:blob=true`; Lance stores it **size-adaptively** (small values inline,
+larger ones in packed or dedicated regions, very large originals as an external reference) and
+materializes the bytes **lazily** — a scan that doesn't select the blob column never reads it. This
+is what makes "put a 4 GB video in a row" practical: the row's scalar columns stay cheap to scan,
+and the heavy bytes are only touched when you ask for them.
+
+### What this changes
+
+Unstructured data becomes a **governed, versioned, transactional table citizen** instead of a loose
+pile of S3 objects you track out-of-band:
+
+- **One multimodal table.** `id`, metadata, a `vector` embedding, *and* the source `video`/`image`
+  all live in the same row and the same transaction. No second system to keep in sync, no dangling
+  object keys when a row is deleted.
+- **Search and original co-located.** A `vector_search()` / `match()` finds the row; the same row
+  hands you the original bytes — no join across a vector DB and an object store.
+- **Versioned & transactional.** Blob writes ride Lance's immutable versions and tag-based publish
+  (WAP), so a dataset of unstructured assets has the same time-travel and audit→publish story as any
+  other Lance table.
+- **Governed access.** Reading the bytes goes **through Ontul's IAM** (see below) — the same
+  `data:SelectTable` check that guards the row guards its blob, instead of handing out raw S3 URLs.
+
+### Use cases
+
+| Use case | Shape | Why Blob V2 |
+| --- | --- | --- |
+| **Video / media library for ML** | `id`, `embedding`, `video` (blob), captions | Search by embedding, then stream the exact clip that matched — one table, governed. |
+| **RAG over source documents** | `chunk_id`, `text`, `embedding`, `pdf`/`docx` (blob) | Retrieve chunks *and* serve the original document for citation/preview, transactionally versioned. |
+| **Multimodal training sets** | label columns + `image`/`audio` (blob) | A single versioned, snapshot-able dataset — reproducible training inputs, time-travel to a past version. |
+| **Audit / compliance archives** | metadata + `original` (blob) | Immutable versions + tag-based publish give a tamper-evident, point-in-time record co-located with its index. |
+| **Derived-asset pipelines** | `embedding`, thumbnails inline, `original` external | Hybrid storage: cheap derivatives inline, large originals as zero-copy external references. |
+
+### Hybrid storage pattern (recommended for large originals)
+
+For very large originals (multi-GB video), don't copy the bytes into the dataset — keep the original
+in object storage and store an **external reference** (`lance.Blob(uri=…, position, size)`), which
+Lance streams on read with zero copy. Keep the cheap derivatives — embeddings, thumbnails, extracted
+text, metadata — as ordinary columns / inline blobs in the same row:
+
+```python
+import lance, pyarrow as pa
+schema = pa.schema([("id", pa.int64()), lance.blob_field("video"),
+                    ("thumb", pa.large_binary()), ("embedding", pa.list_(pa.float32(), 512))])
+videos = lance.blob_array([lance.Blob(uri="s3://media/raw/clip-001.mp4")])  # streamed, not copied
+lance.write_dataset(pa.table({...}), uri, schema=schema,
+                    data_storage_version="2.2", allow_external_blob_outside_bases=True)
+```
+
+So: **derivatives in the table, originals by reference** — you get search + governance + versioning
+on the metadata, without duplicating terabytes of source media.
+
+### Governed read — stream a blob THROUGH Ontul
+
+Clients never touch storage directly. The Python SDK pulls the bytes through Ontul, which enforces
+the table's IAM (`data:SelectTable`) and streams in bounded HTTP ranges so neither side buffers the
+whole blob:
+
+```python
+# stream straight to a file (returns the byte count)
+with open("clip.mp4", "wb") as f:
+    session.stream_blob("lance.public.videos", "id", 1, "video", sink=f)
+
+# or iterate bounded chunks without materializing
+for chunk in session.stream_blob("lance.public.videos", "id", 1, "video", chunk_size=4*1024*1024):
+    ...  # feed a decoder / re-upload / hash
+
+# random access — read just bytes [offset, offset+length)
+header = session.read_blob("lance.public.videos", "id", 1, "video", offset=0, length=4096)
+```
+
+A row is identified by a **stable key** (`key_column = key_value`), not a transient Lance row id.
+Under the hood this is a governed admin endpoint — `GET /admin/lance/blob` — which resolves the key
+to a row, reads a bounded range from the blob (`X-Blob-Size` advertises the full size, `Accept-Ranges:
+bytes` for ranged pulls), and serves it only after the IAM check passes; an unauthenticated request
+is rejected (401/403). Because it's range-based, a client can resume, seek, or fetch only the header
+of a multi-GB asset without the server ever holding the whole thing in memory.
+
+> Per-call size note: the Java range read returns a `byte[]` (capped at ~2 GB per call), so a
+> multi-GB blob is served as a sequence of ranges — which is exactly the streaming-chunk model the
+> SDK uses. The originals themselves can be arbitrarily large (external reference).
+
 ## Cross-engine interoperability
 
 Because Ontul uses the `org.lance` lineage, the Lance datasets it writes are readable by Spark
@@ -223,4 +308,8 @@ namespaces.
 - Branch-isolated WAP works on local/dir datasets; on S3/Polaris, branch operations are currently
   blocked by a Lance Java binding (they don't thread storage credentials), so WAP there errors
   clearly rather than writing to `main` — use tag-based publish on S3 until that is fixed.
-- Blob V2 read is supported (serve large binary); a SQL surface to declare/insert blob columns is planned.
+- Blob V2 columns store unstructured data (video/audio/images/docs) as a first-class, governed,
+  versioned column; reads are served through a governed, IAM-gated streaming endpoint and the SDK
+  (`stream_blob` / `read_blob`) — see **[Blob V2](#blob-v2-unstructured-data-as-a-first-class-column)**.
+  Today blob columns are declared/ingested with pylance (`lance.blob_field` / `lance.Blob`); a SQL
+  surface to declare and `INSERT` blob columns directly is planned.
