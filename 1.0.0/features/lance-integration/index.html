@@ -1118,6 +1118,67 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#blob-v2-unstructured-data-as-a-first-class-column" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blob V2 — unstructured data as a first-class column
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Blob V2 — unstructured data as a first-class column">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-this-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hybrid-storage-pattern-recommended-for-large-originals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hybrid storage pattern (recommended for large originals)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#governed-read-stream-a-blob-through-ontul" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Governed read — stream a blob THROUGH Ontul
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cross-engine-interoperability" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2264,6 +2325,106 @@ audited version so consumers reading that tag only advance when you move it.</p>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">audit</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">&quot;SELECT count(*) FROM lance.public.events&quot;</span><span class="p">)</span>  <span class="c1"># main is unchanged until publish</span>
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PUBLISH WAP lance.public.events BRANCH &#39;stage_2024_06&#39;&quot;</span><span class="p">)</span>
 </code></pre></div>
+<h2 id="blob-v2-unstructured-data-as-a-first-class-column">Blob V2 — unstructured data as a first-class column</h2>
+<p>A Lance <strong>Blob V2</strong> column stores large unstructured values — video, audio, images, PDFs, raw
+documents — <em>inside the table</em>, alongside ordinary columns. The blob is an Arrow <code>LargeBinary</code>
+field tagged <code>lance-encoding:blob=true</code>; Lance stores it <strong>size-adaptively</strong> (small values inline,
+larger ones in packed or dedicated regions, very large originals as an external reference) and
+materializes the bytes <strong>lazily</strong> — a scan that doesn't select the blob column never reads it. This
+is what makes "put a 4 GB video in a row" practical: the row's scalar columns stay cheap to scan,
+and the heavy bytes are only touched when you ask for them.</p>
+<h3 id="what-this-changes">What this changes</h3>
+<p>Unstructured data becomes a <strong>governed, versioned, transactional table citizen</strong> instead of a loose
+pile of S3 objects you track out-of-band:</p>
+<ul>
+<li><strong>One multimodal table.</strong> <code>id</code>, metadata, a <code>vector</code> embedding, <em>and</em> the source <code>video</code>/<code>image</code>
+  all live in the same row and the same transaction. No second system to keep in sync, no dangling
+  object keys when a row is deleted.</li>
+<li><strong>Search and original co-located.</strong> A <code>vector_search()</code> / <code>match()</code> finds the row; the same row
+  hands you the original bytes — no join across a vector DB and an object store.</li>
+<li><strong>Versioned &amp; transactional.</strong> Blob writes ride Lance's immutable versions and tag-based publish
+  (WAP), so a dataset of unstructured assets has the same time-travel and audit→publish story as any
+  other Lance table.</li>
+<li><strong>Governed access.</strong> Reading the bytes goes <strong>through Ontul's IAM</strong> (see below) — the same
+  <code>data:SelectTable</code> check that guards the row guards its blob, instead of handing out raw S3 URLs.</li>
+</ul>
+<h3 id="use-cases">Use cases</h3>
+<table>
+<thead>
+<tr>
+<th>Use case</th>
+<th>Shape</th>
+<th>Why Blob V2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Video / media library for ML</strong></td>
+<td><code>id</code>, <code>embedding</code>, <code>video</code> (blob), captions</td>
+<td>Search by embedding, then stream the exact clip that matched — one table, governed.</td>
+</tr>
+<tr>
+<td><strong>RAG over source documents</strong></td>
+<td><code>chunk_id</code>, <code>text</code>, <code>embedding</code>, <code>pdf</code>/<code>docx</code> (blob)</td>
+<td>Retrieve chunks <em>and</em> serve the original document for citation/preview, transactionally versioned.</td>
+</tr>
+<tr>
+<td><strong>Multimodal training sets</strong></td>
+<td>label columns + <code>image</code>/<code>audio</code> (blob)</td>
+<td>A single versioned, snapshot-able dataset — reproducible training inputs, time-travel to a past version.</td>
+</tr>
+<tr>
+<td><strong>Audit / compliance archives</strong></td>
+<td>metadata + <code>original</code> (blob)</td>
+<td>Immutable versions + tag-based publish give a tamper-evident, point-in-time record co-located with its index.</td>
+</tr>
+<tr>
+<td><strong>Derived-asset pipelines</strong></td>
+<td><code>embedding</code>, thumbnails inline, <code>original</code> external</td>
+<td>Hybrid storage: cheap derivatives inline, large originals as zero-copy external references.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hybrid-storage-pattern-recommended-for-large-originals">Hybrid storage pattern (recommended for large originals)</h3>
+<p>For very large originals (multi-GB video), don't copy the bytes into the dataset — keep the original
+in object storage and store an <strong>external reference</strong> (<code>lance.Blob(uri=…, position, size)</code>), which
+Lance streams on read with zero copy. Keep the cheap derivatives — embeddings, thumbnails, extracted
+text, metadata — as ordinary columns / inline blobs in the same row:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lance</span><span class="o">,</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">schema</span><span class="p">([(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="n">pa</span><span class="o">.</span><span class="n">int64</span><span class="p">()),</span> <span class="n">lance</span><span class="o">.</span><span class="n">blob_field</span><span class="p">(</span><span class="s2">&quot;video&quot;</span><span class="p">),</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>                    <span class="p">(</span><span class="s2">&quot;thumb&quot;</span><span class="p">,</span> <span class="n">pa</span><span class="o">.</span><span class="n">large_binary</span><span class="p">()),</span> <span class="p">(</span><span class="s2">&quot;embedding&quot;</span><span class="p">,</span> <span class="n">pa</span><span class="o">.</span><span class="n">list_</span><span class="p">(</span><span class="n">pa</span><span class="o">.</span><span class="n">float32</span><span class="p">(),</span> <span class="mi">512</span><span class="p">))])</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">videos</span> <span class="o">=</span> <span class="n">lance</span><span class="o">.</span><span class="n">blob_array</span><span class="p">([</span><span class="n">lance</span><span class="o">.</span><span class="n">Blob</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="s2">&quot;s3://media/raw/clip-001.mp4&quot;</span><span class="p">)])</span>  <span class="c1"># streamed, not copied</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">lance</span><span class="o">.</span><span class="n">write_dataset</span><span class="p">(</span><span class="n">pa</span><span class="o">.</span><span class="n">table</span><span class="p">({</span><span class="o">...</span><span class="p">}),</span> <span class="n">uri</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>                    <span class="n">data_storage_version</span><span class="o">=</span><span class="s2">&quot;2.2&quot;</span><span class="p">,</span> <span class="n">allow_external_blob_outside_bases</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p>So: <strong>derivatives in the table, originals by reference</strong> — you get search + governance + versioning
+on the metadata, without duplicating terabytes of source media.</p>
+<h3 id="governed-read-stream-a-blob-through-ontul">Governed read — stream a blob THROUGH Ontul</h3>
+<p>Clients never touch storage directly. The Python SDK pulls the bytes through Ontul, which enforces
+the table's IAM (<code>data:SelectTable</code>) and streams in bounded HTTP ranges so neither side buffers the
+whole blob:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># stream straight to a file (returns the byte count)</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;clip.mp4&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="n">session</span><span class="o">.</span><span class="n">stream_blob</span><span class="p">(</span><span class="s2">&quot;lance.public.videos&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;video&quot;</span><span class="p">,</span> <span class="n">sink</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="c1"># or iterate bounded chunks without materializing</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">stream_blob</span><span class="p">(</span><span class="s2">&quot;lance.public.videos&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;video&quot;</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">4</span><span class="o">*</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="p">):</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="o">...</span>  <span class="c1"># feed a decoder / re-upload / hash</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="c1"># random access — read just bytes [offset, offset+length)</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="n">header</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">read_blob</span><span class="p">(</span><span class="s2">&quot;lance.public.videos&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;video&quot;</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">4096</span><span class="p">)</span>
+</code></pre></div>
+<p>A row is identified by a <strong>stable key</strong> (<code>key_column = key_value</code>), not a transient Lance row id.
+Under the hood this is a governed admin endpoint — <code>GET /admin/lance/blob</code> — which resolves the key
+to a row, reads a bounded range from the blob (<code>X-Blob-Size</code> advertises the full size, <code>Accept-Ranges:
+bytes</code> for ranged pulls), and serves it only after the IAM check passes; an unauthenticated request
+is rejected (401/403). Because it's range-based, a client can resume, seek, or fetch only the header
+of a multi-GB asset without the server ever holding the whole thing in memory.</p>
+<blockquote>
+<p>Per-call size note: the Java range read returns a <code>byte[]</code> (capped at ~2 GB per call), so a
+multi-GB blob is served as a sequence of ranges — which is exactly the streaming-chunk model the
+SDK uses. The originals themselves can be arbitrarily large (external reference).</p>
+</blockquote>
 <h2 id="cross-engine-interoperability">Cross-engine interoperability</h2>
 <p>Because Ontul uses the <code>org.lance</code> lineage, the Lance datasets it writes are readable by Spark
 (<code>lance-spark</code>) and Trino (<code>lance-trino</code>), and vice versa — over both directory and Polaris
@@ -2279,7 +2440,11 @@ namespaces.</p>
 <li>Branch-isolated WAP works on local/dir datasets; on S3/Polaris, branch operations are currently
   blocked by a Lance Java binding (they don't thread storage credentials), so WAP there errors
   clearly rather than writing to <code>main</code> — use tag-based publish on S3 until that is fixed.</li>
-<li>Blob V2 read is supported (serve large binary); a SQL surface to declare/insert blob columns is planned.</li>
+<li>Blob V2 columns store unstructured data (video/audio/images/docs) as a first-class, governed,
+  versioned column; reads are served through a governed, IAM-gated streaming endpoint and the SDK
+  (<code>stream_blob</code> / <code>read_blob</code>) — see <strong><a href="#blob-v2-unstructured-data-as-a-first-class-column">Blob V2</a></strong>.
+  Today blob columns are declared/ingested with pylance (<code>lance.blob_field</code> / <code>lance.Blob</code>); a SQL
+  surface to declare and <code>INSERT</code> blob columns directly is planned.</li>
 </ul>
 
 
