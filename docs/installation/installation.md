@@ -135,18 +135,25 @@ Ontul exposes two protocols that require separate Nginx configurations:
 - **Admin UI + REST API** (HTTP/1.1) — Web console, catalog management, job submission
 - **Arrow Flight SQL** (gRPC over HTTP/2) — JDBC connections from DBeaver, DataGrip, SDK applications
 
-Nginx distributes requests across multiple Masters for high availability. If one Master goes down, Nginx automatically routes traffic to the remaining Masters.
+Nginx distributes requests across multiple Masters for high availability. A control-plane write that lands on a follower is forwarded to the leader internally, so nginx itself stays leader-unaware. The one requirement is that the **Flight SQL upstream must be sticky** — a single Flight query is two RPCs (`GetFlightInfo` → `DoGet`) whose result handle lives in the planning Master's local cache, so a plain round-robin would send the second RPC to a Master that never minted the handle. See **[High Availability → Load balancing](../features/high-availability.md#load-balancing-nginx)** for the full rationale, health-check tuning, and the keepalived/VIP note.
 
 ```nginx
 # ── Upstream: multiple Masters for HA ──
+# Consistent hashing pins each client to one Master (required for Flight SQL, and
+# keeps multi-step admin flows sticky). OSS nginx does passive health checks only —
+# tune max_fails / fail_timeout so a dead Master is evicted quickly.
 upstream ontul_admin {
-    server master-1:8080;
-    server master-2:8080;
+    hash $remote_addr consistent;
+    server master-1:8080 max_fails=2 fail_timeout=5s;
+    server master-2:8080 max_fails=2 fail_timeout=5s;
+    keepalive 32;
 }
 
 upstream ontul_flight_sql {
-    server master-1:47470;
-    server master-2:47470;
+    hash $remote_addr consistent;   # REQUIRED — the Flight ticket handle is Master-local
+    server master-1:47470 max_fails=2 fail_timeout=5s;
+    server master-2:47470 max_fails=2 fail_timeout=5s;
+    keepalive 16;
 }
 
 # ── Admin UI + REST API (HTTP/1.1) ──
