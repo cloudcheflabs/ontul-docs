@@ -1321,6 +1321,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#load-balancing-nginx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load balancing (nginx)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Load balancing (nginx)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-flight-sql-needs-session-affinity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Flight SQL needs session affinity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failover-behaviour-health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failover behaviour &amp; health checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#worker-health-monitoring" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2037,7 +2076,60 @@
 <li><strong>State Replication</strong>: The leader Master replicates catalog metadata, IAM policies, KMS keys, sessions, and connection credentials to follower Masters via the internal NIO protocol.</li>
 <li><strong>Automatic Failover</strong>: If the leader Master fails, ZooKeeper elects a new leader, which reloads persisted state from RocksDB and resumes operations.</li>
 </ul>
-<p>All Masters can serve client queries — only write operations (catalog registration, IAM changes, etc.) are routed to the leader.</p>
+<p>Any Master accepts both reads and writes — clients never need to know which Master is the leader:</p>
+<ul>
+<li><strong>Reads / queries</strong> are served by whichever Master receives them.</li>
+<li><strong>Control-plane writes</strong> (catalog &amp; connector registration, IAM users/groups/policies/keys, KMS, connection credentials, driver upload, semantic-view edits) received on a <strong>follower</strong> are <strong>transparently forwarded to the leader</strong> over the internal protocol, applied once on the leader's RocksDB, and broadcast back to every follower as a snapshot. A leader-unaware proxy is therefore correct for writes as well as reads — the forwarding happens inside the engine, not in the load balancer.</li>
+<li><strong>Table data written by SQL DML</strong> (<code>INSERT</code>, <code>CREATE TABLE</code>, <code>MERGE</code>, …) commits to the <strong>external catalog/storage the connector points at</strong> — Iceberg-on-Polaris + object storage, JDBC, etc. — which is the shared source of truth. Ontul is a processing engine, not a store, so no divergent per-Master copy of table data exists and nothing is lost if a follower dies mid-session.</li>
+</ul>
+<h2 id="load-balancing-nginx">Load balancing (nginx)</h2>
+<p>A stock nginx in front of the Masters is all the HA "router" Ontul needs — there is no bespoke query gateway, no cluster-health routing logic, no per-query queue management, and no leader awareness in the proxy. The single rule: <strong>the Flight SQL upstream must be sticky.</strong></p>
+<h3 id="why-flight-sql-needs-session-affinity">Why Flight SQL needs session affinity</h3>
+<p>A single Flight SQL query is <strong>two RPCs</strong>: <code>GetFlightInfo</code> returns a <em>ticket</em>, then <code>DoGet(ticket)</code> streams the rows. The ticket is a handle (<code>TicketStatementQuery</code>) into a <strong>result cache that lives in the Master that planned the query</strong> — result batches are <em>not</em> replicated across Masters (only session/auth metadata is synced). If a plain round-robin sends the <code>DoGet</code> to a different Master, that Master has no such handle and the client fails with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>No results for handle: &lt;uuid&gt;
+</code></pre></div>
+<p>Prepared statements (<code>CreatePreparedStatement</code> → execute → <code>ClosePreparedStatement</code>) use the same Master-local handle cache, so they need the same affinity.</p>
+<p><strong>Consistent hashing on the client address</strong> pins each client to one Master for the life of its connection — which is all that is required. (Contrast with a Trino-style setup, where HA depends on a <em>smart</em> gateway that tracks cluster health, routes by cluster group, and stamps resource-group tags. Ontul needs none of that — just one <code>hash</code> directive.)</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># ── Admin UI + REST API (HTTP/1.1) ──</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">upstream</span><span class="w"> </span><span class="no">on</span><span class="s">tul_admin</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span><span class="w">    </span><span class="c1"># keep multi-step stateful admin flows on one Master</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-1</span><span class="p">:</span><span class="mi">8080</span><span class="w">  </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-2</span><span class="p">:</span><span class="mi">8080</span><span class="w">  </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># ── Arrow Flight SQL (gRPC over HTTP/2) ──</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">upstream</span><span class="w"> </span><span class="no">on</span><span class="s">tul_flight_sql</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span><span class="w">    </span><span class="c1"># REQUIRED — the Flight ticket handle is Master-local</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-1</span><span class="p">:</span><span class="mi">47470</span><span class="w"> </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-2</span><span class="p">:</span><span class="mi">47470</span><span class="w"> </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="p">}</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="k">server</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">8080</span><span class="p">;</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="s">/</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">        </span><span class="kn">proxy_pass</span><span class="w"> </span><span class="s">http://ontul_admin</span><span class="p">;</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">        </span><span class="kn">proxy_next_upstream</span><span class="w"> </span><span class="s">error</span><span class="w"> </span><span class="s">timeout</span><span class="w"> </span><span class="s">http_502</span><span class="w"> </span><span class="s">http_503</span><span class="p">;</span><span class="w">   </span><span class="c1"># retry a healthy Master</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="p">}</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="k">server</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">47470</span><span class="w"> </span><span class="s">http2</span><span class="p">;</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="s">/</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">        </span><span class="kn">grpc_pass</span><span class="w"> </span><span class="s">grpc://ontul_flight_sql</span><span class="p">;</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">        </span><span class="kn">grpc_next_upstream</span><span class="w"> </span><span class="s">error</span><span class="w"> </span><span class="s">timeout</span><span class="p">;</span><span class="w">                      </span><span class="c1"># retry a healthy Master</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="failover-behaviour-health-checks">Failover behaviour &amp; health checks</h3>
+<p>Open-source nginx performs <strong>passive</strong> health checks only: a dead Master is marked down after <code>max_fails</code> failed requests within <code>fail_timeout</code>, so the first request or two after a Master crashes may fail before nginx routes around it. Mitigate this by:</p>
+<ul>
+<li>Tightening <code>max_fails</code> / <code>fail_timeout</code> (shown above) so eviction is fast.</li>
+<li>Setting <code>proxy_next_upstream</code> / <code>grpc_next_upstream</code> so nginx <strong>retries the surviving Master</strong> on a connect or timeout error instead of surfacing it to the client.</li>
+<li>(Optional) NGINX Plus if you need <strong>active</strong> health probes (<code>health_check</code>) rather than passive detection.</li>
+</ul>
+<p>Because a single nginx is itself a single point of failure, run it as a <strong>redundant pair with keepalived + a virtual IP</strong> (or use a cloud L4 load balancer) so the cluster's entry point is highly available too.</p>
 <h2 id="worker-health-monitoring">Worker Health Monitoring</h2>
 <p>The Master continuously monitors Worker health:</p>
 <ul>
