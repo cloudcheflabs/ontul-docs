@@ -50,6 +50,7 @@ nav:
       - "Lance Integration (Vector / Multimodal)": features/lance-integration.md
       - "Semantic Layer": features/semantic-layer.md
       - "Retrievers (Multi-Modal Retrieval)": features/retrievers.md
+      - "Ontology (Objects, Links & Actions)": features/ontology.md
       - "BI Integration": features/bi-integration.md
       - "Remote Mode": features/remote-mode.md
       - "User-Defined Functions": features/udf.md

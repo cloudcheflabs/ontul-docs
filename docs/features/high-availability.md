@@ -66,6 +66,29 @@ server {
 }
 ```
 
+### Choosing the hash key
+
+`hash $remote_addr consistent` keys the affinity on the **client IP**, which is the right default for direct clients. Be aware of two cases:
+
+- **Clients behind a shared egress (NAT, a corporate proxy, a Kubernetes egress gateway)** all present the *same* source IP, so `$remote_addr` hashing pins them **all to one Master** and defeats load spreading. When your clients funnel through a single IP, hash on a per-client attribute instead — e.g. an auth/session identifier the client always sends. Over gRPC/Flight that means a header:
+
+    ```nginx
+    # requires nginx built with the ngx_http_split_clients / map hashing you need;
+    # here we hash on an Ontul auth token header the client sets on every RPC.
+    upstream ontul_flight_sql {
+        hash $http_x_ontul_session consistent;   # per-session affinity, NAT-safe
+        server master-1:47470 max_fails=2 fail_timeout=5s;
+        server master-2:47470 max_fails=2 fail_timeout=5s;
+        keepalive 16;
+    }
+    ```
+
+    Any stable, per-client value works (`$http_authorization`, a cookie via `$cookie_…` for the HTTP admin plane, or `$ssl_client_s_dn` with mTLS). The only requirement is that **the same client always hashes to the same key** for the life of its Flight connection.
+
+- **X-Forwarded-For chains**: if nginx sits behind another proxy/LB, `$remote_addr` is that proxy's IP (again collapsing everyone onto one Master). Configure `set_real_ip_from` + `real_ip_header X-Forwarded-For` so `$remote_addr` reflects the true client, or hash on the forwarded header directly.
+
+If a single upstream Master ends up hot because of one of the above, the fix is the hash *key*, not turning off affinity — round-robin is never safe for the Flight `GetFlightInfo → DoGet` handle.
+
 ### Failover behaviour & health checks
 
 Open-source nginx performs **passive** health checks only: a dead Master is marked down after `max_fails` failed requests within `fail_timeout`, so the first request or two after a Master crashes may fail before nginx routes around it. Mitigate this by:

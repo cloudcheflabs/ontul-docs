@@ -1,0 +1,331 @@
+# Ontology (Objects, Links & Actions)
+
+The **ontology** is Ontul's typed semantic model of your business — a layer of
+**object types**, **link types**, and **action types** that sit *above* the
+physical tables, catalogs, and graphs the engine reads and writes. Where a
+[semantic view](semantic-layer.md) curates *analytics* (metrics + dimensions)
+and a [retriever](retrievers.md) curates *retrieval* (vector / graph / full-text),
+the ontology curates the *entities and operations* an application or agent works
+with: a `Customer`, an `Order`, the `places` relationship between them, and the
+governed `approve_invoice` write.
+
+The design goal is a credible, open ontology + Action layer: reads win
+structurally (open Iceberg as the source of truth, single-engine graph RAG via
+NeorunBase, a semantic layer, IAM, and an MCP surface), and the ontology adds the
+typed object/link model plus **governed write-back Actions** on top.
+
+```text
+Agent (MCP) / App / Admin UI
+        │
+        ▼
+   ┌──────────────────────── Ontology ────────────────────────┐
+   │  ObjectType   ──places──►  ObjectType        (type graph) │
+   │   (Customer)               (Order)                        │
+   │      │  read: query / traverse    │  write: invoke action │
+   └──────┼─────────────────────────────┼─────────────────────┘
+          ▼                             ▼
+   read runtime                   write runtime
+   ├─ ObjectSet query   → engine  ├─ DML       → SoT (Iceberg / JDBC)
+   └─ Link traversal              └─ OPERATION → REST / ERP connector
+      ├─ JOIN  → engine SQL
+      └─ GRAPH → NeorunBase GRAPH_NEIGHBORS
+```
+
+Two principles run through the whole layer:
+
+- **Iceberg is the system of record; NeorunBase is derived, rebuildable serving.**
+  Reads may come from the derived serving layer; **writes go to the source of
+  record (Iceberg's ACID / write-audit-publish) or to an external operational
+  system (ERP), never to the derived layer** — which is then rebuilt from the SoT.
+- **Two graphs.** The ontology *type graph* (object/link *definitions*) is small
+  metadata in the cluster store. The *instance graph* (actual edges between
+  millions of rows) lives in NeorunBase; a `GRAPH` link binds a link type to it
+  for traversal.
+
+All three primitives are persisted in the cluster metadata store (key prefixes
+`objecttype:`, `linktype:`, `actiontype:`) and replicate to follower masters with
+the rest of the cluster metadata, exactly like semantic views and retrievers.
+
+---
+
+## Object types
+
+An **object type** maps a business entity onto a physical read source, naming its
+properties in business terms and declaring where writes to it should land.
+
+| Field | Purpose |
+| --- | --- |
+| `catalog`, `schema`, `name` | The object type's identity; its FQN is `catalog.schema.Name`. |
+| `readSource` | The physical table (a `catalog.schema.table` registered in Ontul) instances are read from. |
+| `primaryKey[]` | One or more **property names** (not physical columns) that identify an instance. |
+| `properties[]` | Each property: `name` (logical), `type` (`string`/`long`/`double`/`boolean`/…), `column` (the physical column it maps to), plus optional `synonyms` (NL/agent matching) and `pii`. |
+| `writeTarget` | Where a write action lands: `DML` (a table — `catalog.schema.table`) or `OPERATION` (a connector operation). |
+| `allowedRoles[]`, `tags[]`, `status` | Governance + lifecycle metadata. |
+
+The property → column mapping is the crux: callers, agents, and SDKs reference
+**logical property names**, and Ontul resolves them to physical columns when it
+generates SQL. A `primaryKey` entry must name a declared property — registering a
+primary key that references a physical column name (e.g. `o_orderkey` instead of
+the property `orderkey`) is rejected.
+
+```json
+{
+  "catalog": "lake", "schema": "sales", "name": "Order",
+  "readSource": "lake.sales.orders",
+  "primaryKey": ["orderkey"],
+  "properties": [
+    { "name": "orderkey", "type": "long",   "column": "o_orderkey" },
+    { "name": "status",   "type": "string", "column": "o_orderstatus", "synonyms": ["상태"] },
+    { "name": "custkey",  "type": "long",   "column": "o_custkey" }
+  ],
+  "writeTarget": { "mode": "DML", "catalog": "lake", "schema": "sales", "table": "orders" }
+}
+```
+
+---
+
+## Link types
+
+A **link type** is a typed relationship between two object types — the edges of
+the ontology's type graph. It declares a **binding** that says how the
+relationship resolves at query time.
+
+| Field | Purpose |
+| --- | --- |
+| `fromObjectType`, `toObjectType` | The endpoint object-type FQNs. |
+| `cardinality` | `ONE_TO_ONE` / `ONE_TO_MANY` / `MANY_TO_ONE` / `MANY_TO_MANY`. |
+| `binding.mode` | `JOIN` (relational key equality) or `GRAPH` (a native NeorunBase edge). |
+| `binding.fromKey`, `binding.toKey` | *(JOIN)* the property names on each side whose values must match. |
+| `binding.graphCatalog`, `binding.edgeTable`, `binding.edgeLabel`, `binding.direction` | *(GRAPH)* the NeorunBase catalog, the edge/relations table, the edge label, and traversal direction. |
+
+- A **JOIN** binding resolves through the query engine: `Customer places Order`
+  where `Customer.custkey = Order.custkey`.
+- A **GRAPH** binding is pushed down to NeorunBase's graph engine — the same
+  instance graph a [retriever](retrievers.md) reaches — so traversal *is* the
+  graph engine, not an application-side loop.
+
+```json
+{
+  "catalog": "lake", "schema": "sales", "name": "places",
+  "fromObjectType": "lake.sales.Customer",
+  "toObjectType": "lake.sales.Order",
+  "cardinality": "ONE_TO_MANY",
+  "binding": { "mode": "JOIN", "fromKey": "custkey", "toKey": "custkey" }
+}
+```
+
+---
+
+## Reading the ontology
+
+The read runtime is the resolver that turns an ontology intent — expressed
+against object/link definitions — into injection-safe SQL the existing engines
+execute, and returns typed rows. It is the read counterpart to Actions (write).
+
+### ObjectSet query
+
+`POST /api/v1/object-types/{fqn}/query` returns instances of one object type,
+filtered and projected **by property name**. The body accepts `filters`
+(property → value equality predicates, ANDed), `select` (property names to
+project; omit for all), `orderBy`, `desc`, and `limit`.
+
+```bash
+curl -X POST "$ADMIN/api/v1/object-types/lake.sales.Order/query" \
+  -H "Authorization: Token $TOKEN" -H "Content-Type: application/json" \
+  -d '{ "filters": { "status": "OPEN" }, "select": ["orderkey","status"], "limit": 50 }'
+```
+
+Ontul resolves each property to its column, builds
+`SELECT "o_orderkey" AS "orderkey", … FROM lake.sales.orders WHERE "o_orderstatus" = 'OPEN' LIMIT 50`,
+executes it through the query engine, and returns `{ columns, rows, rowCount }`
+where the columns are the **logical property names**. Referencing an undeclared
+property is rejected with `400` before any SQL runs.
+
+### Link traversal
+
+`POST /api/v1/link-types/{fqn}/traverse` returns the related to-object instances
+reachable from one source object. The body takes `sourceKey` (the source
+object's primary-key value), `select`, `limit`, and — for GRAPH links — an
+optional `maxDepth`.
+
+- **JOIN** links resolve relationally. When the link's `fromKey` *is* the
+  from-object's primary key (the common case), traversal collapses to a single
+  filter on the to-object (`toKey = sourceKey`) — no join needed; otherwise a
+  relational join resolves the key.
+- **GRAPH** links are pushed down to NeorunBase's
+  `GRAPH_NEIGHBORS(edge_table, seed, max_depth, edge_filter)` table-valued
+  function; the returned neighbour ids are joined back to the to-object's table so
+  you get typed instances, not bare ids.
+
+```bash
+# Walk the graph: relations of entity 1, along 'is_a' edges, up to depth 2.
+curl -X POST "$ADMIN/api/v1/link-types/nb.public.is_a/traverse" \
+  -H "Authorization: Token $TOKEN" -H "Content-Type: application/json" \
+  -d '{ "sourceKey": "1", "maxDepth": 2, "select": ["id","name"], "limit": 50 }'
+```
+
+---
+
+## Actions (governed write-back)
+
+An **action type** is a typed, parameterized, **governed** write operation over
+an object type — how an application or agent *changes* data, in contrast to the
+read runtime above. An agent invokes a named action (`approve_invoice`) instead
+of composing raw SQL; the platform validates parameters, authorizes the caller,
+enforces idempotency, executes against the write system-of-record, and audits the
+run.
+
+| Field | Purpose |
+| --- | --- |
+| `objectType` | The object type this action operates on (its write context). |
+| `mode` | `DML` (execute rendered SQL against the SoT) or `OPERATION` (call a connector operation). |
+| `parameters[]` | Each: `name`, `type` (`STRING`/`LONG`/`DOUBLE`/`BOOLEAN`/`IDENT`), `required`, `description`. |
+| `sqlTemplate` | *(DML)* parameterized SQL with `${param}` placeholders. **Admin-authored and trusted.** |
+| `operationCatalog`, `operation` | *(OPERATION)* the operation-surface catalog + operation id to invoke. |
+| `allowedRoles[]`, `requiresApproval` | Governance — role gating + an optional human-in-the-loop gate. |
+| `tags[]`, `status`, `owner` | Lifecycle metadata. |
+
+### Invoking an action
+
+`POST /api/v1/action-types/{fqn}/invoke` is **fail-closed and governed**. In order:
+
+1. **Authorization** — the caller must be an administrator *or* hold an explicit
+   `ontology:InvokeAction` grant on the action's FQN. Denied by default.
+2. **Idempotency** — an optional `idempotencyKey` is checked against a ledger
+   (`actionrun:`); a retried key returns the prior result without re-applying the
+   write.
+3. **Parameter validation** — every required parameter must be present, else `400`.
+4. **Approval gate** — if `requiresApproval` is set, the invoke is *staged*
+   (returns `202 pending_approval`) rather than applied.
+5. **Execution**:
+     - **DML** — the template is rendered into injection-safe SQL and executed
+       through the query engine against the source of record; the result is
+       audited and the idempotency outcome recorded.
+     - **OPERATION** — the action's `operationCatalog` is resolved to a connector
+       exposing an operation surface (see below) and the named operation is
+       invoked; the result is audited and recorded identically.
+
+```bash
+curl -X POST "$ADMIN/api/v1/action-types/lake.sales.approve_invoice/invoke" \
+  -H "Authorization: Token $TOKEN" -H "Content-Type: application/json" \
+  -d '{ "args": { "id": 42, "reason": "reviewed" }, "idempotencyKey": "req-42" }'
+```
+
+### Injection safety
+
+The same explicit model as retrievers applies: **the template is admin-authored
+and trusted; the arguments are caller-supplied and untrusted.** Each parameter's
+declared `type` governs how its value is rendered — `STRING` becomes a
+single-quote-escaped literal (`'…''…'`), `LONG`/`DOUBLE`/`BOOLEAN` are validated
+and inlined bare, and `IDENT` is restricted to `[A-Za-z0-9_.]`. A caller cannot
+smuggle SQL through an argument, and an argument referencing an undeclared
+parameter is dropped.
+
+---
+
+## The operation surface (REST / ERP connector)
+
+Not every write is SQL DML. To let an Action write to an external operational
+system, Ontul provides a generic **`rest-operation` connector** — the substrate
+for `OPERATION`-mode actions. A catalog registered with this connector exposes a
+set of named, parameterized HTTP operations; an ERP integration is simply this
+connector plus an ERP **profile** and the ERP's operation set — *"ERP connector =
+a profile on the generic REST connector."*
+
+Config keys for a `rest-operation` catalog:
+
+| Key | Purpose |
+| --- | --- |
+| `baseUrl` | The external base URL (e.g. `https://erp.example.com/api`). |
+| `authType` | `NONE` / `BASIC` / `BEARER` / `HEADER`; credentials via `user`/`password`, `token`, or `authHeaderName`/`authHeaderValue` (resolvable through a [Connection ID](connection-id.md)). |
+| `profile` | `generic` / `sap-odata` / … — supplies default request headers (content type / accept conventions). |
+| `operations` | A JSON array of operations, each `{ id, method, path, body, headers?, successCodes? }` with `${param}` placeholders. |
+
+Rendering is injection-safe: path values are URL-encoded and body values are
+JSON-escaped (the template author supplies the surrounding JSON structure and
+quoting, the same contract as the SQL template). The connector is a write target,
+not a readable source, so it exposes no tables.
+
+```json
+{
+  "connector": "rest-operation",
+  "baseUrl": "https://erp.example.com/api",
+  "profile": "generic", "authType": "BEARER", "token": "…",
+  "operations": "[{\"id\":\"post_invoice\",\"method\":\"POST\",\"path\":\"/invoices\",\"body\":\"{\\\"id\\\": ${id}, \\\"amount\\\": ${amount}}\",\"successCodes\":[200,201]}]"
+}
+```
+
+---
+
+## Agent access (MCP)
+
+Every primitive is exposed on the [Ontul MCP server](../reference/mcp-server.md)
+so an agent discovers and uses the ontology through one governed surface — the
+read tools and the write tool are symmetric:
+
+| Tool | Purpose |
+| --- | --- |
+| `ontul_list_object_types` / `ontul_describe_object_type` | Discover object types + their property contracts. |
+| `ontul_query_object_type` | Read instances (ObjectSet query) by property filters. |
+| `ontul_list_link_types` / `ontul_describe_link_type` | Discover relationships. |
+| `ontul_traverse_link` | Walk a relationship from a source object to its related objects. |
+| `ontul_list_action_types` / `ontul_describe_action_type` | Discover write actions + their parameter contracts. |
+| `ontul_invoke_action_type` | Invoke a governed write-back (DML or OPERATION). |
+
+Because governance (IAM, idempotency, audit) is enforced by the master beneath
+these tools, an agent gets the ontology's read/write power without a path around
+its controls.
+
+---
+
+## Admin UI
+
+The admin UI manages the whole ontology under dedicated pages — **Object Types**,
+**Link Types**, and **Action Types** (with a parameter editor and an invoke
+tester), and the **Catalogs** page gains a *REST / ERP* catalog type (base URL,
+profile, auth, and a JSON operations editor) for the operation surface.
+
+---
+
+## Row caps
+
+An ObjectSet query or link traversal is bounded by each request's own `limit` and
+by a hard cluster-wide ceiling — the effective cap is the smaller of the two:
+
+```properties
+# ontul.properties — hard cluster-wide cap on rows returned by an ontology read
+# (ObjectSet query or link traversal). Applied on top of each request's own limit.
+ontul.ontology.read.max.rows.ceiling=10000
+```
+
+Both the relational (JOIN / ObjectSet) path and the GRAPH pushdown honour this
+ceiling.
+
+---
+
+## REST API summary
+
+All routes are under the master's admin HTTP port and reuse the same IAM token
+as the rest of the admin surface. Reads are IAM-filtered on the backing read
+source; registration/deletion is administrator-gated; action invoke is gated on
+`ontology:InvokeAction`.
+
+| Method + path | Purpose |
+| --- | --- |
+| `GET/POST /api/v1/object-types` | List / register object types. |
+| `GET/DELETE /api/v1/object-types/{fqn}` | Fetch / delete one. |
+| `POST /api/v1/object-types/{fqn}/query` | ObjectSet query (filters / select / limit). |
+| `GET/POST /api/v1/link-types` | List / register link types. |
+| `GET/DELETE /api/v1/link-types/{fqn}` | Fetch / delete one. |
+| `POST /api/v1/link-types/{fqn}/traverse` | Traverse from a source object (JOIN or GRAPH). |
+| `GET/POST /api/v1/action-types` | List / register action types. |
+| `GET/DELETE /api/v1/action-types/{fqn}` | Fetch / delete one. |
+| `POST /api/v1/action-types/{fqn}/invoke` | Governed write-back (DML or OPERATION). |
+
+## Related
+
+- [Semantic Layer](semantic-layer.md) — metrics + dimensions the engine rewrites.
+- [Retrievers](retrievers.md) — vector / graph / full-text retrieval pushdown.
+- [Connector Architecture](connector-architecture.md) — how catalogs and
+  connectors (including `rest-operation`) are registered.
+- [IAM](iam.md) — the actions and grants the ontology's governance builds on.
