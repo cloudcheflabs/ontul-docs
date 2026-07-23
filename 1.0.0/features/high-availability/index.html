@@ -1026,6 +1026,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../ontology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontology (Objects, Links & Actions)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../bi-integration/" class="md-nav__link">
         
   
@@ -1337,6 +1365,17 @@
     <span class="md-ellipsis">
       
         Why Flight SQL needs session affinity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#choosing-the-hash-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing the hash key
       
     </span>
   </a>
@@ -2122,6 +2161,27 @@
 <a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">    </span><span class="p">}</span>
 <a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="p">}</span>
 </code></pre></div>
+<h3 id="choosing-the-hash-key">Choosing the hash key</h3>
+<p><code>hash $remote_addr consistent</code> keys the affinity on the <strong>client IP</strong>, which is the right default for direct clients. Be aware of two cases:</p>
+<ul>
+<li>
+<p><strong>Clients behind a shared egress (NAT, a corporate proxy, a Kubernetes egress gateway)</strong> all present the <em>same</em> source IP, so <code>$remote_addr</code> hashing pins them <strong>all to one Master</strong> and defeats load spreading. When your clients funnel through a single IP, hash on a per-client attribute instead — e.g. an auth/session identifier the client always sends. Over gRPC/Flight that means a header:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># requires nginx built with the ngx_http_split_clients / map hashing you need;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># here we hash on an Ontul auth token header the client sets on every RPC.</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">upstream</span><span class="w"> </span><span class="no">on</span><span class="s">tul_flight_sql</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$http_x_ontul_session</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span><span class="w">   </span><span class="c1"># per-session affinity, NAT-safe</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-1</span><span class="p">:</span><span class="mi">47470</span><span class="w"> </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-2</span><span class="p">:</span><span class="mi">47470</span><span class="w"> </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="p">}</span>
+</code></pre></div>
+<p>Any stable, per-client value works (<code>$http_authorization</code>, a cookie via <code>$cookie_…</code> for the HTTP admin plane, or <code>$ssl_client_s_dn</code> with mTLS). The only requirement is that <strong>the same client always hashes to the same key</strong> for the life of its Flight connection.</p>
+</li>
+<li>
+<p><strong>X-Forwarded-For chains</strong>: if nginx sits behind another proxy/LB, <code>$remote_addr</code> is that proxy's IP (again collapsing everyone onto one Master). Configure <code>set_real_ip_from</code> + <code>real_ip_header X-Forwarded-For</code> so <code>$remote_addr</code> reflects the true client, or hash on the forwarded header directly.</p>
+</li>
+</ul>
+<p>If a single upstream Master ends up hot because of one of the above, the fix is the hash <em>key</em>, not turning off affinity — round-robin is never safe for the Flight <code>GetFlightInfo → DoGet</code> handle.</p>
 <h3 id="failover-behaviour-health-checks">Failover behaviour &amp; health checks</h3>
 <p>Open-source nginx performs <strong>passive</strong> health checks only: a dead Master is marked down after <code>max_fails</code> failed requests within <code>fail_timeout</code>, so the first request or two after a Master crashes may fail before nginx routes around it. Mitigate this by:</p>
 <ul>
