@@ -858,6 +858,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../jdbc-drivers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JDBC Drivers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../federation/" class="md-nav__link">
         
   
@@ -1186,10 +1214,82 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-operation-surface-rest-erp-connector" class="md-nav__link">
+  <a href="#action-workflows-saga-dag" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The operation surface (REST / ERP connector)
+        Action workflows (Saga / DAG)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Action workflows (Saga / DAG)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dag-not-just-a-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG, not just a chain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authoring-in-yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authoring in YAML
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#invoke-run-or-roll-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Invoke → run, or roll back
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#governance-every-action-stays-governed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Governance — every action stays governed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execution-master-coordinates-workers-act" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execution — master coordinates, workers act
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-operation-surface-rest-connector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The operation surface (REST connector)
       
     </span>
   </a>
@@ -2191,8 +2291,8 @@ typed object/link model plus <strong>governed write-back Actions</strong> on top
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>          ▼                             ▼
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>   read runtime                   write runtime
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>   ├─ ObjectSet query   → engine  ├─ DML       → SoT (Iceberg / JDBC)
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>   └─ Link traversal              └─ OPERATION → REST / ERP connector
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>      ├─ JOIN  → engine SQL
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>   └─ Link traversal              └─ OPERATION → REST operational system
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>      ├─ JOIN  → engine SQL          (ERP / CRM / payment / internal service …)
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>      └─ GRAPH → NeorunBase GRAPH_NEIGHBORS
 </code></pre></div>
 <p>Two principles run through the whole layer:</p>
@@ -2200,7 +2300,11 @@ typed object/link model plus <strong>governed write-back Actions</strong> on top
 <li><strong>Iceberg is the system of record; NeorunBase is derived, rebuildable serving.</strong>
   Reads may come from the derived serving layer; <strong>writes go to the source of
   record (Iceberg's ACID / write-audit-publish) or to an external operational
-  system (ERP), never to the derived layer</strong> — which is then rebuilt from the SoT.</li>
+  system over REST — an ERP, CRM, payment gateway, ticketing or internal service —
+  never to the derived layer</strong>, which is then rebuilt from the SoT. Writing critical
+  action-writes straight into a lakehouse table, or via raw JDBC into an operational
+  database, is an anti-pattern; the real write goes to the system of record's own
+  API. (ERP is just one example of such a system, not the framing.)</li>
 <li><strong>Two graphs.</strong> The ontology <em>type graph</em> (object/link <em>definitions</em>) is small
   metadata in the cluster store. The <em>instance graph</em> (actual edges between
   millions of rows) lives in NeorunBase; a <code>GRAPH</code> link binds a link type to it
@@ -2433,13 +2537,139 @@ and inlined bare, and <code>IDENT</code> is restricted to <code>[A-Za-z0-9_.]</c
 smuggle SQL through an argument, and an argument referencing an undeclared
 parameter is dropped.</p>
 <hr />
-<h2 id="the-operation-surface-rest-erp-connector">The operation surface (REST / ERP connector)</h2>
-<p>Not every write is SQL DML. To let an Action write to an external operational
-system, Ontul provides a generic <strong><code>rest-operation</code> connector</strong> — the substrate
-for <code>OPERATION</code>-mode actions. A catalog registered with this connector exposes a
-set of named, parameterized HTTP operations; an ERP integration is simply this
-connector plus an ERP <strong>profile</strong> and the ERP's operation set — <em>"ERP connector =
-a profile on the generic REST connector."</em></p>
+<h2 id="action-workflows-saga-dag">Action workflows (Saga / DAG)</h2>
+<p>A single write is one action. A real operation is often <strong>several</strong> — reserve
+stock, charge payment, create a shipment — that must run <strong>as one governed unit</strong>
+and, if a later step fails, <strong>undo</strong> what already ran. An <strong>action workflow</strong> is
+that unit: a <strong>DAG of action types</strong> executed server-side as a <strong>Saga</strong>.</p>
+<p>Because the writes target external systems of record over REST (which cannot join
+a distributed transaction and cannot be rolled back), "all-or-nothing" here means
+<strong>run to completion, or compensate what ran</strong> — a best-effort <em>logical</em> inverse
+call per completed step, not a database rollback. Orchestration, compensation,
+idempotency, and audit are the platform's responsibility, so a caller — an agent,
+an app, the admin UI — invokes <strong>one</strong> workflow and gets the whole guarantee.</p>
+<h3 id="dag-not-just-a-chain">DAG, not just a chain</h3>
+<p>Each step names an already-registered action and its place in the graph:</p>
+<table>
+<thead>
+<tr>
+<th>Step field</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>Step id (referenced by other steps' <code>requires</code>).</td>
+</tr>
+<tr>
+<td><code>action</code></td>
+<td>FQN of a registered action type to run.</td>
+</tr>
+<tr>
+<td><code>args</code></td>
+<td><code>param → workflow-input key</code> (or <code>=literal</code>) — builds the action's args from the workflow's <code>input</code>.</td>
+</tr>
+<tr>
+<td><code>requires</code></td>
+<td>Ids of steps that must complete first. Empty = a root.</td>
+</tr>
+<tr>
+<td><code>compensate</code></td>
+<td><em>(optional)</em> FQN of a registered action that <strong>undoes</strong> this step on rollback.</td>
+</tr>
+<tr>
+<td><code>compensateArgs</code></td>
+<td><em>(optional)</em> arg mapping for the compensate action; defaults to this step's own <code>args</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Steps run in <strong>topological order</strong>: a step runs once its <code>requires</code> are done, so
+independent branches (a "diamond") both run and a join step waits for both. A
+workflow where <strong>no</strong> step declares <code>requires</code> degenerates to declared (linear)
+order — so a simple sequence is just the trivial DAG. Cycles and references to
+unknown steps are <strong>rejected at registration</strong> (<code>400</code>).</p>
+<h3 id="authoring-in-yaml">Authoring in YAML</h3>
+<p>Workflows are authored as <strong>YAML</strong> (the admin UI is a full-width YAML editor; the
+same document round-trips via the REST API). A step's <code>compensate</code> is <strong>optional</strong>
+— omit it and that step is simply skipped on rollback.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">catalog</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ops</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fulfill_order</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Fulfill order</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nt">steps</span><span class="p">:</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reserve</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.reserve_stock</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span><span class="nt">compensate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.release_stock</span><span class="w">          </span><span class="c1"># registered action; undoes reserve</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">charge</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.charge_payment</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="p p-Indicator">,</span><span class="nt"> amount</span><span class="p">:</span><span class="w"> </span><span class="nv">amount</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">    </span><span class="nt">requires</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">reserve</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">    </span><span class="nt">compensate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.refund_payment</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">    </span><span class="nt">compensateArgs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w">        </span><span class="c1"># optional; else the step&#39;s own args</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ship</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.create_shipment</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">    </span><span class="nt">requires</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">charge</span><span class="p p-Indicator">]</span><span class="w">                           </span><span class="c1"># no compensate → nothing to undo</span>
+</code></pre></div>
+<p>Register it with <code>POST /api/v1/action-workflows/yaml</code> (body = the YAML) and export
+the editable YAML back with <code>GET /api/v1/action-workflows/{fqn}/yaml</code> (server-
+managed/computed fields — <code>fqn</code>, <code>createdAt</code>, <code>owner</code>, … — are stripped so you see
+only what you can edit). A JSON form of the same document works via
+<code>POST /api/v1/action-workflows</code>.</p>
+<h3 id="invoke-run-or-roll-back">Invoke → run, or roll back</h3>
+<p><code>POST /api/v1/action-workflows/{fqn}/invoke</code> runs the Saga:</p>
+<ol>
+<li><strong>Authorization</strong> — gated on <code>ontology:InvokeWorkflow</code> for the workflow FQN
+   (admin-bypass, fail-closed). An optional <code>requiresApproval</code> stages it instead.</li>
+<li><strong>Idempotency</strong> — an optional <code>idempotencyKey</code> returns the prior run's result.</li>
+<li><strong>Forward pass</strong> — steps execute in topological order; each result records
+   <code>ok</code>, and where it ran (<code>driver</code>).</li>
+<li><strong>Failure → compensation</strong> — the first hard failure (a step that isn't
+   <code>continueOnError</code>) stops the forward pass and runs each <strong>completed</strong> step's
+   <code>compensate</code> action in <strong>reverse order</strong>. Final status is <code>completed</code>,
+   <code>completed_with_errors</code>, or <code>rolled_back</code>.</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ADMIN</span><span class="s2">/api/v1/action-workflows/erp.ops.fulfill_order/invoke&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{ &quot;input&quot;: { &quot;orderId&quot;: 42, &quot;amount&quot;: 199.90 }, &quot;idempotencyKey&quot;: &quot;order-42&quot; }&#39;</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># → { &quot;status&quot;: &quot;rolled_back&quot;, &quot;steps&quot;: [...], &quot;compensations&quot;: [ {&quot;via&quot;:&quot;erp.ops.refund_payment&quot;,...}, {&quot;via&quot;:&quot;erp.ops.release_stock&quot;,...} ] }</span>
+</code></pre></div>
+<h3 id="governance-every-action-stays-governed">Governance — every action stays governed</h3>
+<p>Compensation is a <strong>workflow</strong> concern, so it lives on the step (<code>compensate</code>), not
+as a property of the action type. And crucially, a <code>compensate</code> must be a
+<strong>registered action</strong> — never inline ad-hoc REST — because both the forward step
+<strong>and</strong> the compensation run through the same governed path: each is IAM-checked on
+<strong>its own</strong> <code>ontology:InvokeAction</code> (fail-closed, admin-bypass), parameter-
+validated, and audited. RBAC is thereby delegated to each registered action: a
+compensation runs only if the caller may invoke that action. There is no way to
+smuggle an ungoverned call into a rollback.</p>
+<h3 id="execution-master-coordinates-workers-act">Execution — master coordinates, workers act</h3>
+<p>The master is the <strong>logical driver</strong>: it owns the DAG scheduling, compensation
+order, idempotency ledger, IAM, and audit. The <strong>actual</strong> work — the (possibly
+slow) outbound REST call of an <code>OPERATION</code> action — is <strong>delegated to a worker</strong>,
+exactly the way batch/streaming jobs are dispatched (<code>TASK_ASSIGN</code>). The master
+resolves the concrete request (base URL + auth from the operation catalog /
+<a href="../connection-id/">Connection ID</a>) and hands the worker a self-contained call to
+perform; it falls back to running the call in-process only when no worker is ready.
+So a long-running action doesn't tie up the master, and action execution scales
+across the worker fleet.</p>
+<p>Relevant timeouts are configurable:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># ontul.properties</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="na">ontul.action.exec.timeout.ms</span><span class="o">=</span><span class="s">600000       # master awaiting a worker&#39;s action result</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="na">ontul.action.http.timeout.seconds</span><span class="o">=</span><span class="s">60      # the action&#39;s outbound HTTP request</span>
+</code></pre></div>
+<hr />
+<h2 id="the-operation-surface-rest-connector">The operation surface (REST connector)</h2>
+<p>Not every write is SQL DML. To let an Action write back to an external operational
+system of record over REST, Ontul provides a generic <strong><code>rest-operation</code> connector</strong>
+— the substrate for <code>OPERATION</code>-mode actions. A catalog registered with this
+connector exposes a set of named, parameterized HTTP operations. Any operational
+system with an API fits: ERP, CRM, payment, ticketing, an internal service. An ERP
+integration, for instance, is simply this connector plus an ERP <strong>profile</strong>
+(default headers / conventions) and the ERP's operation set — the connector is
+generic, and a "profile" adapts it to a given system.</p>
 <p>Config keys for a <code>rest-operation</code> catalog:</p>
 <table>
 <thead>
@@ -2471,12 +2701,12 @@ a profile on the generic REST connector."</em></p>
 JSON-escaped (the template author supplies the surrounding JSON structure and
 quoting, the same contract as the SQL template). The connector is a write target,
 not a readable source, so it exposes no tables.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rest-operation&quot;</span><span class="p">,</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">&quot;baseUrl&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://erp.example.com/api&quot;</span><span class="p">,</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">&quot;profile&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;generic&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;authType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BEARER&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">&quot;operations&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[{\&quot;id\&quot;:\&quot;post_invoice\&quot;,\&quot;method\&quot;:\&quot;POST\&quot;,\&quot;path\&quot;:\&quot;/invoices\&quot;,\&quot;body\&quot;:\&quot;{\\\&quot;id\\\&quot;: ${id}, \\\&quot;amount\\\&quot;: ${amount}}\&quot;,\&quot;successCodes\&quot;:[200,201]}]&quot;</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rest-operation&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&quot;baseUrl&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://erp.example.com/api&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">&quot;profile&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;generic&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;authType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BEARER&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">&quot;operations&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[{\&quot;id\&quot;:\&quot;post_invoice\&quot;,\&quot;method\&quot;:\&quot;POST\&quot;,\&quot;path\&quot;:\&quot;/invoices\&quot;,\&quot;body\&quot;:\&quot;{\\\&quot;id\\\&quot;: ${id}, \\\&quot;amount\\\&quot;: ${amount}}\&quot;,\&quot;successCodes\&quot;:[200,201]}]&quot;</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
 <h2 id="agent-access-mcp">Agent access (MCP)</h2>
@@ -2515,6 +2745,14 @@ read tools and the write tool are symmetric:</p>
 <td><code>ontul_invoke_action_type</code></td>
 <td>Invoke a governed write-back (DML or OPERATION).</td>
 </tr>
+<tr>
+<td><code>ontul_list_action_workflows</code> / <code>ontul_describe_action_workflow</code></td>
+<td>Discover multi-action workflows + their step DAG.</td>
+</tr>
+<tr>
+<td><code>ontul_invoke_action_workflow</code></td>
+<td>Run a workflow as one governed Saga (with reverse compensation on failure).</td>
+</tr>
 </tbody>
 </table>
 <p>Because governance (IAM, idempotency, audit) is enforced by the master beneath
@@ -2523,16 +2761,22 @@ its controls.</p>
 <hr />
 <h2 id="admin-ui">Admin UI</h2>
 <p>The admin UI manages the whole ontology under dedicated pages — <strong>Object Types</strong>,
-<strong>Link Types</strong>, and <strong>Action Types</strong> (with a parameter editor and an invoke
-tester), and the <strong>Catalogs</strong> page gains a <em>REST / ERP</em> catalog type (base URL,
-profile, auth, and a JSON operations editor) for the operation surface.</p>
+<strong>Link Types</strong>, <strong>Action Types</strong> (with a parameter editor and an invoke tester),
+and <strong>Action Workflows</strong> (a full-width YAML editor with a diamond-DAG starter
+template, plus a DAG visualization and an invoke panel that shows the run outcome
+and any compensations). The <strong>Catalogs</strong> page gains a <em>REST</em> catalog type (base
+URL, profile, auth, and a JSON operations editor) for the operation surface, and a
+<strong>Drivers</strong> page manages uploaded JDBC driver JARs (one JAR per driver class;
+uploading a newer version replaces the old one, streamed to every worker). Both
+REST and NeorunBase catalogs can reference a registered <a href="../connection-id/">Connection ID</a>
+instead of inlining credentials.</p>
 <hr />
 <h2 id="row-caps">Row caps</h2>
 <p>An ObjectSet query or link traversal is bounded by each request's own <code>limit</code> and
 by a hard cluster-wide ceiling — the effective cap is the smaller of the two:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># ontul.properties — hard cluster-wide cap on rows returned by an ontology read</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># (ObjectSet query or link traversal). Applied on top of each request&#39;s own limit.</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="na">ontul.ontology.read.max.rows.ceiling</span><span class="o">=</span><span class="s">10000</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># ontul.properties — hard cluster-wide cap on rows returned by an ontology read</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="c1"># (ObjectSet query or link traversal). Applied on top of each request&#39;s own limit.</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="na">ontul.ontology.read.max.rows.ceiling</span><span class="o">=</span><span class="s">10000</span>
 </code></pre></div>
 <p>Both the relational (JOIN / ObjectSet) path and the GRAPH pushdown honour this
 ceiling.</p>
@@ -2585,6 +2829,26 @@ source; registration/deletion is administrator-gated; action invoke is gated on
 <tr>
 <td><code>POST /api/v1/action-types/{fqn}/invoke</code></td>
 <td>Governed write-back (DML or OPERATION).</td>
+</tr>
+<tr>
+<td><code>GET/POST /api/v1/action-workflows</code></td>
+<td>List / register workflows (JSON).</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/action-workflows/yaml</code></td>
+<td>Register a workflow from YAML.</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/action-workflows/{fqn}</code> · <code>/yaml</code></td>
+<td>Fetch one (JSON) · export editable YAML.</td>
+</tr>
+<tr>
+<td><code>DELETE /api/v1/action-workflows/{fqn}</code></td>
+<td>Delete one.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/action-workflows/{fqn}/invoke</code></td>
+<td>Run the Saga (gated on <code>ontology:InvokeWorkflow</code>).</td>
 </tr>
 </tbody>
 </table>
