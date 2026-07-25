@@ -88,6 +88,7 @@ curl -X POST http://localhost:8080/admin/connections \
 | `jdbc` | `url`, `username`, `password` | JDBC source/sink, NeorunBase JDBC mode |
 | `kafka` | `bootstrap.servers` (+ optional security props) | Kafka source/sink |
 | `neorunbase` | `endpoint`, `jdbcUrl`, `username`, `password` | NeorunBase catalog + sink |
+| `rest` | `baseUrl`, `profile`, `authType` (+ auth props) | Ontology `OPERATION` action write-back (`rest-operation` catalog) |
 | `http` | `url` (+ optional `headers`) | HTTP / Webhook sink |
 | `elasticsearch` | `endpoint` (+ optional auth) | Elasticsearch sink |
 
