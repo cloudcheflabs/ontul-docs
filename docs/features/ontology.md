@@ -26,8 +26,8 @@ Agent (MCP) / App / Admin UI
           ▼                             ▼
    read runtime                   write runtime
    ├─ ObjectSet query   → engine  ├─ DML       → SoT (Iceberg / JDBC)
-   └─ Link traversal              └─ OPERATION → REST / ERP connector
-      ├─ JOIN  → engine SQL
+   └─ Link traversal              └─ OPERATION → REST operational system
+      ├─ JOIN  → engine SQL          (ERP / CRM / payment / internal service …)
       └─ GRAPH → NeorunBase GRAPH_NEIGHBORS
 ```
 
@@ -36,7 +36,11 @@ Two principles run through the whole layer:
 - **Iceberg is the system of record; NeorunBase is derived, rebuildable serving.**
   Reads may come from the derived serving layer; **writes go to the source of
   record (Iceberg's ACID / write-audit-publish) or to an external operational
-  system (ERP), never to the derived layer** — which is then rebuilt from the SoT.
+  system over REST — an ERP, CRM, payment gateway, ticketing or internal service —
+  never to the derived layer**, which is then rebuilt from the SoT. Writing critical
+  action-writes straight into a lakehouse table, or via raw JDBC into an operational
+  database, is an anti-pattern; the real write goes to the system of record's own
+  API. (ERP is just one example of such a system, not the framing.)
 - **Two graphs.** The ontology *type graph* (object/link *definitions*) is small
   metadata in the cluster store. The *instance graph* (actual edges between
   millions of rows) lives in NeorunBase; a `GRAPH` link binds a link type to it
@@ -223,14 +227,137 @@ parameter is dropped.
 
 ---
 
-## The operation surface (REST / ERP connector)
+## Action workflows (Saga / DAG)
 
-Not every write is SQL DML. To let an Action write to an external operational
-system, Ontul provides a generic **`rest-operation` connector** — the substrate
-for `OPERATION`-mode actions. A catalog registered with this connector exposes a
-set of named, parameterized HTTP operations; an ERP integration is simply this
-connector plus an ERP **profile** and the ERP's operation set — *"ERP connector =
-a profile on the generic REST connector."*
+A single write is one action. A real operation is often **several** — reserve
+stock, charge payment, create a shipment — that must run **as one governed unit**
+and, if a later step fails, **undo** what already ran. An **action workflow** is
+that unit: a **DAG of action types** executed server-side as a **Saga**.
+
+Because the writes target external systems of record over REST (which cannot join
+a distributed transaction and cannot be rolled back), "all-or-nothing" here means
+**run to completion, or compensate what ran** — a best-effort *logical* inverse
+call per completed step, not a database rollback. Orchestration, compensation,
+idempotency, and audit are the platform's responsibility, so a caller — an agent,
+an app, the admin UI — invokes **one** workflow and gets the whole guarantee.
+
+### DAG, not just a chain
+
+Each step names an already-registered action and its place in the graph:
+
+| Step field | Purpose |
+| --- | --- |
+| `id` | Step id (referenced by other steps' `requires`). |
+| `action` | FQN of a registered action type to run. |
+| `args` | `param → workflow-input key` (or `=literal`) — builds the action's args from the workflow's `input`. |
+| `requires` | Ids of steps that must complete first. Empty = a root. |
+| `compensate` | *(optional)* FQN of a registered action that **undoes** this step on rollback. |
+| `compensateArgs` | *(optional)* arg mapping for the compensate action; defaults to this step's own `args`. |
+
+Steps run in **topological order**: a step runs once its `requires` are done, so
+independent branches (a "diamond") both run and a join step waits for both. A
+workflow where **no** step declares `requires` degenerates to declared (linear)
+order — so a simple sequence is just the trivial DAG. Cycles and references to
+unknown steps are **rejected at registration** (`400`).
+
+### Authoring in YAML
+
+Workflows are authored as **YAML** (the admin UI is a full-width YAML editor; the
+same document round-trips via the REST API). A step's `compensate` is **optional**
+— omit it and that step is simply skipped on rollback.
+
+```yaml
+catalog: erp
+schema: ops
+name: fulfill_order
+title: Fulfill order
+steps:
+  - id: reserve
+    action: erp.ops.reserve_stock
+    args: { orderId: orderId }
+    compensate: erp.ops.release_stock          # registered action; undoes reserve
+  - id: charge
+    action: erp.ops.charge_payment
+    args: { orderId: orderId, amount: amount }
+    requires: [reserve]
+    compensate: erp.ops.refund_payment
+    compensateArgs: { orderId: orderId }        # optional; else the step's own args
+  - id: ship
+    action: erp.ops.create_shipment
+    args: { orderId: orderId }
+    requires: [charge]                           # no compensate → nothing to undo
+```
+
+Register it with `POST /api/v1/action-workflows/yaml` (body = the YAML) and export
+the editable YAML back with `GET /api/v1/action-workflows/{fqn}/yaml` (server-
+managed/computed fields — `fqn`, `createdAt`, `owner`, … — are stripped so you see
+only what you can edit). A JSON form of the same document works via
+`POST /api/v1/action-workflows`.
+
+### Invoke → run, or roll back
+
+`POST /api/v1/action-workflows/{fqn}/invoke` runs the Saga:
+
+1. **Authorization** — gated on `ontology:InvokeWorkflow` for the workflow FQN
+   (admin-bypass, fail-closed). An optional `requiresApproval` stages it instead.
+2. **Idempotency** — an optional `idempotencyKey` returns the prior run's result.
+3. **Forward pass** — steps execute in topological order; each result records
+   `ok`, and where it ran (`driver`).
+4. **Failure → compensation** — the first hard failure (a step that isn't
+   `continueOnError`) stops the forward pass and runs each **completed** step's
+   `compensate` action in **reverse order**. Final status is `completed`,
+   `completed_with_errors`, or `rolled_back`.
+
+```bash
+curl -X POST "$ADMIN/api/v1/action-workflows/erp.ops.fulfill_order/invoke" \
+  -H "Authorization: Token $TOKEN" -H "Content-Type: application/json" \
+  -d '{ "input": { "orderId": 42, "amount": 199.90 }, "idempotencyKey": "order-42" }'
+# → { "status": "rolled_back", "steps": [...], "compensations": [ {"via":"erp.ops.refund_payment",...}, {"via":"erp.ops.release_stock",...} ] }
+```
+
+### Governance — every action stays governed
+
+Compensation is a **workflow** concern, so it lives on the step (`compensate`), not
+as a property of the action type. And crucially, a `compensate` must be a
+**registered action** — never inline ad-hoc REST — because both the forward step
+**and** the compensation run through the same governed path: each is IAM-checked on
+**its own** `ontology:InvokeAction` (fail-closed, admin-bypass), parameter-
+validated, and audited. RBAC is thereby delegated to each registered action: a
+compensation runs only if the caller may invoke that action. There is no way to
+smuggle an ungoverned call into a rollback.
+
+### Execution — master coordinates, workers act
+
+The master is the **logical driver**: it owns the DAG scheduling, compensation
+order, idempotency ledger, IAM, and audit. The **actual** work — the (possibly
+slow) outbound REST call of an `OPERATION` action — is **delegated to a worker**,
+exactly the way batch/streaming jobs are dispatched (`TASK_ASSIGN`). The master
+resolves the concrete request (base URL + auth from the operation catalog /
+[Connection ID](connection-id.md)) and hands the worker a self-contained call to
+perform; it falls back to running the call in-process only when no worker is ready.
+So a long-running action doesn't tie up the master, and action execution scales
+across the worker fleet.
+
+Relevant timeouts are configurable:
+
+```properties
+# ontul.properties
+ontul.action.exec.timeout.ms=600000       # master awaiting a worker's action result
+ontul.action.http.timeout.seconds=60      # the action's outbound HTTP request
+```
+
+---
+
+## The operation surface (REST connector)
+
+Not every write is SQL DML. To let an Action write back to an external operational
+system of record over REST, Ontul provides a generic **`rest-operation` connector**
+— the substrate for `OPERATION`-mode actions. A catalog registered with this
+connector exposes a set of named, parameterized HTTP operations. Any operational
+system with an API fits: ERP, CRM, payment, ticketing, an internal service. An ERP
+integration, for instance, is simply this connector plus an ERP **profile**
+(default headers / conventions) and the ERP's operation set — the connector is
+generic, and a "profile" adapts it to a given system.
 
 Config keys for a `rest-operation` catalog:
 
@@ -271,6 +398,8 @@ read tools and the write tool are symmetric:
 | `ontul_traverse_link` | Walk a relationship from a source object to its related objects. |
 | `ontul_list_action_types` / `ontul_describe_action_type` | Discover write actions + their parameter contracts. |
 | `ontul_invoke_action_type` | Invoke a governed write-back (DML or OPERATION). |
+| `ontul_list_action_workflows` / `ontul_describe_action_workflow` | Discover multi-action workflows + their step DAG. |
+| `ontul_invoke_action_workflow` | Run a workflow as one governed Saga (with reverse compensation on failure). |
 
 Because governance (IAM, idempotency, audit) is enforced by the master beneath
 these tools, an agent gets the ontology's read/write power without a path around
@@ -281,9 +410,15 @@ its controls.
 ## Admin UI
 
 The admin UI manages the whole ontology under dedicated pages — **Object Types**,
-**Link Types**, and **Action Types** (with a parameter editor and an invoke
-tester), and the **Catalogs** page gains a *REST / ERP* catalog type (base URL,
-profile, auth, and a JSON operations editor) for the operation surface.
+**Link Types**, **Action Types** (with a parameter editor and an invoke tester),
+and **Action Workflows** (a full-width YAML editor with a diamond-DAG starter
+template, plus a DAG visualization and an invoke panel that shows the run outcome
+and any compensations). The **Catalogs** page gains a *REST* catalog type (base
+URL, profile, auth, and a JSON operations editor) for the operation surface, and a
+**Drivers** page manages uploaded JDBC driver JARs (one JAR per driver class;
+uploading a newer version replaces the old one, streamed to every worker). Both
+REST and NeorunBase catalogs can reference a registered [Connection ID](connection-id.md)
+instead of inlining credentials.
 
 ---
 
@@ -321,6 +456,11 @@ source; registration/deletion is administrator-gated; action invoke is gated on
 | `GET/POST /api/v1/action-types` | List / register action types. |
 | `GET/DELETE /api/v1/action-types/{fqn}` | Fetch / delete one. |
 | `POST /api/v1/action-types/{fqn}/invoke` | Governed write-back (DML or OPERATION). |
+| `GET/POST /api/v1/action-workflows` | List / register workflows (JSON). |
+| `POST /api/v1/action-workflows/yaml` | Register a workflow from YAML. |
+| `GET /api/v1/action-workflows/{fqn}` · `/yaml` | Fetch one (JSON) · export editable YAML. |
+| `DELETE /api/v1/action-workflows/{fqn}` | Delete one. |
+| `POST /api/v1/action-workflows/{fqn}/invoke` | Run the Saga (gated on `ontology:InvokeWorkflow`). |
 
 ## Related
 

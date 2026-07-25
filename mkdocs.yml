@@ -44,6 +44,7 @@ nav:
       - "Query Performance": features/query-performance.md
       - "Connector Architecture": features/connector-architecture.md
       - "Connection ID (Source/Sink by Reference)": features/connection-id.md
+      - "JDBC Drivers": features/jdbc-drivers.md
       - "Federation Queries": features/federation.md
       - "Iceberg Integration": features/iceberg-integration.md
       - "Iceberg Write-Audit-Publish (WAP)": features/iceberg-wap.md
