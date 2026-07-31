@@ -2276,8 +2276,8 @@
 <tr>
 <td>Elasticsearch</td>
 <td>O</td>
-<td></td>
-<td>Query an ES/OpenSearch index as a table (scroll → Arrow); see below</td>
+<td>O</td>
+<td>Query an ES/OpenSearch index as a table and write to an index via <code>_bulk</code>; see below</td>
 </tr>
 <tr>
 <td>Lance</td>
@@ -2318,8 +2318,9 @@
 <li><strong>Schema discovery.</strong> The connector reads the index mapping (<code>GET /{index}/_mapping</code>) and maps ES field types to Arrow types (<code>integer/long → Int</code>, <code>float/double → FloatingPoint</code>, <code>boolean → Bool</code>, <code>date → Timestamp</code>; <code>text</code>, <code>keyword</code>, <code>ip</code>, <code>geo_point</code>, nested/object → <code>Utf8</code>). The metadata fields <code>_id</code>, <code>_index</code>, <code>_score</code> are also exposed.</li>
 <li><strong>Predicate pushdown.</strong> Simple comparisons (<code>=</code>, <code>!=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>) on <strong>numeric and boolean</strong> fields are pushed to the ES query DSL (<code>term</code> / <code>range</code>) so ES pre-filters documents. String predicates are <strong>not</strong> pushed — the connector maps both analyzed (<code>text</code>) and exact (<code>keyword</code>) fields to <code>Utf8</code> and cannot tell them apart, so pushing them could silently drop matching rows; those predicates stay in the engine instead. Pushdown is therefore always sound.</li>
 <li><strong>Parallel reads.</strong> A scan is parallelized with the ES sliced-scroll API — one split per slice (<code>slice.id</code> / <code>slice.max</code>) — so multiple workers scroll disjoint portions of the index concurrently. A single split falls back to a plain scroll.</li>
-<li><strong>Read-only.</strong> Elasticsearch is a query source here. For writing to ES from a streaming job, use the Elasticsearch streaming <strong>sink</strong> (below).</li>
+<li><strong>Writes (sink).</strong> The connector also implements a sink: <code>INSERT INTO es.default.my_index SELECT …</code> (and <code>CREATE TABLE … AS SELECT</code>) writes documents via the ES <code>_bulk</code> API. Set <code>idField</code> to the column whose value becomes the document <code>_id</code>, giving upsert-by-id (replace) semantics; without it ES auto-generates ids (append). This is the batch write path — streaming jobs can instead use the Elasticsearch streaming sink. So the Elasticsearch connector is a full <strong>source + sink</strong>.</li>
 </ul>
+<p>Because the connector is registered as a catalog, the Java/Python SDK can also read and write it by the catalog name — <code>session.source(Source.sql("SELECT * FROM es.default.my_index"))</code> to load a DataFrame, and <code>INSERT INTO es.default.my_index SELECT …</code> (or a connection-id-referenced sink) to write.</p>
 <h3 id="streaming-sinks">Streaming Sinks</h3>
 <p>Used in streaming jobs. Configured via job config, not catalog registration.</p>
 <table>
