@@ -81,8 +81,35 @@ Registered via `POST /admin/catalogs`. Used in SQL queries and batch pipelines.
 | NeorunBase | O | O | JDBC pg-wire read, REST bulk-insert write |
 | JDBC | O | O | PostgreSQL, MySQL, etc. with HikariCP pooling |
 | File | O | O | CSV, Parquet, JSON, Avro, ORC on S3 |
+| Elasticsearch | O | | Query an ES/OpenSearch index as a table (scroll → Arrow); see below |
+| Lance | O | O | Vector / multimodal columnar format |
 | TPC-H | O | | Built-in benchmark data (configurable scale) |
 | TPC-DS | O | | Built-in benchmark data (configurable scale) |
+
+#### Elasticsearch source connector
+
+Register an Elasticsearch (or OpenSearch) cluster as a catalog and query its indices as tables over the normal SQL / SDK path:
+
+```json
+{
+  "name": "es",
+  "properties": {
+    "connector": "elasticsearch",
+    "hosts": "http://es-host:9200",
+    "user": "elastic",
+    "password": "…",
+    "scrollSize": "1000",
+    "scrollTimeout": "1m"
+  }
+}
+```
+
+Once registered, each index (and alias) shows up as a table — e.g. `SELECT * FROM es.default.my_index`. Behaviour:
+
+- **Schema discovery.** The connector reads the index mapping (`GET /{index}/_mapping`) and maps ES field types to Arrow types (`integer/long → Int`, `float/double → FloatingPoint`, `boolean → Bool`, `date → Timestamp`; `text`, `keyword`, `ip`, `geo_point`, nested/object → `Utf8`). The metadata fields `_id`, `_index`, `_score` are also exposed.
+- **Predicate pushdown.** Simple comparisons (`=`, `!=`, `>`, `>=`, `<`, `<=`) on **numeric and boolean** fields are pushed to the ES query DSL (`term` / `range`) so ES pre-filters documents. String predicates are **not** pushed — the connector maps both analyzed (`text`) and exact (`keyword`) fields to `Utf8` and cannot tell them apart, so pushing them could silently drop matching rows; those predicates stay in the engine instead. Pushdown is therefore always sound.
+- **Parallel reads.** A scan is parallelized with the ES sliced-scroll API — one split per slice (`slice.id` / `slice.max`) — so multiple workers scroll disjoint portions of the index concurrently. A single split falls back to a plain scroll.
+- **Read-only.** Elasticsearch is a query source here. For writing to ES from a streaming job, use the Elasticsearch streaming **sink** (below).
 
 ### Streaming Sinks
 
