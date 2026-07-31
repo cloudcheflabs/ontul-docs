@@ -2898,7 +2898,15 @@
 </tbody>
 </table>
 <h2 id="exchange-manager">Exchange Manager</h2>
-<p>The Exchange Manager handles spill of intermediate shuffle/exchange data and execution-state checkpoints, with optional S3 backup for fault-tolerant execution.</p>
+<p>The Exchange Manager handles spill of intermediate shuffle/exchange data and execution-state checkpoints (streaming snapshots). It has two storage modes, selected by <code>ontul.exchange.s3.enabled</code>, and all payloads are KMS envelope-encrypted at rest in both modes.</p>
+<ul>
+<li><strong>Local-disk mode (default).</strong> Data is written to — and read from — a worker-local directory. This is fast, but the data is tied to that worker's disk: a stage that is retried on a <strong>different</strong> worker cannot see it.</li>
+<li><strong>S3-primary mode (<code>ontul.exchange.s3.enabled=true</code>).</strong> Data is read and written <strong>directly to S3</strong> (the object store is the primary exchange storage, not a background copy). Because the spill/snapshot objects live in S3, a task that is reassigned to a different worker reads the same data from S3 — this is what enables worker-independent, fault-tolerant recovery. Object keys are worker-independent (<code>{prefix}spill/{stageId}/…</code>, <code>{prefix}snapshot/{checkpointId}/…</code>), so any worker configured with the same bucket and prefix resolves them.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>S3-primary mode is analogous to a filesystem/object-store-backed exchange manager (<code>exchange.base-directories=s3://…</code>) in engines that support fault-tolerant execution: the object store <strong>replaces</strong> local disk for exchange data — it is not merely a backup of it.</p>
+</div>
 <table>
 <thead>
 <tr>
@@ -2911,27 +2919,32 @@
 <tr>
 <td><code>ontul.exchange.base.dir</code></td>
 <td><code>${ontul.base.data.dir}/exchange</code></td>
-<td>Worker-local directory for spilling intermediate shuffle/exchange data and execution-state checkpoints to disk. This is scratch/spill space (safe to be node-local); all spill data is KMS envelope-encrypted at rest.</td>
+<td>Worker-local directory used in <strong>local-disk mode</strong> for spilling intermediate shuffle/exchange data and execution-state checkpoints. Scratch/spill space (safe to be node-local); KMS envelope-encrypted at rest. Ignored in S3-primary mode.</td>
 </tr>
 <tr>
 <td><code>ontul.exchange.s3.enabled</code></td>
 <td><code>false</code></td>
-<td>When <code>true</code>, intermediate exchange data is also backed up to S3 so a failed stage can be recovered/retried on a different worker (fault-tolerant execution). When <code>false</code>, exchange data lives only on local disk.</td>
+<td><code>false</code> selects <strong>local-disk mode</strong>. <code>true</code> selects <strong>S3-primary mode</strong>, where spill and snapshot data is read and written directly to S3 (not local disk, and not a background backup).</td>
 </tr>
 <tr>
 <td><code>ontul.exchange.s3.endpoint</code></td>
 <td><em>(commented / optional)</em></td>
-<td>S3 endpoint URL for the exchange backup bucket. Set for S3-compatible stores (e.g. MinIO <code>http://localhost:9000</code>); leave unset to use the AWS default endpoint.</td>
+<td>S3 endpoint URL for the exchange bucket. Set for S3-compatible stores (e.g. MinIO <code>http://localhost:9000</code>); leave unset to use the AWS default endpoint.</td>
 </tr>
 <tr>
 <td><code>ontul.exchange.s3.region</code></td>
 <td><em>(commented / optional, default <code>us-east-1</code>)</em></td>
-<td>AWS region for the exchange backup bucket.</td>
+<td>AWS region for the exchange bucket.</td>
 </tr>
 <tr>
 <td><code>ontul.exchange.s3.bucket</code></td>
 <td><em>(commented / optional, default <code>ontul-exchange</code>)</em></td>
-<td>S3 bucket name used to store exchange backup objects.</td>
+<td>S3 bucket name used to store exchange objects.</td>
+</tr>
+<tr>
+<td><code>ontul.exchange.s3.prefix</code></td>
+<td><code>exchange/</code></td>
+<td>Key prefix under which exchange spill/snapshot objects are stored inside the bucket, so multiple clusters can share one bucket. Trailing slash optional.</td>
 </tr>
 <tr>
 <td><code>ontul.exchange.s3.path.style</code></td>
@@ -2951,7 +2964,7 @@
 <tr>
 <td><code>ontul.exchange.writer.threads</code></td>
 <td><code>2</code></td>
-<td>Number of background writer threads the exchange manager uses for spill and state-snapshot writes to disk (and S3 backup when enabled). More threads means more parallel I/O for spill-heavy or fault-tolerant workloads.</td>
+<td>Number of background writer threads the exchange manager uses for spill and state-snapshot writes in <strong>local-disk mode</strong>. More threads means more parallel disk I/O for spill-heavy or fault-tolerant workloads.</td>
 </tr>
 </tbody>
 </table>

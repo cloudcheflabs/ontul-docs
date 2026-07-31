@@ -943,6 +943,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Catalog Connectors (Query/Batch)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#elasticsearch-source-connector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elasticsearch source connector
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2257,6 +2274,18 @@
 <td>CSV, Parquet, JSON, Avro, ORC on S3</td>
 </tr>
 <tr>
+<td>Elasticsearch</td>
+<td>O</td>
+<td></td>
+<td>Query an ES/OpenSearch index as a table (scroll → Arrow); see below</td>
+</tr>
+<tr>
+<td>Lance</td>
+<td>O</td>
+<td>O</td>
+<td>Vector / multimodal columnar format</td>
+</tr>
+<tr>
 <td>TPC-H</td>
 <td>O</td>
 <td></td>
@@ -2270,6 +2299,27 @@
 </tr>
 </tbody>
 </table>
+<h4 id="elasticsearch-source-connector">Elasticsearch source connector</h4>
+<p>Register an Elasticsearch (or OpenSearch) cluster as a catalog and query its indices as tables over the normal SQL / SDK path:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;es&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elasticsearch&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">&quot;hosts&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://es-host:9200&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elastic&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">&quot;scrollSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1000&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">&quot;scrollTimeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1m&quot;</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">}</span>
+</code></pre></div>
+<p>Once registered, each index (and alias) shows up as a table — e.g. <code>SELECT * FROM es.default.my_index</code>. Behaviour:</p>
+<ul>
+<li><strong>Schema discovery.</strong> The connector reads the index mapping (<code>GET /{index}/_mapping</code>) and maps ES field types to Arrow types (<code>integer/long → Int</code>, <code>float/double → FloatingPoint</code>, <code>boolean → Bool</code>, <code>date → Timestamp</code>; <code>text</code>, <code>keyword</code>, <code>ip</code>, <code>geo_point</code>, nested/object → <code>Utf8</code>). The metadata fields <code>_id</code>, <code>_index</code>, <code>_score</code> are also exposed.</li>
+<li><strong>Predicate pushdown.</strong> Simple comparisons (<code>=</code>, <code>!=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>) on <strong>numeric and boolean</strong> fields are pushed to the ES query DSL (<code>term</code> / <code>range</code>) so ES pre-filters documents. String predicates are <strong>not</strong> pushed — the connector maps both analyzed (<code>text</code>) and exact (<code>keyword</code>) fields to <code>Utf8</code> and cannot tell them apart, so pushing them could silently drop matching rows; those predicates stay in the engine instead. Pushdown is therefore always sound.</li>
+<li><strong>Parallel reads.</strong> A scan is parallelized with the ES sliced-scroll API — one split per slice (<code>slice.id</code> / <code>slice.max</code>) — so multiple workers scroll disjoint portions of the index concurrently. A single split falls back to a plain scroll.</li>
+<li><strong>Read-only.</strong> Elasticsearch is a query source here. For writing to ES from a streaming job, use the Elasticsearch streaming <strong>sink</strong> (below).</li>
+</ul>
 <h3 id="streaming-sinks">Streaming Sinks</h3>
 <p>Used in streaming jobs. Configured via job config, not catalog registration.</p>
 <table>
@@ -2320,9 +2370,9 @@
 </table>
 <h2 id="cross-engine-federation">Cross-Engine Federation</h2>
 <p>Multiple catalogs can be joined in a single query:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">neorun</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">events</span><span class="w"> </span><span class="n">n</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_custkey</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">neorun</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">events</span><span class="w"> </span><span class="n">n</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_custkey</span>
 </code></pre></div>
 <h2 id="plugin-connectors">Plugin Connectors</h2>
 <p>External connectors can be loaded as plugins via <code>URLClassLoader</code> with full dependency isolation. Each plugin JAR is loaded in its own classloader, preventing dependency conflicts between connectors.</p>
