@@ -10,6 +10,17 @@ The Java SDK and all dependencies are included in the Ontul distribution. Add `l
 java -cp "lib/*" com.example.MyApp
 ```
 
+### Shaded bundle jar (recommended for applications)
+
+The distribution also ships a **self-contained, shaded SDK bundle** at `sdk/ontul-sdk-<version>-all.jar`. Use this when adding the SDK to your own application rather than pulling in the full `lib/*`: its heavy transitive dependencies (Jackson, AWS SDK, Parquet, Hadoop, ORC, Avro) are **relocated** under `com.cloudcheflabs.ontul.shaded.*`, so they won't clash with whatever versions your application already uses.
+
+```bash
+java -cp "sdk/ontul-sdk-1.0.0-all.jar:your-app.jar" com.example.MyApp
+```
+
+!!! note
+    Apache Arrow (and Arrow Flight's transitive gRPC/Netty) is deliberately **not** relocated in the bundle. Arrow is the on-the-wire IPC format shared with the Ontul Master, so both ends must use the canonical `org.apache.arrow.*` classes. If your application also uses Arrow directly, align its Arrow version with the SDK's rather than expecting isolation for that one library.
+
 ## OntulSession
 
 Entry point for all SDK operations.

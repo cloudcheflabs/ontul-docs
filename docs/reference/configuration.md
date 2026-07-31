@@ -184,19 +184,26 @@ Server-wide defaults for Iceberg REST catalogs. Every value is a **default**: a 
 
 ## Exchange Manager
 
-The Exchange Manager handles spill of intermediate shuffle/exchange data and execution-state checkpoints, with optional S3 backup for fault-tolerant execution.
+The Exchange Manager handles spill of intermediate shuffle/exchange data and execution-state checkpoints (streaming snapshots). It has two storage modes, selected by `ontul.exchange.s3.enabled`, and all payloads are KMS envelope-encrypted at rest in both modes.
+
+- **Local-disk mode (default).** Data is written to — and read from — a worker-local directory. This is fast, but the data is tied to that worker's disk: a stage that is retried on a **different** worker cannot see it.
+- **S3-primary mode (`ontul.exchange.s3.enabled=true`).** Data is read and written **directly to S3** (the object store is the primary exchange storage, not a background copy). Because the spill/snapshot objects live in S3, a task that is reassigned to a different worker reads the same data from S3 — this is what enables worker-independent, fault-tolerant recovery. Object keys are worker-independent (`{prefix}spill/{stageId}/…`, `{prefix}snapshot/{checkpointId}/…`), so any worker configured with the same bucket and prefix resolves them.
+
+!!! note
+    S3-primary mode is analogous to a filesystem/object-store-backed exchange manager (`exchange.base-directories=s3://…`) in engines that support fault-tolerant execution: the object store **replaces** local disk for exchange data — it is not merely a backup of it.
 
 | Property | Default | Description |
 | --- | --- | --- |
-| `ontul.exchange.base.dir` | `${ontul.base.data.dir}/exchange` | Worker-local directory for spilling intermediate shuffle/exchange data and execution-state checkpoints to disk. This is scratch/spill space (safe to be node-local); all spill data is KMS envelope-encrypted at rest. |
-| `ontul.exchange.s3.enabled` | `false` | When `true`, intermediate exchange data is also backed up to S3 so a failed stage can be recovered/retried on a different worker (fault-tolerant execution). When `false`, exchange data lives only on local disk. |
-| `ontul.exchange.s3.endpoint` | _(commented / optional)_ | S3 endpoint URL for the exchange backup bucket. Set for S3-compatible stores (e.g. MinIO `http://localhost:9000`); leave unset to use the AWS default endpoint. |
-| `ontul.exchange.s3.region` | _(commented / optional, default `us-east-1`)_ | AWS region for the exchange backup bucket. |
-| `ontul.exchange.s3.bucket` | _(commented / optional, default `ontul-exchange`)_ | S3 bucket name used to store exchange backup objects. |
+| `ontul.exchange.base.dir` | `${ontul.base.data.dir}/exchange` | Worker-local directory used in **local-disk mode** for spilling intermediate shuffle/exchange data and execution-state checkpoints. Scratch/spill space (safe to be node-local); KMS envelope-encrypted at rest. Ignored in S3-primary mode. |
+| `ontul.exchange.s3.enabled` | `false` | `false` selects **local-disk mode**. `true` selects **S3-primary mode**, where spill and snapshot data is read and written directly to S3 (not local disk, and not a background backup). |
+| `ontul.exchange.s3.endpoint` | _(commented / optional)_ | S3 endpoint URL for the exchange bucket. Set for S3-compatible stores (e.g. MinIO `http://localhost:9000`); leave unset to use the AWS default endpoint. |
+| `ontul.exchange.s3.region` | _(commented / optional, default `us-east-1`)_ | AWS region for the exchange bucket. |
+| `ontul.exchange.s3.bucket` | _(commented / optional, default `ontul-exchange`)_ | S3 bucket name used to store exchange objects. |
+| `ontul.exchange.s3.prefix` | `exchange/` | Key prefix under which exchange spill/snapshot objects are stored inside the bucket, so multiple clusters can share one bucket. Trailing slash optional. |
 | `ontul.exchange.s3.path.style` | _(commented / optional, default `true`)_ | Use path-style S3 addressing (bucket in the URL path) instead of virtual-hosted style. Required by most S3-compatible servers like MinIO. |
 | `ontul.exchange.s3.access.key` | _(commented / optional)_ | Static access key for the exchange S3 bucket. Leave empty to use the default AWS credential provider chain (env/instance profile/etc). |
 | `ontul.exchange.s3.secret.key` | _(commented / optional)_ | Static secret key paired with the access key above. |
-| `ontul.exchange.writer.threads` | `2` | Number of background writer threads the exchange manager uses for spill and state-snapshot writes to disk (and S3 backup when enabled). More threads means more parallel I/O for spill-heavy or fault-tolerant workloads. |
+| `ontul.exchange.writer.threads` | `2` | Number of background writer threads the exchange manager uses for spill and state-snapshot writes in **local-disk mode**. More threads means more parallel disk I/O for spill-heavy or fault-tolerant workloads. |
 
 ## Streaming
 
