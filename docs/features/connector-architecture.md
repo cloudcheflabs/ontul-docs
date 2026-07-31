@@ -81,7 +81,7 @@ Registered via `POST /admin/catalogs`. Used in SQL queries and batch pipelines.
 | NeorunBase | O | O | JDBC pg-wire read, REST bulk-insert write |
 | JDBC | O | O | PostgreSQL, MySQL, etc. with HikariCP pooling |
 | File | O | O | CSV, Parquet, JSON, Avro, ORC on S3 |
-| Elasticsearch | O | | Query an ES/OpenSearch index as a table (scroll → Arrow); see below |
+| Elasticsearch | O | O | Query an ES/OpenSearch index as a table and write to an index via `_bulk`; see below |
 | Lance | O | O | Vector / multimodal columnar format |
 | TPC-H | O | | Built-in benchmark data (configurable scale) |
 | TPC-DS | O | | Built-in benchmark data (configurable scale) |
@@ -109,7 +109,9 @@ Once registered, each index (and alias) shows up as a table — e.g. `SELECT * F
 - **Schema discovery.** The connector reads the index mapping (`GET /{index}/_mapping`) and maps ES field types to Arrow types (`integer/long → Int`, `float/double → FloatingPoint`, `boolean → Bool`, `date → Timestamp`; `text`, `keyword`, `ip`, `geo_point`, nested/object → `Utf8`). The metadata fields `_id`, `_index`, `_score` are also exposed.
 - **Predicate pushdown.** Simple comparisons (`=`, `!=`, `>`, `>=`, `<`, `<=`) on **numeric and boolean** fields are pushed to the ES query DSL (`term` / `range`) so ES pre-filters documents. String predicates are **not** pushed — the connector maps both analyzed (`text`) and exact (`keyword`) fields to `Utf8` and cannot tell them apart, so pushing them could silently drop matching rows; those predicates stay in the engine instead. Pushdown is therefore always sound.
 - **Parallel reads.** A scan is parallelized with the ES sliced-scroll API — one split per slice (`slice.id` / `slice.max`) — so multiple workers scroll disjoint portions of the index concurrently. A single split falls back to a plain scroll.
-- **Read-only.** Elasticsearch is a query source here. For writing to ES from a streaming job, use the Elasticsearch streaming **sink** (below).
+- **Writes (sink).** The connector also implements a sink: `INSERT INTO es.default.my_index SELECT …` (and `CREATE TABLE … AS SELECT`) writes documents via the ES `_bulk` API. Set `idField` to the column whose value becomes the document `_id`, giving upsert-by-id (replace) semantics; without it ES auto-generates ids (append). This is the batch write path — streaming jobs can instead use the Elasticsearch streaming sink. So the Elasticsearch connector is a full **source + sink**.
+
+Because the connector is registered as a catalog, the Java/Python SDK can also read and write it by the catalog name — `session.source(Source.sql("SELECT * FROM es.default.my_index"))` to load a DataFrame, and `INSERT INTO es.default.my_index SELECT …` (or a connection-id-referenced sink) to write.
 
 ### Streaming Sinks
 
