@@ -12,14 +12,14 @@ java -cp "lib/*" com.example.MyApp
 
 ### Shaded bundle jar (recommended for applications)
 
-The distribution also ships a **self-contained, shaded SDK bundle** at `sdk/ontul-sdk-<version>-all.jar`. Use this when adding the SDK to your own application rather than pulling in the full `lib/*`: its heavy transitive dependencies (Jackson, AWS SDK, Parquet, Hadoop, ORC, Avro) are **relocated** under `com.cloudcheflabs.ontul.shaded.*`, so they won't clash with whatever versions your application already uses.
+The distribution also ships a **self-contained, shaded SDK bundle** at `sdk/ontul-sdk-<version>-all.jar`. Use this when adding the SDK to your own application rather than pulling in the full `lib/*`: its heavy transitive dependencies (Jackson, AWS SDK, Parquet, Hadoop, ORC, Avro) — **and the Flight transport internals, gRPC and Netty** — are **relocated** under `com.cloudcheflabs.ontul.shaded.*`, so they won't clash with whatever versions your application already uses. Netty runs in pure-NIO mode (the JNI native transports are excluded), which is what makes relocating it safe.
 
 ```bash
 java -cp "sdk/ontul-sdk-1.0.0-all.jar:your-app.jar" com.example.MyApp
 ```
 
 !!! note
-    Apache Arrow (and Arrow Flight's transitive gRPC/Netty) is deliberately **not** relocated in the bundle. Arrow is the on-the-wire IPC format shared with the Ontul Master, so both ends must use the canonical `org.apache.arrow.*` classes. If your application also uses Arrow directly, align its Arrow version with the SDK's rather than expecting isolation for that one library.
+    Relocating gRPC/Netty is safe because the Flight wire protocol (HTTP/2 + protobuf) is package-name-independent — the shaded client still talks to a canonical-Netty Master. What is **not** relocated is Apache Arrow's `arrow-vector` / `arrow-memory`: your application handles Arrow vectors directly (e.g. `VectorSchemaRoot` from a `DataFrame`), and Arrow IPC bytes are the shared wire format, so those types must stay canonical `org.apache.arrow.*`. If your application also uses Arrow directly, align its Arrow version with the SDK's.
 
 ## OntulSession
 

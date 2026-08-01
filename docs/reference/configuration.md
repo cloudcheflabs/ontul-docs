@@ -204,6 +204,9 @@ The Exchange Manager handles spill of intermediate shuffle/exchange data and exe
 | `ontul.exchange.s3.access.key` | _(commented / optional)_ | Static access key for the exchange S3 bucket. Leave empty to use the default AWS credential provider chain (env/instance profile/etc). |
 | `ontul.exchange.s3.secret.key` | _(commented / optional)_ | Static secret key paired with the access key above. |
 | `ontul.exchange.writer.threads` | `2` | Number of background writer threads the exchange manager uses for spill and state-snapshot writes in **local-disk mode**. More threads means more parallel disk I/O for spill-heavy or fault-tolerant workloads. |
+| `ontul.exchange.s3.orphan.ttl.ms` | `86400000` | **S3-primary mode only.** On worker startup, sweep exchange objects older than this TTL (ms) — orphans left by crashed jobs whose stage cleanup never ran. `0` disables the sweep. Default 24h. |
+| `ontul.exchange.s3.multipart.threshold.bytes` | `67108864` | **S3-primary mode only.** Object size (bytes) above which uploads switch to multipart — avoids the 5 GB single-PUT limit and improves throughput for large spills. Default 64 MiB. |
+| `ontul.exchange.s3.multipart.part.size.bytes` | `16777216` | **S3-primary mode only.** Part size (bytes) for multipart uploads (S3 minimum is 5 MiB). Default 16 MiB. |
 
 ## Streaming
 
