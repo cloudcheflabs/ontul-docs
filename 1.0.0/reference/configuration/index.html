@@ -2966,6 +2966,21 @@
 <td><code>2</code></td>
 <td>Number of background writer threads the exchange manager uses for spill and state-snapshot writes in <strong>local-disk mode</strong>. More threads means more parallel disk I/O for spill-heavy or fault-tolerant workloads.</td>
 </tr>
+<tr>
+<td><code>ontul.exchange.s3.orphan.ttl.ms</code></td>
+<td><code>86400000</code></td>
+<td><strong>S3-primary mode only.</strong> On worker startup, sweep exchange objects older than this TTL (ms) — orphans left by crashed jobs whose stage cleanup never ran. <code>0</code> disables the sweep. Default 24h.</td>
+</tr>
+<tr>
+<td><code>ontul.exchange.s3.multipart.threshold.bytes</code></td>
+<td><code>67108864</code></td>
+<td><strong>S3-primary mode only.</strong> Object size (bytes) above which uploads switch to multipart — avoids the 5 GB single-PUT limit and improves throughput for large spills. Default 64 MiB.</td>
+</tr>
+<tr>
+<td><code>ontul.exchange.s3.multipart.part.size.bytes</code></td>
+<td><code>16777216</code></td>
+<td><strong>S3-primary mode only.</strong> Part size (bytes) for multipart uploads (S3 minimum is 5 MiB). Default 16 MiB.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="streaming">Streaming</h2>
