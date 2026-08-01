@@ -2422,7 +2422,7 @@
 <a id="__codelineno-2-197" name="__codelineno-2-197" href="#__codelineno-2-197"></a>if __name__ == &quot;__main__&quot;:
 <a id="__codelineno-2-198" name="__codelineno-2-198" href="#__codelineno-2-198"></a>    main()
 </code></pre></div>
-<p>You can also run queries through JDBC and Arrow Flight in java.</p>
+<p>You can also connect from standard JDBC tools. Arrow Flight SQL is Ontul's native, columnar query protocol (gRPC + Arrow), and JDBC clients reach it through the <strong>Arrow Flight SQL JDBC driver</strong> — the driver translates the JDBC API into the Flight SQL protocol under the hood (URL <code>jdbc:arrow-flight-sql://host:port</code>). The example below uses that driver from Java.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>import java.sql.*;
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>import java.util.Properties;
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>

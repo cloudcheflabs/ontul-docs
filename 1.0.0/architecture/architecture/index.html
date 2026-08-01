@@ -576,6 +576,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#capability-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability Layers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ontul-architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2163,6 +2174,25 @@
 <li><strong>Query Engine</strong>: Interactive SQL queries with federation across multiple data sources. Connect from any JDBC tool (DBeaver, DataGrip) or BI platform via Arrow Flight SQL, and query Iceberg, JDBC databases, files on S3, and more through a unified SQL interface.</li>
 </ul>
 <p>Both modes share the same distributed execution engine, the same Arrow-native operator pipeline, and the same cluster infrastructure. A single Ontul deployment replaces what traditionally requires three or more separate systems.</p>
+<p>Beyond the engine, Ontul provides a <strong>semantic layer</strong> and an <strong>ontology</strong> as first-class capabilities on the same execution path — served through the same Arrow Flight SQL and MCP interfaces. See <a href="#capability-layers">Capability Layers</a> below.</p>
+<h2 id="capability-layers">Capability Layers</h2>
+<p>Ontul is best understood as a stack. The semantic layer and ontology are <strong>not</strong> engine internals — they sit <em>above</em> the unified engine and are served through the very same interfaces (Arrow Flight SQL, MCP, BI), so no separate serving system is introduced.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Access        SQL · Arrow Flight SQL / JDBC   |   MCP (AI agents)   |   BI (Tableau, Power BI, …)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                                   ▲
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Semantic &amp; Ontology   Semantic views (metrics, dimensions, RBAC — rewritten at plan time)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                      Ontology (objects · links · actions)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                                   ▲
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>Unified Engine        Master · Worker  —  batch · stream · query  —  Arrow-native execution
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                                   ▲
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>Storage               Apache Iceberg  ·  Lance (vector/multimodal)  ·  files on S3
+</code></pre></div>
+<ul>
+<li><strong>Storage</strong> stays open (Iceberg / Lance / S3) — no proprietary format lock-in.</li>
+<li><strong>Unified Engine</strong> runs batch, streaming, and interactive SQL on one Arrow-native runtime (the rest of this page).</li>
+<li><strong>Semantic Layer &amp; Ontology</strong> add meaning on top of the engine: a semantic view is expanded into its metric/join/RBAC expression <strong>at plan time</strong> (so <code>SELECT revenue FROM sales</code> works everywhere), and the ontology exposes governed <strong>objects · links · actions</strong>. Because both ride the engine's normal query path, the same IAM, caching, and Arrow pipeline apply.</li>
+<li><strong>Access</strong> is uniform: the identical result is reachable over SQL/Flight for BI and JDBC tools, and over MCP for AI agents.</li>
+</ul>
+<p>For the details of these upper layers see the <a href="../../features/semantic-layer/">Semantic Layer</a> and <a href="../../features/ontology/">Ontology</a> feature pages. The remainder of this page describes the <strong>Unified Engine</strong> layer.</p>
 <h2 id="ontul-architecture">Ontul Architecture</h2>
 <p><img width="1200" src="../../images/architecture/ontul-architecture.png" align="center"/></p>
 <p>Ontul consists of two main deployable components: <strong>Master</strong> and <strong>Worker</strong>.</p>
