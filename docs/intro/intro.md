@@ -364,7 +364,7 @@ if __name__ == "__main__":
 ```
 
 
-You can also run queries through JDBC and Arrow Flight in java.
+You can also connect from standard JDBC tools. Arrow Flight SQL is Ontul's native, columnar query protocol (gRPC + Arrow), and JDBC clients reach it through the **Arrow Flight SQL JDBC driver** — the driver translates the JDBC API into the Flight SQL protocol under the hood (URL `jdbc:arrow-flight-sql://host:port`). The example below uses that driver from Java.
 
 ```agsl
 import java.sql.*;

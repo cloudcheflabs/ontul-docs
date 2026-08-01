@@ -7,6 +7,30 @@ Ontul is a **distributed unified data engine** that combines a processing engine
 
 Both modes share the same distributed execution engine, the same Arrow-native operator pipeline, and the same cluster infrastructure. A single Ontul deployment replaces what traditionally requires three or more separate systems.
 
+Beyond the engine, Ontul provides a **semantic layer** and an **ontology** as first-class capabilities on the same execution path — served through the same Arrow Flight SQL and MCP interfaces. See [Capability Layers](#capability-layers) below.
+
+## Capability Layers
+
+Ontul is best understood as a stack. The semantic layer and ontology are **not** engine internals — they sit *above* the unified engine and are served through the very same interfaces (Arrow Flight SQL, MCP, BI), so no separate serving system is introduced.
+
+```
+Access        SQL · Arrow Flight SQL / JDBC   |   MCP (AI agents)   |   BI (Tableau, Power BI, …)
+                                   ▲
+Semantic & Ontology   Semantic views (metrics, dimensions, RBAC — rewritten at plan time)
+                      Ontology (objects · links · actions)
+                                   ▲
+Unified Engine        Master · Worker  —  batch · stream · query  —  Arrow-native execution
+                                   ▲
+Storage               Apache Iceberg  ·  Lance (vector/multimodal)  ·  files on S3
+```
+
+- **Storage** stays open (Iceberg / Lance / S3) — no proprietary format lock-in.
+- **Unified Engine** runs batch, streaming, and interactive SQL on one Arrow-native runtime (the rest of this page).
+- **Semantic Layer & Ontology** add meaning on top of the engine: a semantic view is expanded into its metric/join/RBAC expression **at plan time** (so `SELECT revenue FROM sales` works everywhere), and the ontology exposes governed **objects · links · actions**. Because both ride the engine's normal query path, the same IAM, caching, and Arrow pipeline apply.
+- **Access** is uniform: the identical result is reachable over SQL/Flight for BI and JDBC tools, and over MCP for AI agents.
+
+For the details of these upper layers see the [Semantic Layer](../features/semantic-layer.md) and [Ontology](../features/ontology.md) feature pages. The remainder of this page describes the **Unified Engine** layer.
+
 ## Ontul Architecture
 
 <img width="1200" src="../../images/architecture/ontul-architecture.png" align="center"/>
