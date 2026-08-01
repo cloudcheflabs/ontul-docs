@@ -313,6 +313,8 @@ For transactional sinks, Ontul guarantees exactly-once delivery through barrier 
 
 If a Worker fails and restarts, it resumes from the last committed checkpoint — no duplicates, no data loss.
 
+**Automatic restart.** When a streaming task fails on a Worker, the Worker notifies the Master (a `TASK_FAILURE_NOTIFY` message); the Master's `JobManager` then auto-restarts the job — up to `ontul.streaming.max.retries` times with exponential backoff — resuming from the last completed checkpoint. In S3-primary exchange mode the checkpoint state lives in S3, so the restart can be reassigned to a **different** Worker and still recover.
+
 | Sink | Transactional | Exactly-Once |
 |------|:---:|:---:|
 | Iceberg | O | O |
