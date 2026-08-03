@@ -314,9 +314,11 @@ Allow DML everywhere, but forbid updating/deleting audit and log tables (matched
 
 ## Column- and row-level control
 
-### Column-Restricted Read
+These express Ontul's column deny, column masking, and row filtering. The Admin UI ships the allow-list and row-filter forms as one-click templates; the **Column Deny** and **Column Mask** forms below are the same policy shapes, written by hand (or edited from a template). All apply server-side inside the query plan. See [Column-Level Security](iam.md#column-level-security).
 
-Grant `Select` on a table but expose only specific columns (all others are hidden). See [Column-Level Security](iam.md#column-level-security).
+### Column-Restricted Read (allow-list)
+
+Grant `Select` on a table but expose only specific columns via `Columns` on an **Allow** — all other columns are hidden.
 
 ```json
 {
@@ -332,6 +334,70 @@ Grant `Select` on a table but expose only specific columns (all others are hidde
   ]
 }
 ```
+
+### Column Deny (hide specific columns)
+
+The inverse of the allow-list: `Columns` on a **Deny** drops just those columns from the scan output, so a `SELECT *` returns every column except the denied ones.
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "HideSsnFromAnalysts",
+      "Effect": "Deny",
+      "Action": "data:Select",
+      "Resource": "data:table:hr.core.employees",
+      "Columns": ["ssn"]
+    }
+  ]
+}
+```
+
+### Column Mask
+
+Replace a column's value with a SQL expression via `MaskedColumns` (`Effect: "Mask"`). The output column keeps its original name and type — joins, `WHERE`, and aggregations still work, just on the masked value. The expression is evaluated at the worker and may reference the original column and `${user.attr.*}` attributes.
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "MaskHrPii",
+      "Effect": "Mask",
+      "Action": "data:Select",
+      "Resource": "data:table:hr.core.employees",
+      "MaskedColumns": {
+        "ssn": "'***-**-' || substr(ssn, -4)",
+        "email": "regexp_replace(email, '(^.).*(@.*$)', '$1***$2')",
+        "salary": "0"
+      }
+    }
+  ]
+}
+```
+
+Masks can be conditional — e.g. unmask for one role and mask everyone else:
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "ConditionalUnmaskSsn",
+      "Effect": "Mask",
+      "Action": "data:Select",
+      "Resource": "data:table:hr.core.employees",
+      "MaskedColumns": {
+        "ssn": "CASE WHEN '${user.attr.role}' = 'compliance' THEN ssn ELSE '***-**-XXXX' END"
+      }
+    }
+  ]
+}
+```
+
+!!! note
+    Precedence is **Deny > Mask > Allow**. A column named in both a Deny and a Mask statement disappears entirely — the mask never fires.
 
 ### Row-Level Filter
 
