@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/installation/installation/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/iceberg/metadata-tables/">
       
       
-        <link rel="prev" href="../../architecture/architecture/">
+        <link rel="prev" href="../maintenance/">
       
       
-        <link rel="next" href="../../intro/intro/">
+        <link rel="next" href="../wap/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Download & Install - Ontul</title>
+        <title>Metadata Tables (stats) - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#installation" class="md-skip">
+        <a href="#iceberg-metadata-tables" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Download & Install
+              Metadata Tables (stats)
             
           </span>
         </div>
@@ -253,13 +253,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../installation/installation/" class="md-tabs__link">
           
   
   
@@ -295,11 +293,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../iceberg/integration/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../integration/" class="md-tabs__link">
           
   
   
@@ -543,31 +543,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -585,7 +580,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -600,37 +595,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Download & Install
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../installation/installation/" class="md-nav__link">
         
   
   
@@ -646,159 +614,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#download" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Download
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Download">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prerequisites
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick Start
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ports" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Ports
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#connect-via-jdbc" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Connect via JDBC
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multi-node-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Node Cluster
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#nginx-reverse-proxy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Nginx Reverse Proxy
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Nginx Reverse Proxy">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#jdbc-connection-via-nginx" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        JDBC Connection via Nginx
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1602,26 +1417,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -1639,7 +1459,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1657,7 +1477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../iceberg/integration/" class="md-nav__link">
+      <a href="../integration/" class="md-nav__link">
         
   
   
@@ -1685,7 +1505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../iceberg/maintenance/" class="md-nav__link">
+      <a href="../maintenance/" class="md-nav__link">
         
   
   
@@ -1710,10 +1530,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../iceberg/metadata-tables/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metadata Tables (stats)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1729,6 +1576,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#available-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available tables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapshots-write-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $snapshots — write statistics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="$snapshots — write statistics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#snapshot-trace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Snapshot trace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write-pattern-shift-average-added-file-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write-pattern shift — average added file size
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#empty-commits-and-compactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Empty commits and compactions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-small-file-diagnosis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $files — small-file diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata_files-table-recreation-uuid-generations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $metadata_files — table recreation / UUID generations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1741,7 +1702,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../iceberg/wap/" class="md-nav__link">
+      <a href="../wap/" class="md-nav__link">
         
   
   
@@ -2218,220 +2179,202 @@
 
 
 
-<h1 id="installation">Installation</h1>
-<h2 id="download">Download</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-O<span class="w"> </span>https://github.com/cloudcheflabs/ontul-pack/releases/download/ontul-archive/ontul-1.0.0.tar.gz
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>tar<span class="w"> </span>xzf<span class="w"> </span>ontul-1.0.0.tar.gz
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nb">cd</span><span class="w"> </span>ontul-1.0.0
+<h1 id="iceberg-metadata-tables">Iceberg Metadata Tables</h1>
+<p>Ontul exposes an Iceberg table's internal metadata as <strong>virtual metadata tables</strong>, queryable with plain SQL by appending a <code>$&lt;kind&gt;</code> suffix to the table name (Trino/Spark convention). Use them to inspect commit history, diagnose small-file problems, trace write patterns, and find the snapshot id to roll back to — all without leaving SQL.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$snapshots&quot;</span><span class="p">;</span>
 </code></pre></div>
-<h3 id="prerequisites">Prerequisites</h3>
-<ul>
-<li><strong>Java 17+</strong></li>
-<li><strong>ZooKeeper</strong> (embedded ZooKeeper included for standalone mode)</li>
-</ul>
-<h3 id="quick-start">Quick Start</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 1. Set master key for KMS encryption (minimum 32 characters)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ONTUL_MASTER_KEY</span><span class="o">=</span><span class="s2">&quot;your-master-key-at-least-32-chars!&quot;</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 2. Start ZooKeeper (embedded, for standalone mode)</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>bin/start-zk.sh
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># 3. Start Master</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>bin/start-master.sh
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># 4. Start Worker</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>bin/start-worker.sh
-</code></pre></div>
-<h3 id="verify">Verify</h3>
-<p>Open the Admin UI at <code>http://localhost:8080/admin/</code>.</p>
-<ol>
-<li>Login with default credentials: <code>admin</code> / <code>admin</code></li>
-<li>Change the default password on first login</li>
-<li>Register catalogs through the Admin UI (Catalogs page)</li>
-<li>Run SQL queries through the built-in SQL Runner</li>
-</ol>
-<h3 id="ports">Ports</h3>
+<p>Quote the table reference (<code>"orders$snapshots"</code>) so the <code>$</code> is taken literally.</p>
+<h2 id="available-tables">Available tables</h2>
 <table>
 <thead>
 <tr>
-<th>Service</th>
-<th>Port</th>
-<th>Description</th>
+<th>Table</th>
+<th>What it shows</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Admin UI / REST API</td>
-<td>8080</td>
-<td>Web console, REST API, query execution</td>
+<td><code>$snapshots</code></td>
+<td>One row per snapshot — commit time, operation, and write statistics (see below).</td>
 </tr>
 <tr>
-<td>Arrow Flight SQL</td>
-<td>47470</td>
-<td>JDBC connections (DBeaver, DataGrip, SDK)</td>
+<td><code>$history</code></td>
+<td>The snapshot log: <code>made_current_at</code>, <code>snapshot_id</code>, <code>parent_id</code>, <code>is_current_ancestor</code>.</td>
 </tr>
 <tr>
-<td>Master Internal RPC</td>
-<td>19999</td>
-<td>Master-to-Worker communication</td>
+<td><code>$refs</code></td>
+<td>Branches and tags — <code>name</code>, <code>type</code>, <code>snapshot_id</code>, retention settings.</td>
 </tr>
 <tr>
-<td>Worker Internal RPC</td>
-<td>19998</td>
-<td>Worker-to-Master communication</td>
+<td><code>$manifests</code></td>
+<td>Manifest files of the current snapshot with per-manifest file/row counts.</td>
 </tr>
 <tr>
-<td>Worker Flight</td>
-<td>20998</td>
-<td>Worker data exchange (internal port + 1000)</td>
+<td><code>$files</code></td>
+<td>Data files of the current snapshot — <code>file_path</code>, <code>file_format</code>, <code>record_count</code>, <code>file_size_in_bytes</code>, column stats.</td>
 </tr>
 <tr>
-<td>ZooKeeper</td>
-<td>2181</td>
-<td>Cluster coordination (embedded)</td>
+<td><code>$partitions</code></td>
+<td>Per-partition <code>record_count</code>, <code>file_count</code>, <code>total_data_file_size_in_bytes</code>.</td>
+</tr>
+<tr>
+<td><code>$metadata_files</code></td>
+<td>The <code>metadata.json</code> log with <code>table_uuid</code> — detects table <strong>recreation</strong> (Ontul-specific; see below).</td>
 </tr>
 </tbody>
 </table>
-<h3 id="connect-via-jdbc">Connect via JDBC</h3>
-<p>Use any JDBC client (DBeaver, DataGrip, or custom application):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>URL:      jdbc:arrow-flight-sql://localhost:47470
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Username: admin
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Password: (your changed password)
+<h2 id="snapshots-write-statistics"><code>$snapshots</code> — write statistics</h2>
+<p><code>$snapshots</code> carries the standard Iceberg summary fields <strong>flattened into typed columns</strong>, so stats queries need no map access or <code>CAST</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Summary key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>committed_at</code></td>
+<td>timestamp</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>snapshot_id</code>, <code>parent_id</code></td>
+<td>bigint</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>operation</code></td>
+<td>varchar</td>
+<td><code>append</code> / <code>overwrite</code> / <code>delete</code> / <code>replace</code></td>
+</tr>
+<tr>
+<td><code>manifest_list</code></td>
+<td>varchar</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>summary</code></td>
+<td>varchar (JSON)</td>
+<td>the full map, for the long tail of non-standard keys</td>
+</tr>
+<tr>
+<td><code>add_rec</code> / <code>del_rec</code></td>
+<td>bigint</td>
+<td>added / deleted-records</td>
+</tr>
+<tr>
+<td><code>add_df</code> / <code>del_df</code></td>
+<td>bigint</td>
+<td>added / deleted-data-files</td>
+</tr>
+<tr>
+<td><code>add_size</code> / <code>rm_size</code></td>
+<td>bigint</td>
+<td>added-files-size / removed-files-size</td>
+</tr>
+<tr>
+<td><code>tot_rec</code> / <code>tot_df</code> / <code>tot_size</code></td>
+<td>bigint</td>
+<td>total-records / total-data-files / total-files-size</td>
+</tr>
+<tr>
+<td><code>chg_part</code></td>
+<td>int</td>
+<td>changed-partition-count</td>
+</tr>
+</tbody>
+</table>
+<h3 id="snapshot-trace">Snapshot trace</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">committed_at</span><span class="p">,</span><span class="w"> </span><span class="k">operation</span><span class="p">,</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">       </span><span class="n">add_rec</span><span class="p">,</span><span class="w"> </span><span class="n">del_rec</span><span class="p">,</span><span class="w"> </span><span class="n">add_df</span><span class="p">,</span><span class="w"> </span><span class="n">del_df</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">       </span><span class="n">tot_rec</span><span class="p">,</span><span class="w"> </span><span class="n">tot_df</span><span class="p">,</span><span class="w"> </span><span class="n">tot_size</span><span class="p">,</span><span class="w"> </span><span class="n">chg_part</span><span class="p">,</span><span class="w"> </span><span class="n">snapshot_id</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$snapshots&quot;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">committed_at</span><span class="p">;</span>
 </code></pre></div>
-<h3 id="configuration">Configuration</h3>
-<p>The main configuration file is <code>conf/ontul.properties</code>. Key settings:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Master</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="na">ontul.master.admin.port</span><span class="o">=</span><span class="s">8080</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="na">ontul.master.flight.sql.port</span><span class="o">=</span><span class="s">47470</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="na">ontul.master.internal.port</span><span class="o">=</span><span class="s">19999</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># Worker</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="na">ontul.worker.internal.port</span><span class="o">=</span><span class="s">19998</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="na">ontul.worker.flight.port.offset</span><span class="o">=</span><span class="s">1000</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># ZooKeeper</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="na">ontul.zk.serverList</span><span class="o">=</span><span class="s">localhost:2181</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># KMS (encryption key from environment variable)</span>
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="na">ontul.kms.master.key.env</span><span class="o">=</span><span class="s">ONTUL_MASTER_KEY</span>
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="c1"># Data directory</span>
-<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="na">ontul.base.data.dir</span><span class="o">=</span><span class="s">data</span>
-<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
-<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="c1"># Exchange Manager (fault-tolerance)</span>
-<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="na">ontul.exchange.base.dir</span><span class="o">=</span><span class="s">${ontul.base.data.dir}/exchange</span>
-<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>
-<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="c1"># Streaming</span>
-<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="na">ontul.streaming.checkpoint.interval.ms</span><span class="o">=</span><span class="s">10000</span>
-<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="na">ontul.streaming.max.retries</span><span class="o">=</span><span class="s">3</span>
-<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>
-<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="c1"># Logging</span>
-<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="na">ontul.log.path</span><span class="o">=</span><span class="s">${user.dir}/logs</span>
+<h3 id="write-pattern-shift-average-added-file-size">Write-pattern shift — average added file size</h3>
+<p>Spot where writes changed shape (e.g. 100 MiB → 400 MiB files):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">committed_at</span><span class="p">,</span><span class="w"> </span><span class="k">operation</span><span class="p">,</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">       </span><span class="n">add_df</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">files</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">       </span><span class="n">add_size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">add_df</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1048576</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">avg_file_mb</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$snapshots&quot;</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">WHERE</span><span class="w"> </span><span class="k">operation</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;append&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;overwrite&#39;</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">committed_at</span><span class="p">;</span>
 </code></pre></div>
-<h3 id="multi-node-cluster">Multi-Node Cluster</h3>
-<p>For production deployments with multiple Masters and Workers:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># On each node, set the master key</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ONTUL_MASTER_KEY</span><span class="o">=</span><span class="s2">&quot;shared-master-key-across-all-nodes!&quot;</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Master 1</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>bin/start-master.sh<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span>-Dontul.zk.serverList<span class="o">=</span>zk1:2181,zk2:2181,zk3:2181<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span>-Dontul.master.host<span class="o">=</span>master-1<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>-Dontul.master.admin.port<span class="o">=</span><span class="m">8080</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span>-Dontul.master.flight.sql.port<span class="o">=</span><span class="m">47470</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># Master 2 (HA follower)</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>bin/start-master.sh<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span>-Dontul.zk.serverList<span class="o">=</span>zk1:2181,zk2:2181,zk3:2181<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">  </span>-Dontul.master.host<span class="o">=</span>master-2<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">  </span>-Dontul.master.admin.port<span class="o">=</span><span class="m">8080</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span>-Dontul.master.flight.sql.port<span class="o">=</span><span class="m">47470</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="c1"># Worker 1</span>
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>bin/start-worker.sh<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">  </span>-Dontul.zk.serverList<span class="o">=</span>zk1:2181,zk2:2181,zk3:2181<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">  </span>-Dontul.worker.internal.port<span class="o">=</span><span class="m">29999</span>
-<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
-<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="c1"># Worker 2</span>
-<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>bin/start-worker.sh<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">  </span>-Dontul.zk.serverList<span class="o">=</span>zk1:2181,zk2:2181,zk3:2181<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">  </span>-Dontul.worker.internal.port<span class="o">=</span><span class="m">29998</span>
+<h3 id="empty-commits-and-compactions">Empty commits and compactions</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">-- Empty commits (state-preserving commits)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$snapshots&quot;</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">WHERE</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">add_df</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">del_df</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1">-- Compactions: files replaced but row count unchanged</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">committed_at</span><span class="p">,</span><span class="w"> </span><span class="n">del_df</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">removed</span><span class="p">,</span><span class="w"> </span><span class="n">add_df</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">added</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$snapshots&quot;</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="k">WHERE</span><span class="w"> </span><span class="k">operation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;replace&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">add_rec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">del_rec</span><span class="p">;</span>
 </code></pre></div>
-<h3 id="nginx-reverse-proxy">Nginx Reverse Proxy</h3>
-<p>In production, place Nginx in front of the Ontul Masters to provide TLS termination, load balancing, and a single entry point for clients.</p>
-<p>Ontul exposes two protocols that require separate Nginx configurations:</p>
+<p>The raw <code>summary</code> JSON is still available for any key not flattened above:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">snapshot_id</span><span class="p">,</span><span class="w"> </span><span class="n">summary</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$snapshots&quot;</span><span class="p">;</span>
+</code></pre></div>
+<h2 id="files-small-file-diagnosis"><code>$files</code> — small-file diagnosis</h2>
+<p>Before running <code>ALTER TABLE … EXECUTE optimize</code>, size up the problem:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">small_files</span><span class="p">,</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">       </span><span class="k">sum</span><span class="p">(</span><span class="n">file_size_in_bytes</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1048576</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">mb</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$files&quot;</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">file_size_in_bytes</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">64</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">;</span>
+</code></pre></div>
+<h2 id="metadata_files-table-recreation-uuid-generations"><code>$metadata_files</code> — table recreation / UUID generations</h2>
+<p>Iceberg's <code>table_uuid</code> changes when a table is <strong>dropped and recreated at the same path</strong> — the storage location is reused but it is a different logical table. No engine's <code>$snapshots</code> shows this, because <code>$snapshots</code> only reflects the <em>current</em> table. <code>$metadata_files</code> exposes the <code>metadata.json</code> log with each file's <code>table_uuid</code>, so a change in <code>table_uuid</code> marks a new <strong>generation</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>metadata_file</code></td>
+<td>varchar</td>
+<td>Path of the <code>metadata.json</code>.</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>timestamp</td>
+<td>When that metadata file was written.</td>
+</tr>
+<tr>
+<td><code>table_uuid</code></td>
+<td>varchar</td>
+<td>The table uuid recorded in that file (best-effort read; null if the file was expired/removed).</td>
+</tr>
+<tr>
+<td><code>is_latest</code></td>
+<td>boolean</td>
+<td>Whether this is the current metadata file.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1">-- Number each generation in time order: a new number appears whenever a new</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1">-- table_uuid is first seen (i.e. the table was recreated at the same path).</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">metadata_file</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="n">table_uuid</span><span class="p">,</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">       </span><span class="n">DENSE_RANK</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">first_seen</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">generation</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="n">metadata_file</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="n">table_uuid</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">         </span><span class="k">MIN</span><span class="p">(</span><span class="n">created_at</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">table_uuid</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">first_seen</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$metadata_files&quot;</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="p">)</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_at</span><span class="p">;</span>
+</code></pre></div>
+<p>A single <code>generation</code> value across all rows means the table was never recreated; two or more values mark recreation boundaries (the article's <code>g1</code> / <code>g2</code>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>table_uuid</code> is read from each historical <code>metadata.json</code> on demand; files removed by <code>expire_snapshots</code> / <code>remove_orphan_files</code> return <code>null</code>. <code>is_latest = true</code> marks the one current metadata file.</p>
+</div>
+<h2 id="related">Related</h2>
 <ul>
-<li><strong>Admin UI + REST API</strong> (HTTP/1.1) — Web console, catalog management, job submission</li>
-<li><strong>Arrow Flight SQL</strong> (gRPC over HTTP/2) — JDBC connections from DBeaver, DataGrip, SDK applications</li>
-</ul>
-<p>Nginx distributes requests across multiple Masters for high availability. A control-plane write that lands on a follower is forwarded to the leader internally, so nginx itself stays leader-unaware. The one requirement is that the <strong>Flight SQL upstream must be sticky</strong> — a single Flight query is two RPCs (<code>GetFlightInfo</code> → <code>DoGet</code>) whose result handle lives in the planning Master's local cache, so a plain round-robin would send the second RPC to a Master that never minted the handle. See <strong><a href="../../features/high-availability/#load-balancing-nginx">High Availability → Load balancing</a></strong> for the full rationale, health-check tuning, and the keepalived/VIP note.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># ── Upstream: multiple Masters for HA ──</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># Consistent hashing pins each client to one Master (required for Flight SQL, and</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># keeps multi-step admin flows sticky). OSS nginx does passive health checks only —</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># tune max_fails / fail_timeout so a dead Master is evicted quickly.</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">upstream</span><span class="w"> </span><span class="no">on</span><span class="s">tul_admin</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-1</span><span class="p">:</span><span class="mi">8080</span><span class="w"> </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-2</span><span class="p">:</span><span class="mi">8080</span><span class="w"> </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">}</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="k">upstream</span><span class="w"> </span><span class="no">on</span><span class="s">tul_flight_sql</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span><span class="w">   </span><span class="c1"># REQUIRED — the Flight ticket handle is Master-local</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-1</span><span class="p">:</span><span class="mi">47470</span><span class="w"> </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-2</span><span class="p">:</span><span class="mi">47470</span><span class="w"> </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span>
-<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="p">}</span>
-<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>
-<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="c1"># ── Admin UI + REST API (HTTP/1.1) ──</span>
-<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="k">server</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">443</span><span class="w"> </span><span class="s">ssl</span><span class="p">;</span>
-<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="w">    </span><span class="kn">server_name</span><span class="w"> </span><span class="no">on</span><span class="s">tul.example.com</span><span class="p">;</span>
-<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>
-<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">    </span><span class="kn">ssl_certificate</span><span class="w">     </span><span class="s">/etc/nginx/ssl/ontul.crt</span><span class="p">;</span>
-<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="w">    </span><span class="kn">ssl_certificate_key</span><span class="w"> </span><span class="s">/etc/nginx/ssl/ontul.key</span><span class="p">;</span>
-<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>
-<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="w">    </span><span class="c1"># No body size limit (large INSERT, bulk-insert, file uploads)</span>
-<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a><span class="w">    </span><span class="kn">client_max_body_size</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>
-<a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a><span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="s">/</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a><span class="w">        </span><span class="kn">proxy_pass</span><span class="w"> </span><span class="s">http://ontul_admin</span><span class="p">;</span>
-<a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a><span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Host</span><span class="w"> </span><span class="nv">$host</span><span class="p">;</span>
-<a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a><span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Real-IP</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="p">;</span>
-<a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a><span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-For</span><span class="w"> </span><span class="nv">$proxy_add_x_forwarded_for</span><span class="p">;</span>
-<a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a><span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-Proto</span><span class="w"> </span><span class="nv">$scheme</span><span class="p">;</span>
-<a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-5-37" name="__codelineno-5-37" href="#__codelineno-5-37"></a><span class="p">}</span>
-<a id="__codelineno-5-38" name="__codelineno-5-38" href="#__codelineno-5-38"></a>
-<a id="__codelineno-5-39" name="__codelineno-5-39" href="#__codelineno-5-39"></a><span class="c1"># ── Arrow Flight SQL (gRPC over HTTP/2) ──</span>
-<a id="__codelineno-5-40" name="__codelineno-5-40" href="#__codelineno-5-40"></a><span class="k">server</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-5-41" name="__codelineno-5-41" href="#__codelineno-5-41"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">443</span><span class="w"> </span><span class="s">ssl</span><span class="w"> </span><span class="s">http2</span><span class="p">;</span>
-<a id="__codelineno-5-42" name="__codelineno-5-42" href="#__codelineno-5-42"></a><span class="w">    </span><span class="kn">server_name</span><span class="w"> </span><span class="s">flight.ontul.example.com</span><span class="p">;</span>
-<a id="__codelineno-5-43" name="__codelineno-5-43" href="#__codelineno-5-43"></a>
-<a id="__codelineno-5-44" name="__codelineno-5-44" href="#__codelineno-5-44"></a><span class="w">    </span><span class="kn">ssl_certificate</span><span class="w">     </span><span class="s">/etc/nginx/ssl/ontul.crt</span><span class="p">;</span>
-<a id="__codelineno-5-45" name="__codelineno-5-45" href="#__codelineno-5-45"></a><span class="w">    </span><span class="kn">ssl_certificate_key</span><span class="w"> </span><span class="s">/etc/nginx/ssl/ontul.key</span><span class="p">;</span>
-<a id="__codelineno-5-46" name="__codelineno-5-46" href="#__codelineno-5-46"></a>
-<a id="__codelineno-5-47" name="__codelineno-5-47" href="#__codelineno-5-47"></a><span class="w">    </span><span class="c1"># No body size limit (large query results, streaming data)</span>
-<a id="__codelineno-5-48" name="__codelineno-5-48" href="#__codelineno-5-48"></a><span class="w">    </span><span class="kn">client_max_body_size</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<a id="__codelineno-5-49" name="__codelineno-5-49" href="#__codelineno-5-49"></a>
-<a id="__codelineno-5-50" name="__codelineno-5-50" href="#__codelineno-5-50"></a><span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="s">/</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-5-51" name="__codelineno-5-51" href="#__codelineno-5-51"></a><span class="w">        </span><span class="kn">grpc_pass</span><span class="w"> </span><span class="s">grpc://ontul_flight_sql</span><span class="p">;</span>
-<a id="__codelineno-5-52" name="__codelineno-5-52" href="#__codelineno-5-52"></a><span class="w">        </span><span class="kn">grpc_set_header</span><span class="w"> </span><span class="s">Host</span><span class="w"> </span><span class="nv">$host</span><span class="p">;</span>
-<a id="__codelineno-5-53" name="__codelineno-5-53" href="#__codelineno-5-53"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-5-54" name="__codelineno-5-54" href="#__codelineno-5-54"></a><span class="p">}</span>
-</code></pre></div>
-<h4 id="jdbc-connection-via-nginx">JDBC Connection via Nginx</h4>
-<p>When connecting through Nginx with TLS, set <code>useEncryption=true</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>URL:      jdbc:arrow-flight-sql://flight.ontul.example.com:443
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>Username: admin
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>Password: (your password)
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>Properties: useEncryption=true
-</code></pre></div>
-<h3 id="next-steps">Next Steps</h3>
-<ul>
-<li><a href="../../intro/intro/">Getting Started</a> — Run your first query and example</li>
-<li><a href="../../features/admin-ui/">Admin UI</a> — Explore the web console</li>
-<li><a href="../../reference/sdk-java/">Ontul SDK</a> — Java and Python SDK guide</li>
+<li><a href="../maintenance/">Table Maintenance</a> — <code>optimize</code>, <code>expire_snapshots</code>, <code>rewrite_manifests</code>, <code>remove_orphan_files</code>, <code>rollback_*</code>. Use <code>$snapshots</code> / <code>$files</code> to decide when to run them, and <code>$history</code> / <code>$refs</code> to find the snapshot id for a rollback.</li>
+<li><a href="../wap/">Write-Audit-Publish</a>.</li>
 </ul>
 
 

@@ -14,7 +14,7 @@
         <link rel="prev" href="../integration/">
       
       
-        <link rel="next" href="../wap/">
+        <link rel="next" href="../metadata-tables/">
       
       
         
@@ -1189,6 +1189,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/iam-policy-templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM Policy Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/admin-password-recovery/" class="md-nav__link">
         
   
@@ -1662,6 +1690,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metadata-tables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metadata Tables (stats)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2437,8 +2493,9 @@ as the listing root — point catalogs at a dedicated prefix per table so the li
 <h3 id="rollback_to_timestamp-rollback_to_snapshot-revert-the-table"><code>rollback_to_timestamp</code> / <code>rollback_to_snapshot</code> — revert the table</h3>
 <p>Resets the table's current snapshot to an earlier version — to recover from a bad write, or to
 publish/inspect a known-good state. <code>rollback_to_timestamp</code> selects the snapshot that was current at
-the given instant; <code>rollback_to_snapshot</code> targets an explicit snapshot id (find ids in time-travel
-history).</p>
+the given instant; <code>rollback_to_snapshot</code> targets an explicit snapshot id. Find the snapshot id to
+roll back to by querying the <a href="../metadata-tables/"><code>$snapshots</code> / <code>$history</code> metadata tables</a> —
+e.g. <code>SELECT committed_at, snapshot_id, operation, add_rec FROM ice.sales."orders$snapshots" ORDER BY committed_at</code>.</p>
 <table>
 <thead>
 <tr>
