@@ -56,6 +56,7 @@ nav:
       - "Remote Mode": features/remote-mode.md
       - "User-Defined Functions": features/udf.md
       - "IAM": features/iam.md
+      - "IAM Policy Templates": features/iam-policy-templates.md
       - "Admin Password Recovery": features/admin-password-recovery.md
       - "Data Lineage": features/data-lineage.md
       - "Encryption & KMS": features/encryption.md
@@ -66,6 +67,7 @@ nav:
   - "Iceberg Integration":
       - "Overview": iceberg/integration.md
       - "Table Maintenance": iceberg/maintenance.md
+      - "Metadata Tables (stats)": iceberg/metadata-tables.md
       - "Write-Audit-Publish (WAP)": iceberg/wap.md
   - "Reference":
       - "Java SDK": reference/sdk-java.md

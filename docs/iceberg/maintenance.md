@@ -218,8 +218,9 @@ REMOVE ORPHAN FILES ice.sales.orders;
 
 Resets the table's current snapshot to an earlier version — to recover from a bad write, or to
 publish/inspect a known-good state. `rollback_to_timestamp` selects the snapshot that was current at
-the given instant; `rollback_to_snapshot` targets an explicit snapshot id (find ids in time-travel
-history).
+the given instant; `rollback_to_snapshot` targets an explicit snapshot id. Find the snapshot id to
+roll back to by querying the [`$snapshots` / `$history` metadata tables](metadata-tables.md) —
+e.g. `SELECT committed_at, snapshot_id, operation, add_rec FROM ice.sales."orders$snapshots" ORDER BY committed_at`.
 
 | Procedure | Parameter | Type | Description |
 |---|---|---|---|
