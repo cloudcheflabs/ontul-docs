@@ -1273,6 +1273,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/audit-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit Log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/encryption/" class="md-nav__link">
         
   
@@ -2888,10 +2916,76 @@
 <tr>
 <td><code>ontul.audit.log.retention.days</code></td>
 <td><code>90</code></td>
-<td>Retention (days) for IAM/security audit log entries (authentication, key and password changes, etc.). Older entries are pruned.</td>
+<td>Retention (days) for the query/access audit log and IAM/security entries — the absolute local cap; records older than this are pruned from the local store whether or not tiering is on. Editable at runtime from the Admin UI.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.read.enabled</code></td>
+<td><code>true</code></td>
+<td>Whether <code>SELECT</code>/read queries are audited (who ran which query). Volume is bounded by the sample rate.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.read.sample.rate</code></td>
+<td><code>1.0</code></td>
+<td>Fraction (0.0–1.0) of read queries recorded when read auditing is on.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.mode</code></td>
+<td><code>none</code></td>
+<td>Audit tiering target: <code>none</code> (local only), <code>iceberg</code> (recommended), or <code>parquet</code> (fallback). Older records are offloaded to durable, queryable S3.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.iceberg.table</code></td>
+<td><code>ice.ops.audit_events</code></td>
+<td>Target Iceberg table (<code>catalog.schema.table</code>) for <code>tier.mode=iceberg</code>. Written as a format-v2 table partitioned by <code>day(event_time)</code> via Ontul's in-process Iceberg writer.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.parquet.path</code></td>
+<td><em>(empty)</em></td>
+<td>Target <code>s3://</code> prefix for the <code>tier.mode=parquet</code> fallback.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.connectionId</code></td>
+<td><em>(empty)</em></td>
+<td>S3 connection id (from the Connection registry) used by tiering.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.retain.local.days</code></td>
+<td><code>7</code></td>
+<td>Days a tiered record is also kept locally as a hot copy (durable history lives in S3). Only records already tiered <em>and</em> older than this are pruned.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.interval.ms</code></td>
+<td><code>300000</code></td>
+<td>How often the tiering sweep runs (ms).</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.batch.size</code></td>
+<td><code>5000</code></td>
+<td>Max records tiered per sweep.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.maintenance.enabled</code></td>
+<td><code>true</code></td>
+<td>When tiering→iceberg, auto-register the audit table for periodic Iceberg Table Maintenance (compaction + expire-snapshots + orphan cleanup).</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.maintenance.cron</code></td>
+<td><code>0 * * * *</code></td>
+<td>5-field UNIX cron for the audit table's maintenance (default hourly).</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.maintenance.snapshot.retain.last</code></td>
+<td><code>24</code></td>
+<td><code>expire_snapshots</code> retain-last for the audit table — always keep at least this many recent commits.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.maintenance.remove.orphan.files</code></td>
+<td><code>true</code></td>
+<td>Run <code>remove_orphan_files</code> on the audit table (reclaims files left by compaction/expiry).</td>
 </tr>
 </tbody>
 </table>
+<p>See <a href="../../features/audit-log/">Audit Log</a> for the full feature description.</p>
 <h2 id="job">Job</h2>
 <table>
 <thead>

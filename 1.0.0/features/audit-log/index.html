@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/federation/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/audit-log/">
       
       
-        <link rel="prev" href="../jdbc-drivers/">
+        <link rel="prev" href="../data-lineage/">
       
       
-        <link rel="next" href="../iceberg-integration/">
+        <link rel="next" href="../encryption/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Federation Queries - Ontul</title>
+        <title>Audit Log - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#federation-queries" class="md-skip">
+        <a href="#audit-log" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Federation Queries
+              Audit Log
             
           </span>
         </div>
@@ -883,37 +883,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Queries
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../federation/" class="md-nav__link">
         
   
   
@@ -929,81 +902,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#multi-catalog-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Catalog Architecture
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cross-source-joins" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cross-Source Joins
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#supported-catalog-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Supported Catalog Types
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dynamic-registration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dynamic Registration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#schema-introspection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Schema Introspection
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1377,10 +1275,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../audit-log/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit Log
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1396,6 +1321,170 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-recorded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Is Recorded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-capture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Capture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Automatic Capture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#read-auditing-and-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read Auditing and Sampling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-engine-ingestion-rest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External-Engine Ingestion (REST)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#access-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access Model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storage-and-failover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage and Failover
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#s3-tiering-iceberg-parquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3 Tiering (Iceberg / Parquet)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S3 Tiering (Iceberg / Parquet)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automatic-table-maintenance-itm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Table Maintenance (ITM)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-and-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search and Filters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admin-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admin UI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2168,55 +2257,240 @@
 
 
 
-<h1 id="federation-queries">Federation Queries</h1>
-<p>Ontul supports federated queries across multiple data sources through its multi-catalog architecture powered by Apache Calcite.</p>
-<h2 id="multi-catalog-architecture">Multi-Catalog Architecture</h2>
-<p>Ontul uses a 3-level schema hierarchy for table resolution:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>catalog.schema.table
-</code></pre></div>
-<p>Each catalog represents a separate data source. Multiple catalogs can be registered simultaneously, and a single SQL query can reference tables from different catalogs.</p>
-<h2 id="cross-source-joins">Cross-Source Joins</h2>
-<p>Join data across different data sources in a single query:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">jdbc_catalog</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">customers</span><span class="w"> </span><span class="k">c</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">INNER</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="n">o</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">customer_id</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;completed&#39;</span><span class="p">;</span>
-</code></pre></div>
-<p>In this example, <code>customers</code> comes from a JDBC database and <code>orders</code> comes from an Iceberg table — Ontul handles the distributed execution transparently.</p>
-<h2 id="supported-catalog-types">Supported Catalog Types</h2>
+<h1 id="audit-log">Audit Log</h1>
+<p>Ontul keeps a <strong>replicated audit log</strong> of query and access activity that answers, for every recorded operation: <strong>who</strong> (user), <strong>which engine</strong> (source), <strong>which tables</strong>, <strong>what query</strong>, and the operation <strong>details</strong>. Audit records are collected independently of the query hot-path, survive leader failover, and can optionally be tiered to durable, queryable S3 storage.</p>
+<p>The audit log is the access/activity half of Ontul governance; its table list on each record is the same edge captured by <a href="../data-lineage/">Data Lineage</a>, so the two views line up — lineage answers <em>"what was this table built from"</em>, audit answers <em>"who and which engine touched it, with what query"</em>.</p>
+<h2 id="what-is-recorded">What Is Recorded</h2>
+<p>Each audit event carries:</p>
 <table>
 <thead>
 <tr>
-<th>Catalog Type</th>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>userId</code></td>
+<td>The principal who ran the operation</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>Originating engine — <code>ontul</code> today; <code>trino</code> / <code>spark</code> / <code>flink</code> when pushed by external authz plugins</td>
+</tr>
+<tr>
+<td><code>action</code></td>
+<td>Operation kind, e.g. <code>data:Select</code>, <code>data:Insert</code>, DDL, IAM change</td>
+</tr>
+<tr>
+<td><code>resource</code></td>
+<td>Primary resource acted on (table / object)</td>
+</tr>
+<tr>
+<td><code>tables</code></td>
+<td>All tables the operation read and/or wrote (the lineage edge)</td>
+</tr>
+<tr>
+<td><code>query</code></td>
+<td>The SQL text of the operation, when applicable</td>
+</tr>
+<tr>
+<td><code>details</code></td>
+<td>Free-form context</td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td>Event time (epoch millis)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="automatic-capture">Automatic Capture</h2>
+<p>Ontul records audit events for the statements it executes, with <strong>no configuration</strong>:</p>
+<ul>
+<li><strong>Writes and DDL are always audited</strong> — <code>INSERT</code>, <code>CREATE</code>, <code>MERGE</code>, IAM changes, etc.</li>
+<li><strong>Reads (SELECT) are audited by sampling</strong> — see below. The engine is recorded as <code>ontul</code>, and touched tables are extracted from the statement.</li>
+</ul>
+<p>Capture is best-effort and never blocks or fails a query.</p>
+<h3 id="read-auditing-and-sampling">Read Auditing and Sampling</h3>
+<p>Knowing <em>who ran which query</em> requires auditing reads, but read traffic is high-volume and would grow the store quickly. Two knobs bound this:</p>
+<ul>
+<li><code>ontul.audit.read.enabled</code> (default <code>true</code>) — record <code>SELECT</code>s at all.</li>
+<li><code>ontul.audit.read.sample.rate</code> (default <code>1.0</code>) — fraction of reads recorded (e.g. <code>0.1</code> = 10%).</li>
+</ul>
+<p>Both are changeable at runtime from the Admin UI.</p>
+<h3 id="retention">Retention</h3>
+<ul>
+<li><code>ontul.audit.log.retention.days</code> (default <code>90</code>) — the <strong>absolute local cap</strong>: records older than this are pruned from the local store whether or not tiering is on. This is the primary knob to bound a read-heavy audit store — lower it (e.g. to <code>1</code>) when local growth matters. It is editable at runtime from the Admin UI.</li>
+</ul>
+<h2 id="external-engine-ingestion-rest">External-Engine Ingestion (REST)</h2>
+<p>External engines push audit events into the same Ontul store over a REST endpoint. Trino, Spark, and Flink authorization plugins (as deployed by <a href="https://www.cloudchef-labs.com">Chango</a>) already enforce Ontul IAM; the same plugins report the queries they authorized here, so audit from every engine is collected centrally.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>POST /admin/v1/api/audit
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Authorization: Bearer &lt;token&gt;
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Content-Type: application/json
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>[
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  {
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    &quot;source&quot;:  &quot;trino&quot;,
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    &quot;userId&quot;:  &quot;alice&quot;,
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    &quot;action&quot;:  &quot;data:Select&quot;,
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    &quot;resource&quot;:&quot;hive.sales.orders&quot;,
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    &quot;query&quot;:   &quot;SELECT id,total FROM hive.sales.orders WHERE region=&#39;EU&#39;&quot;,
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    &quot;tables&quot;:  [&quot;hive.sales.orders&quot;],
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    &quot;details&quot;: &quot;trino authz plugin&quot;
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>  }
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>]
+</code></pre></div>
+<p>The body may be a single event or an array. Ingested events are indistinguishable from native ones in search, filters, and the Admin UI, other than their <code>source</code>.</p>
+<h2 id="access-model">Access Model</h2>
+<p>The audit log deliberately splits its read and write paths:</p>
+<ul>
+<li><strong>Writes bypass IAM.</strong> The internal component is the sole writer; no IAM principal has write access, so audit records cannot be forged or suppressed through the normal authorization surface.</li>
+<li><strong>Reads enforce IAM.</strong> Audit contains sensitive query text and column names, so listing/searching the log is an authorized admin action.</li>
+</ul>
+<p>All audit and lineage writes are forwarded to the <strong>leader</strong> and replicated to standby masters (below).</p>
+<h2 id="storage-and-failover">Storage and Failover</h2>
+<p>Audit records live in the <strong>replicated metadata store</strong> (the same mechanism as catalogs, IAM, and lineage): the leader owns the store and broadcasts to standbys, so the audit log <strong>survives restarts and leader failover</strong> — a newly elected leader serves the same history.</p>
+<p>Local collection is independent of any tiering/emit path: if S3 tiering is enabled but temporarily failing, records keep accumulating locally and are tiered later (see below) rather than being lost.</p>
+<h2 id="s3-tiering-iceberg-parquet">S3 Tiering (Iceberg / Parquet)</h2>
+<p>By default audit stays local only. When you need durable, long-term, queryable history, enable tiering from the Admin UI (or <code>ontul.audit.tier.*</code>). An asynchronous, best-effort sweep offloads older records to S3:</p>
+<ul>
+<li><strong><code>iceberg</code> (recommended).</strong> Records are bulk-written to an Iceberg <strong>v2</strong> table (default <code>ice.ops.audit_events</code>) partitioned by <code>day(event_time)</code>, using Ontul's own in-process Iceberg writer (the <code>IcebergConnectorSink</code> handler) — not the SQL engine and not the raw Iceberg Java API — which avoids any circular dependency on the query path or IAM.</li>
+<li><strong><code>parquet</code> (fallback).</strong> Records are written as day-partitioned Parquet under an <code>s3://</code> prefix when no Iceberg catalog is available.</li>
+</ul>
+<p>A <strong>watermark</strong> marks the resume point; the sweep advances it after each successful commit and retries with exponential backoff on failure. <code>ontul.audit.tier.retain.local.days</code> (default <code>7</code>) controls how long tiered records are also kept locally as a hot copy — durable history lives in S3, recent data stays local for fast queries. (Only records already tiered <em>and</em> older than this window are pruned, so no un-tiered record is ever dropped.)</p>
+<p>Once tiered to Iceberg, the audit table is queryable like any other Ontul table:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">source</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">ops</span><span class="p">.</span><span class="n">audit_events</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">source</span><span class="p">;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">ops</span><span class="p">.</span><span class="ss">&quot;audit_events$snapshots&quot;</span><span class="p">;</span><span class="w">   </span><span class="c1">-- commit history</span>
+</code></pre></div>
+<h3 id="automatic-table-maintenance-itm">Automatic Table Maintenance (ITM)</h3>
+<p>The audit table receives one commit per tiering sweep, so it accrues many small data files and snapshots. When tiering to Iceberg is enabled, Ontul <strong>auto-registers the audit table for periodic <a href="../../iceberg/maintenance/">Iceberg Table Maintenance</a></strong> — by default an <strong>hourly</strong> job that runs compaction, snapshot expiry (retaining the last 24 commits), and orphan-file cleanup. The registration is refreshed on every settings save (so renaming the target table re-registers the new name) and the entry is visible and editable on the Admin UI <strong>Maintenance</strong> page. See <code>ontul.audit.tier.maintenance.*</code> in the configuration table.</p>
+<h2 id="search-and-filters">Search and Filters</h2>
+<p>The audit log supports rich search over the collected events:</p>
+<table>
+<thead>
+<tr>
+<th>Filter</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>user</code></td>
+<td>Exact user id</td>
+</tr>
+<tr>
+<td><code>engine</code></td>
+<td>Exact engine (<code>ontul</code> / <code>trino</code> / <code>spark</code> / <code>flink</code>)</td>
+</tr>
+<tr>
+<td><code>table</code></td>
+<td>Substring match against any touched table</td>
+</tr>
+<tr>
+<td><code>action</code></td>
+<td><code>read</code> (SELECT) / <code>write</code> (everything else) / <code>all</code></td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>Free-text over query, details, resource, user, and tables</td>
+</tr>
+<tr>
+<td><code>from</code> / <code>to</code></td>
+<td>Time range (epoch millis)</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>GET /admin/audit?engine=trino&amp;action=read&amp;q=orders&amp;limit=200
+</code></pre></div>
+<h2 id="admin-ui">Admin UI</h2>
+<p>The <strong>Audit</strong> section has two pages:</p>
+<ul>
+<li><strong>Overview &amp; Graph</strong> — summary counters (events, users, engines, tables, reads, writes), the storage &amp; retention settings (retention days, read enable + sample rate, tiering mode with Iceberg/Parquet targets, retain-local days), and an interactive <strong>relationship graph</strong> of <code>user → engine → table</code>. Clicking a user, engine, or table node <strong>drills down</strong> to that entity's related read/write audit logs — with expandable query text and details — right below the graph. Engine badges are color-coded (ontul / trino / spark / flink).</li>
+<li><strong>Search</strong> — a dedicated page with a free-text search bar plus user / engine / table / type (read·write) / time-range filters over the full log.</li>
+</ul>
+<h2 id="configuration">Configuration</h2>
+<p>All keys are settable in <code>ontul.properties</code>; the runtime-adjustable ones are also editable from the Admin UI.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Iceberg</td>
-<td>REST catalog (e.g., Polaris, Nessie) for Iceberg tables</td>
+<td><code>ontul.audit.log.retention.days</code></td>
+<td><code>90</code></td>
+<td>Absolute local retention cap (days)</td>
 </tr>
 <tr>
-<td>JDBC</td>
-<td>Any relational database accessible via JDBC</td>
+<td><code>ontul.audit.read.enabled</code></td>
+<td><code>true</code></td>
+<td>Audit SELECT/read queries</td>
 </tr>
 <tr>
-<td>TPC-H / TPC-DS</td>
-<td>Built-in benchmark data</td>
+<td><code>ontul.audit.read.sample.rate</code></td>
+<td><code>1.0</code></td>
+<td>Fraction of reads recorded (0.0–1.0)</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.mode</code></td>
+<td><code>none</code></td>
+<td><code>none</code> / <code>iceberg</code> / <code>parquet</code></td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.iceberg.table</code></td>
+<td><code>ice.ops.audit_events</code></td>
+<td>Target table (catalog.schema.table) for <code>iceberg</code></td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.parquet.path</code></td>
+<td>—</td>
+<td>Target <code>s3://</code> prefix for <code>parquet</code></td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.connectionId</code></td>
+<td>—</td>
+<td>S3 connection id for tiering</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.retain.local.days</code></td>
+<td><code>7</code></td>
+<td>Local hot-copy window after tiering (days)</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.interval.ms</code></td>
+<td><code>300000</code></td>
+<td>Tiering sweep interval</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.batch.size</code></td>
+<td><code>5000</code></td>
+<td>Max records tiered per sweep</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.maintenance.enabled</code></td>
+<td><code>true</code></td>
+<td>Auto-register the audit table for ITM when tiering→iceberg</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.maintenance.cron</code></td>
+<td><code>0 * * * *</code></td>
+<td>Cron for the audit table's maintenance (hourly)</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.maintenance.snapshot.retain.last</code></td>
+<td><code>24</code></td>
+<td>Snapshots always retained by expiry</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.maintenance.remove.orphan.files</code></td>
+<td><code>true</code></td>
+<td>Run orphan-file cleanup on the audit table</td>
 </tr>
 </tbody>
 </table>
-<h2 id="dynamic-registration">Dynamic Registration</h2>
-<p>Catalogs are registered at runtime through the Admin API or Admin UI. No cluster restart is required. Once registered, all tables within the catalog are immediately discoverable and queryable.</p>
-<h2 id="schema-introspection">Schema Introspection</h2>
-<p>Standard metadata commands work across all catalog types:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">CATALOGS</span><span class="p">;</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">SCHEMAS</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">my_catalog</span><span class="p">;</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">TABLES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">my_catalog</span><span class="p">.</span><span class="n">my_schema</span><span class="p">;</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">DESCRIBE</span><span class="w"> </span><span class="n">my_catalog</span><span class="p">.</span><span class="n">my_schema</span><span class="p">.</span><span class="n">my_table</span><span class="p">;</span>
-</code></pre></div>
-<p>Ontul also provides <code>information_schema</code> virtual tables (<code>tables</code>, <code>columns</code>, <code>schemata</code>) for programmatic introspection.</p>
 
 
 
