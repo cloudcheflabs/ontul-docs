@@ -63,6 +63,24 @@ Read-only lineage endpoints (any authenticated user):
 | `GET /admin/lineage/impact?table=<table>` | Transitive downstream tables |
 | `GET /admin/lineage/pii-flow?table=<table>&column=<col>` | Downstream flow of a column |
 
+## External-Engine Lineage Ingestion
+
+Ontul is not only the source of lineage — it is also a **collection point** for other engines. Trino, Spark, and Flink authorization plugins (as deployed by [Chango](https://www.cloudchef-labs.com)) already route their access-control decisions through Ontul IAM; the same plugins push the **lineage edges** they observe into Ontul over a REST endpoint, so lineage from every engine lands in one replicated store.
+
+```
+POST /admin/v1/api/lineage
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "target":    "lake.curated.orders_daily",
+  "sources":   ["hive.sales.orders", "hive.sales.customers"],
+  "operation": "INSERT"
+}
+```
+
+The ingested edge is stored and queried exactly like a natively-captured one — it appears in `SHOW LINEAGE`, the graph/impact/PII-flow endpoints, and the Admin UI graph, regardless of which engine produced it. This is the lineage half of Ontul's cross-engine [Audit Log](audit-log.md); the audit half records **who / which engine / which query** for the same operation.
+
 ## Admin UI
 
 The **Data Lineage** page renders an interactive graph (sources on the left, derived tables on the right). Enter a table, choose direction and depth, and trace its lineage. Click any node to open a side panel showing its column-level lineage — with the `derived` flag — and its downstream impact.

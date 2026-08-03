@@ -160,7 +160,22 @@ Server-wide defaults for Iceberg REST catalogs. Every value is a **default**: a 
 
 | Property | Default | Description |
 | --- | --- | --- |
-| `ontul.audit.log.retention.days` | `90` | Retention (days) for IAM/security audit log entries (authentication, key and password changes, etc.). Older entries are pruned. |
+| `ontul.audit.log.retention.days` | `90` | Retention (days) for the query/access audit log and IAM/security entries — the absolute local cap; records older than this are pruned from the local store whether or not tiering is on. Editable at runtime from the Admin UI. |
+| `ontul.audit.read.enabled` | `true` | Whether `SELECT`/read queries are audited (who ran which query). Volume is bounded by the sample rate. |
+| `ontul.audit.read.sample.rate` | `1.0` | Fraction (0.0–1.0) of read queries recorded when read auditing is on. |
+| `ontul.audit.tier.mode` | `none` | Audit tiering target: `none` (local only), `iceberg` (recommended), or `parquet` (fallback). Older records are offloaded to durable, queryable S3. |
+| `ontul.audit.tier.iceberg.table` | `ice.ops.audit_events` | Target Iceberg table (`catalog.schema.table`) for `tier.mode=iceberg`. Written as a format-v2 table partitioned by `day(event_time)` via Ontul's in-process Iceberg writer. |
+| `ontul.audit.tier.parquet.path` | _(empty)_ | Target `s3://` prefix for the `tier.mode=parquet` fallback. |
+| `ontul.audit.tier.connectionId` | _(empty)_ | S3 connection id (from the Connection registry) used by tiering. |
+| `ontul.audit.tier.retain.local.days` | `7` | Days a tiered record is also kept locally as a hot copy (durable history lives in S3). Only records already tiered *and* older than this are pruned. |
+| `ontul.audit.tier.interval.ms` | `300000` | How often the tiering sweep runs (ms). |
+| `ontul.audit.tier.batch.size` | `5000` | Max records tiered per sweep. |
+| `ontul.audit.tier.maintenance.enabled` | `true` | When tiering→iceberg, auto-register the audit table for periodic Iceberg Table Maintenance (compaction + expire-snapshots + orphan cleanup). |
+| `ontul.audit.tier.maintenance.cron` | `0 * * * *` | 5-field UNIX cron for the audit table's maintenance (default hourly). |
+| `ontul.audit.tier.maintenance.snapshot.retain.last` | `24` | `expire_snapshots` retain-last for the audit table — always keep at least this many recent commits. |
+| `ontul.audit.tier.maintenance.remove.orphan.files` | `true` | Run `remove_orphan_files` on the audit table (reclaims files left by compaction/expiry). |
+
+See [Audit Log](../features/audit-log.md) for the full feature description.
 
 ## Job
 
