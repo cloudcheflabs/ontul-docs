@@ -12,7 +12,12 @@ Every policy is a JSON document with a `Version` and a list of `Statement`s. Eac
 {
   "Version": "2024-01-01",
   "Statement": [
-    { "Sid": "ReadOnlyAccess", "Effect": "Allow", "Action": "data:Select", "Resource": "data:table:*.*.*" }
+    {
+      "Sid": "ReadOnlyAccess",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:*.*.*"
+    }
   ]
 }
 ```
@@ -54,7 +59,13 @@ Full access to everything. Reserved — it cannot be deleted.
 ```json
 {
   "Version": "2024-01-01",
-  "Statement": [{ "Effect": "Allow", "Action": "*", "Resource": "*" }]
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "*",
+      "Resource": "*"
+    }
+  ]
 }
 ```
 
@@ -65,7 +76,14 @@ Same effect as `AdministratorAccess`, but a normal (deletable) policy — use it
 ```json
 {
   "Version": "2024-01-01",
-  "Statement": [{ "Sid": "SuperuserAccess", "Effect": "Allow", "Action": "*", "Resource": "*" }]
+  "Statement": [
+    {
+      "Sid": "SuperuserAccess",
+      "Effect": "Allow",
+      "Action": "*",
+      "Resource": "*"
+    }
+  ]
 }
 ```
 
@@ -76,7 +94,14 @@ Read any table in any catalog — the typical BI / analyst grant.
 ```json
 {
   "Version": "2024-01-01",
-  "Statement": [{ "Sid": "ReadOnlyAccess", "Effect": "Allow", "Action": "data:Select", "Resource": "data:table:*.*.*" }]
+  "Statement": [
+    {
+      "Sid": "ReadOnlyAccess",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:*.*.*"
+    }
+  ]
 }
 ```
 
@@ -87,9 +112,14 @@ Full DML (no DDL) across all tables — for application service accounts that re
 ```json
 {
   "Version": "2024-01-01",
-  "Statement": [{ "Sid": "AppReadWrite", "Effect": "Allow",
-    "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete"],
-    "Resource": "data:table:*.*.*" }]
+  "Statement": [
+    {
+      "Sid": "AppReadWrite",
+      "Effect": "Allow",
+      "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete"],
+      "Resource": "data:table:*.*.*"
+    }
+  ]
 }
 ```
 
@@ -100,10 +130,23 @@ DML plus DDL (`CreateTable` / `DropTable` / `AlterTable` / `Merge`) across all t
 ```json
 {
   "Version": "2024-01-01",
-  "Statement": [{ "Sid": "SchemaAdmin", "Effect": "Allow",
-    "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete",
-               "data:CreateTable", "data:DropTable", "data:AlterTable", "data:Merge"],
-    "Resource": "data:table:*.*.*" }]
+  "Statement": [
+    {
+      "Sid": "SchemaAdmin",
+      "Effect": "Allow",
+      "Action": [
+        "data:Select",
+        "data:Insert",
+        "data:Update",
+        "data:Delete",
+        "data:CreateTable",
+        "data:DropTable",
+        "data:AlterTable",
+        "data:Merge"
+      ],
+      "Resource": "data:table:*.*.*"
+    }
+  ]
 }
 ```
 
@@ -113,38 +156,68 @@ DML plus DDL (`CreateTable` / `DropTable` / `AlterTable` / `Merge`) across all t
 
 Scope grants to a single connector by using the catalog segment of the resource (`ice.*.*`, `pg.*.*`, `kafka.*.*`, …).
 
-### Iceberg Read-Only / Read-Write
+### Iceberg Read-Only
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "IcebergReadOnly", "Effect": "Allow", "Action": "data:Select", "Resource": "data:table:ice.*.*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "IcebergReadOnly",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:ice.*.*"
+    }
+  ]
+}
 ```
 
+### Iceberg Read-Write
+
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "IcebergDML", "Effect": "Allow",
-    "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete", "data:Merge"],
-    "Resource": "data:table:ice.*.*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "IcebergDML",
+      "Effect": "Allow",
+      "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete", "data:Merge"],
+      "Resource": "data:table:ice.*.*"
+    }
+  ]
+}
 ```
 
-### JDBC Catalog Read-Only / Read-Write
-
-Same idea, scoped to a JDBC catalog (`pg.*.*`).
+### JDBC Catalog Read-Only
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "JdbcReadOnly", "Effect": "Allow", "Action": "data:Select", "Resource": "data:table:pg.*.*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "JdbcReadOnly",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:pg.*.*"
+    }
+  ]
+}
 ```
 
+### JDBC Catalog Read-Write
+
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "JdbcDML", "Effect": "Allow",
-    "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete"],
-    "Resource": "data:table:pg.*.*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "JdbcDML",
+      "Effect": "Allow",
+      "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete"],
+      "Resource": "data:table:pg.*.*"
+    }
+  ]
+}
 ```
 
 ### Cross-Catalog (Iceberg + JDBC)
@@ -152,10 +225,23 @@ Same idea, scoped to a JDBC catalog (`pg.*.*`).
 Different permissions per catalog in one policy — e.g. full write to Iceberg, insert-only to JDBC.
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "IcebergAccess", "Effect": "Allow", "Action": ["data:Select", "data:Insert", "data:Merge"], "Resource": "data:table:ice.*.*" },
-  { "Sid": "JdbcAccess",    "Effect": "Allow", "Action": ["data:Select", "data:Insert"],                "Resource": "data:table:pg.*.*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "IcebergAccess",
+      "Effect": "Allow",
+      "Action": ["data:Select", "data:Insert", "data:Merge"],
+      "Resource": "data:table:ice.*.*"
+    },
+    {
+      "Sid": "JdbcAccess",
+      "Effect": "Allow",
+      "Action": ["data:Select", "data:Insert"],
+      "Resource": "data:table:pg.*.*"
+    }
+  ]
+}
 ```
 
 ### Kafka Stream Consumer
@@ -163,9 +249,17 @@ Different permissions per catalog in one policy — e.g. full write to Iceberg, 
 Read-only on a Kafka catalog — for streaming source consumers.
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "KafkaConsume", "Effect": "Allow", "Action": "data:Select", "Resource": "data:table:kafka.*.*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "KafkaConsume",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:kafka.*.*"
+    }
+  ]
+}
 ```
 
 ### Namespace Isolation
@@ -173,10 +267,17 @@ Read-only on a Kafka catalog — for streaming source consumers.
 Confine a team to a single schema (namespace) — everything within `ice.team_a`, nothing outside it.
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "NamespaceAccess", "Effect": "Allow", "Action": "*",
-    "Resource": ["data:table:ice.team_a.*", "data:schema:ice.team_a"] }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "NamespaceAccess",
+      "Effect": "Allow",
+      "Action": "*",
+      "Resource": ["data:table:ice.team_a.*", "data:schema:ice.team_a"]
+    }
+  ]
+}
 ```
 
 ---
@@ -190,10 +291,23 @@ Confine a team to a single schema (namespace) — everything within `ice.team_a`
 Allow DML everywhere, but forbid updating/deleting audit and log tables (matched by name pattern).
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "AllowDML",        "Effect": "Allow", "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete"], "Resource": "data:table:*.*.*" },
-  { "Sid": "DenyModifyAudit", "Effect": "Deny",  "Action": ["data:Update", "data:Delete"], "Resource": ["data:table:*.*.audit_*", "data:table:*.*.*_logs"] }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "AllowDML",
+      "Effect": "Allow",
+      "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete"],
+      "Resource": "data:table:*.*.*"
+    },
+    {
+      "Sid": "DenyModifyAudit",
+      "Effect": "Deny",
+      "Action": ["data:Update", "data:Delete"],
+      "Resource": ["data:table:*.*.audit_*", "data:table:*.*.*_logs"]
+    }
+  ]
+}
 ```
 
 ---
@@ -205,10 +319,18 @@ Allow DML everywhere, but forbid updating/deleting audit and log tables (matched
 Grant `Select` on a table but expose only specific columns (all others are hidden). See [Column-Level Security](iam.md#column-level-security).
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "LimitedColumns", "Effect": "Allow", "Action": "data:Select",
-    "Resource": "data:table:pg.public.employees", "Columns": ["id", "name", "department"] }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "LimitedColumns",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:pg.public.employees",
+      "Columns": ["id", "name", "department"]
+    }
+  ]
+}
 ```
 
 ### Row-Level Filter
@@ -216,10 +338,18 @@ Grant `Select` on a table but expose only specific columns (all others are hidde
 Attach a `Condition` so the user only sees matching rows — the predicate is injected into every query against the table. Templated conditions like `department = '${user.attr.department}'` resolve per user. See [Row-Level Security](iam.md#row-level-security).
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "DeptFilter", "Effect": "Allow", "Action": "data:Select",
-    "Resource": "data:table:pg.public.employees", "Condition": "department = 'Engineering'" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "DeptFilter",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:pg.public.employees",
+      "Condition": "department = 'Engineering'"
+    }
+  ]
+}
 ```
 
 ---
@@ -231,10 +361,23 @@ Attach a `Condition` so the user only sees matching rows — the predicate is in
 Read everything, and write/create tables in Iceberg — the grant a batch/streaming job's identity needs.
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "ReadAllCatalogs", "Effect": "Allow", "Action": "data:Select", "Resource": "data:table:*.*.*" },
-  { "Sid": "WriteIceberg",    "Effect": "Allow", "Action": ["data:Insert", "data:Merge", "data:CreateTable"], "Resource": "data:table:ice.*.*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "ReadAllCatalogs",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:*.*.*"
+    },
+    {
+      "Sid": "WriteIceberg",
+      "Effect": "Allow",
+      "Action": ["data:Insert", "data:Merge", "data:CreateTable"],
+      "Resource": "data:table:ice.*.*"
+    }
+  ]
+}
 ```
 
 ### Job Manager
@@ -242,10 +385,23 @@ Read everything, and write/create tables in Iceberg — the grant a batch/stream
 Kill jobs / cancel queries plus read access — for operators managing running work.
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "JobManagement",   "Effect": "Allow", "Action": ["data:KillJob", "data:CancelQuery"], "Resource": ["data:job:*", "data:query:*"] },
-  { "Sid": "ReadAllCatalogs", "Effect": "Allow", "Action": "data:Select", "Resource": "data:table:*.*.*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "JobManagement",
+      "Effect": "Allow",
+      "Action": ["data:KillJob", "data:CancelQuery"],
+      "Resource": ["data:job:*", "data:query:*"]
+    },
+    {
+      "Sid": "ReadAllCatalogs",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:*.*.*"
+    }
+  ]
+}
 ```
 
 ---
@@ -257,17 +413,33 @@ UDF resources are `udf:<name>`, so `udf:*` covers all functions and a prefix lik
 ### UDF Execute Any
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "UdfExecAny", "Effect": "Allow", "Action": "UDF:EXECUTE", "Resource": "udf:*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "UdfExecAny",
+      "Effect": "Allow",
+      "Action": "UDF:EXECUTE",
+      "Resource": "udf:*"
+    }
+  ]
+}
 ```
 
 ### UDF Author (Create + Drop + Execute)
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "UdfAuthor", "Effect": "Allow", "Action": ["UDF:CREATE", "UDF:DROP", "UDF:EXECUTE"], "Resource": "udf:*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "UdfAuthor",
+      "Effect": "Allow",
+      "Action": ["UDF:CREATE", "UDF:DROP", "UDF:EXECUTE"],
+      "Resource": "udf:*"
+    }
+  ]
+}
 ```
 
 ### UDF Sandbox (Execute Specific Functions)
@@ -275,10 +447,17 @@ UDF resources are `udf:<name>`, so `udf:*` covers all functions and a prefix lik
 Execute only an allow-listed set of functions — nothing else.
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "UdfSandbox", "Effect": "Allow", "Action": "UDF:EXECUTE",
-    "Resource": ["udf:mask_*", "udf:hash_*", "udf:length_class"] }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "UdfSandbox",
+      "Effect": "Allow",
+      "Action": "UDF:EXECUTE",
+      "Resource": ["udf:mask_*", "udf:hash_*", "udf:length_class"]
+    }
+  ]
+}
 ```
 
 ### UDF Deny Sensitive
@@ -286,10 +465,23 @@ Execute only an allow-listed set of functions — nothing else.
 Execute any function except a denied family (admin/internal), enforced by a `Deny` overlay.
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "UdfBaseExec",  "Effect": "Allow", "Action": "UDF:EXECUTE", "Resource": "udf:*" },
-  { "Sid": "UdfDenyAdmin", "Effect": "Deny",  "Action": "UDF:EXECUTE", "Resource": ["udf:*_admin", "udf:internal_*"] }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "UdfBaseExec",
+      "Effect": "Allow",
+      "Action": "UDF:EXECUTE",
+      "Resource": "udf:*"
+    },
+    {
+      "Sid": "UdfDenyAdmin",
+      "Effect": "Deny",
+      "Action": "UDF:EXECUTE",
+      "Resource": ["udf:*_admin", "udf:internal_*"]
+    }
+  ]
+}
 ```
 
 ### UDF Global Admin (Create + Drop GLOBAL)
@@ -297,9 +489,17 @@ Execute any function except a denied family (admin/internal), enforced by a `Den
 Authoring rights for **global** (cluster-wide) UDFs, plus execute.
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "UdfGlobalAdmin", "Effect": "Allow", "Action": ["UDF:CREATE_GLOBAL", "UDF:DROP_GLOBAL", "UDF:EXECUTE"], "Resource": "udf:*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "UdfGlobalAdmin",
+      "Effect": "Allow",
+      "Action": ["UDF:CREATE_GLOBAL", "UDF:DROP_GLOBAL", "UDF:EXECUTE"],
+      "Resource": "udf:*"
+    }
+  ]
+}
 ```
 
 ### UDF Global Read-Only (Execute Only)
@@ -307,9 +507,17 @@ Authoring rights for **global** (cluster-wide) UDFs, plus execute.
 Execute-only — for consumers who use global UDFs but cannot author them.
 
 ```json
-{ "Version": "2024-01-01", "Statement": [
-  { "Sid": "UdfGlobalExec", "Effect": "Allow", "Action": "UDF:EXECUTE", "Resource": "udf:*" }
-]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "UdfGlobalExec",
+      "Effect": "Allow",
+      "Action": "UDF:EXECUTE",
+      "Resource": "udf:*"
+    }
+  ]
+}
 ```
 
 ---
