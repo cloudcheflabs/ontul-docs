@@ -1388,6 +1388,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#authorization-outcome-allowed-and-denied-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authorization Outcome — Allowed and Denied Access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#external-engine-ingestion-rest" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2287,6 +2298,10 @@
 <td>Primary resource acted on (table / object)</td>
 </tr>
 <tr>
+<td><code>decision</code></td>
+<td>Authorization outcome — <code>ALLOW</code> or <code>DENY</code> (empty on events where no allow/deny applies). A <strong>denied</strong> attempt is recorded, not only successful access</td>
+</tr>
+<tr>
 <td><code>tables</code></td>
 <td>All tables the operation read and/or wrote (the lineage edge)</td>
 </tr>
@@ -2296,7 +2311,7 @@
 </tr>
 <tr>
 <td><code>details</code></td>
-<td>Free-form context</td>
+<td>Free-form context — for a denial, the refusal reason (e.g. <code>ontul: ABSTAIN</code>)</td>
 </tr>
 <tr>
 <td><code>timestamp</code></td>
@@ -2322,8 +2337,16 @@
 <ul>
 <li><code>ontul.audit.log.retention.days</code> (default <code>90</code>) — the <strong>absolute local cap</strong>: records older than this are pruned from the local store whether or not tiering is on. This is the primary knob to bound a read-heavy audit store — lower it (e.g. to <code>1</code>) when local growth matters. It is editable at runtime from the Admin UI.</li>
 </ul>
+<h2 id="authorization-outcome-allowed-and-denied-access">Authorization Outcome — Allowed and Denied Access</h2>
+<p>A security audit must answer <em>"who tried to do what and was </em><em>refused</em><em>"</em>, not only <em>"what succeeded"</em>. Every access event therefore carries a <code>decision</code>:</p>
+<ul>
+<li><code>ALLOW</code> — the access was authorized and executed.</li>
+<li><code>DENY</code> — the access was <strong>refused by IAM</strong> and never ran; the refusal reason is in <code>details</code> (e.g. <code>ontul: ABSTAIN</code> = no policy grants it).</li>
+</ul>
+<p>A denied Ontul query is recorded with <code>decision=DENY</code> before the refusal is raised — it does <strong>not</strong> vanish as a generic error. The external engine plugins do the same: a refused Trino/Spark/Flink access is reported as a <code>DENY</code> audit event (no lineage is emitted, since nothing was written). Denials are always recorded — they are never subject to the read sampling that bounds high-volume allowed <code>SELECT</code>s.</p>
+<p>The <strong>Decision</strong> column in the Admin UI makes refused attempts stand out at a glance (a red <code>DENY</code> badge), and free-text search matches the refusal reason in <code>details</code> — the primary signal for probing, misconfiguration, or a revoked grant still being exercised.</p>
 <h2 id="external-engine-ingestion-rest">External-Engine Ingestion (REST)</h2>
-<p>External engines push audit events into the same Ontul store over a REST endpoint. Trino, Spark, and Flink authorization plugins (as deployed by <a href="https://www.cloudchef-labs.com">Chango</a>) already enforce Ontul IAM; the same plugins report the queries they authorized here, so audit from every engine is collected centrally.</p>
+<p>External engines push audit events into the same Ontul store over a REST endpoint. Trino, Spark, and Flink authorization plugins (as deployed by <a href="https://www.cloudchef-labs.com">Chango</a>) already enforce Ontul IAM; the same plugins report the accesses they authorized — <strong>and the ones they refused</strong> — here, so audit from every engine is collected centrally.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>POST /admin/v1/api/audit
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Authorization: Bearer &lt;token&gt;
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Content-Type: application/json
@@ -2336,11 +2359,21 @@
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    &quot;resource&quot;:&quot;hive.sales.orders&quot;,
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    &quot;query&quot;:   &quot;SELECT id,total FROM hive.sales.orders WHERE region=&#39;EU&#39;&quot;,
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    &quot;tables&quot;:  [&quot;hive.sales.orders&quot;],
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    &quot;details&quot;: &quot;trino authz plugin&quot;
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>  }
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>]
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    &quot;decision&quot;:&quot;ALLOW&quot;,
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    &quot;details&quot;: &quot;trino authz plugin&quot;
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>  },
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>  {
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    &quot;source&quot;:  &quot;trino&quot;,
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    &quot;userId&quot;:  &quot;bob&quot;,
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    &quot;action&quot;:  &quot;data:CreateTable&quot;,
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    &quot;resource&quot;:&quot;hive.sales.secret&quot;,
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    &quot;tables&quot;:  [&quot;hive.sales.secret&quot;],
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    &quot;decision&quot;:&quot;DENY&quot;,
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    &quot;details&quot;: &quot;trino authz plugin (ontul: ABSTAIN)&quot;
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>  }
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>]
 </code></pre></div>
-<p>The body may be a single event or an array. Ingested events are indistinguishable from native ones in search, filters, and the Admin UI, other than their <code>source</code>.</p>
+<p>The body may be a single event or an array. The <code>decision</code> field is optional (older plugins omit it); when present it is stored and searchable. Ingested events are indistinguishable from native ones in search, filters, and the Admin UI, other than their <code>source</code>.</p>
 <h2 id="access-model">Access Model</h2>
 <p>The audit log deliberately splits its read and write paths:</p>
 <ul>
@@ -2408,6 +2441,7 @@
 <li><strong>Overview &amp; Graph</strong> — summary counters (events, users, engines, tables, reads, writes), the storage &amp; retention settings (retention days, read enable + sample rate, tiering mode with Iceberg/Parquet targets, retain-local days), and an interactive <strong>relationship graph</strong> of <code>user → engine → table</code>. Clicking a user, engine, or table node <strong>drills down</strong> to that entity's related read/write audit logs — with expandable query text and details — right below the graph. Engine badges are color-coded (ontul / trino / spark / flink).</li>
 <li><strong>Search</strong> — a dedicated page with a free-text search bar plus user / engine / table / type (read·write) / time-range filters over the full log.</li>
 </ul>
+<p>Both pages render each event's authorization outcome as a <strong>Decision</strong> badge — a red <code>DENY</code> or green <code>ALLOW</code> — so refused attempts stand out at a glance next to the action and touched tables.</p>
 <h2 id="configuration">Configuration</h2>
 <p>All keys are settable in <code>ontul.properties</code>; the runtime-adjustable ones are also editable from the Admin UI.</p>
 <table>
