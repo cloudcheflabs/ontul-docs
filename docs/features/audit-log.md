@@ -14,9 +14,10 @@ Each audit event carries:
 | `source` | Originating engine — `ontul` today; `trino` / `spark` / `flink` when pushed by external authz plugins |
 | `action` | Operation kind, e.g. `data:Select`, `data:Insert`, DDL, IAM change |
 | `resource` | Primary resource acted on (table / object) |
+| `decision` | Authorization outcome — `ALLOW` or `DENY` (empty on events where no allow/deny applies). A **denied** attempt is recorded, not only successful access |
 | `tables` | All tables the operation read and/or wrote (the lineage edge) |
 | `query` | The SQL text of the operation, when applicable |
-| `details` | Free-form context |
+| `details` | Free-form context — for a denial, the refusal reason (e.g. `ontul: ABSTAIN`) |
 | `timestamp` | Event time (epoch millis) |
 
 ## Automatic Capture
@@ -41,9 +42,20 @@ Both are changeable at runtime from the Admin UI.
 
 - `ontul.audit.log.retention.days` (default `90`) — the **absolute local cap**: records older than this are pruned from the local store whether or not tiering is on. This is the primary knob to bound a read-heavy audit store — lower it (e.g. to `1`) when local growth matters. It is editable at runtime from the Admin UI.
 
+## Authorization Outcome — Allowed and Denied Access
+
+A security audit must answer *"who tried to do what and was **refused**"*, not only *"what succeeded"*. Every access event therefore carries a `decision`:
+
+- `ALLOW` — the access was authorized and executed.
+- `DENY` — the access was **refused by IAM** and never ran; the refusal reason is in `details` (e.g. `ontul: ABSTAIN` = no policy grants it).
+
+A denied Ontul query is recorded with `decision=DENY` before the refusal is raised — it does **not** vanish as a generic error. The external engine plugins do the same: a refused Trino/Spark/Flink access is reported as a `DENY` audit event (no lineage is emitted, since nothing was written). Denials are always recorded — they are never subject to the read sampling that bounds high-volume allowed `SELECT`s.
+
+The **Decision** column in the Admin UI makes refused attempts stand out at a glance (a red `DENY` badge), and free-text search matches the refusal reason in `details` — the primary signal for probing, misconfiguration, or a revoked grant still being exercised.
+
 ## External-Engine Ingestion (REST)
 
-External engines push audit events into the same Ontul store over a REST endpoint. Trino, Spark, and Flink authorization plugins (as deployed by [Chango](https://www.cloudchef-labs.com)) already enforce Ontul IAM; the same plugins report the queries they authorized here, so audit from every engine is collected centrally.
+External engines push audit events into the same Ontul store over a REST endpoint. Trino, Spark, and Flink authorization plugins (as deployed by [Chango](https://www.cloudchef-labs.com)) already enforce Ontul IAM; the same plugins report the accesses they authorized — **and the ones they refused** — here, so audit from every engine is collected centrally.
 
 ```
 POST /admin/v1/api/audit
@@ -58,12 +70,22 @@ Content-Type: application/json
     "resource":"hive.sales.orders",
     "query":   "SELECT id,total FROM hive.sales.orders WHERE region='EU'",
     "tables":  ["hive.sales.orders"],
+    "decision":"ALLOW",
     "details": "trino authz plugin"
+  },
+  {
+    "source":  "trino",
+    "userId":  "bob",
+    "action":  "data:CreateTable",
+    "resource":"hive.sales.secret",
+    "tables":  ["hive.sales.secret"],
+    "decision":"DENY",
+    "details": "trino authz plugin (ontul: ABSTAIN)"
   }
 ]
 ```
 
-The body may be a single event or an array. Ingested events are indistinguishable from native ones in search, filters, and the Admin UI, other than their `source`.
+The body may be a single event or an array. The `decision` field is optional (older plugins omit it); when present it is stored and searchable. Ingested events are indistinguishable from native ones in search, filters, and the Admin UI, other than their `source`.
 
 ## Access Model
 
@@ -123,6 +145,8 @@ The **Audit** section has two pages:
 
 - **Overview & Graph** — summary counters (events, users, engines, tables, reads, writes), the storage & retention settings (retention days, read enable + sample rate, tiering mode with Iceberg/Parquet targets, retain-local days), and an interactive **relationship graph** of `user → engine → table`. Clicking a user, engine, or table node **drills down** to that entity's related read/write audit logs — with expandable query text and details — right below the graph. Engine badges are color-coded (ontul / trino / spark / flink).
 - **Search** — a dedicated page with a free-text search bar plus user / engine / table / type (read·write) / time-range filters over the full log.
+
+Both pages render each event's authorization outcome as a **Decision** badge — a red `DENY` or green `ALLOW` — so refused attempts stand out at a glance next to the action and touched tables.
 
 ## Configuration
 
