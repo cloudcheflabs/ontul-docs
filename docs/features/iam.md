@@ -72,6 +72,27 @@ Ontul uses AWS-style JSON policies to manage permissions. Actions live in the `d
 - **Deny rules take precedence** over allow rules.
 - **Deny-by-default**: no matching policies means access is denied.
 
+### Query-time enforcement (reads **and** writes)
+
+Authorization runs inside the query engine on **every** statement, on **every** interface (Arrow Flight SQL, the REST `POST /v1/api/sql`, the admin `POST /admin/query/execute`, and the MCP server) — clients cannot bypass it. The check is **fail-closed**: a user with no effective policy, an explicit `Deny`, or no matching statement (abstain) is rejected before any data is read or written. Administrators carry a `"*"` resource policy and always pass.
+
+Both the tables a query **reads** and the table it **writes** are authorized, each against the action that matches the operation:
+
+| Statement | Authorized resource(s) | Action |
+|---|---|---|
+| `SELECT … FROM t` | every scanned source `t` | `data:Select` |
+| `INSERT INTO t SELECT … FROM s` | source `s` | `data:Select` |
+| | **target `t`** | `data:Insert` |
+| `CREATE TABLE t AS SELECT … FROM s` | source `s` | `data:Select` |
+| | **target `t`** | `data:Insert` |
+| `MERGE INTO t …` | **target `t`** | `data:Insert` |
+| `UPDATE t SET …` | **target `t`** | `data:Update` |
+| `DELETE FROM t …` | **target `t`** | `data:Delete` |
+
+The write **target** is authorized in addition to the read sources: granting a user `data:Select` on a table does **not** let them `INSERT`/`UPDATE`/`DELETE` into it — a separate `data:Insert`/`data:Update`/`data:Delete` grant (or a wildcard such as `data:*`) on that table resource is required. So the `SalesReadWrite` example above (`["data:Select","data:Insert"]` on `data:table:ice.sales.*`) permits both reading and inserting across the `ice.sales` schema, while a read-only policy that lists only `data:Select` blocks every write to those tables.
+
+The engine authorization is the enforcement point the [chango Trino / Spark / Flink authz plugins](../index.md) also call over REST — so the same policy governs a table whether it is touched by an external engine or by an Ontul SQL statement.
+
 ### Creating and updating policies
 
 The same endpoint handles both — `POST /admin/iam/policies` is upsert. Re-posting with an existing `name` overwrites the document and propagates the new content to follower masters via `pushUpdate()`. The next query the affected user issues sees the new policy; no cache invalidation is needed because effective policies are computed per-query.
