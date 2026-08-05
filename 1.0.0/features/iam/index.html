@@ -1277,6 +1277,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#query-time-enforcement-reads-and-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query-time enforcement (reads and writes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#creating-and-updating-policies" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2486,6 +2497,62 @@
 <li><strong>Deny rules take precedence</strong> over allow rules.</li>
 <li><strong>Deny-by-default</strong>: no matching policies means access is denied.</li>
 </ul>
+<h3 id="query-time-enforcement-reads-and-writes">Query-time enforcement (reads <strong>and</strong> writes)</h3>
+<p>Authorization runs inside the query engine on <strong>every</strong> statement, on <strong>every</strong> interface (Arrow Flight SQL, the REST <code>POST /v1/api/sql</code>, the admin <code>POST /admin/query/execute</code>, and the MCP server) — clients cannot bypass it. The check is <strong>fail-closed</strong>: a user with no effective policy, an explicit <code>Deny</code>, or no matching statement (abstain) is rejected before any data is read or written. Administrators carry a <code>"*"</code> resource policy and always pass.</p>
+<p>Both the tables a query <strong>reads</strong> and the table it <strong>writes</strong> are authorized, each against the action that matches the operation:</p>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>Authorized resource(s)</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SELECT … FROM t</code></td>
+<td>every scanned source <code>t</code></td>
+<td><code>data:Select</code></td>
+</tr>
+<tr>
+<td><code>INSERT INTO t SELECT … FROM s</code></td>
+<td>source <code>s</code></td>
+<td><code>data:Select</code></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>target <code>t</code></strong></td>
+<td><code>data:Insert</code></td>
+</tr>
+<tr>
+<td><code>CREATE TABLE t AS SELECT … FROM s</code></td>
+<td>source <code>s</code></td>
+<td><code>data:Select</code></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>target <code>t</code></strong></td>
+<td><code>data:Insert</code></td>
+</tr>
+<tr>
+<td><code>MERGE INTO t …</code></td>
+<td><strong>target <code>t</code></strong></td>
+<td><code>data:Insert</code></td>
+</tr>
+<tr>
+<td><code>UPDATE t SET …</code></td>
+<td><strong>target <code>t</code></strong></td>
+<td><code>data:Update</code></td>
+</tr>
+<tr>
+<td><code>DELETE FROM t …</code></td>
+<td><strong>target <code>t</code></strong></td>
+<td><code>data:Delete</code></td>
+</tr>
+</tbody>
+</table>
+<p>The write <strong>target</strong> is authorized in addition to the read sources: granting a user <code>data:Select</code> on a table does <strong>not</strong> let them <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code> into it — a separate <code>data:Insert</code>/<code>data:Update</code>/<code>data:Delete</code> grant (or a wildcard such as <code>data:*</code>) on that table resource is required. So the <code>SalesReadWrite</code> example above (<code>["data:Select","data:Insert"]</code> on <code>data:table:ice.sales.*</code>) permits both reading and inserting across the <code>ice.sales</code> schema, while a read-only policy that lists only <code>data:Select</code> blocks every write to those tables.</p>
+<p>The engine authorization is the enforcement point the <a href="../../">chango Trino / Spark / Flink authz plugins</a> also call over REST — so the same policy governs a table whether it is touched by an external engine or by an Ontul SQL statement.</p>
 <h3 id="creating-and-updating-policies">Creating and updating policies</h3>
 <p>The same endpoint handles both — <code>POST /admin/iam/policies</code> is upsert. Re-posting with an existing <code>name</code> overwrites the document and propagates the new content to follower masters via <code>pushUpdate()</code>. The next query the affected user issues sees the new policy; no cache invalidation is needed because effective policies are computed per-query.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Initial creation</span>
