@@ -446,6 +446,39 @@ Read everything, and write/create tables in Iceberg — the grant a batch/stream
 }
 ```
 
+### Streaming Flow (Ontul Flow)
+
+Starting an [Ontul Flow](../streaming/flow.md) enforces the same table-level RBAC as SQL DML: the
+identity needs `data:Select` on any Ontul-catalog **source** table and write access on the Ontul-catalog
+**sink** table — `data:Insert` for an append flow, plus `data:Update` / `data:Delete` for a CDC / upsert
+write mode. External systems (Kafka, CDC databases, JDBC, Elasticsearch, webhooks, NeorunBase) are
+reached through their registered connection credentials, not IAM. This template grants a Flow that reads
+any table and maintains an Iceberg CDC replica.
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "FlowReadSources",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:*.*.*"
+    },
+    {
+      "Sid": "FlowWriteIcebergSink",
+      "Effect": "Allow",
+      "Action": ["data:Insert", "data:Update", "data:Delete"],
+      "Resource": "data:table:ice.*.*"
+    }
+  ]
+}
+```
+
+For an **append-only** flow (no CDC / upsert), the sink statement needs only `data:Insert`. Scope the
+`Resource` segments down (`ice.sales.*`, a single table) to confine which sinks a Flow identity may
+write.
+
 ### Job Manager
 
 Kill jobs / cancel queries plus read access — for operators managing running work.

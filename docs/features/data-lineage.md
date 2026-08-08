@@ -10,8 +10,15 @@ When a table is created or populated, Ontul records its lineage — no configura
 - `INSERT INTO ... SELECT`
 - `MERGE INTO`
 - `CREATE VIEW`
+- `SUBMIT STREAMING` — an **[Ontul Flow](../streaming/flow.md)**: the flow's source(s) → sink edge is
+  recorded when the flow starts
 
 Capture is **best-effort**: it runs after the statement succeeds and never blocks or fails the query.
+
+For a streaming flow, Ontul-catalog tables appear under their `catalog.schema.table` name (so a flow's
+edge lines up with SQL-DML lineage), while external systems are recorded as scheme-prefixed datasets —
+`kafka://<topic>`, `cdc://<connector>/<table>`, `jdbc://<table>`, `es://<index>`, `http://<endpoint>`,
+`neorunbase://<table>`, or the S3 path for a file source.
 
 ## Table-Level Lineage
 
@@ -103,7 +110,7 @@ Because every catalog's tables — Iceberg, JDBC, Kafka, TPC-H — are first-cla
 
 Ontul can emit [OpenLineage](https://openlineage.io)-spec events so external catalogs (Marquez, DataHub, Atlan, …) ingest Ontul lineage through the industry-standard wire format.
 
-Set `ontul.lineage.openlineage.url` to an HTTP endpoint; each CTAS/INSERT/MERGE/VIEW then emits a `COMPLETE` RunEvent with `inputs`, `outputs`, and a standard `columnLineage` facet. When unset, emission is disabled.
+Set `ontul.lineage.openlineage.url` to an HTTP endpoint; each CTAS/INSERT/MERGE/VIEW — and each streaming [Ontul Flow](../streaming/flow.md) start — then emits a `COMPLETE` RunEvent with `inputs`, `outputs`, and a standard `columnLineage` facet. When unset, emission is disabled.
 
 ## Storage
 
