@@ -236,6 +236,36 @@ The Exchange Manager handles spill of intermediate shuffle/exchange data and exe
 | `ontul.streaming.checkpoint.send.timeout.ms` | `5000` | Timeout (ms) for the checkpoint coordinator to send a checkpoint barrier message to a worker. |
 | `ontul.streaming.checkpoint.timeout.ms` | `30000` | Timeout (ms) for a checkpoint round overall — how long the coordinator waits for all workers to acknowledge the barrier before the checkpoint is considered failed. |
 
+## Ontul Flow
+
+Tuning for the named streaming-pipeline registry ([Ontul Flow](../streaming/flow.md)). A running
+flow's live status + run history are replicated across masters via the metadata store so the Flow
+list and History tab are consistent regardless of which master serves the request.
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.flow.status.persist.interval.ms` | `5000` | How often the owning master persists a running flow's live status + records to the replicated metadata store (`flow.status.<name>` / `flow.history.<name>`). Lower = fresher Flow list at the cost of more metadata writes/broadcasts. |
+| `ontul.flow.status.freshness.ms` | `15000` | A persisted flow.status snapshot older than this is treated as stale (the flow is shown as not-running until the owner refreshes it). Keep it a few multiples of the persist interval. |
+| `ontul.flow.history.max.runs` | `20` | Maximum run records retained per flow in the replicated run history (History tab). |
+
+## Job Logs
+
+Streaming and batch job logs can be flushed to append-only rolling gzip segments on S3
+(`{prefix}jobLogs/<jobId>/<seq>-<ts>.log.gz`), so long-running jobs' logs stay durable and queryable
+by time range after the in-memory log is gone. By default these settings inherit the Exchange
+Manager's S3 target, so turning on S3-primary exchange also puts job logs on S3.
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.job.logs.s3.enabled` | _(inherits `ontul.exchange.s3.enabled`)_ | Enable flushing job logs to S3 rolling segments. Defaults to whatever the exchange S3 mode is. |
+| `ontul.job.logs.memory.tail` | `1000` | Number of most-recent log lines kept in memory per job (the rest are flushed to S3 segments). |
+| `ontul.job.logs.flush.interval.ms` | `10000` | How often the worker/master drains buffered job-log lines to an S3 segment (time-based roll). |
+
+The S3 endpoint/region/bucket/prefix/credentials for job logs default to the exchange S3 target
+(`ontul.exchange.s3.*`) and can be overridden with `ontul.job.logs.s3.*`. The backend can also be
+switched from the Admin UI **Storage** page at runtime (no restart), which persists to the replicated
+metadata store as `storage.jobLogs.*` / `storage.exchange.*` referencing an S3 connection.
+
 ## Admin
 
 | Property | Default | Description |

@@ -81,6 +81,7 @@ nav:
       - "Batch Guide": batch/guide.md
   - "Streaming":
       - "Streaming Guide": streaming/guide.md
+      - "Ontul Flow": streaming/flow.md
 
 
 

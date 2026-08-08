@@ -120,6 +120,30 @@ session.streamSource(
 
 `.property(...)` values supplied alongside `.connection(id)` override the corresponding stored property — useful for per-job tuning (consumer group, batch size) without forking the connection. See the [Connection ID feature reference](../features/connection-id.md) for details.
 
+`streamSource(...)` accepts any streaming `Source`, not just Kafka:
+
+```java
+// Debezium CDC (postgres/mysql/sqlserver/oracle/db2) — credentials from a registered connection
+session.streamSource(Source.database("cdc-pg").tables("public.orders").snapshot("initial"))
+    .sink(Sink.table("ice.sales.orders"))          // Iceberg CDC-apply sink
+    .start();
+
+// Iceberg incremental source — append-only, or changelog (I/U/D with __op)
+session.streamSource(Source.iceberg("ice.sales.orders").changelog().snapshot("earliest"))
+    .sink(Sink.table("ice.sales.orders_replica"))
+    .start();
+
+// Rolling S3 objects (newline-delimited JSON)
+session.streamSource(Source.file("s3://bucket/events/", "json").connection("s3-conn"))
+    .filter("level = 'ERROR'")
+    .sink(Sink.table("ice.ops.errors"))
+    .start();
+```
+
+The SDK emits the same [SUBMIT STREAMING config](../streaming/flow.md#submit-streaming-config) the REST
+path and the [Ontul Flow](../streaming/flow.md) editor use: Kafka keeps the legacy `kafka` node, while
+`database`/`iceberg`/`file` emit a generic `source` node with a `type` discriminator.
+
 ## Write to Sink
 
 ```java

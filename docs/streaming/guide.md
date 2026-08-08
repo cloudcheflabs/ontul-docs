@@ -4,49 +4,63 @@ Ontul streaming uses **Flink-style continuous processing** — events are proces
 
 ## Submitting Streaming Jobs
 
-### 1. REST API
+### 1. REST API — `SUBMIT STREAMING`
+
+Submit a streaming job as a `SUBMIT STREAMING <config-json>` statement through the SQL endpoint. The
+config has a **source** (a `kafka` node, or a generic `source` node with a `type`), optional
+**operations**, and a **sink** node:
 
 ```bash
-curl -X POST http://localhost:8080/v1/api/job/submit \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "kafka-to-iceberg",
-    "type": "STREAMING",
-    "config": {
-      "source.kafka.bootstrap.servers": "kafka:9092",
-      "source.kafka.topic": "user-events",
-      "source.kafka.group.id": "ontul-stream-1",
-      "source.kafka.auto.offset.reset": "earliest",
-      "source.kafka.format": "json",
-      "sink.type": "table",
-      "sink.table": "ice.analytics.events"
-    },
-    "operations": [
-      {"type": "FILTER", "value": "event_type <> '\''logout'\''"},
-      {"type": "SELECT", "value": "event_id, event_type, user_name, amount, event_time"}
-    ]
-  }'
+curl -X POST http://localhost:8080/v1/api/sql \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"sql": "SUBMIT STREAMING {
+    \"kafka\": { \"connectionId\": \"kafka-prod\", \"topic\": \"user-events\", \"format\": \"json\", \"groupId\": \"ontul-stream-1\" },
+    \"operations\": [
+      { \"type\": \"FILTER\", \"value\": \"event_type <> '\''logout'\''\" },
+      { \"type\": \"SELECT\", \"value\": \"event_id, event_type, user_name, amount, event_time\" }
+    ],
+    \"sink\": { \"type\": \"table\", \"table\": \"ice.analytics.events\" },
+    \"commitIntervalMs\": 1000, \"numWorkers\": 1
+  }"}'
 ```
 
 Response:
 
 ```json
-{"jobId": "streaming-1714300000000", "status": "SUBMITTED"}
+{"queryId": "…", "status": "ok", "commandTag": "SUBMIT"}
 ```
 
-#### REST API Config Fields
+The submitted job appears as a `STREAMING` job (name `streaming-<queryId8>`) in `/v1/api/job/list`.
+Credentials never live in the config — the source/sink reference a registered
+[connection](../features/connection-id.md) by `connectionId`.
 
-| Field | Description |
-|-------|-------------|
-| `source.kafka.bootstrap.servers` | Kafka broker addresses |
-| `source.kafka.topic` | Topic to consume |
-| `source.kafka.group.id` | Consumer group ID |
-| `source.kafka.auto.offset.reset` | `earliest` or `latest` |
-| `source.kafka.format` | `json` (auto-infer schema) |
-| `sink.type` | `table`, `kafka`, `console` |
-| `sink.table` | Target table (for type=table) |
-| `sink.kafka.topic` | Target topic (for type=kafka) |
+#### Source node
+
+Use the legacy `kafka` node for Kafka, or a generic `source` node with a `type`:
+
+| `type` | Fields |
+|--------|--------|
+| *(kafka node)* | `connectionId`, `topic`, `format` (`json`/`avro`), `groupId` |
+| `cdc` | `connector` (`postgres`/`mysql`/`sqlserver`/`oracle`/`db2`), `connectionId`, `tables[]`, `snapshot` (`initial`/`never`) |
+| `iceberg` | `table` (`catalog.schema.table`), `mode` (`append`/`changelog`), `snapshot` (`latest`/`earliest`) |
+| `file` | `path` (`s3://…`), `format`, `connectionId` |
+| `neorunbase` | `mode` (`rest`/`jdbc`), endpoint/`jdbcUrl`, `pollQuery`, `cursorColumn` |
+
+#### Sink node
+
+| `type` | Fields |
+|--------|--------|
+| `table` | `table` (Iceberg); add a `write` block for upsert / CDC apply / SCD |
+| `jdbc` | `jdbcUrl`, `tableName`, `username`, `password`, `batchSize`; add `mode`/`opColumn`/`keys` for CDC apply |
+| `kafka` | `connectionId`, `topic`, `transactional` |
+| `http` | `url`, `batchSize` (POST rows as JSON) |
+| `elasticsearch` | `endpoint`, `index`, `idField` |
+| `neorunbase` | `mode`, endpoint/`jdbcUrl`, `tableName` |
+| `console` | *(none)* — prints to the worker log |
+
+> **Manage flows visually.** For a governed, persisted way to build, start/stop, monitor and preview
+> these pipelines from the Admin UI — with the full connector palette, YAML/JSON editing, live
+> metrics/logs and run history — see **[Ontul Flow](flow.md)**.
 
 #### REST API Operations
 
