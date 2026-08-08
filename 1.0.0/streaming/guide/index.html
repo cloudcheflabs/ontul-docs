@@ -14,6 +14,8 @@
         <link rel="prev" href="../../batch/guide/">
       
       
+        <link rel="next" href="../flow/">
+      
       
         
       
@@ -2091,22 +2093,33 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-rest-api" class="md-nav__link">
+  <a href="#1-rest-api-submit-streaming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. REST API
+        1. REST API — SUBMIT STREAMING
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. REST API">
+    <nav class="md-nav" aria-label="1. REST API — SUBMIT STREAMING">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#rest-api-config-fields" class="md-nav__link">
+  <a href="#source-node" class="md-nav__link">
     <span class="md-ellipsis">
       
-        REST API Config Fields
+        Source node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sink-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sink node
       
     </span>
   </a>
@@ -2569,6 +2582,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontul Flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2596,74 +2637,104 @@
 <h1 id="streaming-guide">Streaming Guide</h1>
 <p>Ontul streaming uses <strong>Flink-style continuous processing</strong> — events are processed as soon as they arrive (100ms poll), NOT Spark-style micro-batch. Streaming jobs consume from Kafka, apply transformations, and write to sinks (Iceberg, Kafka, NeorunBase, etc.) with exactly-once semantics for transactional sinks.</p>
 <h2 id="submitting-streaming-jobs">Submitting Streaming Jobs</h2>
-<h3 id="1-rest-api">1. REST API</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/v1/api/job/submit<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s1">    &quot;name&quot;: &quot;kafka-to-iceberg&quot;,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s1">    &quot;type&quot;: &quot;STREAMING&quot;,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="s1">    &quot;config&quot;: {</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="s1">      &quot;source.kafka.bootstrap.servers&quot;: &quot;kafka:9092&quot;,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s1">      &quot;source.kafka.topic&quot;: &quot;user-events&quot;,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="s1">      &quot;source.kafka.group.id&quot;: &quot;ontul-stream-1&quot;,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="s1">      &quot;source.kafka.auto.offset.reset&quot;: &quot;earliest&quot;,</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s1">      &quot;source.kafka.format&quot;: &quot;json&quot;,</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s1">      &quot;sink.type&quot;: &quot;table&quot;,</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s1">      &quot;sink.table&quot;: &quot;ice.analytics.events&quot;</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s1">    },</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="s1">    &quot;operations&quot;: [</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="s1">      {&quot;type&quot;: &quot;FILTER&quot;, &quot;value&quot;: &quot;event_type &lt;&gt; &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;logout&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;&quot;},</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="s1">      {&quot;type&quot;: &quot;SELECT&quot;, &quot;value&quot;: &quot;event_id, event_type, user_name, amount, event_time&quot;}</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="s1">    ]</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="s1">  }&#39;</span>
+<h3 id="1-rest-api-submit-streaming">1. REST API — <code>SUBMIT STREAMING</code></h3>
+<p>Submit a streaming job as a <code>SUBMIT STREAMING &lt;config-json&gt;</code> statement through the SQL endpoint. The
+config has a <strong>source</strong> (a <code>kafka</code> node, or a generic <code>source</code> node with a <code>type</code>), optional
+<strong>operations</strong>, and a <strong>sink</strong> node:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/v1/api/sql<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;sql&quot;: &quot;SUBMIT STREAMING {</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="s1">    \&quot;kafka\&quot;: { \&quot;connectionId\&quot;: \&quot;kafka-prod\&quot;, \&quot;topic\&quot;: \&quot;user-events\&quot;, \&quot;format\&quot;: \&quot;json\&quot;, \&quot;groupId\&quot;: \&quot;ontul-stream-1\&quot; },</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s1">    \&quot;operations\&quot;: [</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s1">      { \&quot;type\&quot;: \&quot;FILTER\&quot;, \&quot;value\&quot;: \&quot;event_type &lt;&gt; &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;logout&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;\&quot; },</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="s1">      { \&quot;type\&quot;: \&quot;SELECT\&quot;, \&quot;value\&quot;: \&quot;event_id, event_type, user_name, amount, event_time\&quot; }</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="s1">    ],</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s1">    \&quot;sink\&quot;: { \&quot;type\&quot;: \&quot;table\&quot;, \&quot;table\&quot;: \&quot;ice.analytics.events\&quot; },</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="s1">    \&quot;commitIntervalMs\&quot;: 1000, \&quot;numWorkers\&quot;: 1</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="s1">  }&quot;}&#39;</span>
 </code></pre></div>
 <p>Response:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span><span class="nt">&quot;jobId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;streaming-1714300000000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUBMITTED&quot;</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span><span class="nt">&quot;queryId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ok&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;commandTag&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUBMIT&quot;</span><span class="p">}</span>
 </code></pre></div>
-<h4 id="rest-api-config-fields">REST API Config Fields</h4>
+<p>The submitted job appears as a <code>STREAMING</code> job (name <code>streaming-&lt;queryId8&gt;</code>) in <code>/v1/api/job/list</code>.
+Credentials never live in the config — the source/sink reference a registered
+<a href="../../features/connection-id/">connection</a> by <code>connectionId</code>.</p>
+<h4 id="source-node">Source node</h4>
+<p>Use the legacy <code>kafka</code> node for Kafka, or a generic <code>source</code> node with a <code>type</code>:</p>
 <table>
 <thead>
 <tr>
-<th>Field</th>
-<th>Description</th>
+<th><code>type</code></th>
+<th>Fields</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>source.kafka.bootstrap.servers</code></td>
-<td>Kafka broker addresses</td>
+<td><em>(kafka node)</em></td>
+<td><code>connectionId</code>, <code>topic</code>, <code>format</code> (<code>json</code>/<code>avro</code>), <code>groupId</code></td>
 </tr>
 <tr>
-<td><code>source.kafka.topic</code></td>
-<td>Topic to consume</td>
+<td><code>cdc</code></td>
+<td><code>connector</code> (<code>postgres</code>/<code>mysql</code>/<code>sqlserver</code>/<code>oracle</code>/<code>db2</code>), <code>connectionId</code>, <code>tables[]</code>, <code>snapshot</code> (<code>initial</code>/<code>never</code>)</td>
 </tr>
 <tr>
-<td><code>source.kafka.group.id</code></td>
-<td>Consumer group ID</td>
+<td><code>iceberg</code></td>
+<td><code>table</code> (<code>catalog.schema.table</code>), <code>mode</code> (<code>append</code>/<code>changelog</code>), <code>snapshot</code> (<code>latest</code>/<code>earliest</code>)</td>
 </tr>
 <tr>
-<td><code>source.kafka.auto.offset.reset</code></td>
-<td><code>earliest</code> or <code>latest</code></td>
+<td><code>file</code></td>
+<td><code>path</code> (<code>s3://…</code>), <code>format</code>, <code>connectionId</code></td>
 </tr>
 <tr>
-<td><code>source.kafka.format</code></td>
-<td><code>json</code> (auto-infer schema)</td>
-</tr>
-<tr>
-<td><code>sink.type</code></td>
-<td><code>table</code>, <code>kafka</code>, <code>console</code></td>
-</tr>
-<tr>
-<td><code>sink.table</code></td>
-<td>Target table (for type=table)</td>
-</tr>
-<tr>
-<td><code>sink.kafka.topic</code></td>
-<td>Target topic (for type=kafka)</td>
+<td><code>neorunbase</code></td>
+<td><code>mode</code> (<code>rest</code>/<code>jdbc</code>), endpoint/<code>jdbcUrl</code>, <code>pollQuery</code>, <code>cursorColumn</code></td>
 </tr>
 </tbody>
 </table>
+<h4 id="sink-node">Sink node</h4>
+<table>
+<thead>
+<tr>
+<th><code>type</code></th>
+<th>Fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>table</code></td>
+<td><code>table</code> (Iceberg); add a <code>write</code> block for upsert / CDC apply / SCD</td>
+</tr>
+<tr>
+<td><code>jdbc</code></td>
+<td><code>jdbcUrl</code>, <code>tableName</code>, <code>username</code>, <code>password</code>, <code>batchSize</code>; add <code>mode</code>/<code>opColumn</code>/<code>keys</code> for CDC apply</td>
+</tr>
+<tr>
+<td><code>kafka</code></td>
+<td><code>connectionId</code>, <code>topic</code>, <code>transactional</code></td>
+</tr>
+<tr>
+<td><code>http</code></td>
+<td><code>url</code>, <code>batchSize</code> (POST rows as JSON)</td>
+</tr>
+<tr>
+<td><code>elasticsearch</code></td>
+<td><code>endpoint</code>, <code>index</code>, <code>idField</code></td>
+</tr>
+<tr>
+<td><code>neorunbase</code></td>
+<td><code>mode</code>, endpoint/<code>jdbcUrl</code>, <code>tableName</code></td>
+</tr>
+<tr>
+<td><code>console</code></td>
+<td><em>(none)</em> — prints to the worker log</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Manage flows visually.</strong> For a governed, persisted way to build, start/stop, monitor and preview
+these pipelines from the Admin UI — with the full connector palette, YAML/JSON editing, live
+metrics/logs and run history — see <strong><a href="../flow/">Ontul Flow</a></strong>.</p>
+</blockquote>
 <h4 id="rest-api-operations">REST API Operations</h4>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">&quot;operations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FILTER&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;amount &gt; 0&quot;</span><span class="p">},</span>

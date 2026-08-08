@@ -2062,6 +2062,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#ontul-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ontul Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#job-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Job Logs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#admin" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2373,6 +2395,34 @@
     
   
     Streaming Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../streaming/flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontul Flow
   
 
     
@@ -3185,6 +3235,71 @@
 </tr>
 </tbody>
 </table>
+<h2 id="ontul-flow">Ontul Flow</h2>
+<p>Tuning for the named streaming-pipeline registry (<a href="../../streaming/flow/">Ontul Flow</a>). A running
+flow's live status + run history are replicated across masters via the metadata store so the Flow
+list and History tab are consistent regardless of which master serves the request.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.flow.status.persist.interval.ms</code></td>
+<td><code>5000</code></td>
+<td>How often the owning master persists a running flow's live status + records to the replicated metadata store (<code>flow.status.&lt;name&gt;</code> / <code>flow.history.&lt;name&gt;</code>). Lower = fresher Flow list at the cost of more metadata writes/broadcasts.</td>
+</tr>
+<tr>
+<td><code>ontul.flow.status.freshness.ms</code></td>
+<td><code>15000</code></td>
+<td>A persisted flow.status snapshot older than this is treated as stale (the flow is shown as not-running until the owner refreshes it). Keep it a few multiples of the persist interval.</td>
+</tr>
+<tr>
+<td><code>ontul.flow.history.max.runs</code></td>
+<td><code>20</code></td>
+<td>Maximum run records retained per flow in the replicated run history (History tab).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="job-logs">Job Logs</h2>
+<p>Streaming and batch job logs can be flushed to append-only rolling gzip segments on S3
+(<code>{prefix}jobLogs/&lt;jobId&gt;/&lt;seq&gt;-&lt;ts&gt;.log.gz</code>), so long-running jobs' logs stay durable and queryable
+by time range after the in-memory log is gone. By default these settings inherit the Exchange
+Manager's S3 target, so turning on S3-primary exchange also puts job logs on S3.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.job.logs.s3.enabled</code></td>
+<td><em>(inherits <code>ontul.exchange.s3.enabled</code>)</em></td>
+<td>Enable flushing job logs to S3 rolling segments. Defaults to whatever the exchange S3 mode is.</td>
+</tr>
+<tr>
+<td><code>ontul.job.logs.memory.tail</code></td>
+<td><code>1000</code></td>
+<td>Number of most-recent log lines kept in memory per job (the rest are flushed to S3 segments).</td>
+</tr>
+<tr>
+<td><code>ontul.job.logs.flush.interval.ms</code></td>
+<td><code>10000</code></td>
+<td>How often the worker/master drains buffered job-log lines to an S3 segment (time-based roll).</td>
+</tr>
+</tbody>
+</table>
+<p>The S3 endpoint/region/bucket/prefix/credentials for job logs default to the exchange S3 target
+(<code>ontul.exchange.s3.*</code>) and can be overridden with <code>ontul.job.logs.s3.*</code>. The backend can also be
+switched from the Admin UI <strong>Storage</strong> page at runtime (no restart), which persists to the replicated
+metadata store as <code>storage.jobLogs.*</code> / <code>storage.exchange.*</code> referencing an S3 connection.</p>
 <h2 id="admin">Admin</h2>
 <table>
 <thead>
