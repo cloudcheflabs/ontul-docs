@@ -2271,8 +2271,14 @@
 <li><code>INSERT INTO ... SELECT</code></li>
 <li><code>MERGE INTO</code></li>
 <li><code>CREATE VIEW</code></li>
+<li><code>SUBMIT STREAMING</code> — an <strong><a href="../../streaming/flow/">Ontul Flow</a></strong>: the flow's source(s) → sink edge is
+  recorded when the flow starts</li>
 </ul>
 <p>Capture is <strong>best-effort</strong>: it runs after the statement succeeds and never blocks or fails the query.</p>
+<p>For a streaming flow, Ontul-catalog tables appear under their <code>catalog.schema.table</code> name (so a flow's
+edge lines up with SQL-DML lineage), while external systems are recorded as scheme-prefixed datasets —
+<code>kafka://&lt;topic&gt;</code>, <code>cdc://&lt;connector&gt;/&lt;table&gt;</code>, <code>jdbc://&lt;table&gt;</code>, <code>es://&lt;index&gt;</code>, <code>http://&lt;endpoint&gt;</code>,
+<code>neorunbase://&lt;table&gt;</code>, or the S3 path for a file source.</p>
 <h2 id="table-level-lineage">Table-Level Lineage</h2>
 <p>Table-level lineage records the set of source tables a table was built from — every table scanned by the defining query, across joins and unions.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">demo</span><span class="p">.</span><span class="n">cust_orders</span><span class="w"> </span><span class="k">AS</span>
@@ -2369,7 +2375,7 @@
 <p>Because every catalog's tables — Iceberg, JDBC, Kafka, TPC-H — are first-class scan sources, lineage <strong>crosses systems automatically</strong>. A table built <code>FROM jdbc_catalog.public.users JOIN kafka_catalog.events.clicks</code> records both as upstream sources, giving cross-system lineage with no extra configuration.</p>
 <h2 id="openlineage-emission">OpenLineage Emission</h2>
 <p>Ontul can emit <a href="https://openlineage.io">OpenLineage</a>-spec events so external catalogs (Marquez, DataHub, Atlan, …) ingest Ontul lineage through the industry-standard wire format.</p>
-<p>Set <code>ontul.lineage.openlineage.url</code> to an HTTP endpoint; each CTAS/INSERT/MERGE/VIEW then emits a <code>COMPLETE</code> RunEvent with <code>inputs</code>, <code>outputs</code>, and a standard <code>columnLineage</code> facet. When unset, emission is disabled.</p>
+<p>Set <code>ontul.lineage.openlineage.url</code> to an HTTP endpoint; each CTAS/INSERT/MERGE/VIEW — and each streaming <a href="../../streaming/flow/">Ontul Flow</a> start — then emits a <code>COMPLETE</code> RunEvent with <code>inputs</code>, <code>outputs</code>, and a standard <code>columnLineage</code> facet. When unset, emission is disabled.</p>
 <h2 id="storage">Storage</h2>
 <p>Lineage is persisted in the leader's metadata store and replicated to followers — the same mechanism used for catalogs and IAM — so it survives restarts and leadership changes.</p>
 

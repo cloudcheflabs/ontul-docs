@@ -2212,6 +2212,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#lineage-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lineage &amp; audit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#storage-failover" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2502,6 +2513,20 @@ a separate <code>write</code> block).</p>
 <li><strong>Visibility &amp; management</strong> are <strong>owner-scoped</strong>: admins see and manage all flows; a non-admin user
   sees and can start/stop/edit/delete only the flows they own.</li>
 </ul>
+<h2 id="lineage-audit">Lineage &amp; audit</h2>
+<p>Starting a flow is captured by Ontul governance exactly like SQL DML — no configuration:</p>
+<ul>
+<li><strong><a href="../../features/audit-log/">Audit Log</a></strong> — the start is recorded as a <code>data:Write</code> event with the
+  <strong>sink</strong> as the <code>resource</code> and <strong>every source and sink dataset</strong> in <code>tables</code>, alongside who started
+  it and the full <code>SUBMIT STREAMING</code> config. An IAM-refused start is recorded with <code>decision=DENY</code>.</li>
+<li><strong><a href="../../features/data-lineage/">Data Lineage</a></strong> — a lineage edge is recorded from the flow's
+  <strong>source(s) → sink</strong> (and emitted as an OpenLineage event when <code>ontul.lineage.openlineage.url</code> is
+  set). Ontul-catalog tables appear under their <code>catalog.schema.table</code> name so a flow's edge lines up
+  with SQL-DML lineage; external systems use a scheme-prefixed dataset id — <code>kafka://&lt;topic&gt;</code>,
+  <code>cdc://&lt;connector&gt;/&lt;table&gt;</code>, <code>jdbc://&lt;table&gt;</code>, <code>es://&lt;index&gt;</code>, <code>http://&lt;endpoint&gt;</code>,
+  <code>neorunbase://&lt;table&gt;</code>, or the S3 path for a file source.</li>
+</ul>
+<p>Both are best-effort and never block or fail the flow submission.</p>
 <h2 id="storage-failover">Storage &amp; failover</h2>
 <p>A flow is a distributed streaming job; if a worker dies, another resumes the job from its last
 checkpoint via the <strong>exchange manager</strong>. For real deployments run the exchange (and job logs) on <strong>S3</strong>
