@@ -2724,6 +2724,11 @@
 <td><code>${ontul.base.data.dir}/admin.sock</code></td>
 <td>Filesystem path of the admin recovery Unix domain socket. Must live on a local filesystem that supports Unix domain sockets (not a networked mount); recreated on each Master start.</td>
 </tr>
+<tr>
+<td><code>ontul.admin.socket.marker.file</code></td>
+<td><code>master.socket</code></td>
+<td>Name of the file under <code>&lt;ontul.home&gt;/bin</code> where the Master writes the socket path it actually bound to. <code>bin/ontul-cli.sh</code> prefers that published path over re-deriving one from this file, since <code>ontul.base.data.dir</code> can be overridden with <code>-D</code> at launch. Removed on shutdown.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="metadata">Metadata</h2>
