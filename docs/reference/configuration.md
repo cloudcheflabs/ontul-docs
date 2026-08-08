@@ -87,6 +87,7 @@ Many path properties default to a subdirectory of `${ontul.base.data.dir}` (for 
 | `ontul.iam.audit.dir` | `${ontul.base.data.dir}/iam-audit` | Directory for the append-only IAM/security audit log (authentication attempts, access-key and password changes, role/policy edits). Entries are pruned per `ontul.audit.log.retention.days`. Must persist across restarts. |
 | `ontul.admin.socket.enabled` | `true` | Whether the Master exposes the out-of-band Unix domain socket used for local admin recovery (`bin/ontul-cli.sh iam:reset-password`). The socket file's OS permission (mode 600) is the only authentication. Set `false` to remove the local recovery path. See [Admin Password Recovery](../features/admin-password-recovery.md). |
 | `ontul.admin.socket.path` | `${ontul.base.data.dir}/admin.sock` | Filesystem path of the admin recovery Unix domain socket. Must live on a local filesystem that supports Unix domain sockets (not a networked mount); recreated on each Master start. |
+| `ontul.admin.socket.marker.file` | `master.socket` | Name of the file under `<ontul.home>/bin` where the Master writes the socket path it actually bound to. `bin/ontul-cli.sh` prefers that published path over re-deriving one from this file, since `ontul.base.data.dir` can be overridden with `-D` at launch. Removed on shutdown. |
 
 ## Metadata
 
