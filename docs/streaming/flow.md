@@ -173,6 +173,22 @@ Flows are governed like the rest of Ontul — see [IAM](../features/iam.md).
 - **Visibility & management** are **owner-scoped**: admins see and manage all flows; a non-admin user
   sees and can start/stop/edit/delete only the flows they own.
 
+## Lineage & audit
+
+Starting a flow is captured by Ontul governance exactly like SQL DML — no configuration:
+
+- **[Audit Log](../features/audit-log.md)** — the start is recorded as a `data:Write` event with the
+  **sink** as the `resource` and **every source and sink dataset** in `tables`, alongside who started
+  it and the full `SUBMIT STREAMING` config. An IAM-refused start is recorded with `decision=DENY`.
+- **[Data Lineage](../features/data-lineage.md)** — a lineage edge is recorded from the flow's
+  **source(s) → sink** (and emitted as an OpenLineage event when `ontul.lineage.openlineage.url` is
+  set). Ontul-catalog tables appear under their `catalog.schema.table` name so a flow's edge lines up
+  with SQL-DML lineage; external systems use a scheme-prefixed dataset id — `kafka://<topic>`,
+  `cdc://<connector>/<table>`, `jdbc://<table>`, `es://<index>`, `http://<endpoint>`,
+  `neorunbase://<table>`, or the S3 path for a file source.
+
+Both are best-effort and never block or fail the flow submission.
+
 ## Storage & failover
 
 A flow is a distributed streaming job; if a worker dies, another resumes the job from its last

@@ -25,6 +25,9 @@ Each audit event carries:
 Ontul records audit events for the statements it executes, with **no configuration**:
 
 - **Writes and DDL are always audited** — `INSERT`, `CREATE`, `MERGE`, IAM changes, etc.
+- **Starting an [Ontul Flow](../streaming/flow.md)** (`SUBMIT STREAMING`) is always audited as a
+  `data:Write` with the **sink** as `resource` and every **source and sink dataset** in `tables`;
+  an IAM-refused start is recorded with `decision=DENY`.
 - **Reads (SELECT) are audited by sampling** — see below. The engine is recorded as `ontul`, and touched tables are extracted from the statement.
 
 Capture is best-effort and never blocks or fails a query.
