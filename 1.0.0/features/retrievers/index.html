@@ -1225,6 +1225,155 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#re-ranking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Re-ranking
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Re-ranking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ontul-holds-the-contract-not-the-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ontul holds the contract, not the model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-response-always-says-what-happened" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The response always says what happened
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ordering-is-an-authorization-property" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ordering is an authorization property
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sending-text-off-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sending text off-cluster
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-wide-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cluster-wide limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-one-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting one up
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worked-example-end-to-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked example, end to end
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-the-endpoint-is-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When the endpoint is down
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#an-external-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An external endpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#measuring-whether-it-is-worth-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measuring whether it is worth it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-an-agent-sees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What an agent sees
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#row-caps" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2369,6 +2518,10 @@
 <td>Documentation of the columns the rendered query returns.</td>
 </tr>
 <tr>
+<td><code>rerank</code></td>
+<td>Optional second-stage re-ranking of the rows the template returned — see <a href="#re-ranking">Re-ranking</a>. Absent means the backend's own ordering is final.</td>
+</tr>
+<tr>
 <td><code>defaultMaxRows</code>, <code>maxRowsCeiling</code></td>
 <td>Per-retriever row defaults / cap (further bounded by a cluster-wide cap — see <a href="#row-caps">Row caps</a>).</td>
 </tr>
@@ -2577,6 +2730,367 @@
 <li><strong>No raw SQL crossed the agent boundary for retrieval.</strong> The agent filled a declared param contract; the injection-safe renderer produced the SQL.</li>
 </ul>
 <p>The end-to-end flow is exercised by <code>tests/e2e-neorunbase-retriever.sh</code> in the Ontul repo (register a NeorunBase catalog + a HYBRID retriever, invoke, assert pushdown rows, hard-filter behavior, and injection safety).</p>
+<h2 id="re-ranking">Re-ranking</h2>
+<p>A retriever's SQL template is a <strong>recall</strong> stage. It can score thousands of rows cheaply because the query and the documents were embedded independently — which is also its limitation: nothing ever compared them directly. Ask "환불 정책은 며칠인가" and every refund-related document lands in roughly the same neighbourhood, because they are all about refunds.</p>
+<p>A <strong>cross-encoder</strong> compares them. It takes the query and one document together, in one forward pass, so attention can connect <em>며칠</em> in the question to <em>14일</em> in the text:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>&quot;refunds are available within 14 days of purchase&quot;  → 0.94   (answers the question)
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>&quot;refund reasons explained&quot;                          → 0.31   (about refunds, not about how long)
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>&quot;refund request contact desk&quot;                       → 0.12
+</code></pre></div>
+<p>That costs a forward pass per row, so it cannot run over the whole corpus — which is exactly why it belongs <em>after</em> the template, over the handful of candidates recall already narrowed to.</p>
+<h3 id="ontul-holds-the-contract-not-the-model">Ontul holds the contract, not the model</h3>
+<p>The <code>rerank</code> block never names a model, a runtime or a host. It names a <strong>connection</strong>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">&quot;rerank&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reranker-internal&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">&quot;textColumn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;description&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">&quot;idColumn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">&quot;queryParam&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;q&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="nt">&quot;topN&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="nt">&quot;maxCandidates&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="nt">&quot;maxTextChars&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="nt">&quot;timeoutMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1500</span><span class="p">,</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="nt">&quot;onFailure&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PASSTHROUGH&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">  </span><span class="nt">&quot;instruction&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Given a Korean business query, retrieve passages that directly answer it&quot;</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="p">}</span>
+</code></pre></div>
+<p>Everything model-shaped — weights, quantisation, GPU, the endpoint's address — lives on that <code>RERANK</code> connection. Moving from a 0.6B to a 4B, or from a self-hosted endpoint to a managed one, is an edit on the connection: no retriever definition changes and no Ontul release is involved. The wire contract is deliberately narrow:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>POST {baseUrl}{path}
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>{ &quot;query&quot;: &quot;...&quot;, &quot;documents&quot;: [&quot;...&quot;, ...], &quot;top_n&quot;: 5, &quot;instruction&quot;: &quot;...&quot;, &quot;model&quot;: &quot;...&quot; }
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>→ { &quot;results&quot;: [ { &quot;index&quot;: 0, &quot;relevance_score&quot;: 0.94 }, ... ] }
+</code></pre></div>
+<p>Response parsing is forgiving on purpose — <code>relevance_score</code> or <code>score</code>, wrapped in <code>results</code>/<code>data</code> or a bare array, <code>index</code> present or implied by position — because that is the spread of what real endpoints emit. Anything unparseable is a skip with a named reason, never a guess.</p>
+<div class="admonition note">
+<p class="admonition-title">Dedicated re-rankers only — not generative LLMs</p>
+<p>Anything that speaks this contract fits: a self-hosted Qwen3-Reranker, Cohere Rerank, Voyage. Generative LLMs do not. They answer in prose (needs parsing, and the parse can fail), take seconds rather than hundreds of milliseconds, and therefore need retries — a loop. A retriever invocation is a single synchronous call, so LLM-based ranking belongs in the agent loop above it. <code>ontul.rerank.max.timeout.ms</code> (default 5000) is the mechanical expression of that boundary: a call that needs longer cannot be configured here.</p>
+</div>
+<h3 id="fields">Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td><code>true</code></td>
+<td>Off switch that <strong>keeps</strong> the configuration. Toggling this is how you A/B whether re-ranking actually beats the backend's ordering on your data, without deleting and retyping the block.</td>
+</tr>
+<tr>
+<td><code>connectionId</code></td>
+<td>—</td>
+<td>Required. A <code>ConnectionStore</code> entry of type <code>RERANK</code>. Credentials never appear in the retriever, so a caller who can read the definition still cannot read the endpoint's token.</td>
+</tr>
+<tr>
+<td><code>textColumn</code></td>
+<td>—</td>
+<td>Required. The result column whose text is scored. Resolved against the columns the query <strong>actually returned</strong>, not <code>outputColumns</code> (which is documentation and may be stale).</td>
+</tr>
+<tr>
+<td><code>idColumn</code></td>
+<td>—</td>
+<td>Optional. Echoed in the response so an operator can see which rows moved.</td>
+</tr>
+<tr>
+<td><code>queryParam</code></td>
+<td>first required <code>STRING</code> param</td>
+<td>Which declared param carries the user's question. Set it explicitly when the template takes more than one string.</td>
+</tr>
+<tr>
+<td><code>topN</code></td>
+<td><code>5</code></td>
+<td>Rows kept <strong>after</strong> re-ranking. The caller's <code>maxRows</code> sizes the <em>candidate</em> set; this sizes the answer.</td>
+</tr>
+<tr>
+<td><code>maxCandidates</code></td>
+<td><code>50</code></td>
+<td>Ceiling on rows sent in one request. Bounds endpoint load and payload size regardless of the <code>maxRows</code> a caller asks for.</td>
+</tr>
+<tr>
+<td><code>maxTextChars</code></td>
+<td><code>2000</code></td>
+<td>Per-document truncation. Cross-encoders take a fixed window (commonly 512 tokens) and silently drop the tail, so <strong>where the cut happens is a ranking-quality decision</strong> — made here by the admin who knows the chunking, rather than implicitly by the model.</td>
+</tr>
+<tr>
+<td><code>instruction</code></td>
+<td>—</td>
+<td>Task instruction sent with the request. Write it in <strong>English even for Korean corpora</strong>: instruction-tuned re-rankers were trained on English instructions and follow them more reliably.</td>
+</tr>
+<tr>
+<td><code>timeoutMs</code></td>
+<td><code>1500</code></td>
+<td>Per-call budget. This sits inside a synchronous invoke, so it is also the latency a caller pays before a <code>PASSTHROUGH</code>.</td>
+</tr>
+<tr>
+<td><code>onFailure</code></td>
+<td><code>PASSTHROUGH</code></td>
+<td><code>PASSTHROUGH</code> keeps the backend's ordering and flags it. <code>FAIL</code> returns <strong>502</strong> — for callers where a wrong ordering is worse than an error.</td>
+</tr>
+<tr>
+<td><code>acknowledgeEgress</code></td>
+<td><code>false</code></td>
+<td>Required when the connection is marked <code>external=true</code>. See <a href="#sending-text-off-cluster">Sending text off-cluster</a>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-response-always-says-what-happened">The response always says what happened</h3>
+<p>Every invocation carries a <code>rerank</code> object, applied or not:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;semantic.rag.docs_hybrid&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT d.id, d.description, h.score FROM HYBRID_SEARCH(...)&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">&quot;columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;description&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;score&quot;</span><span class="p">],</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">&quot;rows&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;refunds are available within 14 days of purchase&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">0.71</span><span class="p">],</span><span class="w"> </span><span class="err">...</span><span class="p">],</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span><span class="nt">&quot;rowCount&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">  </span><span class="nt">&quot;rerank&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="nt">&quot;applied&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reranker-internal&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">    </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Qwen/Qwen3-Reranker-0.6B&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">    </span><span class="nt">&quot;candidates&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">    </span><span class="nt">&quot;latencyMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">213</span><span class="p">,</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">    </span><span class="nt">&quot;scores&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.94</span><span class="p">,</span><span class="w"> </span><span class="mf">0.31</span><span class="p">,</span><span class="w"> </span><span class="mf">0.12</span><span class="p">],</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">    </span><span class="nt">&quot;ids&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">]</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="p">}</span>
+</code></pre></div>
+<p>When it did not run, <code>applied</code> is <code>false</code> and <code>reason</code> names the cause. This matters more than it looks: <strong>a re-ranker that quietly stopped working is indistinguishable from one that ranks badly.</strong> Without the reason, "results got worse this week" is an unfalsifiable complaint.</p>
+<table>
+<thead>
+<tr>
+<th><code>reason</code></th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>not-configured</code></td>
+<td>The retriever has no <code>rerank</code> block.</td>
+</tr>
+<tr>
+<td><code>disabled</code></td>
+<td><code>rerank.enabled=false</code> on this retriever.</td>
+</tr>
+<tr>
+<td><code>disabled-cluster-wide</code></td>
+<td><code>ontul.rerank.enabled=false</code> — the operator's kill switch.</td>
+</tr>
+<tr>
+<td><code>text-column-missing:&lt;name&gt;</code></td>
+<td>The template no longer returns that column. A <strong>configuration</strong> problem, not an endpoint problem.</td>
+</tr>
+<tr>
+<td><code>connection-missing:&lt;id&gt;</code>, <code>connection-type:&lt;T&gt;</code>, <code>connection-missing-baseUrl</code></td>
+<td>The connection was deleted, replaced, or is incomplete.</td>
+</tr>
+<tr>
+<td><code>query-empty</code></td>
+<td>No query text could be resolved from the args.</td>
+</tr>
+<tr>
+<td><code>timeout</code>, <code>http-&lt;code&gt;</code>, <code>malformed-response</code>, <code>empty-results</code>, <code>error:&lt;Type&gt;</code></td>
+<td>The endpoint let us down. These are the ones <code>onFailure=FAIL</code> turns into a 502; misconfigurations above stay a 200 with the reason, because answering 502 for a renamed column sends the operator to the wrong system.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ordering-is-an-authorization-property">Ordering is an authorization property</h3>
+<p>Re-ranking runs <strong>strictly after</strong> the query. The rows handed to the endpoint have already passed the IAM <code>data:SelectTable</code> check, the <code>allowedRoles</code> group check, and whatever row-level scoping the template applied through <code>${user.id}</code> / <code>${user.roles}</code>.</p>
+<p>That order is not an implementation detail. Re-ranking first and filtering afterwards would ship rows to an external service that the caller was never entitled to see. Rows the endpoint claims that were never candidates (an out-of-range <code>index</code>) are dropped for the same reason.</p>
+<h3 id="sending-text-off-cluster">Sending text off-cluster</h3>
+<p>A <code>RERANK</code> connection can be marked <code>external=true</code>, meaning document text leaves the cluster. Registration then requires <code>rerank.acknowledgeEgress=true</code>.</p>
+<p>Ontul deliberately does <strong>not</strong> try to decide this for you. A retriever's output columns come from an arbitrary SQL template and carry no link to the <code>pii</code> flags on object-type properties — there is nothing to infer from. A check that cannot actually see PII would be theatre; recording a named admin's explicit decision (with <code>owner</code> and <code>updatedAt</code>) is honest and auditable.</p>
+<p>Self-hosting avoids the question entirely: a Qwen3-Reranker behind your own endpoint keeps the text inside the cluster, and the retriever definition is identical either way.</p>
+<h3 id="cluster-wide-limits">Cluster-wide limits</h3>
+<p>In <code>ontul.properties</code> — these bound what any single retriever definition may ask of the cluster, and are enforced at <strong>registration</strong> so a bad value is a 400 on the definition rather than a surprise at query time:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.rerank.enabled</code></td>
+<td><code>true</code></td>
+<td>Master kill switch. <code>false</code> makes every retriever report <code>disabled-cluster-wide</code> — drop re-ranking during an incident without editing retrievers.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.max.timeout.ms</code></td>
+<td><code>5000</code></td>
+<td>Ceiling on <code>rerank.timeoutMs</code>. Keeps generative LLMs out of the synchronous path.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.max.candidates</code></td>
+<td><code>200</code></td>
+<td>Ceiling on <code>rerank.maxCandidates</code>.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.max.text.chars</code></td>
+<td><code>4000</code></td>
+<td>Ceiling on <code>rerank.maxTextChars</code>.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.http.connect.timeout.ms</code></td>
+<td><code>1000</code></td>
+<td>TCP connect timeout, separate from the per-call budget: an unreachable host fails fast instead of burning the whole request.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.min.timeout.ms</code></td>
+<td><code>50</code></td>
+<td>Floor on <code>rerank.timeoutMs</code> — catches a budget that was meant to be seconds.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.default.path</code></td>
+<td><code>/rerank</code></td>
+<td>Path appended to a connection's <code>baseUrl</code> when the connection sets no <code>path</code> of its own.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="setting-one-up">Setting one up</h3>
+<ol>
+<li><strong>Connections → New</strong>, type <strong>RERANK</strong>. Set <code>baseUrl</code> (e.g. <code>http://reranker:8080</code>), optionally <code>path</code> (default <code>/rerank</code>) and <code>model</code>, plus auth. Mark <code>external=true</code> if the endpoint is outside the cluster.</li>
+<li><strong>Retrievers → Edit</strong> the retriever, tick <strong>Re-rank results</strong>, pick the connection, set <code>textColumn</code> and <code>topN</code>.</li>
+<li><strong>Invoke (▶)</strong> to test. The panel shows whether re-ranking applied, the model, the latency, the scores — or the reason it was skipped.</li>
+<li>Measure before committing: run with <code>enabled: false</code>, then <code>true</code>, and compare. If the template already does structural re-ranking (PPR, graph paths), the additional gain may be small — the contract is simple enough that adding it later costs nothing.</li>
+</ol>
+<p>The end-to-end behaviour is exercised by <code>tests/e2e-retriever-rerank.sh</code> in the Ontul repo: a mock endpoint with a deterministic ordering rule proves the rows follow the endpoint rather than the backend, and every failure mode — timeout, 5xx, garbage body, out-of-range index, endpoint stopped — is asserted to degrade into a flagged pass-through.</p>
+<h3 id="worked-example-end-to-end">Worked example, end to end</h3>
+<p><strong>1. Register the endpoint as a connection.</strong> Everything model-shaped stops here.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://ontul-master:8080/admin/connections<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$ADMIN_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="s1">    &quot;connectionId&quot;: &quot;reranker-internal&quot;,</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="s1">    &quot;type&quot;: &quot;RERANK&quot;,</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="s1">    &quot;description&quot;: &quot;Qwen3-Reranker-0.6B behind TEI, in-cluster&quot;,</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="s1">    &quot;properties&quot;: {</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="s1">      &quot;baseUrl&quot;: &quot;http://reranker.internal:8080&quot;,</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="s1">      &quot;path&quot;: &quot;/rerank&quot;,</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="s1">      &quot;model&quot;: &quot;Qwen/Qwen3-Reranker-0.6B&quot;,</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="s1">      &quot;authType&quot;: &quot;NONE&quot;,</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="s1">      &quot;external&quot;: &quot;false&quot;</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="s1">    }</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p>Name the secret <code>apiKey</code> (or <code>secret</code>) rather than <code>token</code> when the endpoint needs
+one — the connections list masks keys containing <em>secret</em> / <em>password</em> / <em>key</em>, and
+a property literally named <code>token</code> is returned in the clear.</p>
+<p><strong>2. Register the retriever.</strong> <code>maxRows</code> at invoke time sizes the candidate set;
+<code>topN</code> sizes the answer.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://ontul-master:8080/api/v1/retrievers<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="s1">    &quot;catalog&quot;: &quot;semantic&quot;, &quot;schema&quot;: &quot;rag&quot;, &quot;name&quot;: &quot;docs_hybrid&quot;,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="s1">    &quot;kind&quot;: &quot;HYBRID&quot;, &quot;targetCatalog&quot;: &quot;nb&quot;,</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="s1">    &quot;sqlTemplate&quot;: &quot;SELECT d.id, d.description, h.score FROM HYBRID_SEARCH(table =&gt; &#39;</span><span class="s2">&quot;&#39;&quot;</span><span class="s1">&#39;public.docs&#39;</span><span class="s2">&quot;&#39;&quot;</span><span class="s1">&#39;, ts_query =&gt; ${q}, ts_index =&gt; &#39;</span><span class="s2">&quot;&#39;&quot;</span><span class="s1">&#39;idx_docs_text&#39;</span><span class="s2">&quot;&#39;&quot;</span><span class="s1">&#39;, vec_query =&gt; ${qvec}, vec_index =&gt; &#39;</span><span class="s2">&quot;&#39;&quot;</span><span class="s1">&#39;idx_docs_emb&#39;</span><span class="s2">&quot;&#39;&quot;</span><span class="s1">&#39;, alpha =&gt; 0.4, beta =&gt; 0.6, k =&gt; ${k}) h JOIN docs d ON d.id = h.id ORDER BY h.score DESC LIMIT ${k}&quot;,</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="s1">    &quot;params&quot;: [</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="s1">      {&quot;name&quot;: &quot;q&quot;,    &quot;type&quot;: &quot;STRING&quot;, &quot;required&quot;: true},</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="s1">      {&quot;name&quot;: &quot;qvec&quot;, &quot;type&quot;: &quot;VECTOR&quot;, &quot;required&quot;: true},</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="s1">      {&quot;name&quot;: &quot;k&quot;,    &quot;type&quot;: &quot;INT&quot;,    &quot;required&quot;: false, &quot;defaultValue&quot;: &quot;50&quot;}</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="s1">    ],</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="s1">    &quot;outputColumns&quot;: [{&quot;name&quot;: &quot;id&quot;}, {&quot;name&quot;: &quot;description&quot;}, {&quot;name&quot;: &quot;score&quot;}],</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="s1">    &quot;rerank&quot;: {</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="s1">      &quot;enabled&quot;: true,</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="s1">      &quot;connectionId&quot;: &quot;reranker-internal&quot;,</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="s1">      &quot;textColumn&quot;: &quot;description&quot;,</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="s1">      &quot;idColumn&quot;: &quot;id&quot;,</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="s1">      &quot;queryParam&quot;: &quot;q&quot;,</span>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="s1">      &quot;topN&quot;: 5,</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="s1">      &quot;maxCandidates&quot;: 50,</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="s1">      &quot;maxTextChars&quot;: 2000,</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="s1">      &quot;timeoutMs&quot;: 1500,</span>
+<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="s1">      &quot;onFailure&quot;: &quot;PASSTHROUGH&quot;,</span>
+<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="s1">      &quot;instruction&quot;: &quot;Given a Korean business query, retrieve passages that directly answer it&quot;</span>
+<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="s1">    },</span>
+<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="s1">    &quot;status&quot;: &quot;CERTIFIED&quot;</span>
+<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p><strong>3. Invoke it.</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://ontul-master:8080/api/v1/retrievers/semantic.rag.docs_hybrid/invoke<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;args&quot;: {&quot;q&quot;: &quot;환불 정책은 며칠인가&quot;, &quot;qvec&quot;: &quot;[0.9, 0.1, 0.0, 0.0]&quot;, &quot;k&quot;: 50}, &quot;maxRows&quot;: 50}&#39;</span>
+</code></pre></div>
+<p>50 rows are recalled and sent to the endpoint; 5 come back:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;rowCount&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">&quot;columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;d.id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;d.description&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;h.score&quot;</span><span class="p">],</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">&quot;rows&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;구매 후 14일 이내 환불 가능합니다&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">0.71</span><span class="p">],</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;환불 사유는 다음과 같습니다&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">0.83</span><span class="p">],</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;환불 담당 부서 연락처&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">0.80</span><span class="p">]</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">  </span><span class="nt">&quot;rerank&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">    </span><span class="nt">&quot;applied&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">    </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reranker-internal&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">    </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Qwen/Qwen3-Reranker-0.6B&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="w">    </span><span class="nt">&quot;candidates&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="w">    </span><span class="nt">&quot;latencyMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">213</span><span class="p">,</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="w">    </span><span class="nt">&quot;scores&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.94</span><span class="p">,</span><span class="w"> </span><span class="mf">0.31</span><span class="p">,</span><span class="w"> </span><span class="mf">0.12</span><span class="p">],</span>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a><span class="w">    </span><span class="nt">&quot;ids&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">]</span>
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a><span class="p">}</span>
+</code></pre></div>
+<p>Note row 4 is now first even though its hybrid score (<code>0.71</code>) is the <em>lowest</em> of the
+three. That inversion is the whole point: hybrid ranked by topical similarity, the
+cross-encoder ranked by whether the passage answers <em>this</em> question.</p>
+<p><strong>4. What the endpoint received.</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="p">{</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;환불 정책은 며칠인가&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nt">&quot;documents&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;환불 사유는 다음과 같습니다&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;환불 담당 부서 연락처&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">],</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="nt">&quot;top_n&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span><span class="nt">&quot;instruction&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Given a Korean business query, retrieve passages that directly answer it&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Qwen/Qwen3-Reranker-0.6B&quot;</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="p">}</span>
+</code></pre></div>
+<p>Documents are truncated to <code>maxTextChars</code> <strong>before</strong> they leave Ontul, and only the
+<code>textColumn</code> is sent — not the whole row.</p>
+<h3 id="when-the-endpoint-is-down">When the endpoint is down</h3>
+<p>Same request, re-ranker stopped. The answer still arrives:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">&quot;rowCount&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">&quot;rows&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;환불 사유는 다음과 같습니다&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">0.83</span><span class="p">],</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">],</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="nt">&quot;rerank&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;applied&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;timeout&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;latencyMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1502</span><span class="p">,</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">              </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reranker-internal&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>Rows are back in the backend's order and <code>reason</code> says why. Flip <code>onFailure</code> to
+<code>FAIL</code> and the same outage returns <strong>502</strong> instead — pick per retriever, not
+globally.</p>
+<h3 id="an-external-endpoint">An external endpoint</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;baseUrl&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://api.cohere.com/v2&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/rerank&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rerank-v3.5&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span><span class="nt">&quot;authType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BEARER&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span><span class="nt">&quot;apiKey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span><span class="nt">&quot;external&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;true&quot;</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="p">}</span>
+</code></pre></div>
+<p>With <code>external=true</code>, registering a retriever against it fails until the admin adds
+<code>"acknowledgeEgress": true</code> to the <code>rerank</code> block:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>connection &#39;cohere-rerank&#39; is marked external=true: document text from
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>&#39;description&#39; would leave the cluster. Set rerank.acknowledgeEgress=true to
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>accept that explicitly
+</code></pre></div>
+<h3 id="measuring-whether-it-is-worth-it">Measuring whether it is worth it</h3>
+<p>The <code>enabled</code> flag exists so this is a one-field edit rather than a rewrite:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># A: recall only</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../api/v1/retrievers<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{... &quot;rerank&quot;: {..., &quot;enabled&quot;: false}}&#39;</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="c1"># run your evaluation set, record hit@5</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="c1"># B: with re-ranking</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../api/v1/retrievers<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{... &quot;rerank&quot;: {..., &quot;enabled&quot;: true}}&#39;</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="c1"># same evaluation set, compare</span>
+</code></pre></div>
+<p>Worth doing before committing to the latency. If the template already re-ranks
+structurally — PPR, graph paths, a well-tuned <code>alpha</code>/<code>beta</code> — the additional gain
+can be small, and <code>rerank.applied</code> in each response tells you which arm produced
+any given result.</p>
+<h3 id="what-an-agent-sees">What an agent sees</h3>
+<p><code>ontul_describe_retriever</code> surfaces the <code>rerank</code> block, and <code>ontul_invoke_retriever</code>
+passes the <code>rerank</code> object through. Both tool descriptions tell the agent not to
+re-order rows that came back with <code>applied: true</code> — a second opinion from a
+generative model would be worse than the first, since the cross-encoder compared
+each row against the query directly.</p>
 <h2 id="row-caps">Row caps</h2>
 <p>Two layers bound the result size, smaller wins:</p>
 <ul>
@@ -2587,9 +3101,10 @@
 <h2 id="configuring-in-the-admin-ui">Configuring in the Admin UI</h2>
 <p>Retrievers can be managed without REST calls under <strong>Semantic &amp; AI → Retrievers</strong> in the Admin UI:</p>
 <ul>
-<li><strong>Register Retriever</strong> opens a side panel for <code>catalog</code> / <code>schema</code> / <code>name</code>, <code>kind</code>, the <strong>target catalog</strong> (a <code>neorunbase</code> catalog), the SQL template, repeatable <strong>parameter</strong> rows (name, type, required, default, description), synonyms, <code>allowedRoles</code>, and status.</li>
-<li>Each retriever card shows its kind badge, target catalog, a shield icon when role-gated, and its declared params (<code>name:type*</code>).</li>
-<li>The <strong>Invoke</strong> (▶) button opens a tester: fill the declared <code>args</code> as JSON, run it, and the panel shows the <strong>rendered SQL</strong> that was pushed to NeorunBase plus the returned rows — the same <code>POST /api/v1/retrievers/{fqn}/invoke</code> an agent calls. It's the fastest way to validate a template + param contract before agents use it.</li>
+<li><strong>Register Retriever</strong> opens a side panel for <code>catalog</code> / <code>schema</code> / <code>name</code>, <code>kind</code>, the <strong>target catalog</strong> (a <code>neorunbase</code> catalog), the SQL template, repeatable <strong>parameter</strong> rows (name, type, required, default, description), an optional <strong>Re-rank</strong> block, synonyms, <code>allowedRoles</code>, and status.</li>
+<li>The <strong>Edit</strong> (✏️) button reopens an existing retriever in the same panel. <code>catalog</code> / <code>schema</code> / <code>name</code> are its identity and are locked there — saving is an upsert on that FQN, so letting them change would create a second retriever instead of updating this one. Editing is what makes the <code>rerank.enabled</code> A/B a one-field change.</li>
+<li>Each retriever card shows its kind badge, target catalog, a shield icon when role-gated, a <strong>RERANK top N</strong> badge when re-ranking is configured (greyed out when it is configured but disabled), and its declared params (<code>name:type*</code>).</li>
+<li>The <strong>Invoke</strong> (▶) button opens a tester: fill the declared <code>args</code> as JSON, run it, and the panel shows the <strong>rendered SQL</strong> that was pushed to NeorunBase, whether re-ranking applied (with model, latency and scores — or the reason it was skipped), plus the returned rows — the same <code>POST /api/v1/retrievers/{fqn}/invoke</code> an agent calls. It's the fastest way to validate a template + param contract before agents use it.</li>
 </ul>
 <p>Metric / retriever <code>allowedRoles</code> map to IAM groups — see <a href="../iam/#semantic-layer-retriever-rbac">Semantic Layer &amp; Retriever RBAC</a>.</p>
 <h2 id="storage-replication-governance">Storage, replication, governance</h2>
@@ -2600,7 +3115,7 @@
 <li><a href="../semantic-layer/">Semantic Layer</a> — metrics, dimensions, and query rewriting.</li>
 <li><a href="../../reference/mcp-server/">MCP Server</a> — the agent tool surface.</li>
 <li><a href="../connector-architecture/">Connector Architecture</a> — how the <code>neorunbase</code> connector and pushdown fit in.</li>
-<li><a href="../../reference/configuration/">Configuration</a> — <code>ontul.retriever.max.rows.ceiling</code>.</li>
+<li><a href="../../reference/configuration/">Configuration</a> — <code>ontul.retriever.max.rows.ceiling</code>, <code>ontul.rerank.*</code>.</li>
 </ul>
 
 

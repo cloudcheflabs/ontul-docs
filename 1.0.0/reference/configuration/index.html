@@ -2790,6 +2790,41 @@
 <td><code>1000</code></td>
 <td>Hard cluster-wide cap on the number of rows a single <a href="../../features/retrievers/">retriever</a> invocation (<code>POST /api/v1/retrievers/{fqn}/invoke</code>) may return. Applied on top of each retriever's own <code>maxRowsCeiling</code>, so the effective cap is the smaller of the two. Lets an operator bound retriever result size globally regardless of per-retriever definitions.</td>
 </tr>
+<tr>
+<td><code>ontul.rerank.enabled</code></td>
+<td><code>true</code></td>
+<td>Master kill switch for retriever <a href="../../features/retrievers/#re-ranking">re-ranking</a>. <code>false</code> makes every retriever's <code>rerank</code> block report <code>applied=false, reason=disabled-cluster-wide</code> — an operator can drop re-ranking during an incident without editing any retriever.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.max.timeout.ms</code></td>
+<td><code>5000</code></td>
+<td>Upper bound on a retriever's <code>rerank.timeoutMs</code>. The re-rank call sits inside the synchronous invoke, so this is also the worst-case latency a caller pays before falling back to the backend's ordering. Keeping it low is what stops a generative LLM — seconds per call, prose output, needs retries — from being wired into a retriever; that belongs in an agent loop.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.min.timeout.ms</code></td>
+<td><code>50</code></td>
+<td>Lower bound on <code>rerank.timeoutMs</code>. A budget below this is almost always a typo (a <code>5</code> meant as seconds), and it would make every call time out while looking like the endpoint is at fault.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.max.candidates</code></td>
+<td><code>200</code></td>
+<td>Upper bound on <code>rerank.maxCandidates</code>: how many rows may be sent to the endpoint in one request. Bounds endpoint load and payload size regardless of the <code>maxRows</code> a caller asks for.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.max.text.chars</code></td>
+<td><code>4000</code></td>
+<td>Upper bound on <code>rerank.maxTextChars</code>, the per-document truncation. Cross-encoders take a fixed window (commonly 512 tokens) and silently drop the tail, so this caps how much text may be sent per row before that happens invisibly.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.http.connect.timeout.ms</code></td>
+<td><code>1000</code></td>
+<td>TCP connect timeout for the re-ranker endpoint, separate from the per-call budget: an unreachable host fails fast instead of burning the whole request timeout.</td>
+</tr>
+<tr>
+<td><code>ontul.rerank.default.path</code></td>
+<td><code>/rerank</code></td>
+<td>Request path appended to a <code>RERANK</code> connection's <code>baseUrl</code> when that connection does not set its own <code>path</code>. Change it only if every endpoint in the deployment mounts the API elsewhere — per-endpoint differences belong on the connection.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="worker-health-check">Worker Health Check</h2>
