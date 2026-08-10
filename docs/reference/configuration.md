@@ -108,6 +108,13 @@ Many path properties default to a subdirectory of `${ontul.base.data.dir}` (for 
 | Property | Default | Description |
 | --- | --- | --- |
 | `ontul.retriever.max.rows.ceiling` | `1000` | Hard cluster-wide cap on the number of rows a single [retriever](../features/retrievers.md) invocation (`POST /api/v1/retrievers/{fqn}/invoke`) may return. Applied on top of each retriever's own `maxRowsCeiling`, so the effective cap is the smaller of the two. Lets an operator bound retriever result size globally regardless of per-retriever definitions. |
+| `ontul.rerank.enabled` | `true` | Master kill switch for retriever [re-ranking](../features/retrievers.md#re-ranking). `false` makes every retriever's `rerank` block report `applied=false, reason=disabled-cluster-wide` — an operator can drop re-ranking during an incident without editing any retriever. |
+| `ontul.rerank.max.timeout.ms` | `5000` | Upper bound on a retriever's `rerank.timeoutMs`. The re-rank call sits inside the synchronous invoke, so this is also the worst-case latency a caller pays before falling back to the backend's ordering. Keeping it low is what stops a generative LLM — seconds per call, prose output, needs retries — from being wired into a retriever; that belongs in an agent loop. |
+| `ontul.rerank.min.timeout.ms` | `50` | Lower bound on `rerank.timeoutMs`. A budget below this is almost always a typo (a `5` meant as seconds), and it would make every call time out while looking like the endpoint is at fault. |
+| `ontul.rerank.max.candidates` | `200` | Upper bound on `rerank.maxCandidates`: how many rows may be sent to the endpoint in one request. Bounds endpoint load and payload size regardless of the `maxRows` a caller asks for. |
+| `ontul.rerank.max.text.chars` | `4000` | Upper bound on `rerank.maxTextChars`, the per-document truncation. Cross-encoders take a fixed window (commonly 512 tokens) and silently drop the tail, so this caps how much text may be sent per row before that happens invisibly. |
+| `ontul.rerank.http.connect.timeout.ms` | `1000` | TCP connect timeout for the re-ranker endpoint, separate from the per-call budget: an unreachable host fails fast instead of burning the whole request timeout. |
+| `ontul.rerank.default.path` | `/rerank` | Request path appended to a `RERANK` connection's `baseUrl` when that connection does not set its own `path`. Change it only if every endpoint in the deployment mounts the API elsewhere — per-endpoint differences belong on the connection. |
 
 ## Worker Health Check
 
