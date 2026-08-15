@@ -2409,6 +2409,13 @@ every appended row), <strong>zero failures escaping to the client</strong>, and 
 (the cold-file / seq-margin selection kept compaction behind the live writer; the retry net was not
 even needed).</p>
 </blockquote>
+<div class="admonition tip">
+<p class="admonition-title">Streaming sinks are the main reason to schedule this</p>
+<p>An <a href="../../streaming/flow/">Ontul Flow</a> commits on an interval, so it steadily produces small files.
+Turn on scheduled compaction for the flow's sink table and leave the flow running — the safe
+defaults above are exactly what keeps the rewrite behind a live streaming writer, so ingestion
+never has to stop for maintenance.</p>
+</div>
 <hr />
 <h3 id="expire_snapshots-drop-old-snapshots-and-their-files"><code>expire_snapshots</code> — drop old snapshots and their files</h3>
 <p>Removes snapshots (table versions) that are no longer needed and physically deletes the data/metadata

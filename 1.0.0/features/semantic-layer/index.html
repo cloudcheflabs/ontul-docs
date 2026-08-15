@@ -1302,6 +1302,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#certification-goes-stale-when-the-view-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certification goes stale when the view changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#lineage-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2874,7 +2885,11 @@
 <tbody>
 <tr>
 <td><code>status</code></td>
-<td><code>DRAFT</code> (default) / <code>CERTIFIED</code> / <code>DEPRECATED</code>. BI clients can filter by this; LLMs should prefer CERTIFIED.</td>
+<td><code>DRAFT</code> (default) / <code>CERTIFIED</code> / <code>DEPRECATED</code> — what a human declared. <strong>Server-owned</strong>: a register/update payload cannot set it.</td>
+</tr>
+<tr>
+<td><code>effectiveStatus</code></td>
+<td>Read-only, returned on every read. <code>status</code>, plus whether the view has been edited since it was certified (<code>STALE</code>). This is the field BI clients and LLMs should filter on — see below.</td>
 </tr>
 <tr>
 <td><code>certifiedBy</code></td>
@@ -2905,7 +2920,21 @@
 <a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views/tpch.tiny.lineitem_sales/certify<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
 </code></pre></div>
-<p>The <code>/certify</code> endpoint is separate from the generic PATCH so audit trails treat certification as a distinct event — the caller's id becomes <code>certifiedBy</code>, not a free-text field.</p>
+<p>The <code>/certify</code> endpoint is separate from the generic PATCH so audit trails treat certification as
+a distinct event — the caller's id becomes <code>certifiedBy</code>, not a free-text field. <code>status</code>,
+<code>certifiedBy</code>, <code>certifiedAt</code> and the fingerprint are ignored on register/update, so a view cannot
+arrive already claiming to be certified.</p>
+<h3 id="certification-goes-stale-when-the-view-changes">Certification goes stale when the view changes</h3>
+<p>Certifying stamps a fingerprint of the view's <strong>semantics</strong> — <code>baseSql</code>, metric expressions and
+their mandatory filters, dimensions, view-level mandatory filters, conformed-dimension joins.
+Change any of them and every read reports:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CERTIFIED&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;effectiveStatus&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;STALE&quot;</span><span class="p">,</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span><span class="nt">&quot;certificationNote&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;the definition changed after it was certified&quot;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p>Editing a description, synonym or tag does <strong>not</strong> revoke a sign-off. Re-certify to sign off on
+the new shape. Object types built on a DRAFT or STALE view inherit the lower trust — see
+<a href="../ontology/#certification-trust-an-agent-can-act-on">Ontology → Certification</a>. Certification
+requires the <code>ontology:Certify</code> IAM action (admins always may), separate from edit rights.</p>
 <h3 id="lineage-integration">Lineage integration</h3>
 <p>When a semantic view is registered, the master synthesizes <code>SELECT &lt;every metric expr&gt;, &lt;every dim&gt; FROM (baseSql) t</code>, plans it, and feeds the result through both:</p>
 <ul>
@@ -2954,78 +2983,78 @@
 <h2 id="bi-tool-exposure">BI tool exposure</h2>
 <p>A semantic view appears to JDBC / ODBC introspection as if it were a regular VIEW whose columns are the metrics and dimensions. Tableau, Power BI, Looker, DBeaver, JetBrains DataGrip can browse and query without ever seeing the underlying <code>baseSql</code> schema.</p>
 <p><code>DESCRIBE tpch.tiny.lineitem_sales</code> returns the logical column list with a <code>Kind</code> discriminator:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>| Column     | Type      | Nullable | Kind     |
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>|------------|-----------|----------|----------|
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>| revenue    | AGGREGATE | YES      | MEASURE  |
-<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>| units      | AGGREGATE | YES      | MEASURE  |
-<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>| l_shipdate | DIMENSION | YES      | DIMENSION|
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>| Column     | Type      | Nullable | Kind     |
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>|------------|-----------|----------|----------|
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>| revenue    | AGGREGATE | YES      | MEASURE  |
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>| units      | AGGREGATE | YES      | MEASURE  |
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>| l_shipdate | DIMENSION | YES      | DIMENSION|
 </code></pre></div>
 <p>Flight SQL <code>CommandGetTables</code> marks the view as <code>VIEW</code> type (vs. <code>TABLE</code> for plain Iceberg / JDBC / NeorunBase tables) so BI tools render the correct icon and pull the column list from the semantic surface.</p>
 <p>See <a href="../bi-integration/">BI Integration</a> for end-to-end Tableau / DBeaver / Power BI setup.</p>
 <h2 id="end-to-end-example-tenant-scoped-sales-dashboard">End-to-end example: tenant-scoped sales dashboard</h2>
 <p>A more realistic Phase-3 view that exercises mandatory filters, derived metrics, conformed dimensions, and governance simultaneously.</p>
 <h3 id="define-the-view">Define the view</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="s1">      &quot;catalog&quot;: &quot;saas&quot;, &quot;schema&quot;: &quot;core&quot;, &quot;name&quot;: &quot;sales&quot;,</span>
-<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="s1">      &quot;description&quot;: &quot;Per-tenant sales facts — multi-tenant row-scoping enforced.&quot;,</span>
-<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="s1">      &quot;baseSql&quot;: &quot;SELECT order_id, tenant_id, customer_id, part_id, amount, unit_cost, quantity, status, ship_date FROM saas.core.raw_orders&quot;,</span>
-<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a><span class="s1">      &quot;metrics&quot;: [</span>
-<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a><span class="s1">        {&quot;name&quot;:&quot;revenue&quot;, &quot;expr&quot;:&quot;SUM(amount)&quot;,</span>
-<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a><span class="s1">         &quot;description&quot;:&quot;Total net revenue&quot;,</span>
-<a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a><span class="s1">         &quot;synonyms&quot;:[&quot;매출&quot;,&quot;net_revenue&quot;],</span>
-<a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a><span class="s1">         &quot;mandatoryFilters&quot;:[&quot;status = &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;COMPLETED&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;&quot;]</span>
-<a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a><span class="s1">        },</span>
-<a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a><span class="s1">        {&quot;name&quot;:&quot;cost&quot;,    &quot;expr&quot;:&quot;SUM(unit_cost * quantity)&quot;,</span>
-<a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a><span class="s1">         &quot;description&quot;:&quot;Total cost&quot;},</span>
-<a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a><span class="s1">        {&quot;name&quot;:&quot;profit&quot;,         &quot;expr&quot;:&quot;revenue - cost&quot;,</span>
-<a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a><span class="s1">         &quot;description&quot;:&quot;Net profit (derived)&quot;},</span>
-<a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a><span class="s1">        {&quot;name&quot;:&quot;profit_margin&quot;,  &quot;expr&quot;:&quot;(revenue - cost) / revenue&quot;,</span>
-<a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a><span class="s1">         &quot;description&quot;:&quot;Profit / revenue ratio&quot;},</span>
-<a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a><span class="s1">        {&quot;name&quot;:&quot;vip_revenue&quot;,    &quot;expr&quot;:&quot;SUM(amount) FILTER (WHERE status = &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;VIP&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;)&quot;,</span>
-<a id="__codelineno-27-21" name="__codelineno-27-21" href="#__codelineno-27-21"></a><span class="s1">         &quot;description&quot;:&quot;Revenue from VIP segment&quot;,</span>
-<a id="__codelineno-27-22" name="__codelineno-27-22" href="#__codelineno-27-22"></a><span class="s1">         &quot;allowedRoles&quot;:[&quot;finance&quot;,&quot;analyst&quot;]</span>
-<a id="__codelineno-27-23" name="__codelineno-27-23" href="#__codelineno-27-23"></a><span class="s1">        }</span>
-<a id="__codelineno-27-24" name="__codelineno-27-24" href="#__codelineno-27-24"></a><span class="s1">      ],</span>
-<a id="__codelineno-27-25" name="__codelineno-27-25" href="#__codelineno-27-25"></a><span class="s1">      &quot;dimensions&quot;:[</span>
-<a id="__codelineno-27-26" name="__codelineno-27-26" href="#__codelineno-27-26"></a><span class="s1">        {&quot;name&quot;:&quot;ship_date&quot;,&quot;synonyms&quot;:[&quot;출하일&quot;]}</span>
-<a id="__codelineno-27-27" name="__codelineno-27-27" href="#__codelineno-27-27"></a><span class="s1">      ],</span>
-<a id="__codelineno-27-28" name="__codelineno-27-28" href="#__codelineno-27-28"></a><span class="s1">      &quot;joins&quot;:[</span>
-<a id="__codelineno-27-29" name="__codelineno-27-29" href="#__codelineno-27-29"></a><span class="s1">        {&quot;name&quot;:&quot;customer&quot;,&quot;target&quot;:&quot;saas.core.customer&quot;,</span>
-<a id="__codelineno-27-30" name="__codelineno-27-30" href="#__codelineno-27-30"></a><span class="s1">         &quot;onTemplate&quot;:&quot;${this}.customer_id = ${customer}.id&quot;,&quot;type&quot;:&quot;LEFT&quot;},</span>
-<a id="__codelineno-27-31" name="__codelineno-27-31" href="#__codelineno-27-31"></a><span class="s1">        {&quot;name&quot;:&quot;part&quot;,&quot;target&quot;:&quot;saas.core.part&quot;,</span>
-<a id="__codelineno-27-32" name="__codelineno-27-32" href="#__codelineno-27-32"></a><span class="s1">         &quot;onTemplate&quot;:&quot;${this}.part_id = ${part}.id&quot;,&quot;type&quot;:&quot;LEFT&quot;}</span>
-<a id="__codelineno-27-33" name="__codelineno-27-33" href="#__codelineno-27-33"></a><span class="s1">      ],</span>
-<a id="__codelineno-27-34" name="__codelineno-27-34" href="#__codelineno-27-34"></a><span class="s1">      &quot;mandatoryFilters&quot;:[&quot;tenant_id = ${user.attr.tenant_id}&quot;],</span>
-<a id="__codelineno-27-35" name="__codelineno-27-35" href="#__codelineno-27-35"></a><span class="s1">      &quot;tags&quot;:[&quot;finance&quot;,&quot;gold-tier&quot;]</span>
-<a id="__codelineno-27-36" name="__codelineno-27-36" href="#__codelineno-27-36"></a><span class="s1">    }&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="s1">      &quot;catalog&quot;: &quot;saas&quot;, &quot;schema&quot;: &quot;core&quot;, &quot;name&quot;: &quot;sales&quot;,</span>
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="s1">      &quot;description&quot;: &quot;Per-tenant sales facts — multi-tenant row-scoping enforced.&quot;,</span>
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="s1">      &quot;baseSql&quot;: &quot;SELECT order_id, tenant_id, customer_id, part_id, amount, unit_cost, quantity, status, ship_date FROM saas.core.raw_orders&quot;,</span>
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="s1">      &quot;metrics&quot;: [</span>
+<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a><span class="s1">        {&quot;name&quot;:&quot;revenue&quot;, &quot;expr&quot;:&quot;SUM(amount)&quot;,</span>
+<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a><span class="s1">         &quot;description&quot;:&quot;Total net revenue&quot;,</span>
+<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a><span class="s1">         &quot;synonyms&quot;:[&quot;매출&quot;,&quot;net_revenue&quot;],</span>
+<a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a><span class="s1">         &quot;mandatoryFilters&quot;:[&quot;status = &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;COMPLETED&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;&quot;]</span>
+<a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a><span class="s1">        },</span>
+<a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a><span class="s1">        {&quot;name&quot;:&quot;cost&quot;,    &quot;expr&quot;:&quot;SUM(unit_cost * quantity)&quot;,</span>
+<a id="__codelineno-28-15" name="__codelineno-28-15" href="#__codelineno-28-15"></a><span class="s1">         &quot;description&quot;:&quot;Total cost&quot;},</span>
+<a id="__codelineno-28-16" name="__codelineno-28-16" href="#__codelineno-28-16"></a><span class="s1">        {&quot;name&quot;:&quot;profit&quot;,         &quot;expr&quot;:&quot;revenue - cost&quot;,</span>
+<a id="__codelineno-28-17" name="__codelineno-28-17" href="#__codelineno-28-17"></a><span class="s1">         &quot;description&quot;:&quot;Net profit (derived)&quot;},</span>
+<a id="__codelineno-28-18" name="__codelineno-28-18" href="#__codelineno-28-18"></a><span class="s1">        {&quot;name&quot;:&quot;profit_margin&quot;,  &quot;expr&quot;:&quot;(revenue - cost) / revenue&quot;,</span>
+<a id="__codelineno-28-19" name="__codelineno-28-19" href="#__codelineno-28-19"></a><span class="s1">         &quot;description&quot;:&quot;Profit / revenue ratio&quot;},</span>
+<a id="__codelineno-28-20" name="__codelineno-28-20" href="#__codelineno-28-20"></a><span class="s1">        {&quot;name&quot;:&quot;vip_revenue&quot;,    &quot;expr&quot;:&quot;SUM(amount) FILTER (WHERE status = &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;VIP&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;)&quot;,</span>
+<a id="__codelineno-28-21" name="__codelineno-28-21" href="#__codelineno-28-21"></a><span class="s1">         &quot;description&quot;:&quot;Revenue from VIP segment&quot;,</span>
+<a id="__codelineno-28-22" name="__codelineno-28-22" href="#__codelineno-28-22"></a><span class="s1">         &quot;allowedRoles&quot;:[&quot;finance&quot;,&quot;analyst&quot;]</span>
+<a id="__codelineno-28-23" name="__codelineno-28-23" href="#__codelineno-28-23"></a><span class="s1">        }</span>
+<a id="__codelineno-28-24" name="__codelineno-28-24" href="#__codelineno-28-24"></a><span class="s1">      ],</span>
+<a id="__codelineno-28-25" name="__codelineno-28-25" href="#__codelineno-28-25"></a><span class="s1">      &quot;dimensions&quot;:[</span>
+<a id="__codelineno-28-26" name="__codelineno-28-26" href="#__codelineno-28-26"></a><span class="s1">        {&quot;name&quot;:&quot;ship_date&quot;,&quot;synonyms&quot;:[&quot;출하일&quot;]}</span>
+<a id="__codelineno-28-27" name="__codelineno-28-27" href="#__codelineno-28-27"></a><span class="s1">      ],</span>
+<a id="__codelineno-28-28" name="__codelineno-28-28" href="#__codelineno-28-28"></a><span class="s1">      &quot;joins&quot;:[</span>
+<a id="__codelineno-28-29" name="__codelineno-28-29" href="#__codelineno-28-29"></a><span class="s1">        {&quot;name&quot;:&quot;customer&quot;,&quot;target&quot;:&quot;saas.core.customer&quot;,</span>
+<a id="__codelineno-28-30" name="__codelineno-28-30" href="#__codelineno-28-30"></a><span class="s1">         &quot;onTemplate&quot;:&quot;${this}.customer_id = ${customer}.id&quot;,&quot;type&quot;:&quot;LEFT&quot;},</span>
+<a id="__codelineno-28-31" name="__codelineno-28-31" href="#__codelineno-28-31"></a><span class="s1">        {&quot;name&quot;:&quot;part&quot;,&quot;target&quot;:&quot;saas.core.part&quot;,</span>
+<a id="__codelineno-28-32" name="__codelineno-28-32" href="#__codelineno-28-32"></a><span class="s1">         &quot;onTemplate&quot;:&quot;${this}.part_id = ${part}.id&quot;,&quot;type&quot;:&quot;LEFT&quot;}</span>
+<a id="__codelineno-28-33" name="__codelineno-28-33" href="#__codelineno-28-33"></a><span class="s1">      ],</span>
+<a id="__codelineno-28-34" name="__codelineno-28-34" href="#__codelineno-28-34"></a><span class="s1">      &quot;mandatoryFilters&quot;:[&quot;tenant_id = ${user.attr.tenant_id}&quot;],</span>
+<a id="__codelineno-28-35" name="__codelineno-28-35" href="#__codelineno-28-35"></a><span class="s1">      &quot;tags&quot;:[&quot;finance&quot;,&quot;gold-tier&quot;]</span>
+<a id="__codelineno-28-36" name="__codelineno-28-36" href="#__codelineno-28-36"></a><span class="s1">    }&#39;</span>
 </code></pre></div>
 <h3 id="certify-it-for-production-use">Certify it for production use</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views/saas.core.sales/certify<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
-<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="c1"># → status: CERTIFIED, certifiedBy: admin, certifiedAt: 1779999999999</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/api/v1/semantic-views/saas.core.sales/certify<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="c1"># → status: CERTIFIED, certifiedBy: admin, certifiedAt: 1779999999999</span>
 </code></pre></div>
 <h3 id="one-query-touches-every-phase-3-feature">One query touches every Phase-3 feature</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">profit_margin</span>
-<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">sales</span>
-<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ship_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="s1">&#39;2024-01-01&#39;</span>
-<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">profit_margin</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">profit_margin</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">sales</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ship_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="s1">&#39;2024-01-01&#39;</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">profit_margin</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 </code></pre></div>
 <p>For caller <code>alice</code> whose IAM record has <code>attributes.tenant_id = 'acme-co'</code> and groups <code>[analyst]</code>, the rewriter produces</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
-<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">       </span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">unit_cost</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">quantity</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">profit_margin</span>
-<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">sales</span>
-<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">  </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="n">customer</span>
-<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">id</span>
-<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="w">  </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">part</span><span class="w">     </span><span class="n">part</span>
-<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">part_id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">id</span>
-<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ship_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="s1">&#39;2024-01-01&#39;</span>
-<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a><span class="w">   </span><span class="k">AND</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;acme-co&#39;</span><span class="w">        </span><span class="c1">-- view-level mandatory filter</span>
-<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="w">   </span><span class="k">AND</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;COMPLETED&#39;</span><span class="w">          </span><span class="c1">-- per-metric filter (revenue is part of profit_margin)</span>
-<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">category</span>
-<a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">profit_margin</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">       </span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">unit_cost</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">quantity</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">profit_margin</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">sales</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="w">  </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="n">customer</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">  </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">saas</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">part</span><span class="w">     </span><span class="n">part</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">part_id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ship_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="s1">&#39;2024-01-01&#39;</span>
+<a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a><span class="w">   </span><span class="k">AND</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;acme-co&#39;</span><span class="w">        </span><span class="c1">-- view-level mandatory filter</span>
+<a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a><span class="w">   </span><span class="k">AND</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;COMPLETED&#39;</span><span class="w">          </span><span class="c1">-- per-metric filter (revenue is part of profit_margin)</span>
+<a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">customer</span><span class="p">.</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">part</span><span class="p">.</span><span class="n">category</span>
+<a id="__codelineno-31-12" name="__codelineno-31-12" href="#__codelineno-31-12"></a><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">profit_margin</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 </code></pre></div>
 <p>If alice asks for <code>vip_revenue</code> she gets a result; the same query from a user in only the <code>viewer</code> group is denied at rewrite time with a <code>Forbidden: vip_revenue</code> error.</p>
 <h2 id="configuring-in-the-admin-ui">Configuring in the Admin UI</h2>
@@ -3033,7 +3062,8 @@
 <ul>
 <li><strong>Register View</strong> opens a side panel for <code>catalog</code> / <code>schema</code> / <code>name</code>, the base SQL, and repeatable <strong>metric</strong> rows (name, expr, synonyms, <code>allowedRoles</code>, per-metric mandatory filters) and <strong>dimension</strong> rows, plus view-level mandatory filters and tags.</li>
 <li>Each registered view shows its status badge (<code>DRAFT</code> / <code>CERTIFIED</code> / <code>DEPRECATED</code>), its metrics (a shield icon marks role-gated ones), dimensions, and tags.</li>
-<li>The <strong>Certify</strong> button flips <code>DRAFT → CERTIFIED</code> and stamps the certifier; <strong>Delete</strong> removes the metadata.</li>
+<li>The <strong>Certify</strong> button stamps the certifier (the logged-in user) and the fingerprint; it stays
+  available on a <code>STALE</code> view so you can re-certify after an edit. <strong>Delete</strong> removes the metadata.</li>
 </ul>
 <p>The panel issues the same <code>POST /api/v1/semantic-views</code> / <code>certify</code> / <code>DELETE</code> calls documented above, so the UI and API are interchangeable. Metric-level <code>allowedRoles</code> map to IAM groups — see <a href="../iam/#semantic-layer-retriever-rbac">Semantic Layer &amp; Retriever RBAC</a> for configuring the backing group + member. Retrievers have a sibling <strong>Retrievers</strong> page (register + an invoke tester that shows the rendered SQL and rows); see <a href="../retrievers/">Retrievers</a>.</p>
 <h2 id="storage-and-replication">Storage and replication</h2>

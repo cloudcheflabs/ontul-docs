@@ -2201,6 +2201,50 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#data-quality-rejected-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data quality — rejected records
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema drift
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lag
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keeping-the-sink-table-fast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keeping the sink table fast
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#governance-iam" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2471,20 +2515,21 @@ Iceberg CDC apply).</p>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FILTER&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;amount &gt; 50&quot;</span><span class="w"> </span><span class="p">},</span>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;order_id, customer_id, amount&quot;</span><span class="w"> </span><span class="p">}</span>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span><span class="p">],</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">  </span><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.sales.orders&quot;</span><span class="w"> </span><span class="p">},</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">  </span><span class="nt">&quot;write&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cdc&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">    </span><span class="nt">&quot;keys&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">],</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">    </span><span class="nt">&quot;delete&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;soft&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="nt">&quot;opColumn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;__op&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="nt">&quot;deletedFlag&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;is_deleted&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">    </span><span class="nt">&quot;deletedAt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deleted_at&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">    </span><span class="nt">&quot;scd&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;validFrom&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;valid_from&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;validTo&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;valid_to&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;current&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;is_current&quot;</span><span class="w"> </span><span class="p">}</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">  </span><span class="p">},</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">  </span><span class="nt">&quot;commitIntervalMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">  </span><span class="nt">&quot;numWorkers&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">  </span><span class="nt">&quot;durationMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9999999999</span>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="p">}</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">  </span><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.sales.orders&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;schemaEvolution&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;add&quot;</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">  </span><span class="nt">&quot;errorSink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.sales.orders_rejected&quot;</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">  </span><span class="nt">&quot;write&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">    </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cdc&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">    </span><span class="nt">&quot;keys&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">],</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="nt">&quot;delete&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;soft&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="nt">&quot;opColumn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;__op&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">    </span><span class="nt">&quot;deletedFlag&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;is_deleted&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">    </span><span class="nt">&quot;deletedAt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deleted_at&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">    </span><span class="nt">&quot;scd&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;validFrom&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;valid_from&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;validTo&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;valid_to&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;current&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;is_current&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">  </span><span class="nt">&quot;commitIntervalMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">  </span><span class="nt">&quot;numWorkers&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">  </span><span class="nt">&quot;durationMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9999999999</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="p">}</span>
 </code></pre></div>
 <p>A Kafka → JDBC append flow is simpler:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
@@ -2502,6 +2547,129 @@ Iceberg CDC apply).</p>
 </code></pre></div>
 <p>For a JDBC <strong>CDC-apply</strong> sink, put <code>mode</code>/<code>opColumn</code>/<code>keys</code> on the sink node itself (JDBC does not use
 a separate <code>write</code> block).</p>
+<h2 id="data-quality-rejected-records">Data quality — rejected records</h2>
+<p>A record a flow cannot decode (malformed JSON, an undecodable Avro payload, an empty value) is
+<strong>rejected</strong>: it never reaches the sink, and it is <strong>counted</strong>. The count is visible as <strong>Rejected</strong>
+in the Flow list, the header metrics, the Metrics tab and each run's history row, and the reason is
+logged (<code>json_parse</code>, <code>avro_decode</code>, <code>empty_payload</code>).</p>
+<div class="admonition note">
+<p class="admonition-title">A rejected record is not a processed record</p>
+<p><code>Records</code> counts rows written to the sink; <code>Rejected</code> counts rows that were dropped before it.
+They never overlap, so <code>Rejected &gt; 0</code> always means data did not arrive at the target.</p>
+</div>
+<p>To keep the rejected records instead of only counting them, name a <strong>quarantine table</strong> with
+<code>errorSink</code> (Admin UI: the sink panel's <em>Rejected records → Quarantine table</em> field):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connectionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kafka-prod&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;topic&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;orders&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;json&quot;</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.sales.orders&quot;</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">&quot;errorSink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.sales.orders_rejected&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>The quarantine table has a <strong>fixed, source-independent schema</strong> — it holds records whose own shape
+could not be trusted:</p>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>type</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>__flow</code></td>
+<td>string</td>
+<td>the flow (job) that rejected the record</td>
+</tr>
+<tr>
+<td><code>__reason</code></td>
+<td>string</td>
+<td><code>json_parse</code> / <code>avro_decode</code> / <code>empty_payload</code> / <code>schema_mismatch</code></td>
+</tr>
+<tr>
+<td><code>__error</code></td>
+<td>string</td>
+<td>the underlying failure message</td>
+</tr>
+<tr>
+<td><code>__source</code></td>
+<td>string</td>
+<td>where it came from, e.g. <code>orders-0@1523</code></td>
+</tr>
+<tr>
+<td><code>__payload</code></td>
+<td>string</td>
+<td>the raw record, verbatim, for replay (truncated at 64 KB)</td>
+</tr>
+<tr>
+<td><code>__ts</code></td>
+<td>bigint</td>
+<td>rejection time, epoch millis</td>
+</tr>
+</tbody>
+</table>
+<p>It is created on first write, appended at each checkpoint, and governed like any other write target:
+the flow's owner needs <code>data:Insert</code> on it, and it appears in the flow's audit <code>tables</code>. Quarantining
+is <strong>best-effort</strong> — if the quarantine table itself cannot be written, the flow keeps running and the
+records stay counted, with an error in the log.</p>
+<h2 id="schema-drift">Schema drift</h2>
+<p>A source's shape is not frozen: someone runs <code>ALTER TABLE … ADD COLUMN</code> upstream, or a producer
+starts emitting a new JSON field. <code>sink.schemaEvolution</code> decides what a flow does about it:</p>
+<table>
+<thead>
+<tr>
+<th>mode</th>
+<th>behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>add</code> <em>(default)</em></td>
+<td>A column the target table does not have is <strong>added</strong> to it, and <code>int</code>→<code>long</code> / <code>float</code>→<code>double</code> are promoted, before the batch is written.</td>
+</tr>
+<tr>
+<td><code>none</code></td>
+<td>The table schema wins — a new source column is ignored.</td>
+</tr>
+<tr>
+<td><code>strict</code></td>
+<td>Drift <strong>fails the flow</strong> instead of guessing. Use when the target schema is a contract.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;sink&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.sales.orders&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;schemaEvolution&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;add&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p>Only additive, read-compatible changes are ever applied — exactly the set Iceberg can make without
+rewriting committed data files. A column the source <strong>dropped</strong> is deliberately left in the table
+(later rows carry <code>NULL</code>), because one absent field in one batch is not evidence the column is gone.
+Anything narrowing or incompatible is refused: <code>strict</code> fails, otherwise the table keeps its type.</p>
+<p>Schema drift applies to the <strong>Iceberg sink</strong>. A JDBC sink writes to a table whose schema the target
+database owns — add the column there.</p>
+<h2 id="lag">Lag</h2>
+<p><strong>Lag</strong> answers "is this flow keeping up":</p>
+<ul>
+<li><strong>records</strong> — Kafka consumer lag (log end offset − our position), summed over the partitions this
+  flow's workers own.</li>
+<li><strong>time</strong> — how old the newest record processed is. For CDC this is the source database's own change
+  timestamp, and it is the only meaningful lag for a change log (there is no row count to be behind
+  by).</li>
+</ul>
+<p>Both are surfaced in the Flow list and Metrics tab (<code>1,204 rec · 2.3s</code>), in the periodic progress line
+in the flow's log, and on the job status API as <code>sourceLag</code> / <code>sourceLagMs</code>. A flow's worker count is
+fixed for a run: to scale one out, <strong>Stop → change <code>numWorkers</code> → Start</strong> — the run resumes from its
+last committed checkpoint, so no data is reprocessed or lost.</p>
+<h2 id="keeping-the-sink-table-fast">Keeping the sink table fast</h2>
+<p>A streaming flow commits on an interval, so it naturally produces many small files. Ontul compacts
+them <strong>in the background, concurrently with the flow</strong> — no need to stop ingestion:</p>
+<ul>
+<li>Enable per-table compaction (cron or fixed interval) under <strong>Iceberg → Maintenance</strong> in the Admin
+  UI, or with <code>ALTER TABLE … EXECUTE optimize(…)</code>.</li>
+<li>Concurrent-write safety is built in: a cooldown window excludes the files an active writer is
+  still appending to, <code>skip_active_partitions</code> leaves a partition a flow is currently writing
+  untouched, and commits retry with a sequence-number margin.</li>
+</ul>
+<p>See <strong><a href="../../iceberg/maintenance/">Iceberg Maintenance</a></strong> for the full set of operations (compaction,
+expire snapshots, remove orphan files, rewrite position deletes) and their tuning.</p>
 <h2 id="governance-iam">Governance (IAM)</h2>
 <p>Flows are governed like the rest of Ontul — see <a href="../../features/iam/">IAM</a>.</p>
 <ul>
@@ -2538,6 +2706,7 @@ UI, applied cluster-wide without a restart. See <a href="../../reference/configu
 <li><a href="../guide/">Streaming Guide</a> — the engine, SUBMIT STREAMING, SDK APIs, windowing, Iceberg sink modes.</li>
 <li><a href="../../features/kafka-integration/">Kafka integration</a>, <a href="../../features/connection-id/">Connections</a>,
   <a href="../../features/iam/">IAM</a>, <a href="../../features/iceberg-integration/">Iceberg integration</a>.</li>
+<li><a href="../../iceberg/maintenance/">Iceberg Maintenance</a> — compaction that runs alongside a live flow.</li>
 </ul>
 
 

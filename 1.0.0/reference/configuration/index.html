@@ -1930,10 +1930,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#semantic-layer-retrievers" class="md-nav__link">
+  <a href="#semantic-layer-retrievers-ontology" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Semantic Layer / Retrievers
+        Semantic Layer / Retrievers / Ontology
       
     </span>
   </a>
@@ -2069,6 +2069,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Ontul Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rejected-records-schema-drift-and-lag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected records, schema drift and lag
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2775,7 +2792,7 @@
 </tr>
 </tbody>
 </table>
-<h2 id="semantic-layer-retrievers">Semantic Layer / Retrievers</h2>
+<h2 id="semantic-layer-retrievers-ontology">Semantic Layer / Retrievers / Ontology</h2>
 <table>
 <thead>
 <tr>
@@ -2824,6 +2841,21 @@
 <td><code>ontul.rerank.default.path</code></td>
 <td><code>/rerank</code></td>
 <td>Request path appended to a <code>RERANK</code> connection's <code>baseUrl</code> when that connection does not set its own <code>path</code>. Change it only if every endpoint in the deployment mounts the API elsewhere — per-endpoint differences belong on the connection.</td>
+</tr>
+<tr>
+<td><code>ontul.ontology.read.max.rows.ceiling</code></td>
+<td><code>10000</code></td>
+<td>Hard cluster-wide cap on rows returned by an <a href="../../features/ontology/">ontology</a> read — an ObjectSet query (<code>POST /api/v1/object-types/{fqn}/query</code>) or a link traversal (<code>POST /api/v1/link-types/{fqn}/traverse</code>). Applied on top of each request's own <code>limit</code>, so the effective cap is the smaller of the two. Mirrors the retriever ceiling: it bounds what an agent can pull through the ontology in one call regardless of what it asks for.</td>
+</tr>
+<tr>
+<td><code>ontul.action.exec.timeout.ms</code></td>
+<td><code>600000</code> (10 min)</td>
+<td>Time budget for a single <a href="../../features/ontology/#actions-governed-write-back">action type</a> invocation in <code>DML</code> mode — the governed write-back executed through the query engine. A write that exceeds it is abandoned rather than holding the invoke connection open indefinitely.</td>
+</tr>
+<tr>
+<td><code>ontul.action.http.timeout.seconds</code></td>
+<td><code>60</code></td>
+<td>Per-request timeout for an action in <code>OPERATION</code> mode, i.e. the outbound HTTP call to the <code>rest-operation</code> connector (ERP/SaaS write-back). Keep it well under <code>ontul.action.exec.timeout.ms</code>; a slow ERP should surface as a failed operation, not as a stuck action.</td>
 </tr>
 </tbody>
 </table>
@@ -3096,6 +3128,16 @@
 <td><code>100000</code></td>
 <td>Row-count threshold above which a job's result set is treated as "large" and handled via the streaming/spill path rather than buffered fully in memory.</td>
 </tr>
+<tr>
+<td><code>ontul.driver.sync.chunk.size.bytes</code></td>
+<td><code>4194304</code> (4 MiB)</td>
+<td>Chunk size used when the master streams an uploaded JDBC driver JAR out to the workers. Larger chunks mean fewer round-trips on a fast network; smaller chunks keep each NIO frame (and its retry cost) small on a lossy one.</td>
+</tr>
+<tr>
+<td><code>ontul.deps.parent.first.prefixes</code></td>
+<td><em>(empty)</em></td>
+<td>Extra package prefixes kept <strong>parent-first</strong> in the child-first classloader used for UDFs and job dependencies, beyond the built-in JDK / Arrow / Ontul / slf4j set. Comma-separated. Use it when a job JAR ships its own copy of a library that must stay identical to the engine's (otherwise you get <code>ClassCastException</code> between two copies of the same class).</td>
+</tr>
 </tbody>
 </table>
 <h2 id="flight-sql">Flight SQL</h2>
@@ -3305,6 +3347,52 @@ list and History tab are consistent regardless of which master serves the reques
 </tr>
 </tbody>
 </table>
+<h3 id="rejected-records-schema-drift-and-lag">Rejected records, schema drift and lag</h3>
+<p>A record a flow cannot decode (malformed JSON, undecodable Avro, an empty payload) is <strong>rejected</strong>:
+it never reaches the sink, and it is counted. The count is reported on the job status as
+<code>rejectedRows</code> / <code>rejectsByReason</code> and as the <strong>Rejected</strong> column in the Admin UI Flow list, so a
+decode failure is never silent. See <a href="../../streaming/flow/#data-quality-rejected-records">Ontul Flow → Data quality</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.flow.reject.log.first</code></td>
+<td><code>10</code></td>
+<td>Log the first N rejected records of a run in full (reason, error, <code>topic-partition@offset</code>). A poison topic can reject every record, so beyond this the log is sampled. The <strong>count is always exact</strong> regardless of how much is logged.</td>
+</tr>
+<tr>
+<td><code>ontul.flow.reject.log.every</code></td>
+<td><code>1000</code></td>
+<td>After the first N above, log every Nth rejected record. Set both to <code>0</code> to silence the per-record lines entirely and rely on the counters.</td>
+</tr>
+<tr>
+<td><code>ontul.flow.error.sink.buffer.max.rows</code></td>
+<td><code>10000</code></td>
+<td>Maximum rejected records buffered in memory for the quarantine (<code>errorSink</code>) table between flushes. Quarantine must never be the reason a worker runs out of memory: past this the records are still counted, but not written, and an error is logged once.</td>
+</tr>
+<tr>
+<td><code>ontul.flow.error.sink.payload.max.chars</code></td>
+<td><code>65536</code></td>
+<td>Truncate a quarantined payload at this many characters (a <code>…[truncated]</code> marker is appended). Quarantine exists to diagnose and replay the offending record, not to mirror arbitrarily large source messages.</td>
+</tr>
+<tr>
+<td><code>ontul.flow.lag.refresh.interval.ms</code></td>
+<td><code>5000</code></td>
+<td>How often a source refreshes its lag reading. For Kafka this is a broker round-trip (<code>endOffsets</code>), so it is rate-limited rather than measured on every poll. Lag is reported as <code>sourceLag</code> (records behind) and <code>sourceLagMs</code> (age of the newest record processed).</td>
+</tr>
+<tr>
+<td><code>ontul.flow.schema.evolution</code></td>
+<td><code>add</code></td>
+<td>Default schema-drift policy for an Iceberg sink when the flow spec does not set <code>sink.schemaEvolution</code>. <code>add</code> — a column the source starts sending is <strong>added</strong> to the target table, and <code>int</code>→<code>long</code> / <code>float</code>→<code>double</code> are promoted, before the batch is written. <code>none</code> — the table schema wins and the new column is ignored. <code>strict</code> — drift fails the flow instead of guessing. Only additive, read-compatible changes are ever applied; a column the source <strong>dropped</strong> is left in the table (later rows carry <code>NULL</code>), because one absent field in one batch is not evidence the column is gone.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="job-logs">Job Logs</h2>
 <p>Streaming and batch job logs can be flushed to append-only rolling gzip segments on S3
 (<code>{prefix}jobLogs/&lt;jobId&gt;/&lt;seq&gt;-&lt;ts&gt;.log.gz</code>), so long-running jobs' logs stay durable and queryable
@@ -3336,8 +3424,56 @@ Manager's S3 target, so turning on S3-primary exchange also puts job logs on S3.
 </tr>
 </tbody>
 </table>
-<p>The S3 endpoint/region/bucket/prefix/credentials for job logs default to the exchange S3 target
-(<code>ontul.exchange.s3.*</code>) and can be overridden with <code>ontul.job.logs.s3.*</code>. The backend can also be
+<p>Each of the following overrides the corresponding <code>ontul.exchange.s3.*</code> value for job logs only —
+useful when logs belong in a different bucket (or a different account) from the exchange state.
+Leave them unset to inherit.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.job.logs.s3.endpoint</code></td>
+<td><em>(inherits <code>ontul.exchange.s3.endpoint</code>)</em></td>
+<td>S3 endpoint for job-log segments (e.g. a ShannonStore/MinIO URL).</td>
+</tr>
+<tr>
+<td><code>ontul.job.logs.s3.region</code></td>
+<td><em>(inherits)</em></td>
+<td>S3 region.</td>
+</tr>
+<tr>
+<td><code>ontul.job.logs.s3.bucket</code></td>
+<td><em>(inherits)</em></td>
+<td>Bucket holding the job-log segments.</td>
+</tr>
+<tr>
+<td><code>ontul.job.logs.s3.prefix</code></td>
+<td><em>(inherits)</em></td>
+<td>Key prefix; segments are written under <code>{prefix}jobLogs/&lt;jobId&gt;/&lt;seq&gt;-&lt;ts&gt;.log.gz</code>.</td>
+</tr>
+<tr>
+<td><code>ontul.job.logs.s3.access.key</code></td>
+<td><em>(inherits)</em></td>
+<td>Access key. Prefer configuring an S3 <strong>connection</strong> from the Admin UI Storage page so the secret is not in a properties file.</td>
+</tr>
+<tr>
+<td><code>ontul.job.logs.s3.secret.key</code></td>
+<td><em>(inherits)</em></td>
+<td>Secret key. Same caveat as above.</td>
+</tr>
+<tr>
+<td><code>ontul.job.logs.s3.path.style</code></td>
+<td><em>(inherits)</em></td>
+<td><code>true</code> forces path-style addressing (required by most S3-compatible stores); <code>false</code> uses virtual-host style.</td>
+</tr>
+</tbody>
+</table>
+<p>The full set can also be overridden with <code>ontul.job.logs.s3.*</code>. The backend can also be
 switched from the Admin UI <strong>Storage</strong> page at runtime (no restart), which persists to the replicated
 metadata store as <code>storage.jobLogs.*</code> / <code>storage.exchange.*</code> referencing an S3 connection.</p>
 <h2 id="admin">Admin</h2>

@@ -2253,6 +2253,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#rejected-records-schema-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected records &amp; schema drift
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2852,6 +2863,17 @@ metrics/logs and run history — see <strong><a href="../flow/">Ontul Flow</a></
 </tbody>
 </table>
 <p>Per-job overrides win over server defaults: <code>.commitInterval(...)</code> on the SDK builder, or <code>commitIntervalMs</code> / <code>commitRowThreshold</code> in the SUBMIT STREAMING JSON.</p>
+<h3 id="rejected-records-schema-drift">Rejected records &amp; schema drift</h3>
+<p>Two behaviors apply to every streaming job, not just to flows built in the Admin UI:</p>
+<ul>
+<li>A record the source cannot decode is <strong>rejected</strong> — kept out of the sink and counted (<code>rejectedRows</code>
+  on the job status). Add <code>"errorSink": {"type": "table", "table": "cat.schema.rejects"}</code> to the
+  SUBMIT STREAMING JSON to also park it, with its payload and the reason, in a quarantine table.</li>
+<li>An Iceberg sink <strong>evolves the target table</strong> to match a drifting source by default — a new source
+  column is added, <code>int</code>→<code>long</code> / <code>float</code>→<code>double</code> are promoted. Set
+  <code>"sink": {"schemaEvolution": "none" | "strict"}</code> to ignore drift or to fail on it instead.</li>
+</ul>
+<p>Both are documented in full on the <a href="../flow/">Ontul Flow</a> page.</p>
 <hr />
 <h2 id="sourcesink-by-connection-id">Source/Sink by Connection ID</h2>
 <p>Streaming jobs should reference a registered connection by ID instead of restating bootstrap servers and SASL credentials in every payload. The first argument to <code>Source.kafka(...)</code> and <code>Sink.kafka(...)</code> is the connection ID; pass <code>"inline"</code> only when supplying credentials directly via <code>.property(...)</code>.</p>

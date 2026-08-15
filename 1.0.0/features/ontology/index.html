@@ -1330,6 +1330,67 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#certification-trust-an-agent-can-act-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certification (trust an agent can act on)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Certification (trust an agent can act on)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#certification-breaks-when-the-definition-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certification breaks when the definition changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trust-cannot-exceed-what-it-is-built-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust cannot exceed what it is built on
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-it-shows-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where it shows up
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#who-may-certify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who may certify
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rest-api-summary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2459,7 +2520,7 @@ properties in business terms and declaring where writes to it should land.</p>
 </tr>
 <tr>
 <td><code>allowedRoles[]</code>, <code>tags[]</code>, <code>status</code></td>
-<td>Governance + lifecycle metadata.</td>
+<td>Governance + lifecycle metadata. Read <code>effectiveStatus</code> (below) rather than <code>status</code> for trust.</td>
 </tr>
 </tbody>
 </table>
@@ -2893,11 +2954,92 @@ by a hard cluster-wide ceiling — the effective cap is the smaller of the two:<
 <p>Both the relational (JOIN / ObjectSet) path and the GRAPH pushdown honour this
 ceiling.</p>
 <hr />
+<h2 id="certification-trust-an-agent-can-act-on">Certification (trust an agent can act on)</h2>
+<p>Every ontology definition carries a <code>status</code> of <code>DRAFT</code> / <code>CERTIFIED</code> / <code>DEPRECATED</code>. On its own
+a status is only a label, so Ontul adds two things that make it mean something, and folds the
+result into one read-only field: <strong><code>effectiveStatus</code></strong>.</p>
+<table>
+<thead>
+<tr>
+<th><code>effectiveStatus</code></th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CERTIFIED</code></td>
+<td>Signed off, unchanged since, and everything it is built on is certified too.</td>
+</tr>
+<tr>
+<td><code>STALE</code></td>
+<td>Was certified — then the definition changed underneath the signature.</td>
+</tr>
+<tr>
+<td><code>DRAFT</code></td>
+<td>Never certified (or capped there by a dependency).</td>
+</tr>
+<tr>
+<td><code>DEPRECATED</code></td>
+<td>Retired.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Certifying</strong> is its own endpoint, never a field you send:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>curl<span class="w"> </span>-XPOST<span class="w"> </span><span class="nv">$ADMIN</span>/api/v1/object-types/ontology.sales.Customer/certify<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AUTH</span><span class="s2">&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{}&#39;</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># → { …, &quot;status&quot;: &quot;CERTIFIED&quot;, &quot;certifiedBy&quot;: &quot;alice&quot;, &quot;effectiveStatus&quot;: &quot;CERTIFIED&quot; }</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Undo, or retire:</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>curl<span class="w"> </span>-XPOST<span class="w"> </span><span class="nv">$ADMIN</span>/api/v1/object-types/ontology.sales.Customer/decertify<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AUTH</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;status&quot;:&quot;DEPRECATED&quot;}&#39;</span>
+</code></pre></div>
+<p>The certifier is <strong>the caller</strong> — <code>status</code>, <code>certifiedBy</code>, <code>certifiedAt</code> and the fingerprint are
+server-owned and ignored on register/update, so nobody can register a definition that declares
+itself certified, or name someone else as the approver.</p>
+<h3 id="certification-breaks-when-the-definition-changes">Certification breaks when the definition changes</h3>
+<p>Certifying stamps a fingerprint of the parts that decide what the definition <em>resolves to</em> — the
+read source, the property→column bindings, the primary key, the join keys. Change any of them and
+<code>effectiveStatus</code> drops to <code>STALE</code> on the next read:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology.sales.Customer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CERTIFIED&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">&quot;effectiveStatus&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;STALE&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nt">&quot;certificationNote&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;the definition changed after it was certified&quot;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p>Wording is deliberately excluded: editing a description, a title, a synonym or a tag never revokes
+a sign-off. Re-certify to sign off on the new shape.</p>
+<h3 id="trust-cannot-exceed-what-it-is-built-on">Trust cannot exceed what it is built on</h3>
+<p><code>effectiveStatus</code> is capped by dependencies:</p>
+<ul>
+<li>an <strong>object type</strong> cannot be more trusted than the semantic view it reads from;</li>
+<li>a <strong>link type</strong> cannot be more trusted than either of the object types it connects;</li>
+<li>an <strong>action type</strong> cannot be more trusted than the object type it mutates.</li>
+</ul>
+<p>So a CERTIFIED object type over a DRAFT view reports <code>DRAFT</code>, with the reason in
+<code>certificationNote</code>. An agent asking "is everything behind this answer certified?" reads one field
+per object instead of walking the graph itself.</p>
+<h3 id="where-it-shows-up">Where it shows up</h3>
+<ul>
+<li><strong>Reads carry it.</strong> <code>GET /api/v1/object-types</code>, <code>GET .../{fqn}</code>, the ObjectSet
+  <code>POST .../query</code> response and the link <code>POST .../traverse</code> response all include
+  <code>effectiveStatus</code> (+ <code>certificationNote</code>), so a client rendering rows knows what they are worth
+  without a second round-trip.</li>
+<li><strong>MCP</strong> returns the same fields through <code>list_object_types</code> / <code>describe_object_type</code>.</li>
+<li><strong>Admin UI</strong> shows the badge on the Object Types page, with a Certify button and the reason as
+  a tooltip on a STALE badge.</li>
+</ul>
+<h3 id="who-may-certify">Who may certify</h3>
+<p>Certification is an ownership decision, not an editing one, so it has its own IAM action —
+<code>ontology:Certify</code> — separate from the administrator rights needed to <em>edit</em> the ontology. That
+lets a domain owner bless their own subtree without being made an admin:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CertifySalesOntology&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology:Certify&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology.sales.*&quot;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p>Administrators may always certify. Every certify / decertify is written to the
+<a href="../audit-log/">Audit Log</a> as <code>ontology:certify</code> / <code>ontology:decertify</code>, and a refusal as
+<code>ontology:certify:denied</code>.</p>
 <h2 id="rest-api-summary">REST API summary</h2>
 <p>All routes are under the master's admin HTTP port and reuse the same IAM token
 as the rest of the admin surface. Reads are IAM-filtered on the backing read
 source; registration/deletion is administrator-gated; action invoke is gated on
-<code>ontology:InvokeAction</code>.</p>
+<code>ontology:InvokeAction</code>; certification on <code>ontology:Certify</code>.</p>
 <table>
 <thead>
 <tr>
@@ -2961,6 +3103,14 @@ source; registration/deletion is administrator-gated; action invoke is gated on
 <tr>
 <td><code>POST /api/v1/action-workflows/{fqn}/invoke</code></td>
 <td>Run the Saga (gated on <code>ontology:InvokeWorkflow</code>).</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/{object-types,link-types,action-types,action-workflows,retrievers}/{fqn}/certify</code></td>
+<td>Sign off (gated on <code>ontology:Certify</code>).</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/…/{fqn}/decertify</code></td>
+<td>Return to <code>DRAFT</code>, or <code>{"status":"DEPRECATED"}</code> to retire.</td>
 </tr>
 </tbody>
 </table>

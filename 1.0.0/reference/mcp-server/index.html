@@ -1804,6 +1804,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#trust-read-effectivestatus-not-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust: read effectiveStatus, not status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#what-ontul_describe_semantic_view-returns" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2305,8 +2316,76 @@
 <td><code>POST /api/v1/retrievers/{fqn}/invoke</code></td>
 <td>Run a retriever with structured <code>args</code> (and optional <code>max_rows</code>). The master renders the admin-authored template into injection-safe SQL and pushes it down to the backing NeorunBase catalog; returns the rendered SQL plus result rows.</td>
 </tr>
+<tr>
+<td><code>ontul_list_object_types</code></td>
+<td><code>GET /api/v1/object-types</code></td>
+<td>List <a href="../../features/ontology/">object types</a> — typed business entities (Customer, Order) mapped onto physical tables — that the IAM token can read. Optional <code>catalog</code> / <code>schema</code> filter.</td>
+</tr>
+<tr>
+<td><code>ontul_describe_object_type</code></td>
+<td><code>GET /api/v1/object-types/{fqn}</code></td>
+<td>One object type in full: properties (logical name → physical <code>column</code>, type, synonyms, <code>pii</code>), <code>primaryKey</code>, <code>readSource</code>, <code>writeTarget</code>, and governance including <strong><code>effectiveStatus</code></strong> (see below).</td>
+</tr>
+<tr>
+<td><code>ontul_query_object_type</code></td>
+<td><code>POST /api/v1/object-types/{fqn}/query</code></td>
+<td>Query an ObjectSet by <strong>property</strong> names, not columns: <code>filters</code> / <code>select</code> / <code>orderBy</code> / <code>limit</code>. The master renders it to SQL against the read source and returns <code>{columns, rows, rowCount, sql, effectiveStatus}</code>.</td>
+</tr>
+<tr>
+<td><code>ontul_list_link_types</code></td>
+<td><code>GET /api/v1/link-types</code></td>
+<td>List <a href="../../features/ontology/#link-types">link types</a> — typed relationships between object types. Optional <code>catalog</code> / <code>schema</code> / <code>objectType</code> filter.</td>
+</tr>
+<tr>
+<td><code>ontul_describe_link_type</code></td>
+<td><code>GET /api/v1/link-types/{fqn}</code></td>
+<td>One link type: endpoints, cardinality, and its binding — <code>JOIN</code> (property-level join keys) or <code>GRAPH</code> (a NeorunBase edge label traversed natively).</td>
+</tr>
+<tr>
+<td><code>ontul_traverse_link</code></td>
+<td><code>POST /api/v1/link-types/{fqn}/traverse</code></td>
+<td>Walk the relationship from one source object: <code>sourceKey</code>, optional <code>select</code> / <code>limit</code>. <code>JOIN</code> bindings run relational SQL; <code>GRAPH</code> bindings push down to NeorunBase's <code>GRAPH_NEIGHBORS</code> TVF.</td>
+</tr>
+<tr>
+<td><code>ontul_list_action_types</code></td>
+<td><code>GET /api/v1/action-types</code></td>
+<td>List <a href="../../features/ontology/#actions-governed-write-back">action types</a> — the governed write-backs an agent is allowed to perform.</td>
+</tr>
+<tr>
+<td><code>ontul_describe_action_type</code></td>
+<td><code>GET /api/v1/action-types/{fqn}</code></td>
+<td>One action type: mode (<code>DML</code> / <code>OPERATION</code>), the typed parameter contract, whether it <code>requiresApproval</code>, and its target.</td>
+</tr>
+<tr>
+<td><code>ontul_invoke_action_type</code></td>
+<td><code>POST /api/v1/action-types/{fqn}/invoke</code></td>
+<td>Perform the write-back. Gated on <code>ontology:InvokeAction</code>, parameters are validated and rendered injection-safely, repeats are de-duplicated by idempotency key, approval-gated actions return <code>202</code>, and every call is audited.</td>
+</tr>
+<tr>
+<td><code>ontul_list_action_workflows</code></td>
+<td><code>GET /api/v1/action-workflows</code></td>
+<td>List multi-step workflows (Saga / DAG) composed of action types.</td>
+</tr>
+<tr>
+<td><code>ontul_describe_action_workflow</code></td>
+<td><code>GET /api/v1/action-workflows/{fqn}</code></td>
+<td>One workflow: its ordered steps, argument mapping, and each step's compensating action.</td>
+</tr>
+<tr>
+<td><code>ontul_invoke_action_workflow</code></td>
+<td><code>POST /api/v1/action-workflows/{fqn}/invoke</code></td>
+<td>Run the workflow. Gated on <code>ontology:InvokeWorkflow</code>; if a step fails, the completed steps are compensated in reverse order.</td>
+</tr>
 </tbody>
 </table>
+<h3 id="trust-read-effectivestatus-not-status">Trust: read <code>effectiveStatus</code>, not <code>status</code></h3>
+<p>Every ontology and semantic-layer tool returns <strong><code>effectiveStatus</code></strong> alongside the raw <code>status</code>.
+Prefer it: <code>status</code> is what a human declared, while <code>effectiveStatus</code> also folds in whether the
+definition has changed since it was certified and whether everything it is built on is certified
+too. Values are <code>CERTIFIED</code>, <code>STALE</code> (certified, then edited — <code>certificationNote</code> says so),
+<code>DRAFT</code>, <code>DEPRECATED</code>. An agent that wants to state "this answer came from certified definitions"
+should require <code>CERTIFIED</code> on every object it touched, and nothing else.
+See <a href="../../features/ontology/#certification-trust-an-agent-can-act-on">Ontology → Certification</a>.</p>
 <p>The four <code>_list/_describe_table</code> tools are thin wrappers around <code>ontul_query</code> for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. <code>ontul_query</code> itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.</p>
 <p>The three <code>_semantic_*</code> tools and the three <code>_retriever</code> tools talk to the master's admin HTTP port instead of Flight SQL because the semantic CRUD + retriever surface is REST. Read-side semantic <em>consumption</em> — the actual <code>SELECT</code> against a semantic view — flows through Flight SQL like any other query and benefits from the master-side rewriting; retriever invocation instead renders an admin-authored template and pushes it down to the backing engine (see <a href="../../features/retrievers/">Retrievers</a>). The same <code>ONTUL_USER_TOKEN</code> is reused (sent as <code>Authorization: Token &lt;token&gt;</code> on REST), and IAM filtering happens server-side just like for the Flight tools. The admin URL is derived from <code>ONTUL_HOST</code> (or <code>ONTUL_ADMIN_URL</code> to override).</p>
 <h3 id="what-ontul_describe_semantic_view-returns">What <code>ontul_describe_semantic_view</code> returns</h3>

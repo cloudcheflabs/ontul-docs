@@ -2669,10 +2669,9 @@
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="s1">    {&quot;name&quot;: &quot;minRevenue&quot;, &quot;type&quot;: &quot;INT&quot;,    &quot;required&quot;: false, &quot;defaultValue&quot;: &quot;100&quot;,   &quot;description&quot;: &quot;min revenue&quot;},</span>
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="s1">    {&quot;name&quot;: &quot;k&quot;,          &quot;type&quot;: &quot;INT&quot;,    &quot;required&quot;: false, &quot;defaultValue&quot;: &quot;5&quot;,     &quot;description&quot;: &quot;top-k&quot;}</span>
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="s1">  ],</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="s1">  &quot;outputColumns&quot;: [{&quot;name&quot;: &quot;id&quot;}, {&quot;name&quot;: &quot;description&quot;}, {&quot;name&quot;: &quot;score&quot;}],</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="s1">  &quot;status&quot;: &quot;CERTIFIED&quot;</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="s1">}&#39;</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="c1"># → {&quot;status&quot;:&quot;ok&quot;,&quot;fqn&quot;:&quot;semantic.rag.docs_hybrid&quot;}</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="s1">  &quot;outputColumns&quot;: [{&quot;name&quot;: &quot;id&quot;}, {&quot;name&quot;: &quot;description&quot;}, {&quot;name&quot;: &quot;score&quot;}]</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="s1">}&#39;</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="c1"># → {&quot;status&quot;:&quot;ok&quot;,&quot;fqn&quot;:&quot;semantic.rag.docs_hybrid&quot;}</span>
 </code></pre></div>
 <h3 id="2-invoke">2. Invoke</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/v1/retrievers/semantic.rag.docs_hybrid/invoke&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -3000,9 +2999,8 @@ a property literally named <code>token</code> is returned in the clear.</p>
 <a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="s1">      &quot;timeoutMs&quot;: 1500,</span>
 <a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="s1">      &quot;onFailure&quot;: &quot;PASSTHROUGH&quot;,</span>
 <a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="s1">      &quot;instruction&quot;: &quot;Given a Korean business query, retrieve passages that directly answer it&quot;</span>
-<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="s1">    },</span>
-<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="s1">    &quot;status&quot;: &quot;CERTIFIED&quot;</span>
-<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a><span class="s1">  }&#39;</span>
+<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="s1">    }</span>
+<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="s1">  }&#39;</span>
 </code></pre></div>
 <p><strong>3. Invoke it.</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://ontul-master:8080/api/v1/retrievers/semantic.rag.docs_hybrid/invoke<span class="w"> </span><span class="se">\</span>
@@ -3101,7 +3099,8 @@ each row against the query directly.</p>
 <h2 id="configuring-in-the-admin-ui">Configuring in the Admin UI</h2>
 <p>Retrievers can be managed without REST calls under <strong>Semantic &amp; AI → Retrievers</strong> in the Admin UI:</p>
 <ul>
-<li><strong>Register Retriever</strong> opens a side panel for <code>catalog</code> / <code>schema</code> / <code>name</code>, <code>kind</code>, the <strong>target catalog</strong> (a <code>neorunbase</code> catalog), the SQL template, repeatable <strong>parameter</strong> rows (name, type, required, default, description), an optional <strong>Re-rank</strong> block, synonyms, <code>allowedRoles</code>, and status.</li>
+<li><strong>Register Retriever</strong> opens a side panel for <code>catalog</code> / <code>schema</code> / <code>name</code>, <code>kind</code>, the <strong>target catalog</strong> (a <code>neorunbase</code> catalog), the SQL template, repeatable <strong>parameter</strong> rows (name, type, required, default, description), an optional <strong>Re-rank</strong> block, synonyms, and <code>allowedRoles</code>. Certification is not part of the
+form — it is a separate, attributed action (see Governance below).</li>
 <li>The <strong>Edit</strong> (✏️) button reopens an existing retriever in the same panel. <code>catalog</code> / <code>schema</code> / <code>name</code> are its identity and are locked there — saving is an upsert on that FQN, so letting them change would create a second retriever instead of updating this one. Editing is what makes the <code>rerank.enabled</code> A/B a one-field change.</li>
 <li>Each retriever card shows its kind badge, target catalog, a shield icon when role-gated, a <strong>RERANK top N</strong> badge when re-ranking is configured (greyed out when it is configured but disabled), and its declared params (<code>name:type*</code>).</li>
 <li>The <strong>Invoke</strong> (▶) button opens a tester: fill the declared <code>args</code> as JSON, run it, and the panel shows the <strong>rendered SQL</strong> that was pushed to NeorunBase, whether re-ranking applied (with model, latency and scores — or the reason it was skipped), plus the returned rows — the same <code>POST /api/v1/retrievers/{fqn}/invoke</code> an agent calls. It's the fastest way to validate a template + param contract before agents use it.</li>
@@ -3109,7 +3108,27 @@ each row against the query directly.</p>
 <p>Metric / retriever <code>allowedRoles</code> map to IAM groups — see <a href="../iam/#semantic-layer-retriever-rbac">Semantic Layer &amp; Retriever RBAC</a>.</p>
 <h2 id="storage-replication-governance">Storage, replication, governance</h2>
 <p>Retriever definitions live in the cluster metadata store under <code>retriever:</code> and ride the standard <code>exportSnapshot</code> / <code>importSnapshot</code> replication to follower masters — exactly like semantic views. Unlike semantic views they are <strong>not</strong> registered as Calcite views (they are never planned by Ontul's optimizer); they are rendered and pushed down only at invoke time.</p>
-<p>Governance mirrors the semantic layer: <code>status</code> (<code>DRAFT</code> / <code>CERTIFIED</code> / <code>DEPRECATED</code>), <code>tags</code>, <code>certifiedBy</code> / <code>certifiedAt</code>, <code>owner</code>, and <code>allowedRoles</code> for invoke-time RBAC.</p>
+<p>Governance mirrors the semantic layer: <code>status</code> (<code>DRAFT</code> / <code>CERTIFIED</code> / <code>DEPRECATED</code>), <code>tags</code>,
+<code>certifiedBy</code> / <code>certifiedAt</code>, <code>owner</code>, and <code>allowedRoles</code> for invoke-time RBAC.</p>
+<p><code>status</code>, <code>certifiedBy</code>, <code>certifiedAt</code> and the certification fingerprint are <strong>server-owned</strong>: a
+register/update call cannot set them (a payload that tries is ignored), so nothing can declare
+itself certified. Certify through the dedicated endpoint instead, which stamps the <strong>caller</strong> as
+the certifier and is audited:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/v1/retrievers/semantic.rag.docs_hybrid/certify&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{}&#39;</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="c1"># → { …, &quot;status&quot;: &quot;CERTIFIED&quot;, &quot;certifiedBy&quot;: &quot;alice&quot;, &quot;effectiveStatus&quot;: &quot;CERTIFIED&quot; }</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="c1"># Undo (back to DRAFT), or retire it:</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/v1/retrievers/semantic.rag.docs_hybrid/decertify&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;status&quot;:&quot;DEPRECATED&quot;}&#39;</span>
+</code></pre></div>
+<p>Certifying also records a fingerprint of what the retriever <em>does</em> — its <code>kind</code>, target catalog,
+SQL template and parameter contract. Edit any of those afterwards and reads report
+<code>effectiveStatus: "STALE"</code> with a <code>certificationNote</code> explaining why; editing the description or
+synonyms does not. <strong>Read <code>effectiveStatus</code>, not <code>status</code>.</strong> Certification requires the
+<code>ontology:Certify</code> IAM action (admins always may), which is deliberately separate from the rights
+needed to edit a retriever. See
+<a href="../ontology/#certification-trust-an-agent-can-act-on">Ontology → Certification</a>.</p>
 <h2 id="see-also">See also</h2>
 <ul>
 <li><a href="../semantic-layer/">Semantic Layer</a> — metrics, dimensions, and query rewriting.</li>

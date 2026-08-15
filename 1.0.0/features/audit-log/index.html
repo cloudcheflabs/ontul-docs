@@ -2354,6 +2354,13 @@
 <li><strong>Starting an <a href="../../streaming/flow/">Ontul Flow</a></strong> (<code>SUBMIT STREAMING</code>) is always audited as a
   <code>data:Write</code> with the <strong>sink</strong> as <code>resource</code> and every <strong>source and sink dataset</strong> in <code>tables</code>;
   an IAM-refused start is recorded with <code>decision=DENY</code>.</li>
+<li><strong>Ontology invocations and certification are always audited</strong> — a governed write-back is
+  recorded as <code>action:invoke</code> (<code>action:invoke:pending</code> when it is held for approval,
+  <code>action:exec:denied</code> on an IAM refusal), and signing a definition off as <code>ontology:certify</code> /
+  <code>ontology:decertify</code> (<code>ontology:certify:denied</code> when refused). The <code>resource</code> is the definition's
+  fully-qualified name and <code>userId</code> is the certifier. This is what makes a CERTIFIED badge
+  attributable after the fact — see
+  <a href="../ontology/#certification-trust-an-agent-can-act-on">Ontology → Certification</a>.</li>
 <li><strong>Reads (SELECT) are audited by sampling</strong> — see below. The engine is recorded as <code>ontul</code>, and touched tables are extracted from the statement.</li>
 </ul>
 <p>Capture is best-effort and never blocks or fails a query.</p>

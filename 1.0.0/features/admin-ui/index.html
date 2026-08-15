@@ -2098,6 +2098,62 @@
 <p>Register, unregister, and manage data source catalogs. View connector type, connection ID, table count, and configuration for each catalog.</p>
 <h3 id="connections">Connections</h3>
 <p>Manage physical connections (S3, JDBC, Kafka) — create, update, delete, and list. Credentials are encrypted at rest via KMS.</p>
+<h3 id="semantic-layer">Semantic Layer</h3>
+<p>Register and govern <a href="../semantic-layer/">semantic views</a> — curated metrics and dimensions over a
+base SQL view. Each entry shows its trust badge, its metrics (a shield icon marks role-gated
+ones), dimensions, tags and mandatory filters. <strong>Certify</strong> signs a view off, stamping the logged-in
+user and a fingerprint of its semantics; the badge turns <strong>STALE</strong> (orange) if the view is edited
+afterwards, with the reason on hover.</p>
+<h3 id="retrievers">Retrievers</h3>
+<p>Manage <a href="../retrievers/">retrievers</a> — governed multi-modal retrieval (vector / graph / full-text)
+pushed down to a NeorunBase catalog. The side panel covers the SQL template, the typed parameter
+contract, output columns, an optional re-rank block, synonyms and <code>allowedRoles</code>. An <strong>Invoke</strong>
+drawer runs a retriever with structured arguments and shows the rendered SQL next to the rows.</p>
+<h3 id="object-types">Object Types</h3>
+<p>The <a href="../ontology/">ontology</a> entity layer: typed business objects (Customer, Order) mapped onto
+physical tables. Each row shows the read source, the property→column bindings, the write target
+(system of record) and a trust badge. <strong>Certify</strong> signs the definition off; the badge shows
+<strong>STALE</strong> with a tooltip when the read source or a property binding changed after certification.</p>
+<h3 id="link-types">Link Types</h3>
+<p>Typed relationships between object types, bound either to relational join keys (<code>JOIN</code>) or to a
+native NeorunBase graph edge (<code>GRAPH</code>). A link's trust is capped by both endpoint object types, so
+a certified link over a draft object type displays as DRAFT with the offending endpoint named.</p>
+<h3 id="action-types">Action Types</h3>
+<p>Governed write-backs — the only way an agent changes data. Each action declares its target object
+type, its mode (<code>DML</code> against the Iceberg system of record, or <code>OPERATION</code> calling a REST/ERP
+connector), a typed parameter contract, and whether it requires approval. An <strong>invoke tester</strong>
+drawer runs one with real arguments.</p>
+<h3 id="action-workflows">Action Workflows</h3>
+<p>Multi-step Sagas composed of action types, authored as JSON or kiok-style YAML (importable and
+exportable). On a step failure the completed steps are compensated in reverse order; the page
+shows the run ledger.</p>
+<h3 id="ontology-graph">Ontology Graph</h3>
+<p>Visual type-graph of object types and the link types connecting them — the schema-level map an
+agent traverses, rendered for humans.</p>
+<h3 id="flow">Flow</h3>
+<p>The visual <a href="../../streaming/flow/">Ontul Flow</a> builder and operator console: a drag-and-drop
+<code>source → transform → sink</code> canvas backed by an editable JSON/YAML spec (both directions stay in
+sync). The list view shows every registered flow with its status, <strong>Records</strong>, <strong>Rejected</strong> and
+<strong>Lag</strong> columns, plus Start / Stop / Delete. Opening a flow gives Spec, Data (preview rows from a
+source or sink node), Metrics (live throughput sparkline, rejected count, source lag), Logs
+(auto-scrolling tail) and History (past runs with duration and rejected counts). A running flow is
+read-only — stop it to edit.</p>
+<h3 id="data-lineage">Data Lineage</h3>
+<p>Dataset-level lineage graph built from executed DML and started flows: which sources feed which
+targets, with the job or query that created each edge. See <a href="../data-lineage/">Data Lineage</a>.</p>
+<h3 id="audit">Audit</h3>
+<p>Search the <a href="../audit-log/">audit log</a> by user, engine, table, action kind, free text and time
+range. Denied attempts appear alongside allowed ones, so a refused certification or an IAM-blocked
+write is visible here.</p>
+<h3 id="lance-maintenance">Lance Maintenance</h3>
+<p>Compaction and cleanup for <a href="../lance-integration/">Lance</a> datasets, mirroring the Iceberg
+Maintenance page for the vector/AI format.</p>
+<h3 id="storage">Storage</h3>
+<p>Switch the exchange and job-log backends between local disk and S3 <strong>at runtime, cluster-wide, with
+no restart</strong> — the change is persisted to the replicated metadata store and pushed to every node.</p>
+<h3 id="drivers">Drivers</h3>
+<p>Upload JDBC driver JARs for federated catalogs. Drivers are stored durably and synced to every
+worker, so a new driver does not require rebuilding an image.</p>
 <h3 id="jobs">Jobs</h3>
 <p>Monitor active and completed jobs. Submit new batch or streaming jobs, view real-time logs, and kill running jobs.</p>
 <h3 id="iam">IAM</h3>
