@@ -64,7 +64,7 @@ properties in business terms and declaring where writes to it should land.
 | `primaryKey[]` | One or more **property names** (not physical columns) that identify an instance. |
 | `properties[]` | Each property: `name` (logical), `type` (`string`/`long`/`double`/`boolean`/…), `column` (the physical column it maps to), plus optional `synonyms` (NL/agent matching) and `pii`. |
 | `writeTarget` | Where a write action lands: `DML` (a table — `catalog.schema.table`) or `OPERATION` (a connector operation). |
-| `allowedRoles[]`, `tags[]`, `status` | Governance + lifecycle metadata. |
+| `allowedRoles[]`, `tags[]`, `status` | Governance + lifecycle metadata. Read `effectiveStatus` (below) rather than `status` for trust. |
 
 The property → column mapping is the crux: callers, agents, and SDKs reference
 **logical property names**, and Ontul resolves them to physical columns when it
@@ -438,12 +438,92 @@ ceiling.
 
 ---
 
+## Certification (trust an agent can act on)
+
+Every ontology definition carries a `status` of `DRAFT` / `CERTIFIED` / `DEPRECATED`. On its own
+a status is only a label, so Ontul adds two things that make it mean something, and folds the
+result into one read-only field: **`effectiveStatus`**.
+
+| `effectiveStatus` | Meaning |
+| --- | --- |
+| `CERTIFIED` | Signed off, unchanged since, and everything it is built on is certified too. |
+| `STALE` | Was certified — then the definition changed underneath the signature. |
+| `DRAFT` | Never certified (or capped there by a dependency). |
+| `DEPRECATED` | Retired. |
+
+**Certifying** is its own endpoint, never a field you send:
+
+```bash
+curl -XPOST $ADMIN/api/v1/object-types/ontology.sales.Customer/certify -H "$AUTH" -d '{}'
+# → { …, "status": "CERTIFIED", "certifiedBy": "alice", "effectiveStatus": "CERTIFIED" }
+
+# Undo, or retire:
+curl -XPOST $ADMIN/api/v1/object-types/ontology.sales.Customer/decertify -H "$AUTH" \
+  -d '{"status":"DEPRECATED"}'
+```
+
+The certifier is **the caller** — `status`, `certifiedBy`, `certifiedAt` and the fingerprint are
+server-owned and ignored on register/update, so nobody can register a definition that declares
+itself certified, or name someone else as the approver.
+
+### Certification breaks when the definition changes
+
+Certifying stamps a fingerprint of the parts that decide what the definition *resolves to* — the
+read source, the property→column bindings, the primary key, the join keys. Change any of them and
+`effectiveStatus` drops to `STALE` on the next read:
+
+```json
+{ "fqn": "ontology.sales.Customer", "status": "CERTIFIED",
+  "effectiveStatus": "STALE",
+  "certificationNote": "the definition changed after it was certified" }
+```
+
+Wording is deliberately excluded: editing a description, a title, a synonym or a tag never revokes
+a sign-off. Re-certify to sign off on the new shape.
+
+### Trust cannot exceed what it is built on
+
+`effectiveStatus` is capped by dependencies:
+
+- an **object type** cannot be more trusted than the semantic view it reads from;
+- a **link type** cannot be more trusted than either of the object types it connects;
+- an **action type** cannot be more trusted than the object type it mutates.
+
+So a CERTIFIED object type over a DRAFT view reports `DRAFT`, with the reason in
+`certificationNote`. An agent asking "is everything behind this answer certified?" reads one field
+per object instead of walking the graph itself.
+
+### Where it shows up
+
+- **Reads carry it.** `GET /api/v1/object-types`, `GET .../{fqn}`, the ObjectSet
+  `POST .../query` response and the link `POST .../traverse` response all include
+  `effectiveStatus` (+ `certificationNote`), so a client rendering rows knows what they are worth
+  without a second round-trip.
+- **MCP** returns the same fields through `list_object_types` / `describe_object_type`.
+- **Admin UI** shows the badge on the Object Types page, with a Certify button and the reason as
+  a tooltip on a STALE badge.
+
+### Who may certify
+
+Certification is an ownership decision, not an editing one, so it has its own IAM action —
+`ontology:Certify` — separate from the administrator rights needed to *edit* the ontology. That
+lets a domain owner bless their own subtree without being made an admin:
+
+```json
+{ "Sid": "CertifySalesOntology", "Effect": "Allow",
+  "Action": "ontology:Certify", "Resource": "ontology.sales.*" }
+```
+
+Administrators may always certify. Every certify / decertify is written to the
+[Audit Log](audit-log.md) as `ontology:certify` / `ontology:decertify`, and a refusal as
+`ontology:certify:denied`.
+
 ## REST API summary
 
 All routes are under the master's admin HTTP port and reuse the same IAM token
 as the rest of the admin surface. Reads are IAM-filtered on the backing read
 source; registration/deletion is administrator-gated; action invoke is gated on
-`ontology:InvokeAction`.
+`ontology:InvokeAction`; certification on `ontology:Certify`.
 
 | Method + path | Purpose |
 | --- | --- |
@@ -461,6 +541,8 @@ source; registration/deletion is administrator-gated; action invoke is gated on
 | `GET /api/v1/action-workflows/{fqn}` · `/yaml` | Fetch one (JSON) · export editable YAML. |
 | `DELETE /api/v1/action-workflows/{fqn}` | Delete one. |
 | `POST /api/v1/action-workflows/{fqn}/invoke` | Run the Saga (gated on `ontology:InvokeWorkflow`). |
+| `POST /api/v1/{object-types,link-types,action-types,action-workflows,retrievers}/{fqn}/certify` | Sign off (gated on `ontology:Certify`). |
+| `POST /api/v1/…/{fqn}/decertify` | Return to `DRAFT`, or `{"status":"DEPRECATED"}` to retire. |
 
 ## Related
 

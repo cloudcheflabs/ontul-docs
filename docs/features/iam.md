@@ -42,7 +42,7 @@ Users carry an opaque id, a hashed password, group memberships, access keys, and
 
 ## Policy-Based Access Control
 
-Ontul uses AWS-style JSON policies to manage permissions. Actions live in the `data:` namespace (table reads, DML, admin verbs) and `UDF:` namespace; table resources are addressed as `data:table:<catalog>.<schema>.<table>` and accept wildcards.
+Ontul uses AWS-style JSON policies to manage permissions. Actions live in the `data:` namespace (table reads, DML, admin verbs), the `UDF:` namespace, and the `ontology:` namespace (governed write-backs and certification); table resources are addressed as `data:table:<catalog>.<schema>.<table>` and accept wildcards.
 
 ```json
 {
@@ -67,7 +67,8 @@ Ontul uses AWS-style JSON policies to manage permissions. Actions live in the `d
 
 - **Action verbs in `data:` namespace** — runtime SQL: `data:Select`, `data:Insert`, `data:Update`, `data:Delete`, `data:Merge`. Catalog DDL: `data:CreateTable`, `data:DropTable`, `data:AlterTable`. Operational: `data:KillJob`, `data:CancelQuery`. The metadata-only `data:SelectTable` verb gates discovery surfaces (e.g. semantic-view listing, table catalog browse) — distinct from the runtime `data:Select` that gates actual scans.
 - **UDF actions** stay in the `UDF:` namespace — see [UDF Permissions](#udf-permissions).
-- **Resources**: `data:table:<catalog>.<schema>.<table>`, `data:schema:<catalog>.<schema>`, `data:job:*`, `data:query:*`, `udf:<name>`. Wildcards `*` and `?` are supported.
+- **Ontology actions** live in the `ontology:` namespace and gate the [ontology](ontology.md) surface: `ontology:InvokeAction` (perform a governed write-back), `ontology:InvokeWorkflow` (run a multi-step Saga), `ontology:Certify` (sign off on a definition). Administrators are always allowed; for everyone else these are deny-by-default like any other action.
+- **Resources**: `data:table:<catalog>.<schema>.<table>`, `data:schema:<catalog>.<schema>`, `data:job:*`, `data:query:*`, `udf:<name>`. Wildcards `*` and `?` are supported. **Semantic-layer and ontology objects are addressed by their BARE fully-qualified name** — `semantic.rag.*`, `ontology.sales.*` — *not* prefixed with `data:table:`. A policy written as `data:table:ontology.sales.*` never matches, which reads like "IAM is broken" rather than "the pattern did not match".
 - **Attachment**: policies attach to users (direct) or groups (via group membership).
 - **Deny rules take precedence** over allow rules.
 - **Deny-by-default**: no matching policies means access is denied.
@@ -120,6 +121,30 @@ Both calls return `201 Created`. Distinguish create-vs-update on the client side
 | Detach policy from group | `POST   /admin/iam/detach-group-policy` `{groupName, policyName}` |
 
 The `AdministratorAccess` policy is reserved — `deletePolicy` rejects attempts to remove it.
+
+### Certification without admin rights
+
+Certifying an ontology or semantic-layer definition is an **ownership** decision, not an editing
+one, so it has its own action. That lets a domain owner sign off on their own subtree without
+being made an administrator — and, equally, lets someone edit definitions without being able to
+bless their own work:
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [{
+    "Sid": "CertifySalesOntology",
+    "Effect": "Allow",
+    "Action": "ontology:Certify",
+    "Resource": "ontology.sales.*"
+  }]
+}
+```
+
+With this attached, the user may call `POST /api/v1/object-types/{fqn}/certify` (and
+`/decertify`) for anything under `ontology.sales`, and the recorded `certifiedBy` is **their** id.
+Without it the call is refused with `403` even if they can otherwise read the object. Every
+certify / decertify / refusal is written to the [Audit Log](audit-log.md).
 
 ## Column-Level Security
 

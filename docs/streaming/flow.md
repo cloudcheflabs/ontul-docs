@@ -125,7 +125,8 @@ Iceberg CDC apply).
     { "type": "FILTER", "value": "amount > 50" },
     { "type": "SELECT", "value": "order_id, customer_id, amount" }
   ],
-  "sink": { "type": "table", "table": "ice.sales.orders" },
+  "sink": { "type": "table", "table": "ice.sales.orders", "schemaEvolution": "add" },
+  "errorSink": { "type": "table", "table": "ice.sales.orders_rejected" },
   "write": {
     "mode": "cdc",
     "keys": ["order_id"],
@@ -160,6 +161,97 @@ A Kafka → JDBC append flow is simpler:
 
 For a JDBC **CDC-apply** sink, put `mode`/`opColumn`/`keys` on the sink node itself (JDBC does not use
 a separate `write` block).
+
+## Data quality — rejected records
+
+A record a flow cannot decode (malformed JSON, an undecodable Avro payload, an empty value) is
+**rejected**: it never reaches the sink, and it is **counted**. The count is visible as **Rejected**
+in the Flow list, the header metrics, the Metrics tab and each run's history row, and the reason is
+logged (`json_parse`, `avro_decode`, `empty_payload`).
+
+!!! note "A rejected record is not a processed record"
+    `Records` counts rows written to the sink; `Rejected` counts rows that were dropped before it.
+    They never overlap, so `Rejected > 0` always means data did not arrive at the target.
+
+To keep the rejected records instead of only counting them, name a **quarantine table** with
+`errorSink` (Admin UI: the sink panel's *Rejected records → Quarantine table* field):
+
+```json
+{
+  "source": { "type": "kafka", "connectionId": "kafka-prod", "topic": "orders", "format": "json" },
+  "sink": { "type": "table", "table": "ice.sales.orders" },
+  "errorSink": { "type": "table", "table": "ice.sales.orders_rejected" }
+}
+```
+
+The quarantine table has a **fixed, source-independent schema** — it holds records whose own shape
+could not be trusted:
+
+| column | type | |
+|---|---|---|
+| `__flow` | string | the flow (job) that rejected the record |
+| `__reason` | string | `json_parse` / `avro_decode` / `empty_payload` / `schema_mismatch` |
+| `__error` | string | the underlying failure message |
+| `__source` | string | where it came from, e.g. `orders-0@1523` |
+| `__payload` | string | the raw record, verbatim, for replay (truncated at 64 KB) |
+| `__ts` | bigint | rejection time, epoch millis |
+
+It is created on first write, appended at each checkpoint, and governed like any other write target:
+the flow's owner needs `data:Insert` on it, and it appears in the flow's audit `tables`. Quarantining
+is **best-effort** — if the quarantine table itself cannot be written, the flow keeps running and the
+records stay counted, with an error in the log.
+
+## Schema drift
+
+A source's shape is not frozen: someone runs `ALTER TABLE … ADD COLUMN` upstream, or a producer
+starts emitting a new JSON field. `sink.schemaEvolution` decides what a flow does about it:
+
+| mode | behavior |
+|---|---|
+| `add` *(default)* | A column the target table does not have is **added** to it, and `int`→`long` / `float`→`double` are promoted, before the batch is written. |
+| `none` | The table schema wins — a new source column is ignored. |
+| `strict` | Drift **fails the flow** instead of guessing. Use when the target schema is a contract. |
+
+```json
+{ "sink": { "type": "table", "table": "ice.sales.orders", "schemaEvolution": "add" } }
+```
+
+Only additive, read-compatible changes are ever applied — exactly the set Iceberg can make without
+rewriting committed data files. A column the source **dropped** is deliberately left in the table
+(later rows carry `NULL`), because one absent field in one batch is not evidence the column is gone.
+Anything narrowing or incompatible is refused: `strict` fails, otherwise the table keeps its type.
+
+Schema drift applies to the **Iceberg sink**. A JDBC sink writes to a table whose schema the target
+database owns — add the column there.
+
+## Lag
+
+**Lag** answers "is this flow keeping up":
+
+- **records** — Kafka consumer lag (log end offset − our position), summed over the partitions this
+  flow's workers own.
+- **time** — how old the newest record processed is. For CDC this is the source database's own change
+  timestamp, and it is the only meaningful lag for a change log (there is no row count to be behind
+  by).
+
+Both are surfaced in the Flow list and Metrics tab (`1,204 rec · 2.3s`), in the periodic progress line
+in the flow's log, and on the job status API as `sourceLag` / `sourceLagMs`. A flow's worker count is
+fixed for a run: to scale one out, **Stop → change `numWorkers` → Start** — the run resumes from its
+last committed checkpoint, so no data is reprocessed or lost.
+
+## Keeping the sink table fast
+
+A streaming flow commits on an interval, so it naturally produces many small files. Ontul compacts
+them **in the background, concurrently with the flow** — no need to stop ingestion:
+
+- Enable per-table compaction (cron or fixed interval) under **Iceberg → Maintenance** in the Admin
+  UI, or with `ALTER TABLE … EXECUTE optimize(…)`.
+- Concurrent-write safety is built in: a cooldown window excludes the files an active writer is
+  still appending to, `skip_active_partitions` leaves a partition a flow is currently writing
+  untouched, and commits retry with a sequence-number margin.
+
+See **[Iceberg Maintenance](../iceberg/maintenance.md)** for the full set of operations (compaction,
+expire snapshots, remove orphan files, rewrite position deletes) and their tuning.
 
 ## Governance (IAM)
 
@@ -202,3 +294,4 @@ UI, applied cluster-wide without a restart. See [Configuration](../reference/con
 - [Streaming Guide](guide.md) — the engine, SUBMIT STREAMING, SDK APIs, windowing, Iceberg sink modes.
 - [Kafka integration](../features/kafka-integration.md), [Connections](../features/connection-id.md),
   [IAM](../features/iam.md), [Iceberg integration](../features/iceberg-integration.md).
+- [Iceberg Maintenance](../iceberg/maintenance.md) — compaction that runs alongside a live flow.

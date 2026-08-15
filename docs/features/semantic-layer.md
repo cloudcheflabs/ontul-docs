@@ -348,7 +348,8 @@ Each semantic view carries lifecycle, ownership, and labeling fields used by the
 
 | Field | Meaning |
 | --- | --- |
-| `status` | `DRAFT` (default) / `CERTIFIED` / `DEPRECATED`. BI clients can filter by this; LLMs should prefer CERTIFIED. |
+| `status` | `DRAFT` (default) / `CERTIFIED` / `DEPRECATED` — what a human declared. **Server-owned**: a register/update payload cannot set it. |
+| `effectiveStatus` | Read-only, returned on every read. `status`, plus whether the view has been edited since it was certified (`STALE`). This is the field BI clients and LLMs should filter on — see below. |
 | `certifiedBy` | User id stamped when a view is certified via `POST /certify`. |
 | `certifiedAt` | Epoch-ms instant of certification. |
 | `owner` | User id that registered the view; auto-stamped on POST. |
@@ -368,7 +369,26 @@ curl -sf -X POST http://localhost:8090/api/v1/semantic-views/tpch.tiny.lineitem_
     -H "Authorization: Bearer $TOKEN"
 ```
 
-The `/certify` endpoint is separate from the generic PATCH so audit trails treat certification as a distinct event — the caller's id becomes `certifiedBy`, not a free-text field.
+The `/certify` endpoint is separate from the generic PATCH so audit trails treat certification as
+a distinct event — the caller's id becomes `certifiedBy`, not a free-text field. `status`,
+`certifiedBy`, `certifiedAt` and the fingerprint are ignored on register/update, so a view cannot
+arrive already claiming to be certified.
+
+### Certification goes stale when the view changes
+
+Certifying stamps a fingerprint of the view's **semantics** — `baseSql`, metric expressions and
+their mandatory filters, dimensions, view-level mandatory filters, conformed-dimension joins.
+Change any of them and every read reports:
+
+```json
+{ "status": "CERTIFIED", "effectiveStatus": "STALE",
+  "certificationNote": "the definition changed after it was certified" }
+```
+
+Editing a description, synonym or tag does **not** revoke a sign-off. Re-certify to sign off on
+the new shape. Object types built on a DRAFT or STALE view inherit the lower trust — see
+[Ontology → Certification](ontology.md#certification-trust-an-agent-can-act-on). Certification
+requires the `ontology:Certify` IAM action (admins always may), separate from edit rights.
 
 ### Lineage integration
 
@@ -509,7 +529,8 @@ Everything above is also available without writing REST calls, under **Semantic 
 
 - **Register View** opens a side panel for `catalog` / `schema` / `name`, the base SQL, and repeatable **metric** rows (name, expr, synonyms, `allowedRoles`, per-metric mandatory filters) and **dimension** rows, plus view-level mandatory filters and tags.
 - Each registered view shows its status badge (`DRAFT` / `CERTIFIED` / `DEPRECATED`), its metrics (a shield icon marks role-gated ones), dimensions, and tags.
-- The **Certify** button flips `DRAFT → CERTIFIED` and stamps the certifier; **Delete** removes the metadata.
+- The **Certify** button stamps the certifier (the logged-in user) and the fingerprint; it stays
+  available on a `STALE` view so you can re-certify after an edit. **Delete** removes the metadata.
 
 The panel issues the same `POST /api/v1/semantic-views` / `certify` / `DELETE` calls documented above, so the UI and API are interchangeable. Metric-level `allowedRoles` map to IAM groups — see [Semantic Layer & Retriever RBAC](iam.md#semantic-layer-retriever-rbac) for configuring the backing group + member. Retrievers have a sibling **Retrievers** page (register + an invoke tester that shows the rendered SQL and rows); see [Retrievers](retrievers.md).
 
