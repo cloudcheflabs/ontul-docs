@@ -28,6 +28,13 @@ Ontul records audit events for the statements it executes, with **no configurati
 - **Starting an [Ontul Flow](../streaming/flow.md)** (`SUBMIT STREAMING`) is always audited as a
   `data:Write` with the **sink** as `resource` and every **source and sink dataset** in `tables`;
   an IAM-refused start is recorded with `decision=DENY`.
+- **Ontology invocations and certification are always audited** — a governed write-back is
+  recorded as `action:invoke` (`action:invoke:pending` when it is held for approval,
+  `action:exec:denied` on an IAM refusal), and signing a definition off as `ontology:certify` /
+  `ontology:decertify` (`ontology:certify:denied` when refused). The `resource` is the definition's
+  fully-qualified name and `userId` is the certifier. This is what makes a CERTIFIED badge
+  attributable after the fact — see
+  [Ontology → Certification](ontology.md#certification-trust-an-agent-can-act-on).
 - **Reads (SELECT) are audited by sampling** — see below. The engine is recorded as `ontul`, and touched tables are extracted from the statement.
 
 Capture is best-effort and never blocks or fails a query.

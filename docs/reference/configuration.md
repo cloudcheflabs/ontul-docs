@@ -103,7 +103,7 @@ Many path properties default to a subdirectory of `${ontul.base.data.dir}` (for 
 | `ontul.query.rpc.timeout.ms` | `30000` | Timeout (ms) for query-related RPCs the Master issues to Workers (e.g. dispatching a query stage and awaiting its result). Raise for long-running stages over slow links. |
 | `ontul.internal.rpc.timeout.ms` | `10000` | Timeout (ms) for internal (non-query) control-plane RPCs, e.g. small master↔worker coordination calls. Keep relatively short. |
 
-## Semantic Layer / Retrievers
+## Semantic Layer / Retrievers / Ontology
 
 | Property | Default | Description |
 | --- | --- | --- |
@@ -115,6 +115,9 @@ Many path properties default to a subdirectory of `${ontul.base.data.dir}` (for 
 | `ontul.rerank.max.text.chars` | `4000` | Upper bound on `rerank.maxTextChars`, the per-document truncation. Cross-encoders take a fixed window (commonly 512 tokens) and silently drop the tail, so this caps how much text may be sent per row before that happens invisibly. |
 | `ontul.rerank.http.connect.timeout.ms` | `1000` | TCP connect timeout for the re-ranker endpoint, separate from the per-call budget: an unreachable host fails fast instead of burning the whole request timeout. |
 | `ontul.rerank.default.path` | `/rerank` | Request path appended to a `RERANK` connection's `baseUrl` when that connection does not set its own `path`. Change it only if every endpoint in the deployment mounts the API elsewhere — per-endpoint differences belong on the connection. |
+| `ontul.ontology.read.max.rows.ceiling` | `10000` | Hard cluster-wide cap on rows returned by an [ontology](../features/ontology.md) read — an ObjectSet query (`POST /api/v1/object-types/{fqn}/query`) or a link traversal (`POST /api/v1/link-types/{fqn}/traverse`). Applied on top of each request's own `limit`, so the effective cap is the smaller of the two. Mirrors the retriever ceiling: it bounds what an agent can pull through the ontology in one call regardless of what it asks for. |
+| `ontul.action.exec.timeout.ms` | `600000` (10 min) | Time budget for a single [action type](../features/ontology.md#actions-governed-write-back) invocation in `DML` mode — the governed write-back executed through the query engine. A write that exceeds it is abandoned rather than holding the invoke connection open indefinitely. |
+| `ontul.action.http.timeout.seconds` | `60` | Per-request timeout for an action in `OPERATION` mode, i.e. the outbound HTTP call to the `rest-operation` connector (ERP/SaaS write-back). Keep it well under `ontul.action.exec.timeout.ms`; a slow ERP should surface as a failed operation, not as a stuck action. |
 
 ## Worker Health Check
 
@@ -191,6 +194,8 @@ See [Audit Log](../features/audit-log.md) for the full feature description.
 | --- | --- | --- |
 | `ontul.job.history.dir` | `${ontul.base.data.dir}/job-history` | Directory where submitted-job history and job logs are stored. Accepts a local path or an S3 path (e.g. `s3://bucket/ontul/job-history`). If a jobLogs S3 storage connection is configured in the Admin UI, that S3 location overrides this value. |
 | `ontul.job.large.row.threshold` | `100000` | Row-count threshold above which a job's result set is treated as "large" and handled via the streaming/spill path rather than buffered fully in memory. |
+| `ontul.driver.sync.chunk.size.bytes` | `4194304` (4 MiB) | Chunk size used when the master streams an uploaded JDBC driver JAR out to the workers. Larger chunks mean fewer round-trips on a fast network; smaller chunks keep each NIO frame (and its retry cost) small on a lossy one. |
+| `ontul.deps.parent.first.prefixes` | _(empty)_ | Extra package prefixes kept **parent-first** in the child-first classloader used for UDFs and job dependencies, beyond the built-in JDK / Arrow / Ontul / slf4j set. Comma-separated. Use it when a job JAR ships its own copy of a library that must stay identical to the engine's (otherwise you get `ClassCastException` between two copies of the same class). |
 
 ## Flight SQL
 
@@ -256,6 +261,22 @@ list and History tab are consistent regardless of which master serves the reques
 | `ontul.flow.status.freshness.ms` | `15000` | A persisted flow.status snapshot older than this is treated as stale (the flow is shown as not-running until the owner refreshes it). Keep it a few multiples of the persist interval. |
 | `ontul.flow.history.max.runs` | `20` | Maximum run records retained per flow in the replicated run history (History tab). |
 
+### Rejected records, schema drift and lag
+
+A record a flow cannot decode (malformed JSON, undecodable Avro, an empty payload) is **rejected**:
+it never reaches the sink, and it is counted. The count is reported on the job status as
+`rejectedRows` / `rejectsByReason` and as the **Rejected** column in the Admin UI Flow list, so a
+decode failure is never silent. See [Ontul Flow → Data quality](../streaming/flow.md#data-quality-rejected-records).
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.flow.reject.log.first` | `10` | Log the first N rejected records of a run in full (reason, error, `topic-partition@offset`). A poison topic can reject every record, so beyond this the log is sampled. The **count is always exact** regardless of how much is logged. |
+| `ontul.flow.reject.log.every` | `1000` | After the first N above, log every Nth rejected record. Set both to `0` to silence the per-record lines entirely and rely on the counters. |
+| `ontul.flow.error.sink.buffer.max.rows` | `10000` | Maximum rejected records buffered in memory for the quarantine (`errorSink`) table between flushes. Quarantine must never be the reason a worker runs out of memory: past this the records are still counted, but not written, and an error is logged once. |
+| `ontul.flow.error.sink.payload.max.chars` | `65536` | Truncate a quarantined payload at this many characters (a `…[truncated]` marker is appended). Quarantine exists to diagnose and replay the offending record, not to mirror arbitrarily large source messages. |
+| `ontul.flow.lag.refresh.interval.ms` | `5000` | How often a source refreshes its lag reading. For Kafka this is a broker round-trip (`endOffsets`), so it is rate-limited rather than measured on every poll. Lag is reported as `sourceLag` (records behind) and `sourceLagMs` (age of the newest record processed). |
+| `ontul.flow.schema.evolution` | `add` | Default schema-drift policy for an Iceberg sink when the flow spec does not set `sink.schemaEvolution`. `add` — a column the source starts sending is **added** to the target table, and `int`→`long` / `float`→`double` are promoted, before the batch is written. `none` — the table schema wins and the new column is ignored. `strict` — drift fails the flow instead of guessing. Only additive, read-compatible changes are ever applied; a column the source **dropped** is left in the table (later rows carry `NULL`), because one absent field in one batch is not evidence the column is gone. |
+
 ## Job Logs
 
 Streaming and batch job logs can be flushed to append-only rolling gzip segments on S3
@@ -269,8 +290,21 @@ Manager's S3 target, so turning on S3-primary exchange also puts job logs on S3.
 | `ontul.job.logs.memory.tail` | `1000` | Number of most-recent log lines kept in memory per job (the rest are flushed to S3 segments). |
 | `ontul.job.logs.flush.interval.ms` | `10000` | How often the worker/master drains buffered job-log lines to an S3 segment (time-based roll). |
 
-The S3 endpoint/region/bucket/prefix/credentials for job logs default to the exchange S3 target
-(`ontul.exchange.s3.*`) and can be overridden with `ontul.job.logs.s3.*`. The backend can also be
+Each of the following overrides the corresponding `ontul.exchange.s3.*` value for job logs only —
+useful when logs belong in a different bucket (or a different account) from the exchange state.
+Leave them unset to inherit.
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.job.logs.s3.endpoint` | _(inherits `ontul.exchange.s3.endpoint`)_ | S3 endpoint for job-log segments (e.g. a ShannonStore/MinIO URL). |
+| `ontul.job.logs.s3.region` | _(inherits)_ | S3 region. |
+| `ontul.job.logs.s3.bucket` | _(inherits)_ | Bucket holding the job-log segments. |
+| `ontul.job.logs.s3.prefix` | _(inherits)_ | Key prefix; segments are written under `{prefix}jobLogs/<jobId>/<seq>-<ts>.log.gz`. |
+| `ontul.job.logs.s3.access.key` | _(inherits)_ | Access key. Prefer configuring an S3 **connection** from the Admin UI Storage page so the secret is not in a properties file. |
+| `ontul.job.logs.s3.secret.key` | _(inherits)_ | Secret key. Same caveat as above. |
+| `ontul.job.logs.s3.path.style` | _(inherits)_ | `true` forces path-style addressing (required by most S3-compatible stores); `false` uses virtual-host style. |
+
+The full set can also be overridden with `ontul.job.logs.s3.*`. The backend can also be
 switched from the Admin UI **Storage** page at runtime (no restart), which persists to the replicated
 metadata store as `storage.jobLogs.*` / `storage.exchange.*` referencing an S3 connection.
 

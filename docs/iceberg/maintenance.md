@@ -118,6 +118,12 @@ files untouched rather than collapsing the whole table into one file.
 > (the cold-file / seq-margin selection kept compaction behind the live writer; the retry net was not
 > even needed).
 
+!!! tip "Streaming sinks are the main reason to schedule this"
+    An [Ontul Flow](../streaming/flow.md) commits on an interval, so it steadily produces small files.
+    Turn on scheduled compaction for the flow's sink table and leave the flow running — the safe
+    defaults above are exactly what keeps the rewrite behind a live streaming writer, so ingestion
+    never has to stop for maintenance.
+
 ---
 
 ### `expire_snapshots` — drop old snapshots and their files

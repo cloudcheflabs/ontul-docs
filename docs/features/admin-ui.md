@@ -28,6 +28,88 @@ Register, unregister, and manage data source catalogs. View connector type, conn
 
 Manage physical connections (S3, JDBC, Kafka) — create, update, delete, and list. Credentials are encrypted at rest via KMS.
 
+### Semantic Layer
+
+Register and govern [semantic views](semantic-layer.md) — curated metrics and dimensions over a
+base SQL view. Each entry shows its trust badge, its metrics (a shield icon marks role-gated
+ones), dimensions, tags and mandatory filters. **Certify** signs a view off, stamping the logged-in
+user and a fingerprint of its semantics; the badge turns **STALE** (orange) if the view is edited
+afterwards, with the reason on hover.
+
+### Retrievers
+
+Manage [retrievers](retrievers.md) — governed multi-modal retrieval (vector / graph / full-text)
+pushed down to a NeorunBase catalog. The side panel covers the SQL template, the typed parameter
+contract, output columns, an optional re-rank block, synonyms and `allowedRoles`. An **Invoke**
+drawer runs a retriever with structured arguments and shows the rendered SQL next to the rows.
+
+### Object Types
+
+The [ontology](ontology.md) entity layer: typed business objects (Customer, Order) mapped onto
+physical tables. Each row shows the read source, the property→column bindings, the write target
+(system of record) and a trust badge. **Certify** signs the definition off; the badge shows
+**STALE** with a tooltip when the read source or a property binding changed after certification.
+
+### Link Types
+
+Typed relationships between object types, bound either to relational join keys (`JOIN`) or to a
+native NeorunBase graph edge (`GRAPH`). A link's trust is capped by both endpoint object types, so
+a certified link over a draft object type displays as DRAFT with the offending endpoint named.
+
+### Action Types
+
+Governed write-backs — the only way an agent changes data. Each action declares its target object
+type, its mode (`DML` against the Iceberg system of record, or `OPERATION` calling a REST/ERP
+connector), a typed parameter contract, and whether it requires approval. An **invoke tester**
+drawer runs one with real arguments.
+
+### Action Workflows
+
+Multi-step Sagas composed of action types, authored as JSON or kiok-style YAML (importable and
+exportable). On a step failure the completed steps are compensated in reverse order; the page
+shows the run ledger.
+
+### Ontology Graph
+
+Visual type-graph of object types and the link types connecting them — the schema-level map an
+agent traverses, rendered for humans.
+
+### Flow
+
+The visual [Ontul Flow](../streaming/flow.md) builder and operator console: a drag-and-drop
+`source → transform → sink` canvas backed by an editable JSON/YAML spec (both directions stay in
+sync). The list view shows every registered flow with its status, **Records**, **Rejected** and
+**Lag** columns, plus Start / Stop / Delete. Opening a flow gives Spec, Data (preview rows from a
+source or sink node), Metrics (live throughput sparkline, rejected count, source lag), Logs
+(auto-scrolling tail) and History (past runs with duration and rejected counts). A running flow is
+read-only — stop it to edit.
+
+### Data Lineage
+
+Dataset-level lineage graph built from executed DML and started flows: which sources feed which
+targets, with the job or query that created each edge. See [Data Lineage](data-lineage.md).
+
+### Audit
+
+Search the [audit log](audit-log.md) by user, engine, table, action kind, free text and time
+range. Denied attempts appear alongside allowed ones, so a refused certification or an IAM-blocked
+write is visible here.
+
+### Lance Maintenance
+
+Compaction and cleanup for [Lance](lance-integration.md) datasets, mirroring the Iceberg
+Maintenance page for the vector/AI format.
+
+### Storage
+
+Switch the exchange and job-log backends between local disk and S3 **at runtime, cluster-wide, with
+no restart** — the change is persisted to the replicated metadata store and pushed to every node.
+
+### Drivers
+
+Upload JDBC driver JARs for federated catalogs. Drivers are stored durably and synced to every
+worker, so a new driver does not require rebuilding an image.
+
 ### Jobs
 
 Monitor active and completed jobs. Submit new batch or streaming jobs, view real-time logs, and kill running jobs.

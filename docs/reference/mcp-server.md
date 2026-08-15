@@ -23,6 +23,28 @@ The `ontul-mcp` launcher is shipped as part of the Ontul distribution. After unp
 | `ontul_list_retrievers` | `GET /api/v1/retrievers` | List [retrievers](../features/retrievers.md) — governed multi-modal retrieval (NeorunBase vector / graph / full-text) pushed down through Ontul. Optional `catalog` / `schema` filter. |
 | `ontul_describe_retriever` | `GET /api/v1/retrievers/{fqn}` | Fetch one retriever's full definition — `kind`, `targetCatalog`, the declared param contract (`name` / `type` / `required` / `defaultValue` / `description`), output columns, and governance. |
 | `ontul_invoke_retriever` | `POST /api/v1/retrievers/{fqn}/invoke` | Run a retriever with structured `args` (and optional `max_rows`). The master renders the admin-authored template into injection-safe SQL and pushes it down to the backing NeorunBase catalog; returns the rendered SQL plus result rows. |
+| `ontul_list_object_types` | `GET /api/v1/object-types` | List [object types](../features/ontology.md) — typed business entities (Customer, Order) mapped onto physical tables — that the IAM token can read. Optional `catalog` / `schema` filter. |
+| `ontul_describe_object_type` | `GET /api/v1/object-types/{fqn}` | One object type in full: properties (logical name → physical `column`, type, synonyms, `pii`), `primaryKey`, `readSource`, `writeTarget`, and governance including **`effectiveStatus`** (see below). |
+| `ontul_query_object_type` | `POST /api/v1/object-types/{fqn}/query` | Query an ObjectSet by **property** names, not columns: `filters` / `select` / `orderBy` / `limit`. The master renders it to SQL against the read source and returns `{columns, rows, rowCount, sql, effectiveStatus}`. |
+| `ontul_list_link_types` | `GET /api/v1/link-types` | List [link types](../features/ontology.md#link-types) — typed relationships between object types. Optional `catalog` / `schema` / `objectType` filter. |
+| `ontul_describe_link_type` | `GET /api/v1/link-types/{fqn}` | One link type: endpoints, cardinality, and its binding — `JOIN` (property-level join keys) or `GRAPH` (a NeorunBase edge label traversed natively). |
+| `ontul_traverse_link` | `POST /api/v1/link-types/{fqn}/traverse` | Walk the relationship from one source object: `sourceKey`, optional `select` / `limit`. `JOIN` bindings run relational SQL; `GRAPH` bindings push down to NeorunBase's `GRAPH_NEIGHBORS` TVF. |
+| `ontul_list_action_types` | `GET /api/v1/action-types` | List [action types](../features/ontology.md#actions-governed-write-back) — the governed write-backs an agent is allowed to perform. |
+| `ontul_describe_action_type` | `GET /api/v1/action-types/{fqn}` | One action type: mode (`DML` / `OPERATION`), the typed parameter contract, whether it `requiresApproval`, and its target. |
+| `ontul_invoke_action_type` | `POST /api/v1/action-types/{fqn}/invoke` | Perform the write-back. Gated on `ontology:InvokeAction`, parameters are validated and rendered injection-safely, repeats are de-duplicated by idempotency key, approval-gated actions return `202`, and every call is audited. |
+| `ontul_list_action_workflows` | `GET /api/v1/action-workflows` | List multi-step workflows (Saga / DAG) composed of action types. |
+| `ontul_describe_action_workflow` | `GET /api/v1/action-workflows/{fqn}` | One workflow: its ordered steps, argument mapping, and each step's compensating action. |
+| `ontul_invoke_action_workflow` | `POST /api/v1/action-workflows/{fqn}/invoke` | Run the workflow. Gated on `ontology:InvokeWorkflow`; if a step fails, the completed steps are compensated in reverse order. |
+
+### Trust: read `effectiveStatus`, not `status`
+
+Every ontology and semantic-layer tool returns **`effectiveStatus`** alongside the raw `status`.
+Prefer it: `status` is what a human declared, while `effectiveStatus` also folds in whether the
+definition has changed since it was certified and whether everything it is built on is certified
+too. Values are `CERTIFIED`, `STALE` (certified, then edited — `certificationNote` says so),
+`DRAFT`, `DEPRECATED`. An agent that wants to state "this answer came from certified definitions"
+should require `CERTIFIED` on every object it touched, and nothing else.
+See [Ontology → Certification](../features/ontology.md#certification-trust-an-agent-can-act-on).
 
 The four `_list/_describe_table` tools are thin wrappers around `ontul_query` for ergonomics — the LLM does not need to recall Ontul's metadata-command syntax. `ontul_query` itself is the only tool needed to drive any read or write the IAM token allows; the shortcuts merely make catalog discovery cheap.
 

@@ -196,6 +196,19 @@ Notes:
 
 Per-job overrides win over server defaults: `.commitInterval(...)` on the SDK builder, or `commitIntervalMs` / `commitRowThreshold` in the SUBMIT STREAMING JSON.
 
+### Rejected records & schema drift
+
+Two behaviors apply to every streaming job, not just to flows built in the Admin UI:
+
+- A record the source cannot decode is **rejected** — kept out of the sink and counted (`rejectedRows`
+  on the job status). Add `"errorSink": {"type": "table", "table": "cat.schema.rejects"}` to the
+  SUBMIT STREAMING JSON to also park it, with its payload and the reason, in a quarantine table.
+- An Iceberg sink **evolves the target table** to match a drifting source by default — a new source
+  column is added, `int`→`long` / `float`→`double` are promoted. Set
+  `"sink": {"schemaEvolution": "none" | "strict"}` to ignore drift or to fail on it instead.
+
+Both are documented in full on the [Ontul Flow](flow.md) page.
+
 ---
 
 ## Source/Sink by Connection ID

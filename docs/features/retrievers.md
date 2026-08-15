@@ -108,8 +108,7 @@ curl -s -X POST "http://localhost:8080/api/v1/retrievers" \
     {"name": "minRevenue", "type": "INT",    "required": false, "defaultValue": "100",   "description": "min revenue"},
     {"name": "k",          "type": "INT",    "required": false, "defaultValue": "5",     "description": "top-k"}
   ],
-  "outputColumns": [{"name": "id"}, {"name": "description"}, {"name": "score"}],
-  "status": "CERTIFIED"
+  "outputColumns": [{"name": "id"}, {"name": "description"}, {"name": "score"}]
 }'
 # → {"status":"ok","fqn":"semantic.rag.docs_hybrid"}
 ```
@@ -374,8 +373,7 @@ curl -X POST http://ontul-master:8080/api/v1/retrievers \
       "timeoutMs": 1500,
       "onFailure": "PASSTHROUGH",
       "instruction": "Given a Korean business query, retrieve passages that directly answer it"
-    },
-    "status": "CERTIFIED"
+    }
   }'
 ```
 
@@ -508,7 +506,8 @@ A caller's requested `maxRows` is clamped to `min(requested, retriever.maxRowsCe
 
 Retrievers can be managed without REST calls under **Semantic & AI → Retrievers** in the Admin UI:
 
-- **Register Retriever** opens a side panel for `catalog` / `schema` / `name`, `kind`, the **target catalog** (a `neorunbase` catalog), the SQL template, repeatable **parameter** rows (name, type, required, default, description), an optional **Re-rank** block, synonyms, `allowedRoles`, and status.
+- **Register Retriever** opens a side panel for `catalog` / `schema` / `name`, `kind`, the **target catalog** (a `neorunbase` catalog), the SQL template, repeatable **parameter** rows (name, type, required, default, description), an optional **Re-rank** block, synonyms, and `allowedRoles`. Certification is not part of the
+form — it is a separate, attributed action (see Governance below).
 - The **Edit** (✏️) button reopens an existing retriever in the same panel. `catalog` / `schema` / `name` are its identity and are locked there — saving is an upsert on that FQN, so letting them change would create a second retriever instead of updating this one. Editing is what makes the `rerank.enabled` A/B a one-field change.
 - Each retriever card shows its kind badge, target catalog, a shield icon when role-gated, a **RERANK top N** badge when re-ranking is configured (greyed out when it is configured but disabled), and its declared params (`name:type*`).
 - The **Invoke** (▶) button opens a tester: fill the declared `args` as JSON, run it, and the panel shows the **rendered SQL** that was pushed to NeorunBase, whether re-ranking applied (with model, latency and scores — or the reason it was skipped), plus the returned rows — the same `POST /api/v1/retrievers/{fqn}/invoke` an agent calls. It's the fastest way to validate a template + param contract before agents use it.
@@ -519,7 +518,31 @@ Metric / retriever `allowedRoles` map to IAM groups — see [Semantic Layer & Re
 
 Retriever definitions live in the cluster metadata store under `retriever:` and ride the standard `exportSnapshot` / `importSnapshot` replication to follower masters — exactly like semantic views. Unlike semantic views they are **not** registered as Calcite views (they are never planned by Ontul's optimizer); they are rendered and pushed down only at invoke time.
 
-Governance mirrors the semantic layer: `status` (`DRAFT` / `CERTIFIED` / `DEPRECATED`), `tags`, `certifiedBy` / `certifiedAt`, `owner`, and `allowedRoles` for invoke-time RBAC.
+Governance mirrors the semantic layer: `status` (`DRAFT` / `CERTIFIED` / `DEPRECATED`), `tags`,
+`certifiedBy` / `certifiedAt`, `owner`, and `allowedRoles` for invoke-time RBAC.
+
+`status`, `certifiedBy`, `certifiedAt` and the certification fingerprint are **server-owned**: a
+register/update call cannot set them (a payload that tries is ignored), so nothing can declare
+itself certified. Certify through the dedicated endpoint instead, which stamps the **caller** as
+the certifier and is audited:
+
+```bash
+curl -s -X POST "http://localhost:8080/api/v1/retrievers/semantic.rag.docs_hybrid/certify" \
+  -H "Authorization: Bearer $TOKEN" -d '{}'
+# → { …, "status": "CERTIFIED", "certifiedBy": "alice", "effectiveStatus": "CERTIFIED" }
+
+# Undo (back to DRAFT), or retire it:
+curl -s -X POST "http://localhost:8080/api/v1/retrievers/semantic.rag.docs_hybrid/decertify" \
+  -H "Authorization: Bearer $TOKEN" -d '{"status":"DEPRECATED"}'
+```
+
+Certifying also records a fingerprint of what the retriever *does* — its `kind`, target catalog,
+SQL template and parameter contract. Edit any of those afterwards and reads report
+`effectiveStatus: "STALE"` with a `certificationNote` explaining why; editing the description or
+synonyms does not. **Read `effectiveStatus`, not `status`.** Certification requires the
+`ontology:Certify` IAM action (admins always may), which is deliberately separate from the rights
+needed to edit a retriever. See
+[Ontology → Certification](ontology.md#certification-trust-an-agent-can-act-on).
 
 ## See also
 
