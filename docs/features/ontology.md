@@ -191,10 +191,33 @@ run.
 
 ### Invoking an action
 
-`POST /api/v1/action-types/{fqn}/invoke` is **fail-closed and governed**. In order:
+An action can be invoked two ways — REST and SQL — and **both run the same code**
+(`ActionInvoker`). That is deliberate: an action writes to a system of record, so a second
+entry point must not become a weaker path around the governance. The only difference recorded
+is `via=REST` / `via=SQL` in the audit entry.
+
+```bash
+# REST
+curl -X POST "$ADMIN/api/v1/action-types/lake.sales.approve_invoice/invoke" \
+  -H "Authorization: Token $TOKEN" -H "Content-Type: application/json" \
+  -d '{ "args": { "id": 42, "reason": "reviewed" }, "idempotencyKey": "req-42" }'
+```
+
+```sql
+-- SQL (JDBC / Arrow Flight SQL / MCP) — see "Calling an action from SQL" below
+CALL lake.sales.approve_invoice(id => 42, reason => 'reviewed', idempotency_key => 'req-42');
+```
+
+Either way the invoke is **fail-closed and governed**. In order:
 
 1. **Authorization** — the caller must be an administrator *or* hold an explicit
-   `ontology:InvokeAction` grant on the action's FQN. Denied by default.
+   `ontology:InvokeAction` grant on the action's FQN. Denied by default. An `OPERATION`-mode
+   action additionally requires `ontology:InvokeOperation` on
+   `operation:<operationCatalog>:<operation>` — writing into an external system is a different
+   power from reading the warehouse (`data:table:…`), so it is granted separately. That second
+   check is report-only until `ontul.iam.operation.permission.enforced=true`; while it is off, a
+   missing grant is audited as `action:invoke:grant-missing` naming the exact resource, so the
+   grants can be added before enforcement is switched on.
 2. **Idempotency** — an optional `idempotencyKey` is checked against a ledger
    (`actionrun:`); a retried key returns the prior result without re-applying the
    write.
@@ -209,11 +232,51 @@ run.
        exposing an operation surface (see below) and the named operation is
        invoked; the result is audited and recorded identically.
 
-```bash
-curl -X POST "$ADMIN/api/v1/action-types/lake.sales.approve_invoice/invoke" \
-  -H "Authorization: Token $TOKEN" -H "Content-Type: application/json" \
-  -d '{ "args": { "id": 42, "reason": "reviewed" }, "idempotencyKey": "req-42" }'
+### Calling an action from SQL
+
+Ontul's catalog concept comes from Trino, where a catalog is the namespace of **everything a
+connector exposes** — procedures included, not only tables. An action is reachable as a
+procedure:
+
+```sql
+CALL erp.default.post_invoice(order_id => '1001', amount => 250.00);
+
+-- retry-safe: the same key returns the prior outcome instead of posting twice
+CALL erp.default.post_invoice(order_id => '1001', idempotency_key => 'req-42');
 ```
+
+- **Named arguments only.** Positional arguments are rejected: an action writes to a system of
+  record, and a mis-ordered positional argument is exactly the mistake that is expensive to
+  discover afterwards.
+- **`idempotency_key` is reserved**, not an action parameter. It carries the same de-duplication
+  token the REST body passes and shares the same ledger, so retrying a statement — or switching
+  from REST to SQL — never re-applies the write.
+- Returns one row: `action | status | detail`, where `detail` is the JSON document the REST
+  endpoint returns. `status` is `OK`, `REPLAYED` (idempotent retry), or `PENDING_APPROVAL` —
+  the last one means the call was *staged for a human*, not applied.
+- Approval gates, validation, audit and lineage behave exactly as on the REST path.
+
+Discover what can be called:
+
+```sql
+SELECT routine_catalog, routine_schema, routine_name, mode, target, parameters,
+       requires_approval, status
+FROM information_schema.routines;
+```
+
+| Column | Meaning |
+| --- | --- |
+| `ROUTINE_CATALOG` / `_SCHEMA` / `_NAME` | the action's FQN, i.e. what `CALL` addresses |
+| `ROUTINE_TYPE` | always `PROCEDURE` |
+| `MODE` | `DML` (writes the warehouse) or `OPERATION` (writes an external system) |
+| `TARGET` | for `OPERATION`: `<operationCatalog>:<operation>` |
+| `PARAMETERS` | declared parameters with type and nullability |
+| `REQUIRES_APPROVAL` | `YES` → a `CALL` returns `PENDING_APPROVAL`, it does not apply |
+| `STATUS` | lifecycle status of the action definition |
+
+The same rows back JDBC `DatabaseMetaData.getProcedures()`, so a BI tool or an agent finds
+actions without a side channel. This is also why an operation catalog shows no tables: its
+surface is procedures, and that surface is listed here.
 
 ### Injection safety
 
