@@ -16,9 +16,9 @@ Ontul uses Apache Calcite for SQL parsing and query planning, supporting:
 
 - **DML**: `SELECT`, `INSERT INTO`, `UPDATE`, `DELETE`, `MERGE INTO`, `CREATE TABLE AS SELECT`
 - **DDL**: `CREATE TABLE`, `DROP TABLE`, `ALTER TABLE`, `CREATE VIEW`, `DROP VIEW`, `CREATE SCHEMA`, `DROP SCHEMA`
-- **Queries**: `JOIN` (INNER, LEFT, RIGHT, FULL), `GROUP BY`, `ORDER BY`, `LIMIT`, `HAVING`, subqueries, CTEs (`WITH`), window functions, `CASE WHEN`, `CAST`, `LIKE`, `IS NULL`
-- **Aggregations**: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`
-- **Window Functions**: `ROW_NUMBER`, `RANK`, `DENSE_RANK`, `COUNT`, `SUM`, `AVG`, `MIN`, `MAX` with `PARTITION BY` and `ORDER BY`
+- **Queries**: `JOIN` (INNER, LEFT, RIGHT, FULL — one equality in `ON`), `GROUP BY`, `ORDER BY`, `LIMIT`, `HAVING`, `SELECT DISTINCT`, CTEs (`WITH`) and derived tables, `CASE WHEN`, `COALESCE`, `NULLIF`, `CAST`, `LIKE`, `IN`, `BETWEEN`, `IS NULL`
+- **Aggregations**: `COUNT(*)`, `COUNT(col)`, `SUM`, `AVG`, `MIN`, `MAX` (MIN/MAX also over text and dates)
+- **Not executable**: window functions (`OVER`), subqueries in `SELECT`/`WHERE`, `INTERSECT` / `EXCEPT` / de-duplicating `UNION`, `COUNT(DISTINCT)`, `OFFSET`, composite/non-equi join conditions. These are rejected at plan time with an explicit error rather than returning a wrong answer — see [SQL Capability Gate](sql-capability-gate.md) for the full list and the rewrite for each.
 - **Metadata**: `SHOW CATALOGS`, `SHOW SCHEMAS`, `SHOW TABLES`, `DESCRIBE`, `EXPLAIN`
 - **Transactions**: `BEGIN`, `COMMIT`, `ROLLBACK`
 - **Session**: `SET` session variables

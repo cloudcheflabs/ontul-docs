@@ -177,33 +177,82 @@ FROM ice.examples.products
 GROUP BY category
 ORDER BY product_count DESC
 
--- Window function
-SELECT product_name, category, price,
-       ROW_NUMBER() OVER (PARTITION BY category ORDER BY price DESC) AS price_rank
-FROM ice.examples.products
-ORDER BY category, price_rank
-
--- Subquery
-SELECT * FROM ice.examples.products
-WHERE price > (SELECT AVG(price) FROM ice.examples.products)
+-- Join (single equality on the ON clause)
+SELECT p.product_name, o.qty
+FROM ice.examples.products p
+LEFT JOIN ice.examples.orders o ON p.id = o.product_id
 
 -- CTE
 WITH high_value AS (
     SELECT * FROM ice.examples.products WHERE price > 100
 )
 SELECT category, COUNT(*) AS cnt FROM high_value GROUP BY category
+
+-- Conditional expressions
+SELECT product_name,
+       COALESCE(category, 'uncategorized') AS category,
+       CASE WHEN price > 100 THEN 'premium' ELSE 'standard' END AS tier
+FROM ice.examples.products
 ```
 
 ### Supported Syntax
 
-| Category | Syntax |
-|----------|--------|
-| Joins | `INNER JOIN`, `LEFT JOIN`, `RIGHT JOIN`, `FULL OUTER JOIN` |
-| Aggregations | `COUNT`, `SUM`, `AVG`, `MIN`, `MAX` |
-| Window Functions | `ROW_NUMBER`, `RANK`, `DENSE_RANK`, `COUNT`, `SUM`, `AVG` with `PARTITION BY` / `ORDER BY` |
-| Predicates | `WHERE`, `HAVING`, `LIKE`, `IN`, `BETWEEN`, `IS NULL`, `CASE WHEN` |
-| Set Operations | `UNION`, `UNION ALL`, `INTERSECT`, `EXCEPT` |
-| Types | `CAST(expr AS type)`, `INT`, `BIGINT`, `DOUBLE`, `DECIMAL`, `VARCHAR`, `BOOLEAN`, `DATE`, `TIMESTAMP` |
+This table is the engine's **executable contract**, not a list of SQL the parser accepts. Anything
+outside it is rejected before execution with an explicit error — see
+[SQL Capability Gate](../features/sql-capability-gate.md).
+
+| Category | Supported |
+|----------|-----------|
+| Joins | `INNER`, `LEFT`, `RIGHT`, `FULL` — with a **single equality** in `ON` (`a.x = b.y`) |
+| Aggregations | `COUNT(*)`, `COUNT(col)`, `SUM`, `AVG`, `MIN`, `MAX` (MIN/MAX also over `VARCHAR`/`DATE`) |
+| Grouping | `GROUP BY`, `HAVING`, `SELECT DISTINCT` |
+| Predicates | `WHERE`, `AND`/`OR`/`NOT` (any number of operands), `=`, `<>`, `<`, `>`, `<=`, `>=`, `LIKE`, `IN (...)`, `BETWEEN`, `IS [NOT] NULL` |
+| Expressions | `CASE WHEN`, `COALESCE`, `NULLIF`, `CAST`, `\|\|` (concat), `UPPER`, `LOWER`, `SUBSTRING`, `REPLACE`, `ABS`, `ROUND`, `CEIL`, `FLOOR`, `+ - * /`, `MOD`, `ST_*` (geospatial), user-defined functions |
+| Ordering | `ORDER BY ... [ASC\|DESC]`, `LIMIT` |
+| Set Operations | `UNION ALL` |
+| Subquery in FROM | `WITH ... AS (...)` (CTE) and derived tables |
+| Types | `INT`, `BIGINT`, `DOUBLE`, `DECIMAL`, `VARCHAR`, `BOOLEAN`, `DATE`, `TIMESTAMP`, `ARRAY<...>`, `STRUCT`/`ROW` |
+
+### Not Supported
+
+Rejected at plan time with `... is not supported by the Ontul execution engine`:
+
+| Not supported | Use instead |
+|---------------|-------------|
+| Window functions (`OVER`) | Pre-aggregate, or compute the ranking client-side |
+| Subqueries in `SELECT` / `WHERE` (scalar, `IN (SELECT …)`, `EXISTS`) | A join, or materialise the inner query into a table first |
+| `INTERSECT` | An inner join on the shared columns |
+| `EXCEPT` / `MINUS` | An anti-join |
+| `UNION` (de-duplicating) | `UNION ALL`, wrapped in `SELECT DISTINCT` when needed |
+| `COUNT(DISTINCT x)`, `FILTER (WHERE …)`, `WITHIN GROUP`, `GROUPING SETS` / `CUBE` / `ROLLUP` | `GROUP BY x` then count the groups |
+| `OFFSET` | `LIMIT` only; page by a `WHERE` range on a sorted key |
+| Composite / non-equi `ON` (`a.x = b.x AND a.y = b.y`, `a.x > b.y`) | One equality in `ON`, the rest in `WHERE` |
+| `TRIM`, `EXTRACT`, `POWER`/`SQRT`, `CHAR_LENGTH`, `POSITION`, `CURRENT_DATE` … | A [UDF](../features/udf.md) |
+| Comparing a column with a `DATE` / `TIMESTAMP` literal | Compare on the epoch value (these types travel as epoch numbers) |
+| Unary minus (`-x`) | `(0 - x)` |
+| `IN (...)` / `BETWEEN` in the **SELECT list** | Explicit `OR` / `AND` comparisons (both are fine in `WHERE`) |
+| String literals containing `'`, `LIKE ... ESCAPE` | — |
+
+`DELETE`, `UPDATE` and `MERGE INTO` predicates are **not** subject to these limits: they run on a
+separate row-level evaluator that accepts composite and non-equi conditions.
+
+### SQL Semantics
+
+Behaviour you can rely on, matching the SQL standard:
+
+| Rule | Detail |
+|------|--------|
+| **NULL is UNKNOWN, not FALSE** | Any comparison with `NULL` yields UNKNOWN. `WHERE x = 1` and `WHERE NOT (x = 1)` both exclude rows where `x IS NULL`. `AND`/`OR` follow Kleene logic: `UNKNOWN AND FALSE` is FALSE, `UNKNOWN OR TRUE` is TRUE, everything else with an UNKNOWN operand is UNKNOWN |
+| **`AND`/`OR` are n-ary** | `a AND b AND c AND d` evaluates every conjunct; the same for `OR` and for the `OR` that an `IN (…)` list expands into |
+| **`COUNT(*)` counts rows** | Including rows whose columns are all `NULL`. `COUNT(col)` counts non-`NULL` values of that column |
+| **`MIN`/`MAX` are type-preserving** | Numeric columns return their numeric type; `VARCHAR` returns the lexicographic min/max as text; an all-`NULL` input returns `NULL`, never a sentinel |
+| **String comparison is case-sensitive** | `name = 'abc'` does not match `'ABC'`. `LIKE` is case-sensitive too |
+| **`LIKE` wildcards are `%` and `_` only** | Every other character is literal — `LIKE 'a.c'` matches the three characters `a.c`, and `LIKE 'C++'` matches `C++` |
+| **Outer joins keep unmatched rows** | `LEFT`/`RIGHT`/`FULL` emit the unmatched side with `NULL`s. A `NULL` join key never matches — not even another `NULL` — so such rows appear only through an outer join |
+| **`\|\|` propagates NULL** | `NULL \|\| 'x'` is `NULL`, not `'x'` |
+| **`ROUND` is half away from zero** | `ROUND(2.5)` = `3`, `ROUND(-2.5)` = `-3`, on the worker and in the distributed-aggregate finalize alike |
+| **`ORDER BY` NULL placement** | `ASC` puts `NULL`s last, `DESC` puts them first (Calcite's default). Explicit `NULLS FIRST` / `NULLS LAST` is not yet honoured |
+| **Distributed results equal single-node results** | `AVG` and `GROUP BY` are computed as partial aggregates on the workers and finalised on the master; `ORDER BY … LIMIT` is merged globally rather than per worker |
 
 ### EXPLAIN
 
@@ -356,10 +405,9 @@ query(conn, "SELECT category, COUNT(*) AS cnt, " +
     "CAST(AVG(price) AS DECIMAL(10,2)) AS avg_price " +
     "FROM ice.examples.products GROUP BY category");
 
-// 6. Window function
-query(conn, "SELECT product_name, category, price, " +
-    "ROW_NUMBER() OVER (PARTITION BY category ORDER BY price DESC) AS rank " +
-    "FROM ice.examples.products");
+// 6. Top-N per the whole table (window functions are not executable — see "Not Supported")
+query(conn, "SELECT product_name, category, price " +
+    "FROM ice.examples.products ORDER BY price DESC LIMIT 10");
 
 // 7. Cross-catalog federation
 query(conn, "SELECT n.n_name, r.r_name " +

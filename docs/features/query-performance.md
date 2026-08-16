@@ -90,6 +90,10 @@ workloads:
   `checkPermissions` still runs on every hit. Read-only, Iceberg-only, with a TTL and size bounds. On by
   default (`ontul.result.cache.enabled`). Measured: a repeated full-scan aggregate dropped from ~3.5 s to ~9 ms
   (cache hit), while the same query after an `INSERT` correctly returned the new rows.
+  **Time-travelled reads are never cached.** `FOR VERSION AS OF '<branch|snapshot>'` is stripped from the SQL
+  before planning (the qualifier travels out-of-band), and the key carries the table's *current* snapshot — so
+  a branch read would otherwise collide with the plain read of the same table and be served `main`'s rows.
+  Those queries bypass the cache and always execute.
 - **Semantic list cache** — `list_semantic_views` / `search_metrics` (the agent hot path) cache the parsed view
   set instead of re-reading it from the metadata store every call; invalidated on view create/delete.
 - **Manifest content cache** — Iceberg manifest files are immutable, so their content is cached by path

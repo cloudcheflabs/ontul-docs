@@ -13,11 +13,11 @@ The execution engine implements a pull-based streaming operator pipeline:
 - **ScanOperator**: Reads data splits from connectors as Arrow RecordBatches
 - **FilterOperator**: Evaluates predicates on Arrow vectors
 - **ProjectOperator**: Computes expressions and selects columns
-- **HashJoinOperator**: Hash-based join with Arrow vector probing
+- **HashJoinOperator**: Hash-based join with Arrow vector probing. Builds on the right input, probes with the left; INNER / LEFT / RIGHT / FULL are all executed — unmatched probe rows are emitted inline, unmatched build rows once the probe side is drained. NULL join keys never match (SQL treats `NULL = NULL` as UNKNOWN), so they surface only through an outer join
 - **HashAggregateOperator**: Hash-based aggregation on Arrow vectors; scalar aggregates (no `GROUP BY`) reduce each column with typed vector access — no per-row boxing
 - **SortOperator**: Sorts Arrow RecordBatches; `ORDER BY ... LIMIT k` uses a bounded heap (O(n·log k), O(k) memory) instead of a full sort
 - **LimitOperator**: Streaming row limit
-- **WindowOperator**: Window functions (ROW_NUMBER, RANK, DENSE_RANK, COUNT, SUM, AVG, MIN, MAX) with PARTITION BY and ORDER BY
+- **UnionOperator**: Concatenates its inputs (`UNION ALL`)
 - **ExchangeOperator**: Shuffles data between Workers via Arrow Flight
 
 Each operator follows an `open()` → `next()` → `close()` lifecycle, streaming data through the pipeline without materializing full intermediate results.
