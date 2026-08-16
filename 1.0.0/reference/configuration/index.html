@@ -2960,6 +2960,11 @@
 <td>Maximum time (seconds) a query waits to acquire a concurrency admission slot before it is rejected as overloaded.</td>
 </tr>
 <tr>
+<td><code>ontul.iam.operation.permission.enforced</code></td>
+<td><code>false</code></td>
+<td>Whether a missing <code>ontology:InvokeOperation</code> grant BLOCKS an ontology action that writes to an EXTERNAL system, or is only reported. The grant's resource namespace is <code>operation:&lt;operationCatalog&gt;:&lt;operation&gt;</code> — separate from <code>data:table:…</code> used for reads, so broad read access cannot imply the right to post into an ERP. Report-only by default so upgrading does not revoke working actions: the missing grant is logged and audited as <code>action:invoke:grant-missing</code> with the exact resource, then set this to <code>true</code> to enforce. Applies to both the REST invoke endpoint and SQL <code>CALL</code>.</td>
+</tr>
+<tr>
 <td><code>ontul.sql.strict</code></td>
 <td><code>true</code></td>
 <td>SQL capability gate. The master validates every planned query and rejects constructs the execution engine cannot evaluate correctly (window functions, subqueries, <code>INTERSECT</code>/<code>EXCEPT</code>/de-duplicating <code>UNION</code>, <code>COUNT(DISTINCT)</code>, <code>OFFSET</code>, composite/non-equi join conditions, unimplemented scalar functions, …) with an explicit error. Set to <code>false</code> ONLY to triage a regression: it restores the previous behaviour where those queries run and return <strong>wrong results</strong>. <code>DELETE</code>/<code>UPDATE</code>/<code>MERGE</code> predicates are never gated. See <a href="../../features/sql-capability-gate/">SQL Capability Gate</a>.</td>

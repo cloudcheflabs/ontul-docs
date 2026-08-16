@@ -1226,6 +1226,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#calling-an-action-from-sql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calling an action from SQL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#injection-safety" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2705,10 +2716,28 @@ run.</p>
 </tbody>
 </table>
 <h3 id="invoking-an-action">Invoking an action</h3>
-<p><code>POST /api/v1/action-types/{fqn}/invoke</code> is <strong>fail-closed and governed</strong>. In order:</p>
+<p>An action can be invoked two ways — REST and SQL — and <strong>both run the same code</strong>
+(<code>ActionInvoker</code>). That is deliberate: an action writes to a system of record, so a second
+entry point must not become a weaker path around the governance. The only difference recorded
+is <code>via=REST</code> / <code>via=SQL</code> in the audit entry.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># REST</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ADMIN</span><span class="s2">/api/v1/action-types/lake.sales.approve_invoice/invoke&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{ &quot;args&quot;: { &quot;id&quot;: 42, &quot;reason&quot;: &quot;reviewed&quot; }, &quot;idempotencyKey&quot;: &quot;req-42&quot; }&#39;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1">-- SQL (JDBC / Arrow Flight SQL / MCP) — see &quot;Calling an action from SQL&quot; below</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">CALL</span><span class="w"> </span><span class="n">lake</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">approve_invoice</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="n">reason</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;reviewed&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">idempotency_key</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;req-42&#39;</span><span class="p">);</span>
+</code></pre></div>
+<p>Either way the invoke is <strong>fail-closed and governed</strong>. In order:</p>
 <ol>
 <li><strong>Authorization</strong> — the caller must be an administrator <em>or</em> hold an explicit
-   <code>ontology:InvokeAction</code> grant on the action's FQN. Denied by default.</li>
+   <code>ontology:InvokeAction</code> grant on the action's FQN. Denied by default. An <code>OPERATION</code>-mode
+   action additionally requires <code>ontology:InvokeOperation</code> on
+   <code>operation:&lt;operationCatalog&gt;:&lt;operation&gt;</code> — writing into an external system is a different
+   power from reading the warehouse (<code>data:table:…</code>), so it is granted separately. That second
+   check is report-only until <code>ontul.iam.operation.permission.enforced=true</code>; while it is off, a
+   missing grant is audited as <code>action:invoke:grant-missing</code> naming the exact resource, so the
+   grants can be added before enforcement is switched on.</li>
 <li><strong>Idempotency</strong> — an optional <code>idempotencyKey</code> is checked against a ledger
    (<code>actionrun:</code>); a retried key returns the prior result without re-applying the
    write.</li>
@@ -2725,10 +2754,73 @@ run.</p>
 </ul>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ADMIN</span><span class="s2">/api/v1/action-types/lake.sales.approve_invoice/invoke&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{ &quot;args&quot;: { &quot;id&quot;: 42, &quot;reason&quot;: &quot;reviewed&quot; }, &quot;idempotencyKey&quot;: &quot;req-42&quot; }&#39;</span>
+<h3 id="calling-an-action-from-sql">Calling an action from SQL</h3>
+<p>Ontul's catalog concept comes from Trino, where a catalog is the namespace of <strong>everything a
+connector exposes</strong> — procedures included, not only tables. An action is reachable as a
+procedure:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">CALL</span><span class="w"> </span><span class="n">erp</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">post_invoice</span><span class="p">(</span><span class="n">order_id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;1001&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">250</span><span class="p">.</span><span class="mi">00</span><span class="p">);</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1">-- retry-safe: the same key returns the prior outcome instead of posting twice</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">CALL</span><span class="w"> </span><span class="n">erp</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">post_invoice</span><span class="p">(</span><span class="n">order_id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;1001&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">idempotency_key</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;req-42&#39;</span><span class="p">);</span>
 </code></pre></div>
+<ul>
+<li><strong>Named arguments only.</strong> Positional arguments are rejected: an action writes to a system of
+  record, and a mis-ordered positional argument is exactly the mistake that is expensive to
+  discover afterwards.</li>
+<li><strong><code>idempotency_key</code> is reserved</strong>, not an action parameter. It carries the same de-duplication
+  token the REST body passes and shares the same ledger, so retrying a statement — or switching
+  from REST to SQL — never re-applies the write.</li>
+<li>Returns one row: <code>action | status | detail</code>, where <code>detail</code> is the JSON document the REST
+  endpoint returns. <code>status</code> is <code>OK</code>, <code>REPLAYED</code> (idempotent retry), or <code>PENDING_APPROVAL</code> —
+  the last one means the call was <em>staged for a human</em>, not applied.</li>
+<li>Approval gates, validation, audit and lineage behave exactly as on the REST path.</li>
+</ul>
+<p>Discover what can be called:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">routine_catalog</span><span class="p">,</span><span class="w"> </span><span class="k">routine_schema</span><span class="p">,</span><span class="w"> </span><span class="k">routine_name</span><span class="p">,</span><span class="w"> </span><span class="k">mode</span><span class="p">,</span><span class="w"> </span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="k">parameters</span><span class="p">,</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">       </span><span class="n">requires_approval</span><span class="p">,</span><span class="w"> </span><span class="n">status</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="k">FROM</span><span class="w"> </span><span class="n">information_schema</span><span class="p">.</span><span class="n">routines</span><span class="p">;</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ROUTINE_CATALOG</code> / <code>_SCHEMA</code> / <code>_NAME</code></td>
+<td>the action's FQN, i.e. what <code>CALL</code> addresses</td>
+</tr>
+<tr>
+<td><code>ROUTINE_TYPE</code></td>
+<td>always <code>PROCEDURE</code></td>
+</tr>
+<tr>
+<td><code>MODE</code></td>
+<td><code>DML</code> (writes the warehouse) or <code>OPERATION</code> (writes an external system)</td>
+</tr>
+<tr>
+<td><code>TARGET</code></td>
+<td>for <code>OPERATION</code>: <code>&lt;operationCatalog&gt;:&lt;operation&gt;</code></td>
+</tr>
+<tr>
+<td><code>PARAMETERS</code></td>
+<td>declared parameters with type and nullability</td>
+</tr>
+<tr>
+<td><code>REQUIRES_APPROVAL</code></td>
+<td><code>YES</code> → a <code>CALL</code> returns <code>PENDING_APPROVAL</code>, it does not apply</td>
+</tr>
+<tr>
+<td><code>STATUS</code></td>
+<td>lifecycle status of the action definition</td>
+</tr>
+</tbody>
+</table>
+<p>The same rows back JDBC <code>DatabaseMetaData.getProcedures()</code>, so a BI tool or an agent finds
+actions without a side channel. This is also why an operation catalog shows no tables: its
+surface is procedures, and that surface is listed here.</p>
 <h3 id="injection-safety">Injection safety</h3>
 <p>The same explicit model as retrievers applies: <strong>the template is admin-authored
 and trusted; the arguments are caller-supplied and untrusted.</strong> Each parameter's
@@ -2794,25 +2886,25 @@ unknown steps are <strong>rejected at registration</strong> (<code>400</code>).<
 <p>Workflows are authored as <strong>YAML</strong> (the admin UI is a full-width YAML editor; the
 same document round-trips via the REST API). A step's <code>compensate</code> is <strong>optional</strong>
 — omit it and that step is simply skipped on rollback.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">catalog</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ops</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fulfill_order</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Fulfill order</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nt">steps</span><span class="p">:</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reserve</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.reserve_stock</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span><span class="nt">compensate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.release_stock</span><span class="w">          </span><span class="c1"># registered action; undoes reserve</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">charge</span>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.charge_payment</span>
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="p p-Indicator">,</span><span class="nt"> amount</span><span class="p">:</span><span class="w"> </span><span class="nv">amount</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">    </span><span class="nt">requires</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">reserve</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">    </span><span class="nt">compensate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.refund_payment</span>
-<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">    </span><span class="nt">compensateArgs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w">        </span><span class="c1"># optional; else the step&#39;s own args</span>
-<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ship</span>
-<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.create_shipment</span>
-<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">    </span><span class="nt">requires</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">charge</span><span class="p p-Indicator">]</span><span class="w">                           </span><span class="c1"># no compensate → nothing to undo</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">catalog</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ops</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fulfill_order</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Fulfill order</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="nt">steps</span><span class="p">:</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reserve</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.reserve_stock</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span><span class="nt">compensate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.release_stock</span><span class="w">          </span><span class="c1"># registered action; undoes reserve</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">charge</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.charge_payment</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="p p-Indicator">,</span><span class="nt"> amount</span><span class="p">:</span><span class="w"> </span><span class="nv">amount</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">    </span><span class="nt">requires</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">reserve</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">    </span><span class="nt">compensate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.refund_payment</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">    </span><span class="nt">compensateArgs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w">        </span><span class="c1"># optional; else the step&#39;s own args</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ship</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">erp.ops.create_shipment</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> orderId</span><span class="p">:</span><span class="w"> </span><span class="nv">orderId</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="w">    </span><span class="nt">requires</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">charge</span><span class="p p-Indicator">]</span><span class="w">                           </span><span class="c1"># no compensate → nothing to undo</span>
 </code></pre></div>
 <p>Register it with <code>POST /api/v1/action-workflows/yaml</code> (body = the YAML) and export
 the editable YAML back with <code>GET /api/v1/action-workflows/{fqn}/yaml</code> (server-
@@ -2832,10 +2924,10 @@ only what you can edit). A JSON form of the same document works via
    <code>compensate</code> action in <strong>reverse order</strong>. Final status is <code>completed</code>,
    <code>completed_with_errors</code>, or <code>rolled_back</code>.</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ADMIN</span><span class="s2">/api/v1/action-workflows/erp.ops.fulfill_order/invoke&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{ &quot;input&quot;: { &quot;orderId&quot;: 42, &quot;amount&quot;: 199.90 }, &quot;idempotencyKey&quot;: &quot;order-42&quot; }&#39;</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># → { &quot;status&quot;: &quot;rolled_back&quot;, &quot;steps&quot;: [...], &quot;compensations&quot;: [ {&quot;via&quot;:&quot;erp.ops.refund_payment&quot;,...}, {&quot;via&quot;:&quot;erp.ops.release_stock&quot;,...} ] }</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ADMIN</span><span class="s2">/api/v1/action-workflows/erp.ops.fulfill_order/invoke&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{ &quot;input&quot;: { &quot;orderId&quot;: 42, &quot;amount&quot;: 199.90 }, &quot;idempotencyKey&quot;: &quot;order-42&quot; }&#39;</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># → { &quot;status&quot;: &quot;rolled_back&quot;, &quot;steps&quot;: [...], &quot;compensations&quot;: [ {&quot;via&quot;:&quot;erp.ops.refund_payment&quot;,...}, {&quot;via&quot;:&quot;erp.ops.release_stock&quot;,...} ] }</span>
 </code></pre></div>
 <h3 id="governance-every-action-stays-governed">Governance — every action stays governed</h3>
 <p>Compensation is a <strong>workflow</strong> concern, so it lives on the step (<code>compensate</code>), not
@@ -2857,9 +2949,9 @@ perform; it falls back to running the call in-process only when no worker is rea
 So a long-running action doesn't tie up the master, and action execution scales
 across the worker fleet.</p>
 <p>Relevant timeouts are configurable:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># ontul.properties</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="na">ontul.action.exec.timeout.ms</span><span class="o">=</span><span class="s">600000       # master awaiting a worker&#39;s action result</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="na">ontul.action.http.timeout.seconds</span><span class="o">=</span><span class="s">60      # the action&#39;s outbound HTTP request</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># ontul.properties</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="na">ontul.action.exec.timeout.ms</span><span class="o">=</span><span class="s">600000       # master awaiting a worker&#39;s action result</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="na">ontul.action.http.timeout.seconds</span><span class="o">=</span><span class="s">60      # the action&#39;s outbound HTTP request</span>
 </code></pre></div>
 <hr />
 <h2 id="the-operation-surface-rest-connector">The operation surface (REST connector)</h2>
@@ -2902,12 +2994,12 @@ generic, and a "profile" adapts it to a given system.</p>
 JSON-escaped (the template author supplies the surrounding JSON structure and
 quoting, the same contract as the SQL template). The connector is a write target,
 not a readable source, so it exposes no tables.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rest-operation&quot;</span><span class="p">,</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&quot;baseUrl&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://erp.example.com/api&quot;</span><span class="p">,</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">&quot;profile&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;generic&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;authType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BEARER&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">&quot;operations&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[{\&quot;id\&quot;:\&quot;post_invoice\&quot;,\&quot;method\&quot;:\&quot;POST\&quot;,\&quot;path\&quot;:\&quot;/invoices\&quot;,\&quot;body\&quot;:\&quot;{\\\&quot;id\\\&quot;: ${id}, \\\&quot;amount\\\&quot;: ${amount}}\&quot;,\&quot;successCodes\&quot;:[200,201]}]&quot;</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="p">{</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rest-operation&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nt">&quot;baseUrl&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://erp.example.com/api&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span><span class="nt">&quot;profile&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;generic&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;authType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BEARER&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span><span class="nt">&quot;operations&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[{\&quot;id\&quot;:\&quot;post_invoice\&quot;,\&quot;method\&quot;:\&quot;POST\&quot;,\&quot;path\&quot;:\&quot;/invoices\&quot;,\&quot;body\&quot;:\&quot;{\\\&quot;id\\\&quot;: ${id}, \\\&quot;amount\\\&quot;: ${amount}}\&quot;,\&quot;successCodes\&quot;:[200,201]}]&quot;</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
 <h2 id="agent-access-mcp">Agent access (MCP)</h2>
@@ -2975,9 +3067,9 @@ instead of inlining credentials.</p>
 <h2 id="row-caps">Row caps</h2>
 <p>An ObjectSet query or link traversal is bounded by each request's own <code>limit</code> and
 by a hard cluster-wide ceiling — the effective cap is the smaller of the two:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># ontul.properties — hard cluster-wide cap on rows returned by an ontology read</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="c1"># (ObjectSet query or link traversal). Applied on top of each request&#39;s own limit.</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="na">ontul.ontology.read.max.rows.ceiling</span><span class="o">=</span><span class="s">10000</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># ontul.properties — hard cluster-wide cap on rows returned by an ontology read</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1"># (ObjectSet query or link traversal). Applied on top of each request&#39;s own limit.</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="na">ontul.ontology.read.max.rows.ceiling</span><span class="o">=</span><span class="s">10000</span>
 </code></pre></div>
 <p>Both the relational (JOIN / ObjectSet) path and the GRAPH pushdown honour this
 ceiling.</p>
@@ -3013,12 +3105,12 @@ result into one read-only field: <strong><code>effectiveStatus</code></strong>.<
 </tbody>
 </table>
 <p><strong>Certifying</strong> is its own endpoint, never a field you send:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>curl<span class="w"> </span>-XPOST<span class="w"> </span><span class="nv">$ADMIN</span>/api/v1/object-types/ontology.sales.Customer/certify<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AUTH</span><span class="s2">&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{}&#39;</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># → { …, &quot;status&quot;: &quot;CERTIFIED&quot;, &quot;certifiedBy&quot;: &quot;alice&quot;, &quot;effectiveStatus&quot;: &quot;CERTIFIED&quot; }</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Undo, or retire:</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>curl<span class="w"> </span>-XPOST<span class="w"> </span><span class="nv">$ADMIN</span>/api/v1/object-types/ontology.sales.Customer/decertify<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AUTH</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;status&quot;:&quot;DEPRECATED&quot;}&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>curl<span class="w"> </span>-XPOST<span class="w"> </span><span class="nv">$ADMIN</span>/api/v1/object-types/ontology.sales.Customer/certify<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AUTH</span><span class="s2">&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{}&#39;</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="c1"># → { …, &quot;status&quot;: &quot;CERTIFIED&quot;, &quot;certifiedBy&quot;: &quot;alice&quot;, &quot;effectiveStatus&quot;: &quot;CERTIFIED&quot; }</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1"># Undo, or retire:</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>curl<span class="w"> </span>-XPOST<span class="w"> </span><span class="nv">$ADMIN</span>/api/v1/object-types/ontology.sales.Customer/decertify<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AUTH</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;status&quot;:&quot;DEPRECATED&quot;}&#39;</span>
 </code></pre></div>
 <p>The certifier is <strong>the caller</strong> — <code>status</code>, <code>certifiedBy</code>, <code>certifiedAt</code> and the fingerprint are
 server-owned and ignored on register/update, so nobody can register a definition that declares
@@ -3027,9 +3119,9 @@ itself certified, or name someone else as the approver.</p>
 <p>Certifying stamps a fingerprint of the parts that decide what the definition <em>resolves to</em> — the
 read source, the property→column bindings, the primary key, the join keys. Change any of them and
 <code>effectiveStatus</code> drops to <code>STALE</code> on the next read:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology.sales.Customer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CERTIFIED&quot;</span><span class="p">,</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">&quot;effectiveStatus&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;STALE&quot;</span><span class="p">,</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nt">&quot;certificationNote&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;the definition changed after it was certified&quot;</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology.sales.Customer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CERTIFIED&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">&quot;effectiveStatus&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;STALE&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">&quot;certificationNote&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;the definition changed after it was certified&quot;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <p>Wording is deliberately excluded: editing a description, a title, a synonym or a tag never revokes
 a sign-off. Re-certify to sign off on the new shape.</p>
@@ -3057,8 +3149,8 @@ per object instead of walking the graph itself.</p>
 <p>Certification is an ownership decision, not an editing one, so it has its own IAM action —
 <code>ontology:Certify</code> — separate from the administrator rights needed to <em>edit</em> the ontology. That
 lets a domain owner bless their own subtree without being made an admin:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CertifySalesOntology&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology:Certify&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology.sales.*&quot;</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CertifySalesOntology&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology:Certify&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology.sales.*&quot;</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <p>Administrators may always certify. Every certify / decertify is written to the
 <a href="../audit-log/">Audit Log</a> as <code>ontology:certify</code> / <code>ontology:decertify</code>, and a refusal as

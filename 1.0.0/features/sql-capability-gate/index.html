@@ -2414,6 +2414,10 @@ aggregate flags rather than re-parsed strings.</p>
   catalog object other engines (Trino, Spark) also read, so creating one does not require the body to
   be Ontul-executable. The gate applies when the view is <strong>queried</strong> through Ontul.</li>
 <li><strong>Data lineage extraction</strong>, which only reads scan nodes out of the plan.</li>
+<li><strong><code>CALL &lt;catalog&gt;.&lt;schema&gt;.&lt;action&gt;(…)</code>.</strong> A <code>CALL</code> is not planned as a query at all — it is
+  routed to the ontology action path before planning, where its own governance (authorization,
+  argument validation, idempotency, approval gate, audit, lineage) applies. See
+  <a href="../ontology/#calling-an-action-from-sql">Ontology → Calling an action from SQL</a>.</li>
 </ul>
 <h2 id="configuration">Configuration</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># conf/ontul.properties</span>
