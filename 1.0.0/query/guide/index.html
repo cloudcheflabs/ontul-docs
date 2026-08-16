@@ -797,6 +797,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/sql-capability-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Capability Gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/connector-architecture/" class="md-nav__link">
         
   
@@ -2052,6 +2080,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#not-supported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not Supported
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sql-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQL Semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#explain" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2578,54 +2628,192 @@
 <a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">category</span>
 <a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">product_count</span><span class="w"> </span><span class="k">DESC</span>
 <a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>
-<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="c1">-- Window function</span>
-<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">product_name</span><span class="p">,</span><span class="w"> </span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">,</span>
-<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a><span class="w">       </span><span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">category</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">price_rank</span>
-<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">products</span>
-<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">price_rank</span>
-<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a>
-<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a><span class="c1">-- Subquery</span>
-<a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">products</span>
-<a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">AVG</span><span class="p">(</span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">products</span><span class="p">)</span>
-<a id="__codelineno-10-26" name="__codelineno-10-26" href="#__codelineno-10-26"></a>
-<a id="__codelineno-10-27" name="__codelineno-10-27" href="#__codelineno-10-27"></a><span class="c1">-- CTE</span>
-<a id="__codelineno-10-28" name="__codelineno-10-28" href="#__codelineno-10-28"></a><span class="k">WITH</span><span class="w"> </span><span class="n">high_value</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
-<a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a><span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">100</span>
-<a id="__codelineno-10-30" name="__codelineno-10-30" href="#__codelineno-10-30"></a><span class="p">)</span>
-<a id="__codelineno-10-31" name="__codelineno-10-31" href="#__codelineno-10-31"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cnt</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">high_value</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">category</span>
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="c1">-- Join (single equality on the ON clause)</span>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">product_name</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">qty</span>
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">products</span><span class="w"> </span><span class="n">p</span>
+<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">product_id</span>
+<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>
+<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="c1">-- CTE</span>
+<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a><span class="k">WITH</span><span class="w"> </span><span class="n">high_value</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a><span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">100</span>
+<a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a><span class="p">)</span>
+<a id="__codelineno-10-26" name="__codelineno-10-26" href="#__codelineno-10-26"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cnt</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">high_value</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">category</span>
+<a id="__codelineno-10-27" name="__codelineno-10-27" href="#__codelineno-10-27"></a>
+<a id="__codelineno-10-28" name="__codelineno-10-28" href="#__codelineno-10-28"></a><span class="c1">-- Conditional expressions</span>
+<a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">product_name</span><span class="p">,</span>
+<a id="__codelineno-10-30" name="__codelineno-10-30" href="#__codelineno-10-30"></a><span class="w">       </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;uncategorized&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<a id="__codelineno-10-31" name="__codelineno-10-31" href="#__codelineno-10-31"></a><span class="w">       </span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;premium&#39;</span><span class="w"> </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;standard&#39;</span><span class="w"> </span><span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">tier</span>
+<a id="__codelineno-10-32" name="__codelineno-10-32" href="#__codelineno-10-32"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">products</span>
 </code></pre></div>
 <h3 id="supported-syntax">Supported Syntax</h3>
+<p>This table is the engine's <strong>executable contract</strong>, not a list of SQL the parser accepts. Anything
+outside it is rejected before execution with an explicit error — see
+<a href="../../features/sql-capability-gate/">SQL Capability Gate</a>.</p>
 <table>
 <thead>
 <tr>
 <th>Category</th>
-<th>Syntax</th>
+<th>Supported</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Joins</td>
-<td><code>INNER JOIN</code>, <code>LEFT JOIN</code>, <code>RIGHT JOIN</code>, <code>FULL OUTER JOIN</code></td>
+<td><code>INNER</code>, <code>LEFT</code>, <code>RIGHT</code>, <code>FULL</code> — with a <strong>single equality</strong> in <code>ON</code> (<code>a.x = b.y</code>)</td>
 </tr>
 <tr>
 <td>Aggregations</td>
-<td><code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code></td>
+<td><code>COUNT(*)</code>, <code>COUNT(col)</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> (MIN/MAX also over <code>VARCHAR</code>/<code>DATE</code>)</td>
 </tr>
 <tr>
-<td>Window Functions</td>
-<td><code>ROW_NUMBER</code>, <code>RANK</code>, <code>DENSE_RANK</code>, <code>COUNT</code>, <code>SUM</code>, <code>AVG</code> with <code>PARTITION BY</code> / <code>ORDER BY</code></td>
+<td>Grouping</td>
+<td><code>GROUP BY</code>, <code>HAVING</code>, <code>SELECT DISTINCT</code></td>
 </tr>
 <tr>
 <td>Predicates</td>
-<td><code>WHERE</code>, <code>HAVING</code>, <code>LIKE</code>, <code>IN</code>, <code>BETWEEN</code>, <code>IS NULL</code>, <code>CASE WHEN</code></td>
+<td><code>WHERE</code>, <code>AND</code>/<code>OR</code>/<code>NOT</code> (any number of operands), <code>=</code>, <code>&lt;&gt;</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>LIKE</code>, <code>IN (...)</code>, <code>BETWEEN</code>, <code>IS [NOT] NULL</code></td>
+</tr>
+<tr>
+<td>Expressions</td>
+<td><code>CASE WHEN</code>, <code>COALESCE</code>, <code>NULLIF</code>, <code>CAST</code>, <code>\|\|</code> (concat), <code>UPPER</code>, <code>LOWER</code>, <code>SUBSTRING</code>, <code>REPLACE</code>, <code>ABS</code>, <code>ROUND</code>, <code>CEIL</code>, <code>FLOOR</code>, <code>+ - * /</code>, <code>MOD</code>, <code>ST_*</code> (geospatial), user-defined functions</td>
+</tr>
+<tr>
+<td>Ordering</td>
+<td><code>ORDER BY ... [ASC\|DESC]</code>, <code>LIMIT</code></td>
 </tr>
 <tr>
 <td>Set Operations</td>
-<td><code>UNION</code>, <code>UNION ALL</code>, <code>INTERSECT</code>, <code>EXCEPT</code></td>
+<td><code>UNION ALL</code></td>
+</tr>
+<tr>
+<td>Subquery in FROM</td>
+<td><code>WITH ... AS (...)</code> (CTE) and derived tables</td>
 </tr>
 <tr>
 <td>Types</td>
-<td><code>CAST(expr AS type)</code>, <code>INT</code>, <code>BIGINT</code>, <code>DOUBLE</code>, <code>DECIMAL</code>, <code>VARCHAR</code>, <code>BOOLEAN</code>, <code>DATE</code>, <code>TIMESTAMP</code></td>
+<td><code>INT</code>, <code>BIGINT</code>, <code>DOUBLE</code>, <code>DECIMAL</code>, <code>VARCHAR</code>, <code>BOOLEAN</code>, <code>DATE</code>, <code>TIMESTAMP</code>, <code>ARRAY&lt;...&gt;</code>, <code>STRUCT</code>/<code>ROW</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="not-supported">Not Supported</h3>
+<p>Rejected at plan time with <code>... is not supported by the Ontul execution engine</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Not supported</th>
+<th>Use instead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Window functions (<code>OVER</code>)</td>
+<td>Pre-aggregate, or compute the ranking client-side</td>
+</tr>
+<tr>
+<td>Subqueries in <code>SELECT</code> / <code>WHERE</code> (scalar, <code>IN (SELECT …)</code>, <code>EXISTS</code>)</td>
+<td>A join, or materialise the inner query into a table first</td>
+</tr>
+<tr>
+<td><code>INTERSECT</code></td>
+<td>An inner join on the shared columns</td>
+</tr>
+<tr>
+<td><code>EXCEPT</code> / <code>MINUS</code></td>
+<td>An anti-join</td>
+</tr>
+<tr>
+<td><code>UNION</code> (de-duplicating)</td>
+<td><code>UNION ALL</code>, wrapped in <code>SELECT DISTINCT</code> when needed</td>
+</tr>
+<tr>
+<td><code>COUNT(DISTINCT x)</code>, <code>FILTER (WHERE …)</code>, <code>WITHIN GROUP</code>, <code>GROUPING SETS</code> / <code>CUBE</code> / <code>ROLLUP</code></td>
+<td><code>GROUP BY x</code> then count the groups</td>
+</tr>
+<tr>
+<td><code>OFFSET</code></td>
+<td><code>LIMIT</code> only; page by a <code>WHERE</code> range on a sorted key</td>
+</tr>
+<tr>
+<td>Composite / non-equi <code>ON</code> (<code>a.x = b.x AND a.y = b.y</code>, <code>a.x &gt; b.y</code>)</td>
+<td>One equality in <code>ON</code>, the rest in <code>WHERE</code></td>
+</tr>
+<tr>
+<td><code>TRIM</code>, <code>EXTRACT</code>, <code>POWER</code>/<code>SQRT</code>, <code>CHAR_LENGTH</code>, <code>POSITION</code>, <code>CURRENT_DATE</code> …</td>
+<td>A <a href="../../features/udf/">UDF</a></td>
+</tr>
+<tr>
+<td>Comparing a column with a <code>DATE</code> / <code>TIMESTAMP</code> literal</td>
+<td>Compare on the epoch value (these types travel as epoch numbers)</td>
+</tr>
+<tr>
+<td>Unary minus (<code>-x</code>)</td>
+<td><code>(0 - x)</code></td>
+</tr>
+<tr>
+<td><code>IN (...)</code> / <code>BETWEEN</code> in the <strong>SELECT list</strong></td>
+<td>Explicit <code>OR</code> / <code>AND</code> comparisons (both are fine in <code>WHERE</code>)</td>
+</tr>
+<tr>
+<td>String literals containing <code>'</code>, <code>LIKE ... ESCAPE</code></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><code>DELETE</code>, <code>UPDATE</code> and <code>MERGE INTO</code> predicates are <strong>not</strong> subject to these limits: they run on a
+separate row-level evaluator that accepts composite and non-equi conditions.</p>
+<h3 id="sql-semantics">SQL Semantics</h3>
+<p>Behaviour you can rely on, matching the SQL standard:</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>NULL is UNKNOWN, not FALSE</strong></td>
+<td>Any comparison with <code>NULL</code> yields UNKNOWN. <code>WHERE x = 1</code> and <code>WHERE NOT (x = 1)</code> both exclude rows where <code>x IS NULL</code>. <code>AND</code>/<code>OR</code> follow Kleene logic: <code>UNKNOWN AND FALSE</code> is FALSE, <code>UNKNOWN OR TRUE</code> is TRUE, everything else with an UNKNOWN operand is UNKNOWN</td>
+</tr>
+<tr>
+<td><strong><code>AND</code>/<code>OR</code> are n-ary</strong></td>
+<td><code>a AND b AND c AND d</code> evaluates every conjunct; the same for <code>OR</code> and for the <code>OR</code> that an <code>IN (…)</code> list expands into</td>
+</tr>
+<tr>
+<td><strong><code>COUNT(*)</code> counts rows</strong></td>
+<td>Including rows whose columns are all <code>NULL</code>. <code>COUNT(col)</code> counts non-<code>NULL</code> values of that column</td>
+</tr>
+<tr>
+<td><strong><code>MIN</code>/<code>MAX</code> are type-preserving</strong></td>
+<td>Numeric columns return their numeric type; <code>VARCHAR</code> returns the lexicographic min/max as text; an all-<code>NULL</code> input returns <code>NULL</code>, never a sentinel</td>
+</tr>
+<tr>
+<td><strong>String comparison is case-sensitive</strong></td>
+<td><code>name = 'abc'</code> does not match <code>'ABC'</code>. <code>LIKE</code> is case-sensitive too</td>
+</tr>
+<tr>
+<td><strong><code>LIKE</code> wildcards are <code>%</code> and <code>_</code> only</strong></td>
+<td>Every other character is literal — <code>LIKE 'a.c'</code> matches the three characters <code>a.c</code>, and <code>LIKE 'C++'</code> matches <code>C++</code></td>
+</tr>
+<tr>
+<td><strong>Outer joins keep unmatched rows</strong></td>
+<td><code>LEFT</code>/<code>RIGHT</code>/<code>FULL</code> emit the unmatched side with <code>NULL</code>s. A <code>NULL</code> join key never matches — not even another <code>NULL</code> — so such rows appear only through an outer join</td>
+</tr>
+<tr>
+<td><strong><code>\|\|</code> propagates NULL</strong></td>
+<td><code>NULL \|\| 'x'</code> is <code>NULL</code>, not <code>'x'</code></td>
+</tr>
+<tr>
+<td><strong><code>ROUND</code> is half away from zero</strong></td>
+<td><code>ROUND(2.5)</code> = <code>3</code>, <code>ROUND(-2.5)</code> = <code>-3</code>, on the worker and in the distributed-aggregate finalize alike</td>
+</tr>
+<tr>
+<td><strong><code>ORDER BY</code> NULL placement</strong></td>
+<td><code>ASC</code> puts <code>NULL</code>s last, <code>DESC</code> puts them first (Calcite's default). Explicit <code>NULLS FIRST</code> / <code>NULLS LAST</code> is not yet honoured</td>
+</tr>
+<tr>
+<td><strong>Distributed results equal single-node results</strong></td>
+<td><code>AVG</code> and <code>GROUP BY</code> are computed as partial aggregates on the workers and finalised on the master; <code>ORDER BY … LIMIT</code> is merged globally rather than per worker</td>
 </tr>
 </tbody>
 </table>
@@ -2795,23 +2983,22 @@
 <a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a><span class="w">    </span><span class="s">&quot;CAST(AVG(price) AS DECIMAL(10,2)) AS avg_price &quot;</span><span class="w"> </span><span class="o">+</span>
 <a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a><span class="w">    </span><span class="s">&quot;FROM ice.examples.products GROUP BY category&quot;</span><span class="p">);</span>
 <a id="__codelineno-18-24" name="__codelineno-18-24" href="#__codelineno-18-24"></a>
-<a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a><span class="c1">// 6. Window function</span>
-<a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a><span class="n">query</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SELECT product_name, category, price, &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a><span class="w">    </span><span class="s">&quot;ROW_NUMBER() OVER (PARTITION BY category ORDER BY price DESC) AS rank &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a><span class="w">    </span><span class="s">&quot;FROM ice.examples.products&quot;</span><span class="p">);</span>
-<a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a>
-<a id="__codelineno-18-30" name="__codelineno-18-30" href="#__codelineno-18-30"></a><span class="c1">// 7. Cross-catalog federation</span>
-<a id="__codelineno-18-31" name="__codelineno-18-31" href="#__codelineno-18-31"></a><span class="n">query</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SELECT n.n_name, r.r_name &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-18-32" name="__codelineno-18-32" href="#__codelineno-18-32"></a><span class="w">    </span><span class="s">&quot;FROM ice.examples.nations n &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-18-33" name="__codelineno-18-33" href="#__codelineno-18-33"></a><span class="w">    </span><span class="s">&quot;JOIN tpch.tiny.region r ON n.n_regionkey = r.r_regionkey &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-18-34" name="__codelineno-18-34" href="#__codelineno-18-34"></a><span class="w">    </span><span class="s">&quot;ORDER BY r.r_name LIMIT 10&quot;</span><span class="p">);</span>
-<a id="__codelineno-18-35" name="__codelineno-18-35" href="#__codelineno-18-35"></a>
-<a id="__codelineno-18-36" name="__codelineno-18-36" href="#__codelineno-18-36"></a><span class="c1">// 8. CTAS</span>
-<a id="__codelineno-18-37" name="__codelineno-18-37" href="#__codelineno-18-37"></a><span class="n">exec</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CREATE TABLE ice.examples.category_summary AS &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-18-38" name="__codelineno-18-38" href="#__codelineno-18-38"></a><span class="w">    </span><span class="s">&quot;SELECT category, COUNT(*) AS cnt FROM ice.examples.products GROUP BY category&quot;</span><span class="p">);</span>
-<a id="__codelineno-18-39" name="__codelineno-18-39" href="#__codelineno-18-39"></a>
-<a id="__codelineno-18-40" name="__codelineno-18-40" href="#__codelineno-18-40"></a><span class="c1">// 9. EXPLAIN</span>
-<a id="__codelineno-18-41" name="__codelineno-18-41" href="#__codelineno-18-41"></a><span class="n">query</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;EXPLAIN SELECT * FROM ice.examples.products WHERE category = &#39;Electronics&#39;&quot;</span><span class="p">);</span>
+<a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a><span class="c1">// 6. Top-N per the whole table (window functions are not executable — see &quot;Not Supported&quot;)</span>
+<a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a><span class="n">query</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SELECT product_name, category, price &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a><span class="w">    </span><span class="s">&quot;FROM ice.examples.products ORDER BY price DESC LIMIT 10&quot;</span><span class="p">);</span>
+<a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a>
+<a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a><span class="c1">// 7. Cross-catalog federation</span>
+<a id="__codelineno-18-30" name="__codelineno-18-30" href="#__codelineno-18-30"></a><span class="n">query</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SELECT n.n_name, r.r_name &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-18-31" name="__codelineno-18-31" href="#__codelineno-18-31"></a><span class="w">    </span><span class="s">&quot;FROM ice.examples.nations n &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-18-32" name="__codelineno-18-32" href="#__codelineno-18-32"></a><span class="w">    </span><span class="s">&quot;JOIN tpch.tiny.region r ON n.n_regionkey = r.r_regionkey &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-18-33" name="__codelineno-18-33" href="#__codelineno-18-33"></a><span class="w">    </span><span class="s">&quot;ORDER BY r.r_name LIMIT 10&quot;</span><span class="p">);</span>
+<a id="__codelineno-18-34" name="__codelineno-18-34" href="#__codelineno-18-34"></a>
+<a id="__codelineno-18-35" name="__codelineno-18-35" href="#__codelineno-18-35"></a><span class="c1">// 8. CTAS</span>
+<a id="__codelineno-18-36" name="__codelineno-18-36" href="#__codelineno-18-36"></a><span class="n">exec</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CREATE TABLE ice.examples.category_summary AS &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-18-37" name="__codelineno-18-37" href="#__codelineno-18-37"></a><span class="w">    </span><span class="s">&quot;SELECT category, COUNT(*) AS cnt FROM ice.examples.products GROUP BY category&quot;</span><span class="p">);</span>
+<a id="__codelineno-18-38" name="__codelineno-18-38" href="#__codelineno-18-38"></a>
+<a id="__codelineno-18-39" name="__codelineno-18-39" href="#__codelineno-18-39"></a><span class="c1">// 9. EXPLAIN</span>
+<a id="__codelineno-18-40" name="__codelineno-18-40" href="#__codelineno-18-40"></a><span class="n">query</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;EXPLAIN SELECT * FROM ice.examples.products WHERE category = &#39;Electronics&#39;&quot;</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="python-code">Python Code</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ontul.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">OntulSession</span>

@@ -14,7 +14,7 @@
         <link rel="prev" href="../arrow-native-execution/">
       
       
-        <link rel="next" href="../connector-architecture/">
+        <link rel="next" href="../sql-capability-gate/">
       
       
         
@@ -931,6 +931,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql-capability-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Capability Gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2307,7 +2335,11 @@ workloads:</p>
   manual invalidation. The semantic context is in the key (IAM-filtered results never leak across users) and
   <code>checkPermissions</code> still runs on every hit. Read-only, Iceberg-only, with a TTL and size bounds. On by
   default (<code>ontul.result.cache.enabled</code>). Measured: a repeated full-scan aggregate dropped from ~3.5 s to ~9 ms
-  (cache hit), while the same query after an <code>INSERT</code> correctly returned the new rows.</li>
+  (cache hit), while the same query after an <code>INSERT</code> correctly returned the new rows.
+  <strong>Time-travelled reads are never cached.</strong> <code>FOR VERSION AS OF '&lt;branch|snapshot&gt;'</code> is stripped from the SQL
+  before planning (the qualifier travels out-of-band), and the key carries the table's <em>current</em> snapshot — so
+  a branch read would otherwise collide with the plain read of the same table and be served <code>main</code>'s rows.
+  Those queries bypass the cache and always execute.</li>
 <li><strong>Semantic list cache</strong> — <code>list_semantic_views</code> / <code>search_metrics</code> (the agent hot path) cache the parsed view
   set instead of re-reading it from the metadata store every call; invalidated on view create/delete.</li>
 <li><strong>Manifest content cache</strong> — Iceberg manifest files are immutable, so their content is cached by path

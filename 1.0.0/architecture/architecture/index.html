@@ -987,6 +987,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/sql-capability-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Capability Gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/connector-architecture/" class="md-nav__link">
         
   
@@ -2311,7 +2339,7 @@
 <h3 id="master">Master</h3>
 <p>The Master is the entry point for all client interactions — SQL queries, job submissions, and administrative operations.</p>
 <ul>
-<li><strong>SQL Parsing &amp; Planning</strong>: Parses SQL using Apache Calcite with a rule-based optimizer. Supports standard DML (INSERT, UPDATE, DELETE, MERGE INTO), DDL (CREATE TABLE, DROP, ALTER, CREATE VIEW), metadata commands (SHOW CATALOGS/SCHEMAS/TABLES, DESCRIBE, EXPLAIN), and full SELECT queries including JOINs, aggregations, window functions, CTEs, and subqueries.</li>
+<li><strong>SQL Parsing &amp; Planning</strong>: Parses SQL using Apache Calcite with a rule-based optimizer. Supports standard DML (INSERT, UPDATE, DELETE, MERGE INTO), DDL (CREATE TABLE, DROP, ALTER, CREATE VIEW), metadata commands (SHOW CATALOGS/SCHEMAS/TABLES, DESCRIBE, EXPLAIN), and SELECT queries with JOINs (INNER/LEFT/RIGHT/FULL), aggregations, grouping, CTEs and derived tables. The planned query then passes a capability gate that rejects constructs the execution engine cannot evaluate correctly — see <a href="../../features/sql-capability-gate/">SQL Capability Gate</a>.</li>
 <li><strong>Distributed Planning</strong>: Generates physical execution plans with an operator tree, resolves data splits from connectors, and distributes per-worker plans with split assignments. Supports predicate pushdown to connectors and plan caching (SHA-256 based LRU cache) for repeated queries.</li>
 <li><strong>Job Management</strong>: Manages batch and streaming jobs submitted via the SDK or REST API. Small batch jobs run with the Master as driver; large batch and streaming jobs are delegated to a Worker as driver, keeping the Master lightweight. Tracks job lifecycle (SUBMITTED → RUNNING → COMPLETED/FAILED/KILLED) with history stored locally or on S3.</li>
 <li><strong>Multi-Catalog Management</strong>: Manages multiple data source catalogs with a 3-level Calcite schema hierarchy (Catalog → Schema → Table). Catalogs can be dynamically registered and unregistered at runtime without restarts.</li>

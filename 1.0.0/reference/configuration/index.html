@@ -797,6 +797,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/sql-capability-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Capability Gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/connector-architecture/" class="md-nav__link">
         
   
@@ -2930,6 +2958,11 @@
 <td><code>ontul.query.semaphore.acquire.timeout.seconds</code></td>
 <td><code>30</code></td>
 <td>Maximum time (seconds) a query waits to acquire a concurrency admission slot before it is rejected as overloaded.</td>
+</tr>
+<tr>
+<td><code>ontul.sql.strict</code></td>
+<td><code>true</code></td>
+<td>SQL capability gate. The master validates every planned query and rejects constructs the execution engine cannot evaluate correctly (window functions, subqueries, <code>INTERSECT</code>/<code>EXCEPT</code>/de-duplicating <code>UNION</code>, <code>COUNT(DISTINCT)</code>, <code>OFFSET</code>, composite/non-equi join conditions, unimplemented scalar functions, …) with an explicit error. Set to <code>false</code> ONLY to triage a regression: it restores the previous behaviour where those queries run and return <strong>wrong results</strong>. <code>DELETE</code>/<code>UPDATE</code>/<code>MERGE</code> predicates are never gated. See <a href="../../features/sql-capability-gate/">SQL Capability Gate</a>.</td>
 </tr>
 </tbody>
 </table>

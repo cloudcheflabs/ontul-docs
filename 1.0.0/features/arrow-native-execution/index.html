@@ -904,6 +904,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../sql-capability-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Capability Gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../connector-architecture/" class="md-nav__link">
         
   
@@ -2206,11 +2234,11 @@
 <li><strong>ScanOperator</strong>: Reads data splits from connectors as Arrow RecordBatches</li>
 <li><strong>FilterOperator</strong>: Evaluates predicates on Arrow vectors</li>
 <li><strong>ProjectOperator</strong>: Computes expressions and selects columns</li>
-<li><strong>HashJoinOperator</strong>: Hash-based join with Arrow vector probing</li>
+<li><strong>HashJoinOperator</strong>: Hash-based join with Arrow vector probing. Builds on the right input, probes with the left; INNER / LEFT / RIGHT / FULL are all executed — unmatched probe rows are emitted inline, unmatched build rows once the probe side is drained. NULL join keys never match (SQL treats <code>NULL = NULL</code> as UNKNOWN), so they surface only through an outer join</li>
 <li><strong>HashAggregateOperator</strong>: Hash-based aggregation on Arrow vectors; scalar aggregates (no <code>GROUP BY</code>) reduce each column with typed vector access — no per-row boxing</li>
 <li><strong>SortOperator</strong>: Sorts Arrow RecordBatches; <code>ORDER BY ... LIMIT k</code> uses a bounded heap (O(n·log k), O(k) memory) instead of a full sort</li>
 <li><strong>LimitOperator</strong>: Streaming row limit</li>
-<li><strong>WindowOperator</strong>: Window functions (ROW_NUMBER, RANK, DENSE_RANK, COUNT, SUM, AVG, MIN, MAX) with PARTITION BY and ORDER BY</li>
+<li><strong>UnionOperator</strong>: Concatenates its inputs (<code>UNION ALL</code>)</li>
 <li><strong>ExchangeOperator</strong>: Shuffles data between Workers via Arrow Flight</li>
 </ul>
 <p>Each operator follows an <code>open()</code> → <code>next()</code> → <code>close()</code> lifecycle, streaming data through the pipeline without materializing full intermediate results.</p>
