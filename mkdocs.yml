@@ -42,6 +42,7 @@ nav:
       - "Unified Data Engine": features/unified-engine.md
       - "Arrow-Native Execution": features/arrow-native-execution.md
       - "Query Performance": features/query-performance.md
+      - "SQL Capability Gate": features/sql-capability-gate.md
       - "Connector Architecture": features/connector-architecture.md
       - "Connection ID (Source/Sink by Reference)": features/connection-id.md
       - "JDBC Drivers": features/jdbc-drivers.md

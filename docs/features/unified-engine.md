@@ -21,7 +21,7 @@ Run interactive SQL queries with federation across multiple data sources. Connec
 Both modes share:
 
 - The same **Master/Worker** cluster infrastructure
-- The same **Arrow-native operator pipeline** (Scan, Filter, Project, Join, Aggregate, Sort, Window, Exchange)
+- The same **Arrow-native operator pipeline** (Scan, Filter, Project, Join, Aggregate, Sort, Limit, Union, Exchange)
 - The same **Exchange Manager** — unified fault-tolerance for batch spill and streaming checkpoint (KMS encrypted)
 - The same **connector architecture** for accessing external data sources
 - The same **IAM policies** for security and access control
