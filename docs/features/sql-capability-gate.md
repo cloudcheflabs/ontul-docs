@@ -87,6 +87,10 @@ Two consequences worth knowing:
   catalog object other engines (Trino, Spark) also read, so creating one does not require the body to
   be Ontul-executable. The gate applies when the view is **queried** through Ontul.
 - **Data lineage extraction**, which only reads scan nodes out of the plan.
+- **`CALL <catalog>.<schema>.<action>(…)`.** A `CALL` is not planned as a query at all — it is
+  routed to the ontology action path before planning, where its own governance (authorization,
+  argument validation, idempotency, approval gate, audit, lineage) applies. See
+  [Ontology → Calling an action from SQL](ontology.md#calling-an-action-from-sql).
 
 ## Configuration
 

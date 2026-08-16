@@ -236,6 +236,21 @@ Rejected at plan time with `... is not supported by the Ontul execution engine`:
 `DELETE`, `UPDATE` and `MERGE INTO` predicates are **not** subject to these limits: they run on a
 separate row-level evaluator that accepts composite and non-equi conditions.
 
+### CALL — invoking a governed action
+
+Beyond `SELECT`, a catalog can expose **procedures**: ontology ActionTypes, invoked with `CALL`.
+
+```sql
+CALL erp.default.post_invoice(order_id => '1001', amount => 250.00);
+```
+
+Named arguments only, and `idempotency_key => '…'` is a reserved argument that makes a retry
+return the previous outcome instead of applying the write twice. The statement returns one row —
+`action | status | detail` — where `status` is `OK`, `REPLAYED` or `PENDING_APPROVAL`.
+
+`SELECT * FROM information_schema.routines` lists everything `CALL` can reach. See
+[Ontology → Calling an action from SQL](../features/ontology.md#calling-an-action-from-sql).
+
 ### SQL Semantics
 
 Behaviour you can rely on, matching the SQL standard:
