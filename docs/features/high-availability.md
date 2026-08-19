@@ -16,6 +16,26 @@ Any Master accepts both reads and writes — clients never need to know which Ma
 - **Control-plane writes** (catalog & connector registration, IAM users/groups/policies/keys, KMS, connection credentials, driver upload, semantic-view edits) received on a **follower** are **transparently forwarded to the leader** over the internal protocol, applied once on the leader's RocksDB, and broadcast back to every follower as a snapshot. A leader-unaware proxy is therefore correct for writes as well as reads — the forwarding happens inside the engine, not in the load balancer.
 - **Table data written by SQL DML** (`INSERT`, `CREATE TABLE`, `MERGE`, …) commits to the **external catalog/storage the connector points at** — Iceberg-on-Polaris + object storage, JDBC, etc. — which is the shared source of truth. Ontul is a processing engine, not a store, so no divergent per-Master copy of table data exists and nothing is lost if a follower dies mid-session.
 
+### Leader-only background services
+
+Request handling is leader-unaware, but a few **background** services are cluster singletons and run
+on the leader alone. Followers start them and hold them idle, taking over on election.
+
+| Service | Why it must not run twice |
+| --- | --- |
+| Iceberg table maintenance | Two masters compacting one table collide at commit; concurrent `remove_orphan_files` is unsafe. |
+| Iceberg health collection | Table health is a property of the table, not of the master that read it — collecting on every master would multiply object-store metadata reads for identical results. |
+| Streaming job reconciler | Re-dispatching a streaming job from two masters would start it twice. |
+| KMS key lifecycle | Key creation and rotation are writes to the leader-owned state store. |
+
+Two consequences worth planning for. First, per-table Iceberg gauges on `/metrics` are exported by
+the collector owner only — `ontul_iceberg_collector_leader` marks it, and dashboards should aggregate
+with `max by (table) (…)` so a failover does not double-count. Second, state these services hold
+purely in memory (the health time series and the maintenance before/after log) restarts with the new
+leader; anything persisted — maintenance schedules, job history retention, KMS material — is
+unaffected, since it lives in the replicated state store.
+
+
 ## Load balancing (nginx)
 
 A stock nginx in front of the Masters is all the HA "router" Ontul needs — there is no bespoke query gateway, no cluster-health routing logic, no per-query queue management, and no leader awareness in the proxy. The single rule: **the Flight SQL upstream must be sticky.**

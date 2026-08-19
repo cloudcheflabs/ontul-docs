@@ -69,6 +69,7 @@ nav:
   - "Iceberg Integration":
       - "Overview": iceberg/integration.md
       - "Table Maintenance": iceberg/maintenance.md
+      - "Observability (Table Health)": iceberg/observability.md
       - "Metadata Tables (stats)": iceberg/metadata-tables.md
       - "Write-Audit-Publish (WAP)": iceberg/wap.md
   - "Reference":

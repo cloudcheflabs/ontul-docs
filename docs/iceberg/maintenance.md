@@ -41,6 +41,26 @@ operation (or all) on demand against a wildcard table pattern.
 For tests and quick teardown, set `polaris.config.drop-with-purge.enabled=true` on the Polaris catalog so `DROP TABLE` actually deletes the underlying S3 data.
 
 
+## Where maintenance runs
+
+The scheduled cycle is a **cluster singleton**: it runs on the Master leader only. Two masters
+compacting the same table would collide at commit — Iceberg keeps the data correct, but one side
+wastes the rewrite and retries — and concurrent `remove_orphan_files` runs are genuinely unsafe.
+Manual triggers need no special handling: they arrive through the admin API, which already forwards
+a follower's request to the leader.
+
+Per-table maintenance configuration lives in the metadata store, which the leader replicates to
+followers, so a schedule survives a leader handoff and a restart.
+
+## Did it actually help?
+
+Maintenance that runs is not the same as maintenance that helped. Every run is bracketed with a
+health sample taken before it starts and again once it commits, so the Admin UI can show what the
+run changed — `data files 9 → 1`, `deletes 3 → 0`, `score 65 → 100` — instead of only that it
+succeeded. That record, the health score behind it, and the findings that point at these procedures
+are described in [Iceberg Observability](observability.md).
+
+
 ## Procedure reference
 
 All maintenance ops are on-demand `ALTER TABLE <table> EXECUTE <procedure>(param => value, …)`
