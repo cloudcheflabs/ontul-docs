@@ -1584,6 +1584,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../iceberg/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability (Table Health)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../iceberg/metadata-tables/" class="md-nav__link">
         
   
@@ -2017,6 +2045,17 @@
     <span class="md-ellipsis">
       
         Iceberg Maintenance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#iceberg-observability-table-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Iceberg Observability (Table Health)
       
     </span>
   </a>
@@ -3063,6 +3102,58 @@
 </tr>
 </tbody>
 </table>
+<h2 id="iceberg-observability-table-health">Iceberg Observability (Table Health)</h2>
+<p>Continuous collection of Iceberg table health behind the Admin UI's <strong>Iceberg Health</strong> page, the
+<code>/admin/iceberg/health</code> REST surface, and the <code>ontul_iceberg_table_*</code> Prometheus gauges. Collection
+is a cluster singleton — only the Master leader walks the catalogs, because table health is a
+property of the table rather than of the master that read it. See
+<a href="../../iceberg/observability/">Iceberg Observability</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.iceberg.observability.enabled</code></td>
+<td><code>true</code></td>
+<td>Master collects Iceberg table health. Set <code>false</code> to disable the Iceberg Health page, the REST surface, and the per-table gauges.</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.observability.fast.interval.seconds</code></td>
+<td><code>60</code></td>
+<td>Fast-tier period. The fast tier reads only the already-loaded <code>metadata.json</code> — current snapshot summary, snapshot list, metadata log, manifest list — so it performs no manifest I/O and is safe to run often.</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.observability.deep.interval.seconds</code></td>
+<td><code>1800</code></td>
+<td>Deep-tier period, per table. The deep tier plans a file scan to build the per-file size distribution (small-file ratio, percentiles, histogram); it reads <strong>every manifest</strong>, so it runs rarely and its result is cached and carried forward.</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.observability.deep.max.per.cycle</code></td>
+<td><code>3</code></td>
+<td>Deep scans started per collection cycle. Bounds the manifest I/O a freshly elected leader performs when it holds no cached distribution for any table yet — remaining tables are picked up on later cycles. A scan requested from the UI bypasses this cap.</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.observability.series.retention.seconds</code></td>
+<td><code>86400</code></td>
+<td>How long the per-table time series is kept in memory (default 24h). It backs the trend chart only; it is not persisted and does not survive a leader failover.</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.observability.small.file.divisor</code></td>
+<td><code>4</code></td>
+<td>A data file smaller than <code>targetFileSizeMB / N</code> counts as "small". The divisor applies to each table's own maintenance target, so a table configured for 512 MB files is judged against 512 MB, not a global constant.</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.observability.effects.max</code></td>
+<td><code>500</code></td>
+<td>How many maintenance before/after records to keep in memory. Every maintenance run is bracketed with a health sample so the UI can show what the run actually changed.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="audit-log">Audit Log</h2>
 <table>
 <thead>
@@ -3572,6 +3663,56 @@ metadata store as <code>storage.jobLogs.*</code> / <code>storage.exchange.*</cod
 <td><code>ontul.cache.max.bytes</code></td>
 <td><code>268435456</code></td>
 <td>Maximum size (bytes) of the in-memory Arrow LRU result/data cache. Once full, least-recently-used entries are evicted (default 256 MiB). Larger means more cache hits but higher memory use.</td>
+</tr>
+<tr>
+<td><code>ontul.result.cache.enabled</code></td>
+<td><code>true</code></td>
+<td>Cache small query results so a repeated identical query is answered without re-planning or re-scanning.</td>
+</tr>
+<tr>
+<td><code>ontul.result.cache.max</code></td>
+<td><code>1000</code></td>
+<td>Maximum number of cached result entries.</td>
+</tr>
+<tr>
+<td><code>ontul.result.cache.max.bytes</code></td>
+<td><code>8388608</code></td>
+<td>Largest single result that may be cached (8 MiB). Bigger results stream through uncached rather than evicting everything else.</td>
+</tr>
+<tr>
+<td><code>ontul.result.cache.ttl.ms</code></td>
+<td><code>60000</code></td>
+<td>How long a cached result stays valid (60s). Kept short because the underlying tables can commit at any time.</td>
+</tr>
+<tr>
+<td><code>ontul.cache.data.enabled</code></td>
+<td><code>false</code></td>
+<td>Opt-in on-disk cache of Iceberg data files, so repeated scans of the same files avoid the object store. See <a href="../../features/query-performance/">Query Performance</a>.</td>
+</tr>
+<tr>
+<td><code>ontul.cache.data.dir</code></td>
+<td><code>&lt;ontul.base.data.dir&gt;/…</code></td>
+<td>Directory holding the on-disk data cache.</td>
+</tr>
+<tr>
+<td><code>ontul.cache.data.max.bytes</code></td>
+<td><code>5368709120</code></td>
+<td>Cache capacity on disk (5 GiB). Least-recently-used files are evicted past this.</td>
+</tr>
+<tr>
+<td><code>ontul.cache.data.max.file.bytes</code></td>
+<td><code>67108864</code></td>
+<td>Largest single data file that may be cached (64 MiB).</td>
+</tr>
+<tr>
+<td><code>ontul.cache.data.ttl.ms</code></td>
+<td><code>0</code></td>
+<td>Time-to-live for a cached file; <code>0</code> disables expiry and relies on LRU eviction alone.</td>
+</tr>
+<tr>
+<td><code>ontul.cache.data.kms.key.id</code></td>
+<td><code>metadata-encryption</code></td>
+<td>KMS key used to encrypt cached data files at rest, so the cache does not weaken the encryption guarantees of the source.</td>
 </tr>
 </tbody>
 </table>

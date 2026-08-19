@@ -1458,6 +1458,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Master High Availability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#leader-only-background-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leader-only background services
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1721,6 +1738,34 @@
     
   
     Table Maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../iceberg/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability (Table Health)
   
 
     
@@ -2289,6 +2334,41 @@
 <li><strong>Control-plane writes</strong> (catalog &amp; connector registration, IAM users/groups/policies/keys, KMS, connection credentials, driver upload, semantic-view edits) received on a <strong>follower</strong> are <strong>transparently forwarded to the leader</strong> over the internal protocol, applied once on the leader's RocksDB, and broadcast back to every follower as a snapshot. A leader-unaware proxy is therefore correct for writes as well as reads — the forwarding happens inside the engine, not in the load balancer.</li>
 <li><strong>Table data written by SQL DML</strong> (<code>INSERT</code>, <code>CREATE TABLE</code>, <code>MERGE</code>, …) commits to the <strong>external catalog/storage the connector points at</strong> — Iceberg-on-Polaris + object storage, JDBC, etc. — which is the shared source of truth. Ontul is a processing engine, not a store, so no divergent per-Master copy of table data exists and nothing is lost if a follower dies mid-session.</li>
 </ul>
+<h3 id="leader-only-background-services">Leader-only background services</h3>
+<p>Request handling is leader-unaware, but a few <strong>background</strong> services are cluster singletons and run
+on the leader alone. Followers start them and hold them idle, taking over on election.</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Why it must not run twice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Iceberg table maintenance</td>
+<td>Two masters compacting one table collide at commit; concurrent <code>remove_orphan_files</code> is unsafe.</td>
+</tr>
+<tr>
+<td>Iceberg health collection</td>
+<td>Table health is a property of the table, not of the master that read it — collecting on every master would multiply object-store metadata reads for identical results.</td>
+</tr>
+<tr>
+<td>Streaming job reconciler</td>
+<td>Re-dispatching a streaming job from two masters would start it twice.</td>
+</tr>
+<tr>
+<td>KMS key lifecycle</td>
+<td>Key creation and rotation are writes to the leader-owned state store.</td>
+</tr>
+</tbody>
+</table>
+<p>Two consequences worth planning for. First, per-table Iceberg gauges on <code>/metrics</code> are exported by
+the collector owner only — <code>ontul_iceberg_collector_leader</code> marks it, and dashboards should aggregate
+with <code>max by (table) (…)</code> so a failover does not double-count. Second, state these services hold
+purely in memory (the health time series and the maintenance before/after log) restarts with the new
+leader; anything persisted — maintenance schedules, job history retention, KMS material — is
+unaffected, since it lives in the replicated state store.</p>
 <h2 id="load-balancing-nginx">Load balancing (nginx)</h2>
 <p>A stock nginx in front of the Masters is all the HA "router" Ontul needs — there is no bespoke query gateway, no cluster-health routing logic, no per-query queue management, and no leader awareness in the proxy. The single rule: <strong>the Flight SQL upstream must be sticky.</strong></p>
 <h3 id="why-flight-sql-needs-session-affinity">Why Flight SQL needs session affinity</h3>

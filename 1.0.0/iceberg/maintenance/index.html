@@ -14,7 +14,7 @@
         <link rel="prev" href="../integration/">
       
       
-        <link rel="next" href="../metadata-tables/">
+        <link rel="next" href="../observability/">
       
       
         
@@ -1632,6 +1632,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#where-maintenance-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where maintenance runs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#did-it-actually-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Did it actually help?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#procedure-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1746,6 +1768,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability (Table Health)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2325,6 +2375,20 @@ so it never conflicts with in-flight writes — see
 finer-grained parameters can be set optionally per table, and a <strong>Manual Trigger</strong> runs any single
 operation (or all) on demand against a wildcard table pattern.</p>
 <p>For tests and quick teardown, set <code>polaris.config.drop-with-purge.enabled=true</code> on the Polaris catalog so <code>DROP TABLE</code> actually deletes the underlying S3 data.</p>
+<h2 id="where-maintenance-runs">Where maintenance runs</h2>
+<p>The scheduled cycle is a <strong>cluster singleton</strong>: it runs on the Master leader only. Two masters
+compacting the same table would collide at commit — Iceberg keeps the data correct, but one side
+wastes the rewrite and retries — and concurrent <code>remove_orphan_files</code> runs are genuinely unsafe.
+Manual triggers need no special handling: they arrive through the admin API, which already forwards
+a follower's request to the leader.</p>
+<p>Per-table maintenance configuration lives in the metadata store, which the leader replicates to
+followers, so a schedule survives a leader handoff and a restart.</p>
+<h2 id="did-it-actually-help">Did it actually help?</h2>
+<p>Maintenance that runs is not the same as maintenance that helped. Every run is bracketed with a
+health sample taken before it starts and again once it commits, so the Admin UI can show what the
+run changed — <code>data files 9 → 1</code>, <code>deletes 3 → 0</code>, <code>score 65 → 100</code> — instead of only that it
+succeeded. That record, the health score behind it, and the findings that point at these procedures
+are described in <a href="../observability/">Iceberg Observability</a>.</p>
 <h2 id="procedure-reference">Procedure reference</h2>
 <p>All maintenance ops are on-demand <code>ALTER TABLE &lt;table&gt; EXECUTE &lt;procedure&gt;(param =&gt; value, …)</code>
 procedures (Trino-style named arguments). The same operations run on a schedule via the
