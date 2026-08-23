@@ -1,23 +1,23 @@
-# 스키마 — 원장 · 서빙 · 시맨틱
+# Schema — ledger, serving, semantic
 
-세 층이 있고, 각 층이 다른 질문에 답합니다.
+Three layers, each answering a different question.
 
-| 층 | 무엇 | 어디 |
+| Layer | What | Where |
 |---|---|---|
-| **원장** | 기록의 원본. 문서·버전·청크·관계 | Iceberg (Polaris + S3) |
-| **서빙** | 다시 만들 수 있는 파생물. 벡터·FTS·그래프 | NeorunBase |
-| **시맨틱** | 질문이 실제로 붙는 면. 시간 필터와 정책이 여기 | Ontul 시맨틱 뷰 |
+| **Ledger** | The record of fact: documents, versions, chunks, relations | Iceberg (Polaris + S3) |
+| **Serving** | A rebuildable derivative: vectors, full-text, graph | NeorunBase |
+| **Semantic** | The surface questions actually bind to — the temporal filter and the policies live here | Ontul semantic views |
 
-원장과 서빙을 나누는 것이 이 데모의 설계 결정 중 가장 값어치가 큽니다.
-NeorunBase 를 통째로 날리고 다시 세워도 잃는 것이 없습니다 — 파이프라인이
-Iceberg 에서 다시 만들면 되고, 관계가 언제 어떻게 바뀌었는지는 Iceberg 스냅샷에
-남아 있습니다.
+Separating the ledger from the serving layer is the most valuable design decision
+in this demo. NeorunBase can be destroyed and rebuilt with nothing lost: the
+pipeline remakes it from Iceberg, and the history of what changed when is in the
+Iceberg snapshots.
 
 ---
 
-## 1. Iceberg 원장
+## 1. The Iceberg ledger
 
-### 문서와 버전
+### Documents and versions
 
 **`demo/schema/iceberg/01_documents.sql`**
 
@@ -106,12 +106,12 @@ CREATE TABLE IF NOT EXISTS ice.reg.ingest_log (
 ```
 
 
-!!! danger "`effective_from` 이 이 데모의 심장입니다"
-    문서 본문의 부칙이 아니라 **전자결재 승인일**에서 옵니다. 둘이 다른 버전이
-    27개 있고, `date_mismatch` 로 표시됩니다. 부칙을 믿으면 열 주 동안 틀린
-    답을 하면서 아무도 모릅니다.
+!!! danger "`effective_from` is the heart of this demo"
+    It comes from the **approval system**, not from the date printed in the
+    document. 27 versions disagree, flagged as `date_mismatch`. Trust the printed
+    date and you answer wrongly for ten weeks with no way to notice.
 
-### 청크
+### Chunks
 
 **`demo/schema/iceberg/02_chunks.sql`**
 
@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS ice.reg.embedding_generations (
 ```
 
 
-### 인입 대기열
+### The ingest queue
 
 **`demo/schema/iceberg/50_ingest_queue.sql`**
 
@@ -219,7 +219,7 @@ WITH (identifier_fields = ARRAY['s3_uri']);
 ```
 
 
-### 결재 이벤트 (스트림 대상)
+### Approval events (the streaming target)
 
 **`demo/schema/iceberg/40_approval_stream.sql`**
 
@@ -258,7 +258,7 @@ WITH (identifier_fields = ARRAY['approval_id']);
 ```
 
 
-### 개정 요청 원장 — 온톨로지 액션이 쓰는 곳
+### The revision-request ledger — what the ontology action writes to
 
 **`demo/schema/iceberg/60_revision_requests.sql`**
 
@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS ice.reg.revision_requests (
 ```
 
 
-### 그래프의 레이크 투영
+### The graph, projected into the lake
 
 **`demo/schema/iceberg/61_graph_projection.sql`**
 
@@ -336,11 +336,11 @@ CREATE TABLE IF NOT EXISTS ice.reg.graph_edges (
 
 ---
 
-## 2. NeorunBase 서빙 스키마
+## 2. The NeorunBase serving schema
 
-벡터 · 한국어 FTS · 그래프가 한 엔진 안에 있습니다. 하이브리드 융합이
-애플리케이션 코드가 아니라 엔진에서 일어난다는 뜻이고, IAM 행 필터를 두 번
-쓰지 않아도 된다는 뜻이기도 합니다.
+Vectors, Korean full-text and the graph live in one engine. Hybrid fusion happens
+*in the engine* rather than in application code, and the IAM row filter is
+written once rather than twice.
 
 **`demo/schema/neorunbase/01_vectors.sql`**
 
@@ -444,17 +444,17 @@ CREATE TABLE IF NOT EXISTS doc_nodes (
 ```
 
 
-!!! note "왜 시행일이 벡터 테이블에 비정규화되어 있는가"
-    시간 조건이 **검색 안에서** 평가돼야 하기 때문입니다. top-k 를 뽑고 나서
-    걸러내면 k 개보다 적게 남고, 때로는 하나도 남지 않습니다. 이건 성능 문제가
-    아니라 정답 문제입니다.
+!!! note "Why the effective dates are denormalised into the vector table"
+    Because the temporal predicate has to be evaluable **inside** the search.
+    Filtering a top-k result set afterwards returns fewer than k rows, and
+    sometimes none. That is a correctness problem, not a performance one.
 
 ---
 
-## 3. 시맨틱 뷰
+## 3. The semantic views
 
-질문이 실제로 붙는 면입니다. 시간 필터가 여기 있고, 폐지된 본문은 **없습니다** —
-점수가 낮은 것이 아니라 뷰에 존재하지 않습니다.
+This is the surface questions bind to. The temporal filter lives here, and
+superseded text is **absent** — not ranked lower, not present at all.
 
 **`demo/schema/semantic/01_effective.sql`**
 
@@ -577,7 +577,7 @@ FROM nb.public.doc_nodes;
 ```
 
 
-ERP 쪽 뷰들입니다. 연합 질의가 여기서 문서와 기록을 잇습니다.
+The ERP-side views. This is where federated queries join documents to records.
 
 **`demo/schema/semantic/02_erp.sql`**
 
@@ -699,7 +699,13 @@ SELECT
     a.approval_id   AS "결재번호",
     a.doc_no        AS "문서번호",
     d.title         AS "제목",
-    a.version       AS "개정차수",
+    -- CAST 가 붙은 이유는 tests/known-issues/row-filter-changes-a-column-type.md
+    -- 에 있습니다. 요약하면: 이 컬럼은 조인을 거치며 INTEGER 로 선언되고 BIGINT
+    -- 로 재유도되는데, 평소에는 두 경로 중 하나만 돌아서 드러나지 않습니다. IAM
+    -- 행 필터가 파생 테이블을 한 겹 씌우는 순간 둘 다 돌고, 플래너가 타입이
+    -- 보존되지 않았다며 400 을 냅니다 — 접근 권한이 **적은** 사용자만 실패하고,
+    -- 오류 메시지는 정책이 아니라 뷰를 가리킵니다.
+    CAST(a.version AS INTEGER) AS "개정차수",
     CASE a.step WHEN 'DRAFT' THEN '기안' WHEN 'REVIEW' THEN '검토'
                 WHEN 'APPROVED' THEN '승인' WHEN 'EFFECTIVE' THEN '시행'
                 WHEN 'REJECTED' THEN '반려' END AS "단계",
@@ -719,10 +725,11 @@ LEFT JOIN ice.reg.documents d ON d.doc_no = a.doc_no;
 ```
 
 
-시맨틱 뷰는 엔진 레벨 VIEW 가 아니라 **정의**로 등록됩니다. 인증 상태와 필수
-필터를 함께 들고 있어야 하는데, 그건 평범한 DDL 에 담을 곳이 없기 때문입니다.
-`.sql` 파일을 원본으로 두고 아래 스크립트가 옮깁니다 — 검토하는 사람이 JSON 을
-해독하지 않고 시간 조건을 읽을 수 있어야 합니다.
+Semantic views are registered as **definitions** rather than created as
+engine-level views: they carry certification status and mandatory filters, and
+plain DDL has nowhere to put those. The `.sql` files stay the source — a reviewer
+should be able to read the temporal predicate without decoding JSON — and the
+script below does the translation.
 
 **`demo/infra/semantic_views.py`**
 
@@ -795,11 +802,12 @@ if __name__ == "__main__":
 
 ---
 
-## 4. 커넥션
+## 4. Connections
 
-자격증명은 커넥션에 한 번 등록하고, 카탈로그와 잡은 **id 로 참조**합니다.
-임베딩 커넥션이 특히 그렇습니다 — 벡터 공간의 정의가 한 곳에만 있어야 색인한
-벡터와 질의 벡터가 비교 가능합니다.
+Credentials are registered once as a connection; catalogs and jobs then reference
+them **by id**. The embedding connection matters most: the vector space is
+defined in exactly one place, which is what makes a stored vector and a query
+vector comparable.
 
 **`demo/schema/connections/01_embedding.json`**
 
@@ -833,10 +841,10 @@ if __name__ == "__main__":
 ```
 
 
-!!! warning "e5 는 비대칭입니다"
-    같은 문장이라도 저장 텍스트로 임베딩할 때와 검색어로 임베딩할 때가 다릅니다.
-    거꾸로 해도 **오류가 나지 않습니다** — 결과가 조금 나빠질 뿐이고, 그게 설정
-    필드 하나를 쓸 가치가 있는 실패 방식입니다.
+!!! warning "e5 is asymmetric"
+    The same sentence embeds differently as stored text than as a search string.
+    Getting it backwards does **not** error — it quietly returns worse results,
+    which is the failure mode worth spending a config field on.
 
 **`demo/schema/connections/02_erp.json`**
 
@@ -891,11 +899,11 @@ if __name__ == "__main__":
 
 ---
 
-## 5. 등록 스크립트
+## 5. The registration script
 
-카탈로그 · 커넥션 · 스키마 · IAM · 시맨틱 뷰 · 리트리버 · 온톨로지를 전부
-등록합니다. 멱등합니다 — 다시 돌리면 같은 정의를 다시 적용하지 중복을 만들지
-않습니다.
+Catalogs, connections, schema, IAM, semantic views, retrievers and the ontology.
+Idempotent: running it again re-applies the same definitions rather than
+duplicating them.
 
 **`demo/infra/register.sh`**
 
@@ -1341,18 +1349,19 @@ SUMEOF
 bash infra/register.sh
 ```
 
-### 이 스크립트가 순서를 지키는 이유
+### Why this script insists on an order
 
-- **NeorunBase 카탈로그는 스키마를 만든 뒤에 등록합니다.** 커넥터가 등록 시점의
-  테이블 목록을 잡기 때문입니다. 첫 설치에서 먼저 등록하면 테이블 0개로 잡히고,
-  이후 모든 질의가 설정 이야기가 아니라 `Object 'nb' not found` 로 실패합니다.
-- **커넥션은 지우고 다시 만듭니다.** "이미 있음" 을 성공으로 취급하는 것은
-  재실행을 허용하려는 것이지 **바뀐 정의를 무시하려는** 것이 아닙니다. 파일에서
-  타임아웃이나 모델 리비전을 고치고 다시 돌렸을 때 아무 일도 일어나지 않으면,
-  고친 사람은 반영됐다고 믿고 반영되지 않은 채로 계속 갑니다.
-- **온톨로지는 객체 → 링크 → 액션 순서**입니다. 링크는 양쪽 객체 타입이 이미
-  있어야 하고, 액션은 자기가 다루는 객체 타입이 있어야 합니다.
+- **The NeorunBase catalog is registered after its schema exists.** The connector
+  captures the table list at registration time. Register first on a fresh install
+  and it resolves zero tables, after which every query fails with
+  `Object 'nb' not found` — which says nothing about configuration.
+- **Connections are deleted and recreated.** Treating "already exists" as success
+  exists to make re-runs safe, not to **ignore a changed definition**. Edit a
+  timeout or a model revision in the file, re-run, and if nothing happens the
+  person who edited it believes it took effect when it did not.
+- **The ontology goes objects → links → actions.** A link needs both endpoint
+  object types to exist; an action needs the object type it operates on.
 
 ---
 
-다음: [파이프라인](pipeline.md) — 이 스키마를 채우는 분산 잡들.
+Next: [the pipeline](pipeline.md) — the distributed jobs that fill this schema.

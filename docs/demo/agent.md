@@ -1,23 +1,24 @@
-# 에이전트 — 툴 9개, 그리고 질문한 사람으로 실행되는 것
+# The agent — nine tools, running as the person who asked
 
-에이전트는 이 스택을 쓰는 **하나의 클라이언트**입니다. 특권이 없습니다. 인증도
-평범한 페르소나 계정으로 하고, 그 계정이 볼 수 없는 행은 에이전트도 못 봅니다.
+The agent is **one client** of this stack. It has no privileges of its own: it
+authenticates as an ordinary persona account, and rows that account cannot see it
+cannot see either.
 
 ```text
-질문 ──► Agent (claude-opus-5)
-           │  tool_runner 루프
-           ▼
-        9 tools ──► OntulClient ──► Ontul (as the caller)
-                                      ├─ 리트리버 (하이브리드 검색)
-                                      ├─ 시맨틱 뷰 (SQL)
-                                      └─ 온톨로지 (객체 · 링크 · 액션)
+question ──► Agent (claude-opus-5)
+               │  tool_runner loop
+               ▼
+            9 tools ──► OntulClient ──► Ontul (as the caller)
+                                          ├─ retrievers (hybrid search)
+                                          ├─ semantic views (SQL)
+                                          └─ ontology (objects · links · actions)
 ```
 
 ---
 
-## 클라이언트
+## The client
 
-모든 호출이 질문한 사람의 신원을 싣습니다.
+Every call carries the asking user's identity.
 
 **`demo/agent/src/regdemo_agent/client.py`**
 
@@ -233,13 +234,14 @@ class OntulClient:
 ```
 
 
-!!! note "왜 `caller` 를 툴 인자로 두지 않는가"
-    모델이 다른 사번을 지어내면 **다른 사람으로 물어보게** 됩니다. 클로저로
-    닫아 두면 질문이 누가 묻는지를 바꿀 수 없습니다.
+!!! note "Why the caller is not a tool argument"
+    A model that hallucinated a different employee number would be **asking as
+    someone else**. It is closed over instead, so the question cannot change who
+    is asking.
 
 ---
 
-## 툴
+## The tools
 
 **`demo/agent/src/regdemo_agent/tools/registry.py`**
 
@@ -580,21 +582,21 @@ def build_tools(client: OntulClient, caller: Caller) -> list:
 ```
 
 
-| 툴 | 경로 |
+| Tool | Path |
 |---|---|
-| `search_regulations` | 리트리버 `semantic.rag.regulation_search` — 하이브리드 |
-| `get_effective_version` | 시맨틱 뷰 `semantic.reg.version_history` |
-| `trace_authority` | 리트리버 — 그래프 순회 |
-| `impact_of_change` | 리트리버 — 역방향 순회 |
-| `query_hr` | 시맨틱 뷰 `semantic.hr.*` — 행 필터가 걸린 채 |
-| `pending_revision` | 시맨틱 뷰 `semantic.reg.pending_revisions` — CDC 로 들어온 결재 |
-| `describe_regulation` | **온톨로지** ObjectSet + `has_version` |
-| `related_regulations` | **온톨로지** `derives_from` GRAPH 순회 |
-| `request_regulation_revision` | **온톨로지** 액션 — 유일한 쓰기 |
+| `search_regulations` | retriever `semantic.rag.regulation_search` — hybrid |
+| `get_effective_version` | semantic view `semantic.reg.version_history` |
+| `trace_authority` | retriever — graph traversal |
+| `impact_of_change` | retriever — reverse traversal |
+| `query_hr` | semantic views `semantic.hr.*`, with the row filter applied |
+| `pending_revision` | semantic view `semantic.reg.pending_revisions` — approvals via CDC |
+| `describe_regulation` | **ontology** ObjectSet + `has_version` |
+| `related_regulations` | **ontology** `derives_from` GRAPH traversal |
+| `request_regulation_revision` | **ontology** action — the only write |
 
 ---
 
-## 시스템 프롬프트
+## The system prompt
 
 **`demo/agent/src/regdemo_agent/prompts/system.md`**
 
@@ -712,14 +714,15 @@ between meetings.
 ```
 
 
-!!! quote "프롬프트가 하지 않는 일"
-    접근 통제는 여기 없습니다. "박부장 기록은 보지 마" 같은 문장은 없고, 있어도
-    소용이 없습니다 — 행 필터가 애초에 그 행을 돌려주지 않기 때문입니다.
-    프롬프트가 하는 일은 **어느 툴을 언제 부를지**와 **인용을 반드시 달 것** 뿐입니다.
+!!! quote "What the prompt does not do"
+    Access control is not in it. There is no "do not look at the manager's
+    records" sentence, and one would not help — the row filter does not return
+    those rows in the first place. What the prompt does is decide **which tool for
+    which shape of question**, and insist on citations.
 
 ---
 
-## 루프
+## The loop
 
 **`demo/agent/src/regdemo_agent/agent.py`**
 
@@ -882,11 +885,12 @@ if __name__ == "__main__":
 
 ---
 
-## 웹 채팅 화면
+## The chat window
 
-터미널로는 두 가지를 보여주기 어렵습니다: 같은 질문에 사람마다 다른 답이 나오는
-것, 그리고 한 번의 답이 툴 세 번을 거치며 40초를 쓰는 것. 그래서 채팅 페이지가
-하나 있고, 에이전트가 하는 일을 **하는 동안** 흘려보냅니다.
+Two things are hard to show from a terminal: that the same question gets different
+answers depending on who asks, and that a single turn spends forty seconds across
+three tool calls. So there is a chat page that streams what the agent is doing
+**while it does it**.
 
 **`demo/web/server.py`**
 
@@ -1289,14 +1293,21 @@ python3 -m web.server            # http://127.0.0.1:8900
 PORT=9000 HOST=0.0.0.0 python3 -m web.server
 ```
 
-!!! note "페르소나를 바꾸면 계정이 바뀝니다"
-    프롬프트가 바뀌는 것이 아닙니다. **다른 Ontul 계정으로 다시 실행**됩니다.
-    화면에서 보이는 차이는 모델이 말을 잘 들어서가 아니라 정책이 다른 행을
-    돌려주기 때문입니다.
+![The chat window](../images/demo/agent-chat-hong.png)
+
+!!! note "Switching persona switches accounts"
+    Not prompts. It **re-runs as a different Ontul account**. What changes on
+    screen is the policy returning different rows, not the model being agreeable.
+
+Same question, two people:
+
+![Refused for an ordinary employee](../images/demo/agent-chat-hong-denied.png)
+
+![Answered for HR](../images/demo/agent-chat-cho.png)
 
 ---
 
-## 에이전트 패키지
+## The agent package
 
 **`demo/agent/pyproject.toml`**
 
@@ -1321,4 +1332,4 @@ where = ["src"]
 
 ---
 
-다음: [검증](verify.md).
+Next: [verification](verify.md).

@@ -41,7 +41,7 @@ WHERE v.status = 'EFFECTIVE'
   AND (v.effective_to IS NULL OR v.effective_to > CURRENT_DATE)
 ```
 
-And `effective_from` is the **approval date**, not the 부칙 the document prints.
+And `effective_from` is the **approval date**, not the date the document's own 부칙 (supplementary provision) prints.
 HR-REG-003 v3 claims 2025-01-01 and was approved 2025-03-15; for those ten weeks
 the old version was still binding. A pipeline that trusts the document body gets
 this wrong and has no way to notice.
@@ -52,8 +52,8 @@ this wrong and has no way to notice.
 
 | Source read | Answer |
 |---|---|
-| HR-REG-003 **v3** (current, 20 days) | **8일** ✓ |
-| HR-REG-003 v2 (superseded, 15 days) | 3일 ✗ |
+| HR-REG-003 **v3** (current, 20 days) | **8 days left** ✓ |
+| HR-REG-003 v2 (superseded, 15 days) | 3 days left ✗ |
 
 A temporal-isolation failure produces a wrong **number**, not a wrong citation.
 So the end-to-end test asserts on arithmetic rather than on whether a document
@@ -65,7 +65,7 @@ was named.
 
 ```text
                           ┌──────────────────────────────┐
-    사용자 ─── 질문 ────► │  Agent (claude-opus-5)        │
+    user ──── question ──► │  Agent (claude-opus-5)       │
                           │  9 tools, runs as the caller │
                           └──────────────┬───────────────┘
                                          │  every call carries the asker's identity
@@ -80,18 +80,18 @@ was named.
         ▼                      ▼                       ▼
     ┌────────────┐    ┌──────────────────┐    ┌────────────────────┐
     │  Iceberg   │    │   NeorunBase     │    │  ERP (PostgreSQL)  │
-    │  원장       │    │  vector · FTS ·  │    │  전자결재 (MySQL)   │
-    │  (Polaris  │    │  graph · OLTP    │    │  교육이수 (REST)     │
-    │   + S3)    │    │  = 서빙(파생)     │    └────────────────────┘
+    │  the       │    │  vector · FTS ·  │    │  Approvals (MySQL) │
+    │  ledger    │    │  graph · OLTP    │    │  Training (REST)   │
+    │ (Polaris+S3)│   │  = derived serve │    └────────────────────┘
     └─────┬──────┘    └────────▲─────────┘
           │                    │
           │   Ontul Flow       │   CDC + changelog
           └────────────────────┘
 
-    ShannonStore  S3 오브젝트 스토리지 (원본 문서 + Iceberg 데이터 파일)
-    Polaris       Iceberg REST 카탈로그
-    kiok          배치 스케줄러 — 인덱싱 DAG
-    embed-svc     multilingual-e5-base, 오프라인 고정
+    ShannonStore  S3 object storage — the original documents and the Iceberg data files
+    Polaris       the Iceberg REST catalog
+    kiok          the batch scheduler that runs the indexing DAG
+    embed-svc     multilingual-e5-base, pinned and offline
 ```
 
 Nothing is present for breadth:
@@ -112,31 +112,31 @@ Nothing is present for breadth:
 
 | | |
 |---|---|
-| [설치](install.md) | 릴리스 tarball 네 개로 스택 전체를 세웁니다. compose 와 Dockerfile 전문 |
-| [코퍼스](corpus.md) | 실제 공유 드라이브를 닮은 446개 파일 — 파일명 충돌, 스캔 PDF, 목록 결함까지 의도적으로 |
-| [스키마](schema.md) | Iceberg 원장 · 시맨틱 뷰 · NeorunBase 서빙 스키마 |
-| [파이프라인](pipeline.md) | kiok DAG 로 도는 분산 인덱싱 — 추출·청킹·시행일·임베딩·그래프 |
-| [CDC 와 Flow](cdc-flow.md) | ERP → Iceberg, 그래프 → 서빙, 결재 이벤트 스트림 |
-| [IAM 과 리트리버](iam.md) | 페르소나별로 다른 행이 돌아오는 이유 |
-| [온톨로지](ontology.md) | 객체 · 링크 · 거버넌스가 붙은 쓰기 |
-| [에이전트](agent.md) | 툴 9개, 시스템 프롬프트, 웹 채팅 화면 |
-| [검증](verify.md) | 시나리오 스위트와 실제 측정값 |
+| [Install](install.md) | The whole stack from four release tarballs — every compose file and Dockerfile in full |
+| [Corpus](corpus.md) | 446 files shaped like a real shared drive — name collisions, scanned PDFs and register defects, all deliberate |
+| [Schema](schema.md) | The Iceberg ledger, the semantic views, and the NeorunBase serving layer |
+| [Pipeline](pipeline.md) | Distributed indexing on a kiok DAG — extract, chunk, effective dates, embed, graph |
+| [CDC and Flow](cdc-flow.md) | ERP → Iceberg, graph → serving, and the approval event stream |
+| [IAM and retrievers](iam.md) | Why the same question returns different rows to different people |
+| [Ontology](ontology.md) | Objects, links, and a governed write |
+| [Agent](agent.md) | Nine tools, the system prompt, and the chat window |
+| [Verification](verify.md) | The scenario suite and what was actually measured |
 
 ---
 
 ## Measured, on one laptop
 
-Docker 에 10.7GB 를 준 16GB 머신에서 나온 값입니다.
+Taken on a 16 GB laptop with 10.7 GB given to Docker.
 
 | | |
 |---|---|
-| 원본 문서 | 446 files → 인식 123, 미매칭 319, 스캔 전용 4 |
-| 원장 | 문서 50 · 버전 104 |
-| 청크 | 818 (중복 0) |
-| 벡터 | 818 × 768 dim |
-| 그래프 | 노드 50 · 엣지 116 |
-| ERP CDC | 5 tables, 1,214 rows, 값까지 대조 |
-| DAG 한 바퀴 | 약 50초 |
+| Source documents | 446 files → 123 matched, 319 unmatched, 4 scan-only |
+| Ledger | 50 documents · 104 versions |
+| Chunks | 818, none duplicated |
+| Vectors | 818 × 768 dim |
+| Graph | 50 nodes · 116 edges |
+| ERP CDC | 5 tables, 1,214 rows, compared by value |
+| One DAG run | about 50 seconds |
 
 ---
 
