@@ -84,6 +84,17 @@ nav:
   - "Streaming":
       - "Streaming Guide": streaming/guide.md
       - "Ontul Flow": streaming/flow.md
+  - "Demo":
+      - "Regulation Lakehouse": demo/index.md
+      - "설치": demo/install.md
+      - "코퍼스": demo/corpus.md
+      - "스키마": demo/schema.md
+      - "파이프라인": demo/pipeline.md
+      - "CDC 와 Flow": demo/cdc-flow.md
+      - "IAM 과 리트리버": demo/iam.md
+      - "온톨로지": demo/ontology.md
+      - "에이전트": demo/agent.md
+      - "검증": demo/verify.md
 
 
 
