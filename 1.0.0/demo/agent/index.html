@@ -25,7 +25,7 @@
     
     
       
-        <title>에이전트 - Ontul</title>
+        <title>Agent - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#9" class="md-skip">
+        <a href="#the-agent-nine-tools-running-as-the-person-who-asked" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              에이전트
+              Agent
             
           </span>
         </div>
@@ -2247,7 +2247,7 @@
   <span class="md-ellipsis">
     
   
-    설치
+    Install
   
 
     
@@ -2275,7 +2275,7 @@
   <span class="md-ellipsis">
     
   
-    코퍼스
+    Corpus
   
 
     
@@ -2303,7 +2303,7 @@
   <span class="md-ellipsis">
     
   
-    스키마
+    Schema
   
 
     
@@ -2331,7 +2331,7 @@
   <span class="md-ellipsis">
     
   
-    파이프라인
+    Pipeline
   
 
     
@@ -2359,7 +2359,7 @@
   <span class="md-ellipsis">
     
   
-    CDC 와 Flow
+    CDC & Flow
   
 
     
@@ -2387,7 +2387,7 @@
   <span class="md-ellipsis">
     
   
-    IAM 과 리트리버
+    IAM & Retrievers
   
 
     
@@ -2415,7 +2415,7 @@
   <span class="md-ellipsis">
     
   
-    온톨로지
+    Ontology
   
 
     
@@ -2452,7 +2452,7 @@
   <span class="md-ellipsis">
     
   
-    에이전트
+    Agent
   
 
     
@@ -2470,7 +2470,7 @@
   <span class="md-ellipsis">
     
   
-    에이전트
+    Agent
   
 
     
@@ -2496,10 +2496,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#the-client" class="md-nav__link">
     <span class="md-ellipsis">
       
-        클라이언트
+        The client
       
     </span>
   </a>
@@ -2507,10 +2507,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#the-tools" class="md-nav__link">
     <span class="md-ellipsis">
       
-        툴
+        The tools
       
     </span>
   </a>
@@ -2518,10 +2518,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#the-system-prompt" class="md-nav__link">
     <span class="md-ellipsis">
       
-        시스템 프롬프트
+        The system prompt
       
     </span>
   </a>
@@ -2529,10 +2529,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
+  <a href="#the-loop" class="md-nav__link">
     <span class="md-ellipsis">
       
-        루프
+        The loop
       
     </span>
   </a>
@@ -2540,10 +2540,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#the-chat-window" class="md-nav__link">
     <span class="md-ellipsis">
       
-        웹 채팅 화면
+        The chat window
       
     </span>
   </a>
@@ -2551,10 +2551,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
+  <a href="#the-agent-package" class="md-nav__link">
     <span class="md-ellipsis">
       
-        에이전트 패키지
+        The agent package
       
     </span>
   </a>
@@ -2584,7 +2584,7 @@
   <span class="md-ellipsis">
     
   
-    검증
+    Verification
   
 
     
@@ -2622,20 +2622,21 @@
 
 
 
-<h1 id="9">에이전트 — 툴 9개, 그리고 질문한 사람으로 실행되는 것</h1>
-<p>에이전트는 이 스택을 쓰는 <strong>하나의 클라이언트</strong>입니다. 특권이 없습니다. 인증도
-평범한 페르소나 계정으로 하고, 그 계정이 볼 수 없는 행은 에이전트도 못 봅니다.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>질문 ──► Agent (claude-opus-5)
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>           │  tool_runner 루프
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>           ▼
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        9 tools ──► OntulClient ──► Ontul (as the caller)
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                                      ├─ 리트리버 (하이브리드 검색)
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                                      ├─ 시맨틱 뷰 (SQL)
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                                      └─ 온톨로지 (객체 · 링크 · 액션)
+<h1 id="the-agent-nine-tools-running-as-the-person-who-asked">The agent — nine tools, running as the person who asked</h1>
+<p>The agent is <strong>one client</strong> of this stack. It has no privileges of its own: it
+authenticates as an ordinary persona account, and rows that account cannot see it
+cannot see either.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>question ──► Agent (claude-opus-5)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>               │  tool_runner loop
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>               ▼
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>            9 tools ──► OntulClient ──► Ontul (as the caller)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                                          ├─ retrievers (hybrid search)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                                          ├─ semantic views (SQL)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                                          └─ ontology (objects · links · actions)
 </code></pre></div>
 <hr />
-<h2 id="_1">클라이언트</h2>
-<p>모든 호출이 질문한 사람의 신원을 싣습니다.</p>
+<h2 id="the-client">The client</h2>
+<p>Every call carries the asking user's identity.</p>
 <p><strong><code>demo/agent/src/regdemo_agent/client.py</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sd">&quot;&quot;&quot;Thin Ontul client.</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
@@ -2847,12 +2848,13 @@
 <a id="__codelineno-1-208" name="__codelineno-1-208" href="#__codelineno-1-208"></a>        <span class="k">return</span> <span class="n">body</span>
 </code></pre></div>
 <div class="admonition note">
-<p class="admonition-title">왜 <code>caller</code> 를 툴 인자로 두지 않는가</p>
-<p>모델이 다른 사번을 지어내면 <strong>다른 사람으로 물어보게</strong> 됩니다. 클로저로
-닫아 두면 질문이 누가 묻는지를 바꿀 수 없습니다.</p>
+<p class="admonition-title">Why the caller is not a tool argument</p>
+<p>A model that hallucinated a different employee number would be <strong>asking as
+someone else</strong>. It is closed over instead, so the question cannot change who
+is asking.</p>
 </div>
 <hr />
-<h2 id="_2">툴</h2>
+<h2 id="the-tools">The tools</h2>
 <p><strong><code>demo/agent/src/regdemo_agent/tools/registry.py</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="sd">&quot;&quot;&quot;The agent&#39;s tools.</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
@@ -3190,51 +3192,51 @@
 <table>
 <thead>
 <tr>
-<th>툴</th>
-<th>경로</th>
+<th>Tool</th>
+<th>Path</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>search_regulations</code></td>
-<td>리트리버 <code>semantic.rag.regulation_search</code> — 하이브리드</td>
+<td>retriever <code>semantic.rag.regulation_search</code> — hybrid</td>
 </tr>
 <tr>
 <td><code>get_effective_version</code></td>
-<td>시맨틱 뷰 <code>semantic.reg.version_history</code></td>
+<td>semantic view <code>semantic.reg.version_history</code></td>
 </tr>
 <tr>
 <td><code>trace_authority</code></td>
-<td>리트리버 — 그래프 순회</td>
+<td>retriever — graph traversal</td>
 </tr>
 <tr>
 <td><code>impact_of_change</code></td>
-<td>리트리버 — 역방향 순회</td>
+<td>retriever — reverse traversal</td>
 </tr>
 <tr>
 <td><code>query_hr</code></td>
-<td>시맨틱 뷰 <code>semantic.hr.*</code> — 행 필터가 걸린 채</td>
+<td>semantic views <code>semantic.hr.*</code>, with the row filter applied</td>
 </tr>
 <tr>
 <td><code>pending_revision</code></td>
-<td>시맨틱 뷰 <code>semantic.reg.pending_revisions</code> — CDC 로 들어온 결재</td>
+<td>semantic view <code>semantic.reg.pending_revisions</code> — approvals via CDC</td>
 </tr>
 <tr>
 <td><code>describe_regulation</code></td>
-<td><strong>온톨로지</strong> ObjectSet + <code>has_version</code></td>
+<td><strong>ontology</strong> ObjectSet + <code>has_version</code></td>
 </tr>
 <tr>
 <td><code>related_regulations</code></td>
-<td><strong>온톨로지</strong> <code>derives_from</code> GRAPH 순회</td>
+<td><strong>ontology</strong> <code>derives_from</code> GRAPH traversal</td>
 </tr>
 <tr>
 <td><code>request_regulation_revision</code></td>
-<td><strong>온톨로지</strong> 액션 — 유일한 쓰기</td>
+<td><strong>ontology</strong> action — the only write</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="_3">시스템 프롬프트</h2>
+<h2 id="the-system-prompt">The system prompt</h2>
 <p><strong><code>demo/agent/src/regdemo_agent/prompts/system.md</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>You answer questions about company regulations and HR records.
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
@@ -3348,13 +3350,14 @@
 <a id="__codelineno-3-110" name="__codelineno-3-110" href="#__codelineno-3-110"></a>between meetings.
 </code></pre></div>
 <div class="admonition quote">
-<p class="admonition-title">프롬프트가 하지 않는 일</p>
-<p>접근 통제는 여기 없습니다. "박부장 기록은 보지 마" 같은 문장은 없고, 있어도
-소용이 없습니다 — 행 필터가 애초에 그 행을 돌려주지 않기 때문입니다.
-프롬프트가 하는 일은 <strong>어느 툴을 언제 부를지</strong>와 <strong>인용을 반드시 달 것</strong> 뿐입니다.</p>
+<p class="admonition-title">What the prompt does not do</p>
+<p>Access control is not in it. There is no "do not look at the manager's
+records" sentence, and one would not help — the row filter does not return
+those rows in the first place. What the prompt does is decide <strong>which tool for
+which shape of question</strong>, and insist on citations.</p>
 </div>
 <hr />
-<h2 id="_4">루프</h2>
+<h2 id="the-loop">The loop</h2>
 <p><strong><code>demo/agent/src/regdemo_agent/agent.py</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="sd">&quot;&quot;&quot;The agent loop.</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
@@ -3511,10 +3514,11 @@
 <a id="__codelineno-4-153" name="__codelineno-4-153" href="#__codelineno-4-153"></a>    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
 <hr />
-<h2 id="_5">웹 채팅 화면</h2>
-<p>터미널로는 두 가지를 보여주기 어렵습니다: 같은 질문에 사람마다 다른 답이 나오는
-것, 그리고 한 번의 답이 툴 세 번을 거치며 40초를 쓰는 것. 그래서 채팅 페이지가
-하나 있고, 에이전트가 하는 일을 <strong>하는 동안</strong> 흘려보냅니다.</p>
+<h2 id="the-chat-window">The chat window</h2>
+<p>Two things are hard to show from a terminal: that the same question gets different
+answers depending on who asks, and that a single turn spends forty seconds across
+three tool calls. So there is a chat page that streams what the agent is doing
+<strong>while it does it</strong>.</p>
 <p><strong><code>demo/web/server.py</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="sd">&quot;&quot;&quot;A chat window onto the regulation agent.</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
@@ -3906,14 +3910,17 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>web.server<span class="w">            </span><span class="c1"># http://127.0.0.1:8900</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nv">PORT</span><span class="o">=</span><span class="m">9000</span><span class="w"> </span><span class="nv">HOST</span><span class="o">=</span><span class="m">0</span>.0.0.0<span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>web.server
 </code></pre></div>
+<p><img alt="The chat window" src="../../images/demo/agent-chat-hong.png" /></p>
 <div class="admonition note">
-<p class="admonition-title">페르소나를 바꾸면 계정이 바뀝니다</p>
-<p>프롬프트가 바뀌는 것이 아닙니다. <strong>다른 Ontul 계정으로 다시 실행</strong>됩니다.
-화면에서 보이는 차이는 모델이 말을 잘 들어서가 아니라 정책이 다른 행을
-돌려주기 때문입니다.</p>
+<p class="admonition-title">Switching persona switches accounts</p>
+<p>Not prompts. It <strong>re-runs as a different Ontul account</strong>. What changes on
+screen is the policy returning different rows, not the model being agreeable.</p>
 </div>
+<p>Same question, two people:</p>
+<p><img alt="Refused for an ordinary employee" src="../../images/demo/agent-chat-hong-denied.png" /></p>
+<p><img alt="Answered for HR" src="../../images/demo/agent-chat-cho.png" /></p>
 <hr />
-<h2 id="_6">에이전트 패키지</h2>
+<h2 id="the-agent-package">The agent package</h2>
 <p><strong><code>demo/agent/pyproject.toml</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">[project]</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;regdemo-agent&quot;</span>
@@ -3932,7 +3939,7 @@
 <a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="n">where</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span>
 </code></pre></div>
 <hr />
-<p>다음: <a href="../verify/">검증</a>.</p>
+<p>Next: <a href="../verify/">verification</a>.</p>
 
 
 

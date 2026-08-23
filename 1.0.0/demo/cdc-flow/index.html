@@ -25,7 +25,7 @@
     
     
       
-        <title>CDC 와 Flow - Ontul</title>
+        <title>CDC & Flow - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cdc-flow" class="md-skip">
+        <a href="#cdc-and-flow-the-jobs-that-never-finish" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              CDC 와 Flow
+              CDC & Flow
             
           </span>
         </div>
@@ -2247,7 +2247,7 @@
   <span class="md-ellipsis">
     
   
-    설치
+    Install
   
 
     
@@ -2275,7 +2275,7 @@
   <span class="md-ellipsis">
     
   
-    코퍼스
+    Corpus
   
 
     
@@ -2303,7 +2303,7 @@
   <span class="md-ellipsis">
     
   
-    스키마
+    Schema
   
 
     
@@ -2331,7 +2331,7 @@
   <span class="md-ellipsis">
     
   
-    파이프라인
+    Pipeline
   
 
     
@@ -2368,7 +2368,7 @@
   <span class="md-ellipsis">
     
   
-    CDC 와 Flow
+    CDC & Flow
   
 
     
@@ -2386,7 +2386,7 @@
   <span class="md-ellipsis">
     
   
-    CDC 와 Flow
+    CDC & Flow
   
 
     
@@ -2424,10 +2424,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#why-not-connect-directly" class="md-nav__link">
     <span class="md-ellipsis">
       
-        왜 직접 붙지 않는가
+        Why not connect directly
       
     </span>
   </a>
@@ -2440,10 +2440,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2" class="md-nav__link">
+  <a href="#2-the-graph-serving" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. 그래프 → 서빙
+        2. The graph → serving
       
     </span>
   </a>
@@ -2451,10 +2451,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3" class="md-nav__link">
+  <a href="#3-the-approval-event-stream" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. 결재 이벤트 스트림
+        3. The approval event stream
       
     </span>
   </a>
@@ -2484,7 +2484,7 @@
   <span class="md-ellipsis">
     
   
-    IAM 과 리트리버
+    IAM & Retrievers
   
 
     
@@ -2512,7 +2512,7 @@
   <span class="md-ellipsis">
     
   
-    온톨로지
+    Ontology
   
 
     
@@ -2540,7 +2540,7 @@
   <span class="md-ellipsis">
     
   
-    에이전트
+    Agent
   
 
     
@@ -2568,7 +2568,7 @@
   <span class="md-ellipsis">
     
   
-    검증
+    Verification
   
 
     
@@ -2606,44 +2606,45 @@
 
 
 
-<h1 id="cdc-flow">CDC 와 Flow — 끝나지 않는 잡들</h1>
-<p>배치 파이프라인과 다른 점은 하나입니다: <strong>이건 끝나지 않습니다.</strong> 띄워두면 원천이
-바뀌는 대로 표가 따라옵니다.</p>
-<p>이 데모에는 Flow 가 세 묶음 있습니다.</p>
+<h1 id="cdc-and-flow-the-jobs-that-never-finish">CDC and Flow — the jobs that never finish</h1>
+<p>One thing separates these from the batch pipeline: <strong>they do not end.</strong> Leave
+them running and the tables follow their sources.</p>
+<p>There are three groups.</p>
 <table>
 <thead>
 <tr>
 <th>Flow</th>
-<th>소스 → 싱크</th>
-<th>왜</th>
+<th>Source → sink</th>
+<th>Why</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>ERP CDC ×5</td>
 <td>PostgreSQL → Iceberg</td>
-<td>운영계에 조회 부하를 얹지 않고 시점을 일관되게</td>
+<td>No analytical load on the operational system, and one consistent point in time</td>
 </tr>
 <tr>
-<td>그래프 서빙 ×2</td>
+<td>Graph serving ×2</td>
 <td>Iceberg → NeorunBase</td>
-<td>서빙은 파생물이어야 하므로</td>
+<td>Because serving has to be a derivative</td>
 </tr>
 <tr>
-<td>결재 이벤트</td>
-<td>S3(JSON) → Iceberg</td>
-<td>규정이 시행되는 진짜 계기</td>
+<td>Approval events</td>
+<td>S3 (JSON) → Iceberg</td>
+<td>The real trigger for a regulation taking effect</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2 id="1-erp-iceberg-cdc">1. ERP → Iceberg (CDC)</h2>
-<h3 id="_1">왜 직접 붙지 않는가</h3>
-<p>읽기만 하면 괜찮을 것 같지만, 현장에서는 대개 거절당합니다. 운영 ERP 에 분석
-질의가 붙는 것을 반기는 조직은 드뭅니다. 그리고 직접 붙으면 <strong>시점이 흔들립니다</strong> —
-질의마다 다른 순간의 데이터를 보게 되고, 규정과 대조하는 답에서는 그게 틀린
-숫자로 나타납니다.</p>
-<p>그래서 CDC 로 Iceberg 에 모으고, 시맨틱 뷰는 그대로 둡니다. 아래만 바뀝니다.</p>
+<h3 id="why-not-connect-directly">Why not connect directly</h3>
+<p>Read-only access sounds harmless and is usually refused anyway — few organisations
+welcome analytical queries against a production ERP. And connecting directly makes
+the <strong>point in time slip</strong>: each query sees a different instant, which shows up as
+a wrong number in any answer that compares records against a regulation.</p>
+<p>So CDC collects into Iceberg and the semantic views stay as they are. Only what is
+underneath them changes.</p>
 <p><strong><code>demo/schema/flows/erp_cdc.json</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;_comment&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -2734,12 +2735,12 @@
 <a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a><span class="p">}</span>
 </code></pre></div>
 <div class="admonition danger">
-<p class="admonition-title"><code>decimal.handling.mode</code> 를 기본값으로 두면</p>
-<p>Debezium 의 기본값은 NUMERIC 을 <strong>base64 로 인코딩한 unscaled 바이트</strong>로
-보냅니다. 그러면 18.0 이 들어갈 자리에 <code>"ALQ="</code> 같은 문자열이 들어가는데 —
-<strong>행 수는 정확히 일치합니다.</strong> 개수를 세는 모든 검사가 통과하면서 모든 값이
-틀립니다.</p>
-<p>이 데모의 검증이 개수가 아니라 <strong>값</strong>을 비교하는 이유입니다.</p>
+<p class="admonition-title">Leaving <code>decimal.handling.mode</code> at its default</p>
+<p>Debezium's default encodes a NUMERIC as <strong>base64 unscaled bytes</strong>. A column
+that should read 18.0 arrives downstream as the string <code>"ALQ="</code> — and <strong>the
+row counts match exactly</strong>. Every count-based check passes while every value
+is wrong.</p>
+<p>That is why the verification on this page compares values, not counts.</p>
 </div>
 <p><strong><code>demo/infra/cdc.sh</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="ch">#!/usr/bin/env bash</span>
@@ -2784,169 +2785,184 @@
 <a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="s2">import json;d=json.load(open(&#39;</span><span class="nv">$SPEC</span><span class="s2">&#39;,encoding=&#39;utf-8&#39;))</span>
 <a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="s2">for t in d[&#39;tables&#39;]: print(t[&#39;source&#39;], t[&#39;sink&#39;], &#39;,&#39;.join(t[&#39;keys&#39;]))&quot;</span><span class="p">;</span><span class="w"> </span><span class="o">}</span>
 <a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>
-<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>streaming_jobs<span class="o">(){</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-m<span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/list&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json;[print(j[&#39;jobId&#39;]) for j in json.load(sys.stdin) if j.get(&#39;type&#39;)==&#39;STREAMING&#39;]&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="p">;</span><span class="w"> </span><span class="o">}</span>
-<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>
-<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;stop&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;Flow 중지 + 복제 슬롯 정리&quot;</span>
-<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="w">  </span><span class="k">for</span><span class="w"> </span>jid<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>streaming_jobs<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-XPOST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/kill/</span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;kill </span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
-<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a><span class="w">  </span><span class="c1"># 슬롯을 남기면 Postgres 가 WAL 을 계속 붙들고 디스크가 찹니다.</span>
-<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a><span class="w">  </span><span class="k">for</span><span class="w"> </span>s<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT slot_name FROM pg_replication_slots WHERE slot_name LIKE &#39;ontul_%&#39;;&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a><span class="w">    </span>pg<span class="w"> </span><span class="s2">&quot;SELECT pg_drop_replication_slot(&#39;</span><span class="nv">$s</span><span class="s2">&#39;);&quot;</span><span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;슬롯 삭제 </span><span class="nv">$s</span><span class="s2">&quot;</span>
-<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="w">  </span><span class="k">done</span>
-<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
-<a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a><span class="k">fi</span>
-<a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a>
-<a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a>num_eq<span class="o">(){</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-<a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a><span class="s2">import sys</span>
-<a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a><span class="s2">a=sys.argv[1].split(&#39;|&#39;); b=sys.argv[2].split(&#39;|&#39;)</span>
-<a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a><span class="s2">try:</span>
-<a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a><span class="s2">    ok = len(a)==len(b) and all(abs(float(x)-float(y))&lt;1e-9 for x,y in zip(a,b))</span>
-<a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a><span class="s2">except ValueError:</span>
-<a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a><span class="s2">    ok = False</span>
-<a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a><span class="s2">print(&#39;1&#39; if ok else &#39;0&#39;)&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$2</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="o">}</span>
-<a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a>
-<a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;verify&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;원천 대 대상 — 행 수&quot;</span>
-<a id="__codelineno-1-67" name="__codelineno-1-67" href="#__codelineno-1-67"></a><span class="w">  </span>tables<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="nb">read</span><span class="w"> </span>-r<span class="w"> </span>src<span class="w"> </span>sink<span class="w"> </span>keys<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a><span class="w">    </span><span class="nv">t</span><span class="o">=</span><span class="si">${</span><span class="nv">src</span><span class="p">#public.</span><span class="si">}</span>
-<a id="__codelineno-1-69" name="__codelineno-1-69" href="#__codelineno-1-69"></a><span class="w">    </span><span class="nv">a</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT count(*) FROM </span><span class="nv">$t</span><span class="s2">;&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="nv">b</span><span class="o">=</span><span class="k">$(</span>count<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$sink</span><span class="s2">&quot;</span><span class="k">)</span>
-<a id="__codelineno-1-70" name="__codelineno-1-70" href="#__codelineno-1-70"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$a</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$b</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$t</span><span class="s2">: </span><span class="nv">$a</span><span class="s2"> = </span><span class="nv">$b</span><span class="s2">&quot;</span>
-<a id="__codelineno-1-71" name="__codelineno-1-71" href="#__codelineno-1-71"></a><span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;\033[1;31m  차이\033[0m %s: 원천 %s, Iceberg %s\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$t</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$a</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$b</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
-<a id="__codelineno-1-72" name="__codelineno-1-72" href="#__codelineno-1-72"></a><span class="w">  </span><span class="k">done</span>
-<a id="__codelineno-1-73" name="__codelineno-1-73" href="#__codelineno-1-73"></a>
-<a id="__codelineno-1-74" name="__codelineno-1-74" href="#__codelineno-1-74"></a><span class="w">  </span><span class="c1"># 행 수만 보는 검증은 이 파이프라인에서 통과해 놓고 틀린 적이 있습니다. Debezium 이</span>
-<a id="__codelineno-1-75" name="__codelineno-1-75" href="#__codelineno-1-75"></a><span class="w">  </span><span class="c1"># NUMERIC 을 base64 바이트로 보내던 동안 572 = 572 였고 값은 전부 &quot;ALQ=&quot; 였습니다.</span>
-<a id="__codelineno-1-76" name="__codelineno-1-76" href="#__codelineno-1-76"></a><span class="w">  </span><span class="c1"># 그래서 값도 읽습니다 — 숫자 하나, 문자 하나.</span>
-<a id="__codelineno-1-77" name="__codelineno-1-77" href="#__codelineno-1-77"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;값 비교&quot;</span>
-<a id="__codelineno-1-78" name="__codelineno-1-78" href="#__codelineno-1-78"></a><span class="w">  </span><span class="nv">emp</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT emp_no FROM hr_leave_balance ORDER BY emp_no, lv_typ_cd LIMIT 1;&quot;</span><span class="k">)</span>
-<a id="__codelineno-1-79" name="__codelineno-1-79" href="#__codelineno-1-79"></a><span class="w">  </span><span class="nv">typ</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT lv_typ_cd FROM hr_leave_balance WHERE emp_no=&#39;</span><span class="nv">$emp</span><span class="s2">&#39; ORDER BY lv_typ_cd LIMIT 1;&quot;</span><span class="k">)</span>
-<a id="__codelineno-1-80" name="__codelineno-1-80" href="#__codelineno-1-80"></a><span class="w">  </span><span class="nv">src_v</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT grant_days || &#39;|&#39; || used_days FROM hr_leave_balance WHERE emp_no=&#39;</span><span class="nv">$emp</span><span class="s2">&#39; AND lv_typ_cd=&#39;</span><span class="nv">$typ</span><span class="s2">&#39;;&quot;</span><span class="k">)</span>
-<a id="__codelineno-1-81" name="__codelineno-1-81" href="#__codelineno-1-81"></a><span class="w">  </span><span class="nv">ice_v</span><span class="o">=</span><span class="k">$(</span>sql<span class="w"> </span><span class="s2">&quot;SELECT grant_days, used_days FROM ice.erp.hr_leave_balance WHERE emp_no = &#39;</span><span class="nv">$emp</span><span class="s2">&#39; AND lv_typ_cd = &#39;</span><span class="nv">$typ</span><span class="s2">&#39;&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-82" name="__codelineno-1-82" href="#__codelineno-1-82"></a><span class="w">          </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-<a id="__codelineno-1-83" name="__codelineno-1-83" href="#__codelineno-1-83"></a><span class="s2">import sys,json</span>
-<a id="__codelineno-1-84" name="__codelineno-1-84" href="#__codelineno-1-84"></a><span class="s2">d=json.load(sys.stdin); r=(d.get(&#39;rows&#39;) or [[None,None]])[0]</span>
-<a id="__codelineno-1-85" name="__codelineno-1-85" href="#__codelineno-1-85"></a><span class="s2">print(&#39;|&#39;.join(&#39;&#39; if x is None else str(x) for x in r[:2]))&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="k">)</span>
-<a id="__codelineno-1-86" name="__codelineno-1-86" href="#__codelineno-1-86"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>num_eq<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$src_v</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ice_v</span><span class="s2">&quot;</span><span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;1&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<a id="__codelineno-1-87" name="__codelineno-1-87" href="#__codelineno-1-87"></a><span class="w">    </span>step<span class="w"> </span><span class="s2">&quot;hr_leave_balance(</span><span class="nv">$emp</span><span class="s2">,</span><span class="nv">$typ</span><span class="s2">) 수치 일치 — 원천 </span><span class="nv">$src_v</span><span class="s2">, Iceberg </span><span class="nv">$ice_v</span><span class="s2">&quot;</span>
-<a id="__codelineno-1-88" name="__codelineno-1-88" href="#__codelineno-1-88"></a><span class="w">  </span><span class="k">else</span>
-<a id="__codelineno-1-89" name="__codelineno-1-89" href="#__codelineno-1-89"></a><span class="w">    </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;\033[1;31m  불일치\033[0m hr_leave_balance(%s,%s): 원천 %s, Iceberg %s\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$emp</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$typ</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$src_v</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ice_v</span><span class="s2">&quot;</span>
-<a id="__codelineno-1-90" name="__codelineno-1-90" href="#__codelineno-1-90"></a><span class="w">  </span><span class="k">fi</span>
-<a id="__codelineno-1-91" name="__codelineno-1-91" href="#__codelineno-1-91"></a>
-<a id="__codelineno-1-92" name="__codelineno-1-92" href="#__codelineno-1-92"></a><span class="w">  </span><span class="nv">nm_src</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT emp_nm FROM hr_employee WHERE emp_no=&#39;</span><span class="nv">$emp</span><span class="s2">&#39;;&quot;</span><span class="k">)</span>
-<a id="__codelineno-1-93" name="__codelineno-1-93" href="#__codelineno-1-93"></a><span class="w">  </span><span class="nv">nm_ice</span><span class="o">=</span><span class="k">$(</span>sql<span class="w"> </span><span class="s2">&quot;SELECT emp_nm FROM ice.erp.hr_employee WHERE emp_no = &#39;</span><span class="nv">$emp</span><span class="s2">&#39;&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-94" name="__codelineno-1-94" href="#__codelineno-1-94"></a><span class="w">           </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-<a id="__codelineno-1-95" name="__codelineno-1-95" href="#__codelineno-1-95"></a><span class="s2">import sys,json</span>
-<a id="__codelineno-1-96" name="__codelineno-1-96" href="#__codelineno-1-96"></a><span class="s2">d=json.load(sys.stdin); r=d.get(&#39;rows&#39;) or []</span>
-<a id="__codelineno-1-97" name="__codelineno-1-97" href="#__codelineno-1-97"></a><span class="s2">print(r[0][0] if r else &#39;&#39;)&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="k">)</span>
-<a id="__codelineno-1-98" name="__codelineno-1-98" href="#__codelineno-1-98"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$nm_src</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$nm_ice</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;hr_employee(</span><span class="nv">$emp</span><span class="s2">) 성명 일치 — </span><span class="nv">$nm_src</span><span class="s2">&quot;</span>
-<a id="__codelineno-1-99" name="__codelineno-1-99" href="#__codelineno-1-99"></a><span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;\033[1;31m  불일치\033[0m hr_employee(%s): 원천 %s, Iceberg %s\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$emp</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$nm_src</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$nm_ice</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
-<a id="__codelineno-1-100" name="__codelineno-1-100" href="#__codelineno-1-100"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
-<a id="__codelineno-1-101" name="__codelineno-1-101" href="#__codelineno-1-101"></a><span class="k">fi</span>
-<a id="__codelineno-1-102" name="__codelineno-1-102" href="#__codelineno-1-102"></a>
-<a id="__codelineno-1-103" name="__codelineno-1-103" href="#__codelineno-1-103"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;change&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<a id="__codelineno-1-104" name="__codelineno-1-104" href="#__codelineno-1-104"></a><span class="w">  </span><span class="c1"># CDC 가 append 가 아니라는 것을 보이는 부분입니다. update 는 행을 교체하고</span>
-<a id="__codelineno-1-105" name="__codelineno-1-105" href="#__codelineno-1-105"></a><span class="w">  </span><span class="c1"># delete 는 지웁니다 — 행 수가 늘지 않아야 정상입니다.</span>
-<a id="__codelineno-1-106" name="__codelineno-1-106" href="#__codelineno-1-106"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;ERP 에 변경을 넣습니다&quot;</span>
-<a id="__codelineno-1-107" name="__codelineno-1-107" href="#__codelineno-1-107"></a><span class="w">  </span><span class="nv">before</span><span class="o">=</span><span class="k">$(</span>count<span class="w"> </span>ice.erp.hr_leave_balance<span class="k">)</span>
-<a id="__codelineno-1-108" name="__codelineno-1-108" href="#__codelineno-1-108"></a><span class="w">  </span><span class="nv">emp</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT emp_no FROM hr_leave_balance ORDER BY emp_no LIMIT 1;&quot;</span><span class="k">)</span>
-<a id="__codelineno-1-109" name="__codelineno-1-109" href="#__codelineno-1-109"></a><span class="w">  </span>pg<span class="w"> </span><span class="s2">&quot;UPDATE hr_leave_balance SET used_days = used_days + 1 WHERE emp_no = &#39;</span><span class="nv">$emp</span><span class="s2">&#39;;&quot;</span><span class="w"> </span>&gt;/dev/null
-<a id="__codelineno-1-110" name="__codelineno-1-110" href="#__codelineno-1-110"></a><span class="w">  </span>step<span class="w"> </span><span class="s2">&quot;UPDATE hr_leave_balance (사번 </span><span class="nv">$emp</span><span class="s2">)&quot;</span>
-<a id="__codelineno-1-111" name="__codelineno-1-111" href="#__codelineno-1-111"></a><span class="w">  </span>pg<span class="w"> </span><span class="s2">&quot;DELETE FROM fi_expense WHERE exp_id = (SELECT exp_id FROM fi_expense ORDER BY exp_id LIMIT 1);&quot;</span><span class="w"> </span>&gt;/dev/null
-<a id="__codelineno-1-112" name="__codelineno-1-112" href="#__codelineno-1-112"></a><span class="w">  </span>step<span class="w"> </span><span class="s2">&quot;DELETE fi_expense 1건&quot;</span>
-<a id="__codelineno-1-113" name="__codelineno-1-113" href="#__codelineno-1-113"></a><span class="w">  </span>warn<span class="w"> </span><span class="s2">&quot;커밋 간격 + 스냅샷 반영 대기 (25초)&quot;</span>
-<a id="__codelineno-1-114" name="__codelineno-1-114" href="#__codelineno-1-114"></a><span class="w">  </span>sleep<span class="w"> </span><span class="m">25</span>
-<a id="__codelineno-1-115" name="__codelineno-1-115" href="#__codelineno-1-115"></a><span class="w">  </span><span class="nv">after</span><span class="o">=</span><span class="k">$(</span>count<span class="w"> </span>ice.erp.hr_leave_balance<span class="k">)</span>
-<a id="__codelineno-1-116" name="__codelineno-1-116" href="#__codelineno-1-116"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$before</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$after</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;hr_leave_balance 행 수 유지: </span><span class="nv">$before</span><span class="s2"> (update 가 교체됨)&quot;</span>
-<a id="__codelineno-1-117" name="__codelineno-1-117" href="#__codelineno-1-117"></a><span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;\033[1;31m  회귀\033[0m hr_leave_balance %s → %s — upsert 가 append 로 격하됐습니다\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$before</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$after</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
-<a id="__codelineno-1-118" name="__codelineno-1-118" href="#__codelineno-1-118"></a><span class="w">  </span>bash<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$0</span><span class="s2">&quot;</span><span class="w"> </span>verify
-<a id="__codelineno-1-119" name="__codelineno-1-119" href="#__codelineno-1-119"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
-<a id="__codelineno-1-120" name="__codelineno-1-120" href="#__codelineno-1-120"></a><span class="k">fi</span>
-<a id="__codelineno-1-121" name="__codelineno-1-121" href="#__codelineno-1-121"></a>
-<a id="__codelineno-1-122" name="__codelineno-1-122" href="#__codelineno-1-122"></a>log<span class="w"> </span><span class="s2">&quot;1/3  기존 Flow 와 슬롯 정리&quot;</span>
-<a id="__codelineno-1-123" name="__codelineno-1-123" href="#__codelineno-1-123"></a><span class="k">for</span><span class="w"> </span>jid<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>streaming_jobs<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-XPOST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/kill/</span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;이전 잡 kill </span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
-<a id="__codelineno-1-124" name="__codelineno-1-124" href="#__codelineno-1-124"></a><span class="k">for</span><span class="w"> </span>s<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT slot_name FROM pg_replication_slots WHERE slot_name LIKE &#39;ontul_%&#39;;&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-1-125" name="__codelineno-1-125" href="#__codelineno-1-125"></a><span class="w">  </span>pg<span class="w"> </span><span class="s2">&quot;SELECT pg_drop_replication_slot(&#39;</span><span class="nv">$s</span><span class="s2">&#39;);&quot;</span><span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;슬롯 삭제 </span><span class="nv">$s</span><span class="s2">&quot;</span>
-<a id="__codelineno-1-126" name="__codelineno-1-126" href="#__codelineno-1-126"></a><span class="k">done</span>
-<a id="__codelineno-1-127" name="__codelineno-1-127" href="#__codelineno-1-127"></a>sql<span class="w"> </span><span class="s2">&quot;CREATE SCHEMA IF NOT EXISTS ice.erp&quot;</span><span class="w"> </span>&gt;/dev/null<span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;ice.erp 스키마&quot;</span>
-<a id="__codelineno-1-128" name="__codelineno-1-128" href="#__codelineno-1-128"></a>
-<a id="__codelineno-1-129" name="__codelineno-1-129" href="#__codelineno-1-129"></a>log<span class="w"> </span><span class="s2">&quot;2/3  테이블당 Flow 제출&quot;</span>
-<a id="__codelineno-1-130" name="__codelineno-1-130" href="#__codelineno-1-130"></a>tables<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="nb">read</span><span class="w"> </span>-r<span class="w"> </span>src<span class="w"> </span>sink<span class="w"> </span>keys<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-1-131" name="__codelineno-1-131" href="#__codelineno-1-131"></a><span class="w">  </span><span class="nv">JOBID</span><span class="o">=</span><span class="k">$(</span><span class="nv">TOK</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$TOK</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">ONTUL</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">SPEC</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$SPEC</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">SRC</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$src</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">SINK</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$sink</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">KEYS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$keys</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">PW</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$ERP_PW</span><span class="s2">&quot;</span><span class="w"> </span>python3<span class="w"> </span><span class="s">&lt;&lt;&#39;PY&#39;</span>
-<a id="__codelineno-1-132" name="__codelineno-1-132" href="#__codelineno-1-132"></a><span class="s">import os, json, urllib.request, time</span>
-<a id="__codelineno-1-133" name="__codelineno-1-133" href="#__codelineno-1-133"></a><span class="s">tok=os.environ[&quot;TOK&quot;]; base=os.environ[&quot;ONTUL&quot;]</span>
-<a id="__codelineno-1-134" name="__codelineno-1-134" href="#__codelineno-1-134"></a><span class="s">cfg=json.loads(open(os.environ[&quot;SPEC&quot;],encoding=&quot;utf-8&quot;).read())</span>
-<a id="__codelineno-1-135" name="__codelineno-1-135" href="#__codelineno-1-135"></a><span class="s">cfg.pop(&quot;_comment&quot;,None); cfg.pop(&quot;tables&quot;,None)</span>
-<a id="__codelineno-1-136" name="__codelineno-1-136" href="#__codelineno-1-136"></a><span class="s">src=cfg[&quot;source&quot;]; src.pop(&quot;_snapshot_note&quot;,None)</span>
-<a id="__codelineno-1-137" name="__codelineno-1-137" href="#__codelineno-1-137"></a><span class="s">src[&quot;password&quot;]=os.environ[&quot;PW&quot;]</span>
-<a id="__codelineno-1-138" name="__codelineno-1-138" href="#__codelineno-1-138"></a><span class="s">src[&quot;table&quot;]=os.environ[&quot;SRC&quot;]</span>
-<a id="__codelineno-1-139" name="__codelineno-1-139" href="#__codelineno-1-139"></a><span class="s">sink=cfg[&quot;sink&quot;]; sink.pop(&quot;_write_note&quot;,None)</span>
-<a id="__codelineno-1-140" name="__codelineno-1-140" href="#__codelineno-1-140"></a><span class="s">sink[&quot;table&quot;]=os.environ[&quot;SINK&quot;]</span>
-<a id="__codelineno-1-141" name="__codelineno-1-141" href="#__codelineno-1-141"></a><span class="s">sink[&quot;write&quot;][&quot;keys&quot;]=os.environ[&quot;KEYS&quot;].split(&quot;,&quot;)</span>
-<a id="__codelineno-1-142" name="__codelineno-1-142" href="#__codelineno-1-142"></a><span class="s">def api(path, body=None, method=&quot;GET&quot;):</span>
-<a id="__codelineno-1-143" name="__codelineno-1-143" href="#__codelineno-1-143"></a><span class="s">  data=json.dumps(body).encode() if body is not None else None</span>
-<a id="__codelineno-1-144" name="__codelineno-1-144" href="#__codelineno-1-144"></a><span class="s">  r=urllib.request.Request(base+path, data=data, method=method)</span>
-<a id="__codelineno-1-145" name="__codelineno-1-145" href="#__codelineno-1-145"></a><span class="s">  r.add_header(&quot;Authorization&quot;,&quot;Bearer &quot;+tok); r.add_header(&quot;Content-Type&quot;,&quot;application/json&quot;)</span>
-<a id="__codelineno-1-146" name="__codelineno-1-146" href="#__codelineno-1-146"></a><span class="s">  return json.load(urllib.request.urlopen(r,timeout=90))</span>
-<a id="__codelineno-1-147" name="__codelineno-1-147" href="#__codelineno-1-147"></a><span class="s">try:</span>
-<a id="__codelineno-1-148" name="__codelineno-1-148" href="#__codelineno-1-148"></a><span class="s">  d=api(&quot;/v1/api/sql&quot;, {&quot;sql&quot;:&quot;SUBMIT STREAMING &quot;+json.dumps(cfg)}, &quot;POST&quot;)</span>
-<a id="__codelineno-1-149" name="__codelineno-1-149" href="#__codelineno-1-149"></a><span class="s">  if d.get(&quot;status&quot;)!=&quot;ok&quot;: print(&quot;ERR:&quot;+str(d)[:220]); raise SystemExit</span>
-<a id="__codelineno-1-150" name="__codelineno-1-150" href="#__codelineno-1-150"></a><span class="s">  want=&quot;streaming-&quot;+(d.get(&quot;queryId&quot;) or &quot;&quot;)[:8]</span>
-<a id="__codelineno-1-151" name="__codelineno-1-151" href="#__codelineno-1-151"></a><span class="s">  for _ in range(25):</span>
-<a id="__codelineno-1-152" name="__codelineno-1-152" href="#__codelineno-1-152"></a><span class="s">    for j in api(&quot;/v1/api/job/list&quot;):</span>
-<a id="__codelineno-1-153" name="__codelineno-1-153" href="#__codelineno-1-153"></a><span class="s">      if j.get(&quot;type&quot;)==&quot;STREAMING&quot; and j.get(&quot;jobName&quot;)==want: print(j[&quot;jobId&quot;]); raise SystemExit</span>
-<a id="__codelineno-1-154" name="__codelineno-1-154" href="#__codelineno-1-154"></a><span class="s">    time.sleep(1)</span>
-<a id="__codelineno-1-155" name="__codelineno-1-155" href="#__codelineno-1-155"></a><span class="s">  print(&quot;ERR:job never appeared&quot;)</span>
-<a id="__codelineno-1-156" name="__codelineno-1-156" href="#__codelineno-1-156"></a><span class="s">except SystemExit: pass</span>
-<a id="__codelineno-1-157" name="__codelineno-1-157" href="#__codelineno-1-157"></a><span class="s">except Exception as e: print(&quot;ERR:&quot;+str(e)[:220])</span>
-<a id="__codelineno-1-158" name="__codelineno-1-158" href="#__codelineno-1-158"></a><span class="s">PY</span>
-<a id="__codelineno-1-159" name="__codelineno-1-159" href="#__codelineno-1-159"></a><span class="k">)</span>
-<a id="__codelineno-1-160" name="__codelineno-1-160" href="#__codelineno-1-160"></a><span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$JOBID</span><span class="s2">&quot;</span><span class="w"> </span><span class="k">in</span><span class="w"> </span>ERR:*<span class="p">|</span><span class="s2">&quot;&quot;</span><span class="o">)</span><span class="w"> </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;\033[1;31m  실패\033[0m %s -&gt; %s (%s)\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$src</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$sink</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$JOBID</span><span class="s2">&quot;</span><span class="p">;;</span>
-<a id="__codelineno-1-161" name="__codelineno-1-161" href="#__codelineno-1-161"></a><span class="w">                   </span>*<span class="o">)</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$src</span><span class="s2"> → </span><span class="nv">$sink</span><span class="s2">  [</span><span class="nv">$JOBID</span><span class="s2">]&quot;</span><span class="p">;;</span><span class="w"> </span><span class="k">esac</span>
-<a id="__codelineno-1-162" name="__codelineno-1-162" href="#__codelineno-1-162"></a><span class="k">done</span>
-<a id="__codelineno-1-163" name="__codelineno-1-163" href="#__codelineno-1-163"></a>
-<a id="__codelineno-1-164" name="__codelineno-1-164" href="#__codelineno-1-164"></a>log<span class="w"> </span><span class="s2">&quot;3/3  초기 스냅샷 대기&quot;</span>
-<a id="__codelineno-1-165" name="__codelineno-1-165" href="#__codelineno-1-165"></a><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">40</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-1-166" name="__codelineno-1-166" href="#__codelineno-1-166"></a><span class="w">  </span><span class="nv">n</span><span class="o">=</span><span class="k">$(</span>count<span class="w"> </span>ice.erp.hr_employee<span class="k">)</span>
-<a id="__codelineno-1-167" name="__codelineno-1-167" href="#__codelineno-1-167"></a><span class="w">  </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$n</span><span class="s2">&quot;</span><span class="w"> </span>!<span class="o">=</span><span class="w"> </span><span class="s2">&quot;ERR&quot;</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">n</span><span class="k">:-</span><span class="nv">0</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>-ge<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">break</span>
-<a id="__codelineno-1-168" name="__codelineno-1-168" href="#__codelineno-1-168"></a><span class="w">  </span>sleep<span class="w"> </span><span class="m">6</span>
-<a id="__codelineno-1-169" name="__codelineno-1-169" href="#__codelineno-1-169"></a><span class="k">done</span>
-<a id="__codelineno-1-170" name="__codelineno-1-170" href="#__codelineno-1-170"></a>bash<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$0</span><span class="s2">&quot;</span><span class="w"> </span>verify
-<a id="__codelineno-1-171" name="__codelineno-1-171" href="#__codelineno-1-171"></a><span class="nb">echo</span>
-<a id="__codelineno-1-172" name="__codelineno-1-172" href="#__codelineno-1-172"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  변경이 반영되는지 보려면:  bash infra/cdc.sh change&quot;</span>
-<a id="__codelineno-1-173" name="__codelineno-1-173" href="#__codelineno-1-173"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  멈추려면:                  bash infra/cdc.sh stop&quot;</span>
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="c1"># 자기 것만 죽입니다. 스트리밍 잡을 전부 죽이면 이 스크립트가 남의</span>
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="c1"># 파이프라인을 끕니다 — 실제로 그랬습니다: graph_flow 가 띄운 2개를 cdc 가</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="c1"># 죽이고, cdc 가 띄운 5개를 flow 가 죽여서, 세 스크립트를 차례로 돌리면 마지막</span>
+<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="c1"># 하나만 살아남았습니다. 각 스크립트가 성공을 보고했기 때문에 아무도 눈치채지</span>
+<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a><span class="c1"># 못했습니다.</span>
+<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a>streaming_jobs<span class="o">(){</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-m<span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/list&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a><span class="s2">import sys, json</span>
+<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a><span class="s2">for j in json.load(sys.stdin):</span>
+<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="s2">    if j.get(&#39;type&#39;) != &#39;STREAMING&#39;:</span>
+<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="s2">        continue</span>
+<a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a><span class="s2">    tag = (j.get(&#39;description&#39;) or &#39;&#39;) + &#39; &#39; + (j.get(&#39;jobName&#39;) or &#39;&#39;)</span>
+<a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a><span class="s2">    if &#39;erp-cdc&#39; in tag:</span>
+<a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a><span class="s2">        print(j[&#39;jobId&#39;])</span>
+<a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a><span class="s2">&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="p">;</span><span class="w"> </span><span class="o">}</span>
+<a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a>
+<a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;stop&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;Flow 중지 + 복제 슬롯 정리&quot;</span>
+<a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a><span class="w">  </span><span class="k">for</span><span class="w"> </span>jid<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>streaming_jobs<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-XPOST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/kill/</span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;kill </span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
+<a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a><span class="w">  </span><span class="c1"># 슬롯을 남기면 Postgres 가 WAL 을 계속 붙들고 디스크가 찹니다.</span>
+<a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a><span class="w">  </span><span class="k">for</span><span class="w"> </span>s<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT slot_name FROM pg_replication_slots WHERE slot_name LIKE &#39;ontul_%&#39;;&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a><span class="w">    </span>pg<span class="w"> </span><span class="s2">&quot;SELECT pg_drop_replication_slot(&#39;</span><span class="nv">$s</span><span class="s2">&#39;);&quot;</span><span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;슬롯 삭제 </span><span class="nv">$s</span><span class="s2">&quot;</span>
+<a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a><span class="w">  </span><span class="k">done</span>
+<a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
+<a id="__codelineno-1-67" name="__codelineno-1-67" href="#__codelineno-1-67"></a><span class="k">fi</span>
+<a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a>
+<a id="__codelineno-1-69" name="__codelineno-1-69" href="#__codelineno-1-69"></a>num_eq<span class="o">(){</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<a id="__codelineno-1-70" name="__codelineno-1-70" href="#__codelineno-1-70"></a><span class="s2">import sys</span>
+<a id="__codelineno-1-71" name="__codelineno-1-71" href="#__codelineno-1-71"></a><span class="s2">a=sys.argv[1].split(&#39;|&#39;); b=sys.argv[2].split(&#39;|&#39;)</span>
+<a id="__codelineno-1-72" name="__codelineno-1-72" href="#__codelineno-1-72"></a><span class="s2">try:</span>
+<a id="__codelineno-1-73" name="__codelineno-1-73" href="#__codelineno-1-73"></a><span class="s2">    ok = len(a)==len(b) and all(abs(float(x)-float(y))&lt;1e-9 for x,y in zip(a,b))</span>
+<a id="__codelineno-1-74" name="__codelineno-1-74" href="#__codelineno-1-74"></a><span class="s2">except ValueError:</span>
+<a id="__codelineno-1-75" name="__codelineno-1-75" href="#__codelineno-1-75"></a><span class="s2">    ok = False</span>
+<a id="__codelineno-1-76" name="__codelineno-1-76" href="#__codelineno-1-76"></a><span class="s2">print(&#39;1&#39; if ok else &#39;0&#39;)&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$2</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="o">}</span>
+<a id="__codelineno-1-77" name="__codelineno-1-77" href="#__codelineno-1-77"></a>
+<a id="__codelineno-1-78" name="__codelineno-1-78" href="#__codelineno-1-78"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;verify&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<a id="__codelineno-1-79" name="__codelineno-1-79" href="#__codelineno-1-79"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;원천 대 대상 — 행 수&quot;</span>
+<a id="__codelineno-1-80" name="__codelineno-1-80" href="#__codelineno-1-80"></a><span class="w">  </span>tables<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="nb">read</span><span class="w"> </span>-r<span class="w"> </span>src<span class="w"> </span>sink<span class="w"> </span>keys<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-1-81" name="__codelineno-1-81" href="#__codelineno-1-81"></a><span class="w">    </span><span class="nv">t</span><span class="o">=</span><span class="si">${</span><span class="nv">src</span><span class="p">#public.</span><span class="si">}</span>
+<a id="__codelineno-1-82" name="__codelineno-1-82" href="#__codelineno-1-82"></a><span class="w">    </span><span class="nv">a</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT count(*) FROM </span><span class="nv">$t</span><span class="s2">;&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="nv">b</span><span class="o">=</span><span class="k">$(</span>count<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$sink</span><span class="s2">&quot;</span><span class="k">)</span>
+<a id="__codelineno-1-83" name="__codelineno-1-83" href="#__codelineno-1-83"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$a</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$b</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$t</span><span class="s2">: </span><span class="nv">$a</span><span class="s2"> = </span><span class="nv">$b</span><span class="s2">&quot;</span>
+<a id="__codelineno-1-84" name="__codelineno-1-84" href="#__codelineno-1-84"></a><span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;\033[1;31m  차이\033[0m %s: 원천 %s, Iceberg %s\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$t</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$a</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$b</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<a id="__codelineno-1-85" name="__codelineno-1-85" href="#__codelineno-1-85"></a><span class="w">  </span><span class="k">done</span>
+<a id="__codelineno-1-86" name="__codelineno-1-86" href="#__codelineno-1-86"></a>
+<a id="__codelineno-1-87" name="__codelineno-1-87" href="#__codelineno-1-87"></a><span class="w">  </span><span class="c1"># 행 수만 보는 검증은 이 파이프라인에서 통과해 놓고 틀린 적이 있습니다. Debezium 이</span>
+<a id="__codelineno-1-88" name="__codelineno-1-88" href="#__codelineno-1-88"></a><span class="w">  </span><span class="c1"># NUMERIC 을 base64 바이트로 보내던 동안 572 = 572 였고 값은 전부 &quot;ALQ=&quot; 였습니다.</span>
+<a id="__codelineno-1-89" name="__codelineno-1-89" href="#__codelineno-1-89"></a><span class="w">  </span><span class="c1"># 그래서 값도 읽습니다 — 숫자 하나, 문자 하나.</span>
+<a id="__codelineno-1-90" name="__codelineno-1-90" href="#__codelineno-1-90"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;값 비교&quot;</span>
+<a id="__codelineno-1-91" name="__codelineno-1-91" href="#__codelineno-1-91"></a><span class="w">  </span><span class="nv">emp</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT emp_no FROM hr_leave_balance ORDER BY emp_no, lv_typ_cd LIMIT 1;&quot;</span><span class="k">)</span>
+<a id="__codelineno-1-92" name="__codelineno-1-92" href="#__codelineno-1-92"></a><span class="w">  </span><span class="nv">typ</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT lv_typ_cd FROM hr_leave_balance WHERE emp_no=&#39;</span><span class="nv">$emp</span><span class="s2">&#39; ORDER BY lv_typ_cd LIMIT 1;&quot;</span><span class="k">)</span>
+<a id="__codelineno-1-93" name="__codelineno-1-93" href="#__codelineno-1-93"></a><span class="w">  </span><span class="nv">src_v</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT grant_days || &#39;|&#39; || used_days FROM hr_leave_balance WHERE emp_no=&#39;</span><span class="nv">$emp</span><span class="s2">&#39; AND lv_typ_cd=&#39;</span><span class="nv">$typ</span><span class="s2">&#39;;&quot;</span><span class="k">)</span>
+<a id="__codelineno-1-94" name="__codelineno-1-94" href="#__codelineno-1-94"></a><span class="w">  </span><span class="nv">ice_v</span><span class="o">=</span><span class="k">$(</span>sql<span class="w"> </span><span class="s2">&quot;SELECT grant_days, used_days FROM ice.erp.hr_leave_balance WHERE emp_no = &#39;</span><span class="nv">$emp</span><span class="s2">&#39; AND lv_typ_cd = &#39;</span><span class="nv">$typ</span><span class="s2">&#39;&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-95" name="__codelineno-1-95" href="#__codelineno-1-95"></a><span class="w">          </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<a id="__codelineno-1-96" name="__codelineno-1-96" href="#__codelineno-1-96"></a><span class="s2">import sys,json</span>
+<a id="__codelineno-1-97" name="__codelineno-1-97" href="#__codelineno-1-97"></a><span class="s2">d=json.load(sys.stdin); r=(d.get(&#39;rows&#39;) or [[None,None]])[0]</span>
+<a id="__codelineno-1-98" name="__codelineno-1-98" href="#__codelineno-1-98"></a><span class="s2">print(&#39;|&#39;.join(&#39;&#39; if x is None else str(x) for x in r[:2]))&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="k">)</span>
+<a id="__codelineno-1-99" name="__codelineno-1-99" href="#__codelineno-1-99"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>num_eq<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$src_v</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ice_v</span><span class="s2">&quot;</span><span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;1&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<a id="__codelineno-1-100" name="__codelineno-1-100" href="#__codelineno-1-100"></a><span class="w">    </span>step<span class="w"> </span><span class="s2">&quot;hr_leave_balance(</span><span class="nv">$emp</span><span class="s2">,</span><span class="nv">$typ</span><span class="s2">) 수치 일치 — 원천 </span><span class="nv">$src_v</span><span class="s2">, Iceberg </span><span class="nv">$ice_v</span><span class="s2">&quot;</span>
+<a id="__codelineno-1-101" name="__codelineno-1-101" href="#__codelineno-1-101"></a><span class="w">  </span><span class="k">else</span>
+<a id="__codelineno-1-102" name="__codelineno-1-102" href="#__codelineno-1-102"></a><span class="w">    </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;\033[1;31m  불일치\033[0m hr_leave_balance(%s,%s): 원천 %s, Iceberg %s\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$emp</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$typ</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$src_v</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ice_v</span><span class="s2">&quot;</span>
+<a id="__codelineno-1-103" name="__codelineno-1-103" href="#__codelineno-1-103"></a><span class="w">  </span><span class="k">fi</span>
+<a id="__codelineno-1-104" name="__codelineno-1-104" href="#__codelineno-1-104"></a>
+<a id="__codelineno-1-105" name="__codelineno-1-105" href="#__codelineno-1-105"></a><span class="w">  </span><span class="nv">nm_src</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT emp_nm FROM hr_employee WHERE emp_no=&#39;</span><span class="nv">$emp</span><span class="s2">&#39;;&quot;</span><span class="k">)</span>
+<a id="__codelineno-1-106" name="__codelineno-1-106" href="#__codelineno-1-106"></a><span class="w">  </span><span class="nv">nm_ice</span><span class="o">=</span><span class="k">$(</span>sql<span class="w"> </span><span class="s2">&quot;SELECT emp_nm FROM ice.erp.hr_employee WHERE emp_no = &#39;</span><span class="nv">$emp</span><span class="s2">&#39;&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-107" name="__codelineno-1-107" href="#__codelineno-1-107"></a><span class="w">           </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<a id="__codelineno-1-108" name="__codelineno-1-108" href="#__codelineno-1-108"></a><span class="s2">import sys,json</span>
+<a id="__codelineno-1-109" name="__codelineno-1-109" href="#__codelineno-1-109"></a><span class="s2">d=json.load(sys.stdin); r=d.get(&#39;rows&#39;) or []</span>
+<a id="__codelineno-1-110" name="__codelineno-1-110" href="#__codelineno-1-110"></a><span class="s2">print(r[0][0] if r else &#39;&#39;)&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="k">)</span>
+<a id="__codelineno-1-111" name="__codelineno-1-111" href="#__codelineno-1-111"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$nm_src</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$nm_ice</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;hr_employee(</span><span class="nv">$emp</span><span class="s2">) 성명 일치 — </span><span class="nv">$nm_src</span><span class="s2">&quot;</span>
+<a id="__codelineno-1-112" name="__codelineno-1-112" href="#__codelineno-1-112"></a><span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;\033[1;31m  불일치\033[0m hr_employee(%s): 원천 %s, Iceberg %s\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$emp</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$nm_src</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$nm_ice</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<a id="__codelineno-1-113" name="__codelineno-1-113" href="#__codelineno-1-113"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
+<a id="__codelineno-1-114" name="__codelineno-1-114" href="#__codelineno-1-114"></a><span class="k">fi</span>
+<a id="__codelineno-1-115" name="__codelineno-1-115" href="#__codelineno-1-115"></a>
+<a id="__codelineno-1-116" name="__codelineno-1-116" href="#__codelineno-1-116"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;change&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<a id="__codelineno-1-117" name="__codelineno-1-117" href="#__codelineno-1-117"></a><span class="w">  </span><span class="c1"># CDC 가 append 가 아니라는 것을 보이는 부분입니다. update 는 행을 교체하고</span>
+<a id="__codelineno-1-118" name="__codelineno-1-118" href="#__codelineno-1-118"></a><span class="w">  </span><span class="c1"># delete 는 지웁니다 — 행 수가 늘지 않아야 정상입니다.</span>
+<a id="__codelineno-1-119" name="__codelineno-1-119" href="#__codelineno-1-119"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;ERP 에 변경을 넣습니다&quot;</span>
+<a id="__codelineno-1-120" name="__codelineno-1-120" href="#__codelineno-1-120"></a><span class="w">  </span><span class="nv">before</span><span class="o">=</span><span class="k">$(</span>count<span class="w"> </span>ice.erp.hr_leave_balance<span class="k">)</span>
+<a id="__codelineno-1-121" name="__codelineno-1-121" href="#__codelineno-1-121"></a><span class="w">  </span><span class="nv">emp</span><span class="o">=</span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT emp_no FROM hr_leave_balance ORDER BY emp_no LIMIT 1;&quot;</span><span class="k">)</span>
+<a id="__codelineno-1-122" name="__codelineno-1-122" href="#__codelineno-1-122"></a><span class="w">  </span>pg<span class="w"> </span><span class="s2">&quot;UPDATE hr_leave_balance SET used_days = used_days + 1 WHERE emp_no = &#39;</span><span class="nv">$emp</span><span class="s2">&#39;;&quot;</span><span class="w"> </span>&gt;/dev/null
+<a id="__codelineno-1-123" name="__codelineno-1-123" href="#__codelineno-1-123"></a><span class="w">  </span>step<span class="w"> </span><span class="s2">&quot;UPDATE hr_leave_balance (사번 </span><span class="nv">$emp</span><span class="s2">)&quot;</span>
+<a id="__codelineno-1-124" name="__codelineno-1-124" href="#__codelineno-1-124"></a><span class="w">  </span>pg<span class="w"> </span><span class="s2">&quot;DELETE FROM fi_expense WHERE exp_id = (SELECT exp_id FROM fi_expense ORDER BY exp_id LIMIT 1);&quot;</span><span class="w"> </span>&gt;/dev/null
+<a id="__codelineno-1-125" name="__codelineno-1-125" href="#__codelineno-1-125"></a><span class="w">  </span>step<span class="w"> </span><span class="s2">&quot;DELETE fi_expense 1건&quot;</span>
+<a id="__codelineno-1-126" name="__codelineno-1-126" href="#__codelineno-1-126"></a><span class="w">  </span>warn<span class="w"> </span><span class="s2">&quot;커밋 간격 + 스냅샷 반영 대기 (25초)&quot;</span>
+<a id="__codelineno-1-127" name="__codelineno-1-127" href="#__codelineno-1-127"></a><span class="w">  </span>sleep<span class="w"> </span><span class="m">25</span>
+<a id="__codelineno-1-128" name="__codelineno-1-128" href="#__codelineno-1-128"></a><span class="w">  </span><span class="nv">after</span><span class="o">=</span><span class="k">$(</span>count<span class="w"> </span>ice.erp.hr_leave_balance<span class="k">)</span>
+<a id="__codelineno-1-129" name="__codelineno-1-129" href="#__codelineno-1-129"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$before</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$after</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;hr_leave_balance 행 수 유지: </span><span class="nv">$before</span><span class="s2"> (update 가 교체됨)&quot;</span>
+<a id="__codelineno-1-130" name="__codelineno-1-130" href="#__codelineno-1-130"></a><span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;\033[1;31m  회귀\033[0m hr_leave_balance %s → %s — upsert 가 append 로 격하됐습니다\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$before</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$after</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<a id="__codelineno-1-131" name="__codelineno-1-131" href="#__codelineno-1-131"></a><span class="w">  </span>bash<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$0</span><span class="s2">&quot;</span><span class="w"> </span>verify
+<a id="__codelineno-1-132" name="__codelineno-1-132" href="#__codelineno-1-132"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
+<a id="__codelineno-1-133" name="__codelineno-1-133" href="#__codelineno-1-133"></a><span class="k">fi</span>
+<a id="__codelineno-1-134" name="__codelineno-1-134" href="#__codelineno-1-134"></a>
+<a id="__codelineno-1-135" name="__codelineno-1-135" href="#__codelineno-1-135"></a>log<span class="w"> </span><span class="s2">&quot;1/3  기존 Flow 와 슬롯 정리&quot;</span>
+<a id="__codelineno-1-136" name="__codelineno-1-136" href="#__codelineno-1-136"></a><span class="k">for</span><span class="w"> </span>jid<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>streaming_jobs<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-XPOST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/kill/</span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;이전 잡 kill </span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
+<a id="__codelineno-1-137" name="__codelineno-1-137" href="#__codelineno-1-137"></a><span class="k">for</span><span class="w"> </span>s<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>pg<span class="w"> </span><span class="s2">&quot;SELECT slot_name FROM pg_replication_slots WHERE slot_name LIKE &#39;ontul_%&#39;;&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-1-138" name="__codelineno-1-138" href="#__codelineno-1-138"></a><span class="w">  </span>pg<span class="w"> </span><span class="s2">&quot;SELECT pg_drop_replication_slot(&#39;</span><span class="nv">$s</span><span class="s2">&#39;);&quot;</span><span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;슬롯 삭제 </span><span class="nv">$s</span><span class="s2">&quot;</span>
+<a id="__codelineno-1-139" name="__codelineno-1-139" href="#__codelineno-1-139"></a><span class="k">done</span>
+<a id="__codelineno-1-140" name="__codelineno-1-140" href="#__codelineno-1-140"></a>sql<span class="w"> </span><span class="s2">&quot;CREATE SCHEMA IF NOT EXISTS ice.erp&quot;</span><span class="w"> </span>&gt;/dev/null<span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;ice.erp 스키마&quot;</span>
+<a id="__codelineno-1-141" name="__codelineno-1-141" href="#__codelineno-1-141"></a>
+<a id="__codelineno-1-142" name="__codelineno-1-142" href="#__codelineno-1-142"></a>log<span class="w"> </span><span class="s2">&quot;2/3  테이블당 Flow 제출&quot;</span>
+<a id="__codelineno-1-143" name="__codelineno-1-143" href="#__codelineno-1-143"></a>tables<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="nb">read</span><span class="w"> </span>-r<span class="w"> </span>src<span class="w"> </span>sink<span class="w"> </span>keys<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-1-144" name="__codelineno-1-144" href="#__codelineno-1-144"></a><span class="w">  </span><span class="nv">JOBID</span><span class="o">=</span><span class="k">$(</span><span class="nv">TOK</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$TOK</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">ONTUL</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">SPEC</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$SPEC</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">SRC</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$src</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">SINK</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$sink</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">KEYS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$keys</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">PW</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$ERP_PW</span><span class="s2">&quot;</span><span class="w"> </span>python3<span class="w"> </span><span class="s">&lt;&lt;&#39;PY&#39;</span>
+<a id="__codelineno-1-145" name="__codelineno-1-145" href="#__codelineno-1-145"></a><span class="s">import os, json, urllib.request, time</span>
+<a id="__codelineno-1-146" name="__codelineno-1-146" href="#__codelineno-1-146"></a><span class="s">tok=os.environ[&quot;TOK&quot;]; base=os.environ[&quot;ONTUL&quot;]</span>
+<a id="__codelineno-1-147" name="__codelineno-1-147" href="#__codelineno-1-147"></a><span class="s">cfg=json.loads(open(os.environ[&quot;SPEC&quot;],encoding=&quot;utf-8&quot;).read())</span>
+<a id="__codelineno-1-148" name="__codelineno-1-148" href="#__codelineno-1-148"></a><span class="s">cfg.pop(&quot;_comment&quot;,None); cfg.pop(&quot;tables&quot;,None)</span>
+<a id="__codelineno-1-149" name="__codelineno-1-149" href="#__codelineno-1-149"></a><span class="s">src=cfg[&quot;source&quot;]; src.pop(&quot;_snapshot_note&quot;,None)</span>
+<a id="__codelineno-1-150" name="__codelineno-1-150" href="#__codelineno-1-150"></a><span class="s">src[&quot;password&quot;]=os.environ[&quot;PW&quot;]</span>
+<a id="__codelineno-1-151" name="__codelineno-1-151" href="#__codelineno-1-151"></a><span class="s">src[&quot;table&quot;]=os.environ[&quot;SRC&quot;]</span>
+<a id="__codelineno-1-152" name="__codelineno-1-152" href="#__codelineno-1-152"></a><span class="s">sink=cfg[&quot;sink&quot;]; sink.pop(&quot;_write_note&quot;,None)</span>
+<a id="__codelineno-1-153" name="__codelineno-1-153" href="#__codelineno-1-153"></a><span class="s">sink[&quot;table&quot;]=os.environ[&quot;SINK&quot;]</span>
+<a id="__codelineno-1-154" name="__codelineno-1-154" href="#__codelineno-1-154"></a><span class="s">sink[&quot;write&quot;][&quot;keys&quot;]=os.environ[&quot;KEYS&quot;].split(&quot;,&quot;)</span>
+<a id="__codelineno-1-155" name="__codelineno-1-155" href="#__codelineno-1-155"></a><span class="s">def api(path, body=None, method=&quot;GET&quot;):</span>
+<a id="__codelineno-1-156" name="__codelineno-1-156" href="#__codelineno-1-156"></a><span class="s">  data=json.dumps(body).encode() if body is not None else None</span>
+<a id="__codelineno-1-157" name="__codelineno-1-157" href="#__codelineno-1-157"></a><span class="s">  r=urllib.request.Request(base+path, data=data, method=method)</span>
+<a id="__codelineno-1-158" name="__codelineno-1-158" href="#__codelineno-1-158"></a><span class="s">  r.add_header(&quot;Authorization&quot;,&quot;Bearer &quot;+tok); r.add_header(&quot;Content-Type&quot;,&quot;application/json&quot;)</span>
+<a id="__codelineno-1-159" name="__codelineno-1-159" href="#__codelineno-1-159"></a><span class="s">  return json.load(urllib.request.urlopen(r,timeout=90))</span>
+<a id="__codelineno-1-160" name="__codelineno-1-160" href="#__codelineno-1-160"></a><span class="s">try:</span>
+<a id="__codelineno-1-161" name="__codelineno-1-161" href="#__codelineno-1-161"></a><span class="s">  # 나중에 이 묶음만 골라 끌 수 있도록 이름표를 답니다.</span>
+<a id="__codelineno-1-162" name="__codelineno-1-162" href="#__codelineno-1-162"></a><span class="s">  cfg[&quot;description&quot;] = &quot;erp-cdc:&quot; + str(cfg.get(&quot;source&quot;, {}).get(&quot;table&quot;) or &quot;&quot;)</span>
+<a id="__codelineno-1-163" name="__codelineno-1-163" href="#__codelineno-1-163"></a><span class="s">  d=api(&quot;/v1/api/sql&quot;, {&quot;sql&quot;:&quot;SUBMIT STREAMING &quot;+json.dumps(cfg)}, &quot;POST&quot;)</span>
+<a id="__codelineno-1-164" name="__codelineno-1-164" href="#__codelineno-1-164"></a><span class="s">  if d.get(&quot;status&quot;)!=&quot;ok&quot;: print(&quot;ERR:&quot;+str(d)[:220]); raise SystemExit</span>
+<a id="__codelineno-1-165" name="__codelineno-1-165" href="#__codelineno-1-165"></a><span class="s">  want=&quot;streaming-&quot;+(d.get(&quot;queryId&quot;) or &quot;&quot;)[:8]</span>
+<a id="__codelineno-1-166" name="__codelineno-1-166" href="#__codelineno-1-166"></a><span class="s">  for _ in range(25):</span>
+<a id="__codelineno-1-167" name="__codelineno-1-167" href="#__codelineno-1-167"></a><span class="s">    for j in api(&quot;/v1/api/job/list&quot;):</span>
+<a id="__codelineno-1-168" name="__codelineno-1-168" href="#__codelineno-1-168"></a><span class="s">      if j.get(&quot;type&quot;)==&quot;STREAMING&quot; and j.get(&quot;jobName&quot;)==want: print(j[&quot;jobId&quot;]); raise SystemExit</span>
+<a id="__codelineno-1-169" name="__codelineno-1-169" href="#__codelineno-1-169"></a><span class="s">    time.sleep(1)</span>
+<a id="__codelineno-1-170" name="__codelineno-1-170" href="#__codelineno-1-170"></a><span class="s">  print(&quot;ERR:job never appeared&quot;)</span>
+<a id="__codelineno-1-171" name="__codelineno-1-171" href="#__codelineno-1-171"></a><span class="s">except SystemExit: pass</span>
+<a id="__codelineno-1-172" name="__codelineno-1-172" href="#__codelineno-1-172"></a><span class="s">except Exception as e: print(&quot;ERR:&quot;+str(e)[:220])</span>
+<a id="__codelineno-1-173" name="__codelineno-1-173" href="#__codelineno-1-173"></a><span class="s">PY</span>
+<a id="__codelineno-1-174" name="__codelineno-1-174" href="#__codelineno-1-174"></a><span class="k">)</span>
+<a id="__codelineno-1-175" name="__codelineno-1-175" href="#__codelineno-1-175"></a><span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$JOBID</span><span class="s2">&quot;</span><span class="w"> </span><span class="k">in</span><span class="w"> </span>ERR:*<span class="p">|</span><span class="s2">&quot;&quot;</span><span class="o">)</span><span class="w"> </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;\033[1;31m  실패\033[0m %s -&gt; %s (%s)\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$src</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$sink</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$JOBID</span><span class="s2">&quot;</span><span class="p">;;</span>
+<a id="__codelineno-1-176" name="__codelineno-1-176" href="#__codelineno-1-176"></a><span class="w">                   </span>*<span class="o">)</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$src</span><span class="s2"> → </span><span class="nv">$sink</span><span class="s2">  [</span><span class="nv">$JOBID</span><span class="s2">]&quot;</span><span class="p">;;</span><span class="w"> </span><span class="k">esac</span>
+<a id="__codelineno-1-177" name="__codelineno-1-177" href="#__codelineno-1-177"></a><span class="k">done</span>
+<a id="__codelineno-1-178" name="__codelineno-1-178" href="#__codelineno-1-178"></a>
+<a id="__codelineno-1-179" name="__codelineno-1-179" href="#__codelineno-1-179"></a>log<span class="w"> </span><span class="s2">&quot;3/3  초기 스냅샷 대기&quot;</span>
+<a id="__codelineno-1-180" name="__codelineno-1-180" href="#__codelineno-1-180"></a><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">40</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-1-181" name="__codelineno-1-181" href="#__codelineno-1-181"></a><span class="w">  </span><span class="nv">n</span><span class="o">=</span><span class="k">$(</span>count<span class="w"> </span>ice.erp.hr_employee<span class="k">)</span>
+<a id="__codelineno-1-182" name="__codelineno-1-182" href="#__codelineno-1-182"></a><span class="w">  </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$n</span><span class="s2">&quot;</span><span class="w"> </span>!<span class="o">=</span><span class="w"> </span><span class="s2">&quot;ERR&quot;</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">n</span><span class="k">:-</span><span class="nv">0</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>-ge<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">break</span>
+<a id="__codelineno-1-183" name="__codelineno-1-183" href="#__codelineno-1-183"></a><span class="w">  </span>sleep<span class="w"> </span><span class="m">6</span>
+<a id="__codelineno-1-184" name="__codelineno-1-184" href="#__codelineno-1-184"></a><span class="k">done</span>
+<a id="__codelineno-1-185" name="__codelineno-1-185" href="#__codelineno-1-185"></a>bash<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$0</span><span class="s2">&quot;</span><span class="w"> </span>verify
+<a id="__codelineno-1-186" name="__codelineno-1-186" href="#__codelineno-1-186"></a><span class="nb">echo</span>
+<a id="__codelineno-1-187" name="__codelineno-1-187" href="#__codelineno-1-187"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  변경이 반영되는지 보려면:  bash infra/cdc.sh change&quot;</span>
+<a id="__codelineno-1-188" name="__codelineno-1-188" href="#__codelineno-1-188"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  멈추려면:                  bash infra/cdc.sh stop&quot;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>bash<span class="w"> </span>infra/cdc.sh
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>== 2/3  테이블당 Flow 제출
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>== 2/3  Flow per table
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  ok public.hr_employee → ice.erp.hr_employee  [f5fb5c96…]
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  ok public.hr_org → ice.erp.hr_org            [61a06d47…]
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  ok public.hr_leave_balance → …               [db339d92…]
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  ok public.fi_expense → …                     [9a3e92f2…]
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  ok public.pu_purchase_order → …              [ec7017ce…]
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>== 원천 대 대상 — 행 수
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>== source vs target — row counts
 <a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>  ok hr_employee: 300 = 300
 <a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>  ok hr_org: 12 = 12
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>  ok hr_leave_balance: 572 = 572
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>  ok fi_expense: 240 = 240
 <a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>  ok pu_purchase_order: 90 = 90
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>== 값 비교
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>  ok hr_leave_balance(20090001,ANN) 수치 일치 — 원천 23.0|23.0, Iceberg 23.0|23.0
-<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>  ok hr_employee(20090001) 성명 일치 — 조태윤
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>== compared by value
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>  ok hr_leave_balance(20090001,ANN) — source 23.0|23.0, Iceberg 23.0|23.0
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>  ok hr_employee(20090001) name matches
 </code></pre></div>
-<p>변경이 따라오는지 보려면:</p>
+<p>To watch a change propagate:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>bash<span class="w"> </span>infra/cdc.sh<span class="w"> </span>change
 </code></pre></div>
 <hr />
-<h2 id="2">2. 그래프 → 서빙</h2>
-<p>온톨로지의 <code>derives_from</code> 링크는 GRAPH 바인딩이라 NeorunBase 인스턴스 그래프를
-순회합니다. 그 그래프를 채우는 것이 이 Flow 입니다.</p>
-<p><strong>배치 잡은 NeorunBase 에 직접 쓰지 않습니다.</strong> 예전에는 그랬고, 그게 나쁜 이유는
-서빙 계층이 기록의 원본이 되어 버리기 때문입니다 — 다시 세우면 관계가 사라지고,
-언제 어떻게 바뀌었는지는 아무 데도 남지 않고, 그래프를 고치는 방법이 "잡을 다시
-돌린다" 하나뿐입니다.</p>
+<h2 id="2-the-graph-serving">2. The graph → serving</h2>
+<p>The ontology's <code>derives_from</code> link is a GRAPH binding, so it traverses
+NeorunBase's instance graph. These Flows are what fill that graph.</p>
+<p><strong>The batch job does not write to NeorunBase.</strong> It used to, and that was wrong
+because it made the serving layer the system of record: rebuild it and the
+relations were gone, no history of what changed when existed, and the only way to
+fix the graph was "run the job again".</p>
 <p><strong><code>demo/schema/flows/graph_serving.json</code></strong></p>
 <p><div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">&quot;_comment&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -3036,20 +3052,20 @@
 <a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a><span class="p">}</span>
 </code></pre></div>
 <div class="admonition danger">
-<p class="admonition-title"><code>snapshot</code> 값을 잘못 쓰면 조용히 아무것도 안 옵니다</p>
-<p>이 필드가 받는 값은 <code>latest</code> 와 <code>all</code> 뿐입니다. <code>earliest</code> 처럼 그럴듯한
-값을 적으면 <strong>알아보지 못한 채 <code>latest</code> 로 동작</strong>해서, Flow 는 건강하게 돌고
-체크포인트도 남기면서 기존 행을 하나도 흘려보내지 않습니다. 유휴 소스와
-구분되지 않습니다.</p>
-<p>(Ontul 1.0.0 부터는 모르는 값을 거절합니다.)</p>
+<p class="admonition-title">A wrong <code>snapshot</code> value delivers nothing, quietly</p>
+<p>The field accepts <code>latest</code> and <code>all</code>. A plausible-looking value such as
+<code>earliest</code> was <strong>silently treated as <code>latest</code></strong>, so the Flow ran healthily,
+checkpointed, and delivered none of the existing rows. Indistinguishable from
+an idle source.</p>
+<p>(Ontul 1.0.0 rejects unrecognised values.)</p>
 </div>
 <div class="admonition note">
-<p class="admonition-title">싱크가 <code>neorunbase</code> 가 아니라 <code>jdbc</code> 인 이유</p>
-<p><code>neorunbase</code> 싱크는 REST 대량 삽입이라 <strong>덧붙이기만</strong> 합니다. 전량 재작성
-소스와 붙이면 같은 엣지가 계속 쌓입니다. <code>jdbc</code> 싱크의 <code>mode: cdc</code> 는
-<code>__op</code> 를 보고 c/u/r 은 키 기준 upsert, d 는 삭제로 적용해서 서빙이 원본의
-복제본으로 유지됩니다. NeorunBase 는 Postgres 와이어 프로토콜을 서빙하므로
-그대로 붙습니다.</p>
+<p class="admonition-title">Why the sink is <code>jdbc</code> and not <code>neorunbase</code></p>
+<p>The <code>neorunbase</code> sink is a REST bulk insert — it only <strong>appends</strong>. Point it at
+a source that rewrites its table in full and the same edges pile up. The
+<code>jdbc</code> sink in <code>mode: cdc</code> reads <code>__op</code> and applies c/u/r as an upsert on the
+key and d as a delete, so serving stays a replica of the source. NeorunBase
+serves the PostgreSQL wire protocol, so it attaches directly.</p>
 </div>
 <p><strong><code>demo/infra/graph_flow.sh</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="ch">#!/usr/bin/env bash</span>
@@ -3168,23 +3184,23 @@
 <a id="__codelineno-7-114" name="__codelineno-7-114" href="#__codelineno-7-114"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  Flow 는 계속 돕니다. 배치 잡이 관계를 다시 만들면 서빙이 따라옵니다.&quot;</span>
 <a id="__codelineno-7-115" name="__codelineno-7-115" href="#__codelineno-7-115"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  멈추려면:  bash infra/graph_flow.sh stop&quot;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>bash<span class="w"> </span>infra/graph_flow.sh<span class="w">      </span><span class="c1"># 파이프라인보다 먼저</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>bash<span class="w"> </span>infra/graph_flow.sh<span class="w">      </span><span class="c1"># before the pipeline</span>
 </code></pre></div>
 <div class="admonition warning">
-<p class="admonition-title">순서가 있습니다</p>
-<p><code>changelog</code> 모드는 <strong>시작한 시점부터</strong> 변경을 봅니다. 파이프라인을 먼저
-돌리고 Flow 를 나중에 띄우면 이미 만들어진 관계는 서빙에 도달하지 않습니다.
-Flow 를 먼저 띄우고, 파이프라인이 채우게 하십시오.</p>
+<p class="admonition-title">There is an order here</p>
+<p><code>changelog</code> mode sees changes <strong>from the moment it starts</strong>. Run the pipeline
+first and start the Flow afterwards, and the relations already built never
+reach serving. Start the Flows, then let the pipeline fill them.</p>
 </div>
-<p>확인:</p>
+<p>Check it:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-p<span class="w"> </span><span class="m">5434</span><span class="w"> </span>-U<span class="w"> </span>admin<span class="w"> </span>-d<span class="w"> </span>neorunbase<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT count(*) FROM doc_nodes&quot;</span><span class="w">  </span><span class="c1"># 50</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-p<span class="w"> </span><span class="m">5434</span><span class="w"> </span>-U<span class="w"> </span>admin<span class="w"> </span>-d<span class="w"> </span>neorunbase<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT count(*) FROM doc_edges&quot;</span><span class="w">  </span><span class="c1"># 116</span>
 </code></pre></div>
-<p><img alt="Flow 화면" src="../../images/demo/ontul-flow.png" /></p>
+<p><img alt="The Flow page" src="../../images/demo/ontul-flow.png" /></p>
 <hr />
-<h2 id="3">3. 결재 이벤트 스트림</h2>
-<p>규정이 시행되는 진짜 계기는 결재 행이 바뀌는 것입니다. 이 Flow 는 그것을
-<code>ice.reg.approval_status</code> 에 상시 upsert 합니다.</p>
+<h2 id="3-the-approval-event-stream">3. The approval event stream</h2>
+<p>What actually makes a regulation take effect is an approval row changing. This
+Flow keeps <code>ice.reg.approval_status</code> upserted from those events.</p>
 <p><strong><code>demo/schema/flows/approval_status.json</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">&quot;_comment&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -3227,11 +3243,11 @@ Flow 를 먼저 띄우고, 파이프라인이 채우게 하십시오.</p>
 <a id="__codelineno-10-39" name="__codelineno-10-39" href="#__codelineno-10-39"></a><span class="p">}</span>
 </code></pre></div>
 <div class="admonition note">
-<p class="admonition-title">exactly-once 와 upsert 를 같이 쓸 때</p>
-<p>마스터가 단일 커미터가 되어 모든 워커의 파일을 한 커밋으로 씁니다. upsert 와
-함께 쓰면 데이터 파일과 equality delete 파일이 <strong>같은 RowDelta 로</strong> 나가므로,
-새 상태가 보이는 순간 이전 상태가 사라집니다 — 둘 다 보이는 중간 상태가
-없습니다.</p>
+<p class="admonition-title">exactly-once together with upsert</p>
+<p>The master becomes the single committer and writes every worker's files in one
+commit. Combined with upsert, the data files and the equality-delete files go
+out in the <strong>same RowDelta</strong>, so the previous state disappears at the instant
+the new one becomes visible — there is no window where both are readable.</p>
 </div>
 <p><strong><code>demo/infra/flow.sh</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="ch">#!/usr/bin/env bash</span>
@@ -3275,121 +3291,136 @@ Flow 를 먼저 띄우고, 파이프라인이 채우게 하십시오.</p>
 <a id="__codelineno-11-39" name="__codelineno-11-39" href="#__codelineno-11-39"></a>sql_ok<span class="o">(){</span><span class="w"> </span><span class="nb">local</span><span class="w"> </span>out<span class="p">;</span><span class="w"> </span><span class="nv">out</span><span class="o">=</span><span class="k">$(</span>sql<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span><span class="k">)</span>
 <a id="__codelineno-11-40" name="__codelineno-11-40" href="#__codelineno-11-40"></a><span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$out</span><span class="s2">&quot;</span><span class="w"> </span><span class="k">in</span><span class="w"> </span>*<span class="s1">&#39;&quot;status&quot;:&quot;error&quot;&#39;</span>*<span class="o">)</span><span class="w"> </span>fail<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$2</span><span class="s2">: </span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$out</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-c<span class="w"> </span><span class="m">200</span><span class="k">)</span><span class="s2">&quot;</span><span class="p">;;</span><span class="w"> </span><span class="k">esac</span><span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$2</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="o">}</span>
 <a id="__codelineno-11-41" name="__codelineno-11-41" href="#__codelineno-11-41"></a>
-<a id="__codelineno-11-42" name="__codelineno-11-42" href="#__codelineno-11-42"></a>jobs_streaming<span class="o">(){</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/list&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-43" name="__codelineno-11-43" href="#__codelineno-11-43"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json;[print(j[&#39;jobId&#39;]) for j in json.load(sys.stdin) if j.get(&#39;type&#39;)==&#39;STREAMING&#39;]&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="p">;</span><span class="w"> </span><span class="o">}</span>
-<a id="__codelineno-11-44" name="__codelineno-11-44" href="#__codelineno-11-44"></a>
-<a id="__codelineno-11-45" name="__codelineno-11-45" href="#__codelineno-11-45"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;stop&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<a id="__codelineno-11-46" name="__codelineno-11-46" href="#__codelineno-11-46"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;Flow 중지&quot;</span>
-<a id="__codelineno-11-47" name="__codelineno-11-47" href="#__codelineno-11-47"></a><span class="w">  </span><span class="k">for</span><span class="w"> </span>jid<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>jobs_streaming<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-XPOST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/kill/</span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;kill </span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
-<a id="__codelineno-11-48" name="__codelineno-11-48" href="#__codelineno-11-48"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
-<a id="__codelineno-11-49" name="__codelineno-11-49" href="#__codelineno-11-49"></a><span class="k">fi</span>
-<a id="__codelineno-11-50" name="__codelineno-11-50" href="#__codelineno-11-50"></a>
-<a id="__codelineno-11-51" name="__codelineno-11-51" href="#__codelineno-11-51"></a><span class="c1"># ── 이벤트 생성 ───────────────────────────────────────────────────────────────</span>
-<a id="__codelineno-11-52" name="__codelineno-11-52" href="#__codelineno-11-52"></a><span class="c1"># 실제 결재 건을 흉내냅니다. 대상 규정은 원장에 실재하는 문서라야 에이전트가</span>
-<a id="__codelineno-11-53" name="__codelineno-11-53" href="#__codelineno-11-53"></a><span class="c1"># 현행 버전과 나란히 놓고 답할 수 있습니다.</span>
-<a id="__codelineno-11-54" name="__codelineno-11-54" href="#__codelineno-11-54"></a>emit<span class="o">(){</span><span class="w"> </span><span class="c1"># emit &lt;seq&gt; &lt;&lt;&#39;JSON&#39; ... JSON</span>
-<a id="__codelineno-11-55" name="__codelineno-11-55" href="#__codelineno-11-55"></a><span class="w">  </span><span class="nb">local</span><span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="nv">$1</span><span class="w"> </span>tmp<span class="p">;</span><span class="w"> </span><span class="nv">tmp</span><span class="o">=</span><span class="k">$(</span>mktemp<span class="k">)</span><span class="p">;</span><span class="w"> </span>cat<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$tmp</span><span class="s2">&quot;</span>
-<a id="__codelineno-11-56" name="__codelineno-11-56" href="#__codelineno-11-56"></a><span class="w">  </span><span class="nv">$S3</span><span class="w"> </span>cp<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$tmp</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;s3://</span><span class="nv">$BUCKET</span><span class="s2">/</span><span class="nv">$PREFIX</span><span class="s2">/evt-</span><span class="k">$(</span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;%05d&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$seq</span><span class="s2">&quot;</span><span class="k">)</span><span class="s2">.json&quot;</span><span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-57" name="__codelineno-11-57" href="#__codelineno-11-57"></a><span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;이벤트 배치 </span><span class="nv">$seq</span><span class="s2"> 업로드&quot;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span>fail<span class="w"> </span><span class="s2">&quot;업로드 실패&quot;</span>
-<a id="__codelineno-11-58" name="__codelineno-11-58" href="#__codelineno-11-58"></a><span class="w">  </span>rm<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$tmp</span><span class="s2">&quot;</span>
-<a id="__codelineno-11-59" name="__codelineno-11-59" href="#__codelineno-11-59"></a><span class="o">}</span>
-<a id="__codelineno-11-60" name="__codelineno-11-60" href="#__codelineno-11-60"></a>
-<a id="__codelineno-11-61" name="__codelineno-11-61" href="#__codelineno-11-61"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;advance&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<a id="__codelineno-11-62" name="__codelineno-11-62" href="#__codelineno-11-62"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;후속 단계 이벤트 — 같은 결재건이 다음 단계로&quot;</span>
-<a id="__codelineno-11-63" name="__codelineno-11-63" href="#__codelineno-11-63"></a><span class="w">  </span><span class="c1"># 같은 approval_id 입니다. append 라면 행이 늘어나고, upsert 라면 교체됩니다.</span>
-<a id="__codelineno-11-64" name="__codelineno-11-64" href="#__codelineno-11-64"></a><span class="w">  </span>emit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="s">&lt;&lt;&#39;JSON&#39;</span>
-<a id="__codelineno-11-65" name="__codelineno-11-65" href="#__codelineno-11-65"></a><span class="s">{&quot;approval_id&quot;:&quot;APV-2026-0142&quot;,&quot;doc_no&quot;:&quot;HR-REG-003&quot;,&quot;version&quot;:4,&quot;step&quot;:&quot;APPROVED&quot;,&quot;step_seq&quot;:3,&quot;drafter&quot;:&quot;20170003&quot;,&quot;owner_dept&quot;:&quot;HR&quot;,&quot;summary&quot;:&quot;육아지원규정 제4차 개정 — 돌봄휴가 20일→25일 확대&quot;,&quot;expected_from&quot;:&quot;2026-09-01&quot;,&quot;updated_at&quot;:&quot;2026-08-21 14:20:00&quot;}</span>
-<a id="__codelineno-11-66" name="__codelineno-11-66" href="#__codelineno-11-66"></a><span class="s">{&quot;approval_id&quot;:&quot;APV-2026-0151&quot;,&quot;doc_no&quot;:&quot;SEC-GDL-001&quot;,&quot;version&quot;:3,&quot;step&quot;:&quot;REJECTED&quot;,&quot;step_seq&quot;:3,&quot;drafter&quot;:&quot;20190004&quot;,&quot;owner_dept&quot;:&quot;SEC&quot;,&quot;summary&quot;:&quot;보안점검 주기 단축 개정안&quot;,&quot;expected_from&quot;:&quot;2026-10-01&quot;,&quot;updated_at&quot;:&quot;2026-08-21 14:25:00&quot;}</span>
-<a id="__codelineno-11-67" name="__codelineno-11-67" href="#__codelineno-11-67"></a><span class="s">JSON</span>
-<a id="__codelineno-11-68" name="__codelineno-11-68" href="#__codelineno-11-68"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;확인&quot;</span>
-<a id="__codelineno-11-69" name="__codelineno-11-69" href="#__codelineno-11-69"></a><span class="w">  </span>sleep<span class="w"> </span><span class="m">8</span>
-<a id="__codelineno-11-70" name="__codelineno-11-70" href="#__codelineno-11-70"></a><span class="w">  </span>sql<span class="w"> </span><span class="s2">&quot;SELECT approval_id, doc_no, step, step_seq FROM ice.reg.approval_status ORDER BY 1&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-71" name="__codelineno-11-71" href="#__codelineno-11-71"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-<a id="__codelineno-11-72" name="__codelineno-11-72" href="#__codelineno-11-72"></a><span class="s2">import sys,json; d=json.load(sys.stdin); rows=d.get(&#39;rows&#39;) or []</span>
-<a id="__codelineno-11-73" name="__codelineno-11-73" href="#__codelineno-11-73"></a><span class="s2">print(&#39;  현재 결재 상태:&#39;)</span>
-<a id="__codelineno-11-74" name="__codelineno-11-74" href="#__codelineno-11-74"></a><span class="s2">for r in rows: print(&#39;   &#39;, r)</span>
-<a id="__codelineno-11-75" name="__codelineno-11-75" href="#__codelineno-11-75"></a><span class="s2">print(&#39;  행 수:&#39;, len(rows), &#39;(3건이면 upsert, 5건이면 append 로 격하된 것입니다)&#39;)&quot;</span>
-<a id="__codelineno-11-76" name="__codelineno-11-76" href="#__codelineno-11-76"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
-<a id="__codelineno-11-77" name="__codelineno-11-77" href="#__codelineno-11-77"></a><span class="k">fi</span>
-<a id="__codelineno-11-78" name="__codelineno-11-78" href="#__codelineno-11-78"></a>
-<a id="__codelineno-11-79" name="__codelineno-11-79" href="#__codelineno-11-79"></a>log<span class="w"> </span><span class="s2">&quot;1/4  대상 테이블&quot;</span>
-<a id="__codelineno-11-80" name="__codelineno-11-80" href="#__codelineno-11-80"></a><span class="c1"># 줄 앞이 아니라 줄 어디에 있든 -- 뒤를 잘라냅니다. 컬럼 뒤 주석이 그대로</span>
-<a id="__codelineno-11-81" name="__codelineno-11-81" href="#__codelineno-11-81"></a><span class="c1"># 남으면 파서는 다음 컬럼까지 주석으로 삼켜 &quot;Failed to parse CREATE TABLE&quot; 만</span>
-<a id="__codelineno-11-82" name="__codelineno-11-82" href="#__codelineno-11-82"></a><span class="c1"># 돌려줍니다 — 어느 줄이 문제인지는 알려주지 않습니다.</span>
-<a id="__codelineno-11-83" name="__codelineno-11-83" href="#__codelineno-11-83"></a><span class="c1"># 끝의 세미콜론도 뗍니다. ontul 의 CREATE TABLE 파서는 SELECT 와 달리 그것을</span>
-<a id="__codelineno-11-84" name="__codelineno-11-84" href="#__codelineno-11-84"></a><span class="c1"># 받지 못하고 &quot;Failed to parse CREATE TABLE statement&quot; 만 돌려줍니다.</span>
-<a id="__codelineno-11-85" name="__codelineno-11-85" href="#__codelineno-11-85"></a><span class="nv">DDL</span><span class="o">=</span><span class="k">$(</span>sed<span class="w"> </span><span class="s1">&#39;s/--.*$//&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DEMO</span><span class="s2">/schema/iceberg/40_approval_stream.sql&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/  */ /g; s/^ *//; s/ *$//; s/;$//&#39;</span><span class="k">)</span>
-<a id="__codelineno-11-86" name="__codelineno-11-86" href="#__codelineno-11-86"></a>sql_ok<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DDL</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;ice.reg.approval_status 준비&quot;</span>
-<a id="__codelineno-11-87" name="__codelineno-11-87" href="#__codelineno-11-87"></a>
-<a id="__codelineno-11-88" name="__codelineno-11-88" href="#__codelineno-11-88"></a>log<span class="w"> </span><span class="s2">&quot;2/4  기존 Flow 정리 + 이벤트 프리픽스 비우기&quot;</span>
-<a id="__codelineno-11-89" name="__codelineno-11-89" href="#__codelineno-11-89"></a><span class="k">for</span><span class="w"> </span>jid<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>jobs_streaming<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-XPOST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/kill/</span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;이전 잡 kill </span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
-<a id="__codelineno-11-90" name="__codelineno-11-90" href="#__codelineno-11-90"></a><span class="nv">$S3</span><span class="w"> </span>rm<span class="w"> </span><span class="s2">&quot;s3://</span><span class="nv">$BUCKET</span><span class="s2">/</span><span class="nv">$PREFIX</span><span class="s2">/&quot;</span><span class="w"> </span>--recursive<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">true</span>
-<a id="__codelineno-11-91" name="__codelineno-11-91" href="#__codelineno-11-91"></a>sql<span class="w"> </span><span class="s2">&quot;DELETE FROM ice.reg.approval_status&quot;</span><span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
-<a id="__codelineno-11-92" name="__codelineno-11-92" href="#__codelineno-11-92"></a>step<span class="w"> </span><span class="s2">&quot;s3://</span><span class="nv">$BUCKET</span><span class="s2">/</span><span class="nv">$PREFIX</span><span class="s2">/ 비움&quot;</span>
-<a id="__codelineno-11-93" name="__codelineno-11-93" href="#__codelineno-11-93"></a>
-<a id="__codelineno-11-94" name="__codelineno-11-94" href="#__codelineno-11-94"></a>log<span class="w"> </span><span class="s2">&quot;3/4  Flow 제출&quot;</span>
-<a id="__codelineno-11-95" name="__codelineno-11-95" href="#__codelineno-11-95"></a><span class="nv">JOBID</span><span class="o">=</span><span class="k">$(</span><span class="nv">TOK</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$TOK</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">ONTUL</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">SPEC</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$DEMO</span><span class="s2">/schema/flows/approval_status.json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-96" name="__codelineno-11-96" href="#__codelineno-11-96"></a><span class="w">        </span><span class="nv">EP</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$S3_ENDPOINT_INTERNAL</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">AK</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$S3_ACCESS_KEY</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">SK</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$S3_SECRET_KEY</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">RG</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">S3_REGION</span><span class="k">:-</span><span class="nv">us</span><span class="p">-east-1</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-97" name="__codelineno-11-97" href="#__codelineno-11-97"></a><span class="w">        </span>python3<span class="w"> </span><span class="s">&lt;&lt;&#39;PY&#39;</span>
-<a id="__codelineno-11-98" name="__codelineno-11-98" href="#__codelineno-11-98"></a><span class="s">import os,json,urllib.request,time,re</span>
-<a id="__codelineno-11-99" name="__codelineno-11-99" href="#__codelineno-11-99"></a><span class="s">tok=os.environ[&quot;TOK&quot;]; base=os.environ[&quot;ONTUL&quot;]</span>
-<a id="__codelineno-11-100" name="__codelineno-11-100" href="#__codelineno-11-100"></a><span class="s">raw=open(os.environ[&quot;SPEC&quot;],encoding=&quot;utf-8&quot;).read()</span>
-<a id="__codelineno-11-101" name="__codelineno-11-101" href="#__codelineno-11-101"></a><span class="s"># 스펙은 그대로 두고 자격증명만 주입합니다 — 파일에 키를 적어 커밋하지 않기 위해서입니다.</span>
-<a id="__codelineno-11-102" name="__codelineno-11-102" href="#__codelineno-11-102"></a><span class="s">for k,v in ((&quot;S3_ENDPOINT_INTERNAL&quot;,os.environ[&quot;EP&quot;]),(&quot;S3_ACCESS_KEY&quot;,os.environ[&quot;AK&quot;]),</span>
-<a id="__codelineno-11-103" name="__codelineno-11-103" href="#__codelineno-11-103"></a><span class="s">            (&quot;S3_SECRET_KEY&quot;,os.environ[&quot;SK&quot;]),(&quot;S3_REGION&quot;,os.environ[&quot;RG&quot;])):</span>
-<a id="__codelineno-11-104" name="__codelineno-11-104" href="#__codelineno-11-104"></a><span class="s">    raw=raw.replace(&quot;${%s}&quot;%k, v)</span>
-<a id="__codelineno-11-105" name="__codelineno-11-105" href="#__codelineno-11-105"></a><span class="s">cfg=json.loads(raw); cfg.pop(&quot;_comment&quot;,None)</span>
-<a id="__codelineno-11-106" name="__codelineno-11-106" href="#__codelineno-11-106"></a><span class="s">def api(path, body=None, method=&quot;GET&quot;):</span>
-<a id="__codelineno-11-107" name="__codelineno-11-107" href="#__codelineno-11-107"></a><span class="s">  data=json.dumps(body).encode() if body is not None else None</span>
-<a id="__codelineno-11-108" name="__codelineno-11-108" href="#__codelineno-11-108"></a><span class="s">  r=urllib.request.Request(base+path, data=data, method=method)</span>
-<a id="__codelineno-11-109" name="__codelineno-11-109" href="#__codelineno-11-109"></a><span class="s">  r.add_header(&quot;Authorization&quot;,&quot;Bearer &quot;+tok); r.add_header(&quot;Content-Type&quot;,&quot;application/json&quot;)</span>
-<a id="__codelineno-11-110" name="__codelineno-11-110" href="#__codelineno-11-110"></a><span class="s">  return json.load(urllib.request.urlopen(r,timeout=60))</span>
-<a id="__codelineno-11-111" name="__codelineno-11-111" href="#__codelineno-11-111"></a><span class="s">try:</span>
-<a id="__codelineno-11-112" name="__codelineno-11-112" href="#__codelineno-11-112"></a><span class="s">  d=api(&quot;/v1/api/sql&quot;, {&quot;sql&quot;:&quot;SUBMIT STREAMING &quot;+json.dumps(cfg)}, &quot;POST&quot;)</span>
-<a id="__codelineno-11-113" name="__codelineno-11-113" href="#__codelineno-11-113"></a><span class="s">  if d.get(&quot;status&quot;)!=&quot;ok&quot;: print(&quot;ERR:&quot;+str(d)[:300]); raise SystemExit</span>
-<a id="__codelineno-11-114" name="__codelineno-11-114" href="#__codelineno-11-114"></a><span class="s">  want=&quot;streaming-&quot;+(d.get(&quot;queryId&quot;) or &quot;&quot;)[:8]</span>
-<a id="__codelineno-11-115" name="__codelineno-11-115" href="#__codelineno-11-115"></a><span class="s">  for _ in range(20):</span>
-<a id="__codelineno-11-116" name="__codelineno-11-116" href="#__codelineno-11-116"></a><span class="s">    for j in api(&quot;/v1/api/job/list&quot;):</span>
-<a id="__codelineno-11-117" name="__codelineno-11-117" href="#__codelineno-11-117"></a><span class="s">      if j.get(&quot;type&quot;)==&quot;STREAMING&quot; and j.get(&quot;jobName&quot;)==want: print(j[&quot;jobId&quot;]); raise SystemExit</span>
-<a id="__codelineno-11-118" name="__codelineno-11-118" href="#__codelineno-11-118"></a><span class="s">    time.sleep(1)</span>
-<a id="__codelineno-11-119" name="__codelineno-11-119" href="#__codelineno-11-119"></a><span class="s">  print(&quot;ERR:job never appeared&quot;)</span>
-<a id="__codelineno-11-120" name="__codelineno-11-120" href="#__codelineno-11-120"></a><span class="s">except SystemExit: pass</span>
-<a id="__codelineno-11-121" name="__codelineno-11-121" href="#__codelineno-11-121"></a><span class="s">except Exception as e: print(&quot;ERR:&quot;+str(e)[:300])</span>
-<a id="__codelineno-11-122" name="__codelineno-11-122" href="#__codelineno-11-122"></a><span class="s">PY</span>
-<a id="__codelineno-11-123" name="__codelineno-11-123" href="#__codelineno-11-123"></a><span class="k">)</span>
-<a id="__codelineno-11-124" name="__codelineno-11-124" href="#__codelineno-11-124"></a><span class="k">case</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$JOBID</span><span class="s2">&quot;</span><span class="w"> </span><span class="k">in</span><span class="w"> </span>ERR:*<span class="p">|</span><span class="s2">&quot;&quot;</span><span class="o">)</span><span class="w"> </span>fail<span class="w"> </span><span class="s2">&quot;Flow 제출 실패 (</span><span class="nv">$JOBID</span><span class="s2">)&quot;</span><span class="p">;;</span><span class="w"> </span>*<span class="o">)</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;Flow 기동 </span><span class="nv">$JOBID</span><span class="s2">&quot;</span><span class="p">;;</span><span class="w"> </span><span class="k">esac</span>
-<a id="__codelineno-11-125" name="__codelineno-11-125" href="#__codelineno-11-125"></a>
-<a id="__codelineno-11-126" name="__codelineno-11-126" href="#__codelineno-11-126"></a>log<span class="w"> </span><span class="s2">&quot;4/4  1차 이벤트 — 결재 3건이 각각 다른 단계에 있습니다&quot;</span>
-<a id="__codelineno-11-127" name="__codelineno-11-127" href="#__codelineno-11-127"></a>emit<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="s">&lt;&lt;&#39;JSON&#39;</span>
-<a id="__codelineno-11-128" name="__codelineno-11-128" href="#__codelineno-11-128"></a><span class="s">{&quot;approval_id&quot;:&quot;APV-2026-0142&quot;,&quot;doc_no&quot;:&quot;HR-REG-003&quot;,&quot;version&quot;:4,&quot;step&quot;:&quot;REVIEW&quot;,&quot;step_seq&quot;:2,&quot;drafter&quot;:&quot;20170003&quot;,&quot;owner_dept&quot;:&quot;HR&quot;,&quot;summary&quot;:&quot;육아지원규정 제4차 개정 — 돌봄휴가 20일→25일 확대&quot;,&quot;expected_from&quot;:&quot;2026-09-01&quot;,&quot;updated_at&quot;:&quot;2026-08-21 11:05:00&quot;}</span>
-<a id="__codelineno-11-129" name="__codelineno-11-129" href="#__codelineno-11-129"></a><span class="s">{&quot;approval_id&quot;:&quot;APV-2026-0151&quot;,&quot;doc_no&quot;:&quot;SEC-GDL-001&quot;,&quot;version&quot;:3,&quot;step&quot;:&quot;REVIEW&quot;,&quot;step_seq&quot;:2,&quot;drafter&quot;:&quot;20190004&quot;,&quot;owner_dept&quot;:&quot;SEC&quot;,&quot;summary&quot;:&quot;보안점검 주기 단축 개정안&quot;,&quot;expected_from&quot;:&quot;2026-10-01&quot;,&quot;updated_at&quot;:&quot;2026-08-21 11:12:00&quot;}</span>
-<a id="__codelineno-11-130" name="__codelineno-11-130" href="#__codelineno-11-130"></a><span class="s">{&quot;approval_id&quot;:&quot;APV-2026-0163&quot;,&quot;doc_no&quot;:&quot;FIN-GDL-001&quot;,&quot;version&quot;:2,&quot;step&quot;:&quot;DRAFT&quot;,&quot;step_seq&quot;:1,&quot;drafter&quot;:&quot;20210001&quot;,&quot;owner_dept&quot;:&quot;FIN&quot;,&quot;summary&quot;:&quot;국내출장비 일비 인상&quot;,&quot;expected_from&quot;:&quot;2026-11-01&quot;,&quot;updated_at&quot;:&quot;2026-08-21 11:30:00&quot;}</span>
-<a id="__codelineno-11-131" name="__codelineno-11-131" href="#__codelineno-11-131"></a><span class="s">JSON</span>
-<a id="__codelineno-11-132" name="__codelineno-11-132" href="#__codelineno-11-132"></a>
-<a id="__codelineno-11-133" name="__codelineno-11-133" href="#__codelineno-11-133"></a><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">30</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-11-134" name="__codelineno-11-134" href="#__codelineno-11-134"></a><span class="w">  </span><span class="nv">n</span><span class="o">=</span><span class="k">$(</span>sql<span class="w"> </span><span class="s2">&quot;SELECT count(*) FROM ice.reg.approval_status&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-135" name="__codelineno-11-135" href="#__codelineno-11-135"></a><span class="w">      </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json;r=(json.load(sys.stdin).get(&#39;rows&#39;) or [[0]]);print(r[0][0] if r else 0)&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="k">)</span>
-<a id="__codelineno-11-136" name="__codelineno-11-136" href="#__codelineno-11-136"></a><span class="w">  </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">n</span><span class="k">:-</span><span class="nv">0</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;3&quot;</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">break</span><span class="p">;</span><span class="w"> </span>sleep<span class="w"> </span><span class="m">3</span>
-<a id="__codelineno-11-137" name="__codelineno-11-137" href="#__codelineno-11-137"></a><span class="k">done</span>
-<a id="__codelineno-11-138" name="__codelineno-11-138" href="#__codelineno-11-138"></a>sql<span class="w"> </span><span class="s2">&quot;SELECT approval_id, doc_no, version, step FROM ice.reg.approval_status ORDER BY 1&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-139" name="__codelineno-11-139" href="#__codelineno-11-139"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-<a id="__codelineno-11-140" name="__codelineno-11-140" href="#__codelineno-11-140"></a><span class="s2">import sys,json; d=json.load(sys.stdin); rows=d.get(&#39;rows&#39;) or []</span>
-<a id="__codelineno-11-141" name="__codelineno-11-141" href="#__codelineno-11-141"></a><span class="s2">print(&#39;  진행 중인 개정:&#39;)</span>
-<a id="__codelineno-11-142" name="__codelineno-11-142" href="#__codelineno-11-142"></a><span class="s2">for r in rows: print(&#39;   &#39;, r)&quot;</span>
-<a id="__codelineno-11-143" name="__codelineno-11-143" href="#__codelineno-11-143"></a>
-<a id="__codelineno-11-144" name="__codelineno-11-144" href="#__codelineno-11-144"></a>log<span class="w"> </span><span class="s2">&quot;완료 — Flow 는 계속 돕니다&quot;</span>
-<a id="__codelineno-11-145" name="__codelineno-11-145" href="#__codelineno-11-145"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  다음 단계를 흘려보내려면:  bash infra/flow.sh advance&quot;</span>
-<a id="__codelineno-11-146" name="__codelineno-11-146" href="#__codelineno-11-146"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  멈추려면:                  bash infra/flow.sh stop&quot;</span>
+<a id="__codelineno-11-42" name="__codelineno-11-42" href="#__codelineno-11-42"></a><span class="c1"># 자기 것만 죽입니다. 스트리밍 잡을 전부 죽이면 이 스크립트가 남의</span>
+<a id="__codelineno-11-43" name="__codelineno-11-43" href="#__codelineno-11-43"></a><span class="c1"># 파이프라인을 끕니다 — 실제로 그랬습니다: graph_flow 가 띄운 2개를 cdc 가</span>
+<a id="__codelineno-11-44" name="__codelineno-11-44" href="#__codelineno-11-44"></a><span class="c1"># 죽이고, cdc 가 띄운 5개를 flow 가 죽여서, 세 스크립트를 차례로 돌리면 마지막</span>
+<a id="__codelineno-11-45" name="__codelineno-11-45" href="#__codelineno-11-45"></a><span class="c1"># 하나만 살아남았습니다. 각 스크립트가 성공을 보고했기 때문에 아무도 눈치채지</span>
+<a id="__codelineno-11-46" name="__codelineno-11-46" href="#__codelineno-11-46"></a><span class="c1"># 못했습니다.</span>
+<a id="__codelineno-11-47" name="__codelineno-11-47" href="#__codelineno-11-47"></a>jobs_streaming<span class="o">(){</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/list&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-48" name="__codelineno-11-48" href="#__codelineno-11-48"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<a id="__codelineno-11-49" name="__codelineno-11-49" href="#__codelineno-11-49"></a><span class="s2">import sys, json</span>
+<a id="__codelineno-11-50" name="__codelineno-11-50" href="#__codelineno-11-50"></a><span class="s2">for j in json.load(sys.stdin):</span>
+<a id="__codelineno-11-51" name="__codelineno-11-51" href="#__codelineno-11-51"></a><span class="s2">    if j.get(&#39;type&#39;) != &#39;STREAMING&#39;:</span>
+<a id="__codelineno-11-52" name="__codelineno-11-52" href="#__codelineno-11-52"></a><span class="s2">        continue</span>
+<a id="__codelineno-11-53" name="__codelineno-11-53" href="#__codelineno-11-53"></a><span class="s2">    tag = (j.get(&#39;description&#39;) or &#39;&#39;) + &#39; &#39; + (j.get(&#39;jobName&#39;) or &#39;&#39;)</span>
+<a id="__codelineno-11-54" name="__codelineno-11-54" href="#__codelineno-11-54"></a><span class="s2">    if &#39;approval-stream&#39; in tag:</span>
+<a id="__codelineno-11-55" name="__codelineno-11-55" href="#__codelineno-11-55"></a><span class="s2">        print(j[&#39;jobId&#39;])</span>
+<a id="__codelineno-11-56" name="__codelineno-11-56" href="#__codelineno-11-56"></a><span class="s2">&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="p">;</span><span class="w"> </span><span class="o">}</span>
+<a id="__codelineno-11-57" name="__codelineno-11-57" href="#__codelineno-11-57"></a>
+<a id="__codelineno-11-58" name="__codelineno-11-58" href="#__codelineno-11-58"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;stop&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<a id="__codelineno-11-59" name="__codelineno-11-59" href="#__codelineno-11-59"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;Flow 중지&quot;</span>
+<a id="__codelineno-11-60" name="__codelineno-11-60" href="#__codelineno-11-60"></a><span class="w">  </span><span class="k">for</span><span class="w"> </span>jid<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>jobs_streaming<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-XPOST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/kill/</span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;kill </span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
+<a id="__codelineno-11-61" name="__codelineno-11-61" href="#__codelineno-11-61"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
+<a id="__codelineno-11-62" name="__codelineno-11-62" href="#__codelineno-11-62"></a><span class="k">fi</span>
+<a id="__codelineno-11-63" name="__codelineno-11-63" href="#__codelineno-11-63"></a>
+<a id="__codelineno-11-64" name="__codelineno-11-64" href="#__codelineno-11-64"></a><span class="c1"># ── 이벤트 생성 ───────────────────────────────────────────────────────────────</span>
+<a id="__codelineno-11-65" name="__codelineno-11-65" href="#__codelineno-11-65"></a><span class="c1"># 실제 결재 건을 흉내냅니다. 대상 규정은 원장에 실재하는 문서라야 에이전트가</span>
+<a id="__codelineno-11-66" name="__codelineno-11-66" href="#__codelineno-11-66"></a><span class="c1"># 현행 버전과 나란히 놓고 답할 수 있습니다.</span>
+<a id="__codelineno-11-67" name="__codelineno-11-67" href="#__codelineno-11-67"></a>emit<span class="o">(){</span><span class="w"> </span><span class="c1"># emit &lt;seq&gt; &lt;&lt;&#39;JSON&#39; ... JSON</span>
+<a id="__codelineno-11-68" name="__codelineno-11-68" href="#__codelineno-11-68"></a><span class="w">  </span><span class="nb">local</span><span class="w"> </span><span class="nv">seq</span><span class="o">=</span><span class="nv">$1</span><span class="w"> </span>tmp<span class="p">;</span><span class="w"> </span><span class="nv">tmp</span><span class="o">=</span><span class="k">$(</span>mktemp<span class="k">)</span><span class="p">;</span><span class="w"> </span>cat<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$tmp</span><span class="s2">&quot;</span>
+<a id="__codelineno-11-69" name="__codelineno-11-69" href="#__codelineno-11-69"></a><span class="w">  </span><span class="nv">$S3</span><span class="w"> </span>cp<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$tmp</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;s3://</span><span class="nv">$BUCKET</span><span class="s2">/</span><span class="nv">$PREFIX</span><span class="s2">/evt-</span><span class="k">$(</span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;%05d&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$seq</span><span class="s2">&quot;</span><span class="k">)</span><span class="s2">.json&quot;</span><span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-70" name="__codelineno-11-70" href="#__codelineno-11-70"></a><span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;이벤트 배치 </span><span class="nv">$seq</span><span class="s2"> 업로드&quot;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span>fail<span class="w"> </span><span class="s2">&quot;업로드 실패&quot;</span>
+<a id="__codelineno-11-71" name="__codelineno-11-71" href="#__codelineno-11-71"></a><span class="w">  </span>rm<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$tmp</span><span class="s2">&quot;</span>
+<a id="__codelineno-11-72" name="__codelineno-11-72" href="#__codelineno-11-72"></a><span class="o">}</span>
+<a id="__codelineno-11-73" name="__codelineno-11-73" href="#__codelineno-11-73"></a>
+<a id="__codelineno-11-74" name="__codelineno-11-74" href="#__codelineno-11-74"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;advance&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<a id="__codelineno-11-75" name="__codelineno-11-75" href="#__codelineno-11-75"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;후속 단계 이벤트 — 같은 결재건이 다음 단계로&quot;</span>
+<a id="__codelineno-11-76" name="__codelineno-11-76" href="#__codelineno-11-76"></a><span class="w">  </span><span class="c1"># 같은 approval_id 입니다. append 라면 행이 늘어나고, upsert 라면 교체됩니다.</span>
+<a id="__codelineno-11-77" name="__codelineno-11-77" href="#__codelineno-11-77"></a><span class="w">  </span>emit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="s">&lt;&lt;&#39;JSON&#39;</span>
+<a id="__codelineno-11-78" name="__codelineno-11-78" href="#__codelineno-11-78"></a><span class="s">{&quot;approval_id&quot;:&quot;APV-2026-0142&quot;,&quot;doc_no&quot;:&quot;HR-REG-003&quot;,&quot;version&quot;:4,&quot;step&quot;:&quot;APPROVED&quot;,&quot;step_seq&quot;:3,&quot;drafter&quot;:&quot;20170003&quot;,&quot;owner_dept&quot;:&quot;HR&quot;,&quot;summary&quot;:&quot;육아지원규정 제4차 개정 — 돌봄휴가 20일→25일 확대&quot;,&quot;expected_from&quot;:&quot;2026-09-01&quot;,&quot;updated_at&quot;:&quot;2026-08-21 14:20:00&quot;}</span>
+<a id="__codelineno-11-79" name="__codelineno-11-79" href="#__codelineno-11-79"></a><span class="s">{&quot;approval_id&quot;:&quot;APV-2026-0151&quot;,&quot;doc_no&quot;:&quot;SEC-GDL-001&quot;,&quot;version&quot;:3,&quot;step&quot;:&quot;REJECTED&quot;,&quot;step_seq&quot;:3,&quot;drafter&quot;:&quot;20190004&quot;,&quot;owner_dept&quot;:&quot;SEC&quot;,&quot;summary&quot;:&quot;보안점검 주기 단축 개정안&quot;,&quot;expected_from&quot;:&quot;2026-10-01&quot;,&quot;updated_at&quot;:&quot;2026-08-21 14:25:00&quot;}</span>
+<a id="__codelineno-11-80" name="__codelineno-11-80" href="#__codelineno-11-80"></a><span class="s">JSON</span>
+<a id="__codelineno-11-81" name="__codelineno-11-81" href="#__codelineno-11-81"></a><span class="w">  </span>log<span class="w"> </span><span class="s2">&quot;확인&quot;</span>
+<a id="__codelineno-11-82" name="__codelineno-11-82" href="#__codelineno-11-82"></a><span class="w">  </span>sleep<span class="w"> </span><span class="m">8</span>
+<a id="__codelineno-11-83" name="__codelineno-11-83" href="#__codelineno-11-83"></a><span class="w">  </span>sql<span class="w"> </span><span class="s2">&quot;SELECT approval_id, doc_no, step, step_seq FROM ice.reg.approval_status ORDER BY 1&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-84" name="__codelineno-11-84" href="#__codelineno-11-84"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<a id="__codelineno-11-85" name="__codelineno-11-85" href="#__codelineno-11-85"></a><span class="s2">import sys,json; d=json.load(sys.stdin); rows=d.get(&#39;rows&#39;) or []</span>
+<a id="__codelineno-11-86" name="__codelineno-11-86" href="#__codelineno-11-86"></a><span class="s2">print(&#39;  현재 결재 상태:&#39;)</span>
+<a id="__codelineno-11-87" name="__codelineno-11-87" href="#__codelineno-11-87"></a><span class="s2">for r in rows: print(&#39;   &#39;, r)</span>
+<a id="__codelineno-11-88" name="__codelineno-11-88" href="#__codelineno-11-88"></a><span class="s2">print(&#39;  행 수:&#39;, len(rows), &#39;(3건이면 upsert, 5건이면 append 로 격하된 것입니다)&#39;)&quot;</span>
+<a id="__codelineno-11-89" name="__codelineno-11-89" href="#__codelineno-11-89"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
+<a id="__codelineno-11-90" name="__codelineno-11-90" href="#__codelineno-11-90"></a><span class="k">fi</span>
+<a id="__codelineno-11-91" name="__codelineno-11-91" href="#__codelineno-11-91"></a>
+<a id="__codelineno-11-92" name="__codelineno-11-92" href="#__codelineno-11-92"></a>log<span class="w"> </span><span class="s2">&quot;1/4  대상 테이블&quot;</span>
+<a id="__codelineno-11-93" name="__codelineno-11-93" href="#__codelineno-11-93"></a><span class="c1"># 줄 앞이 아니라 줄 어디에 있든 -- 뒤를 잘라냅니다. 컬럼 뒤 주석이 그대로</span>
+<a id="__codelineno-11-94" name="__codelineno-11-94" href="#__codelineno-11-94"></a><span class="c1"># 남으면 파서는 다음 컬럼까지 주석으로 삼켜 &quot;Failed to parse CREATE TABLE&quot; 만</span>
+<a id="__codelineno-11-95" name="__codelineno-11-95" href="#__codelineno-11-95"></a><span class="c1"># 돌려줍니다 — 어느 줄이 문제인지는 알려주지 않습니다.</span>
+<a id="__codelineno-11-96" name="__codelineno-11-96" href="#__codelineno-11-96"></a><span class="c1"># 끝의 세미콜론도 뗍니다. ontul 의 CREATE TABLE 파서는 SELECT 와 달리 그것을</span>
+<a id="__codelineno-11-97" name="__codelineno-11-97" href="#__codelineno-11-97"></a><span class="c1"># 받지 못하고 &quot;Failed to parse CREATE TABLE statement&quot; 만 돌려줍니다.</span>
+<a id="__codelineno-11-98" name="__codelineno-11-98" href="#__codelineno-11-98"></a><span class="nv">DDL</span><span class="o">=</span><span class="k">$(</span>sed<span class="w"> </span><span class="s1">&#39;s/--.*$//&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DEMO</span><span class="s2">/schema/iceberg/40_approval_stream.sql&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/  */ /g; s/^ *//; s/ *$//; s/;$//&#39;</span><span class="k">)</span>
+<a id="__codelineno-11-99" name="__codelineno-11-99" href="#__codelineno-11-99"></a>sql_ok<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DDL</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;ice.reg.approval_status 준비&quot;</span>
+<a id="__codelineno-11-100" name="__codelineno-11-100" href="#__codelineno-11-100"></a>
+<a id="__codelineno-11-101" name="__codelineno-11-101" href="#__codelineno-11-101"></a>log<span class="w"> </span><span class="s2">&quot;2/4  기존 Flow 정리 + 이벤트 프리픽스 비우기&quot;</span>
+<a id="__codelineno-11-102" name="__codelineno-11-102" href="#__codelineno-11-102"></a><span class="k">for</span><span class="w"> </span>jid<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>jobs_streaming<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-XPOST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">/v1/api/job/kill/</span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$AH</span><span class="s2">&quot;</span><span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="p">;</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;이전 잡 kill </span><span class="nv">$jid</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
+<a id="__codelineno-11-103" name="__codelineno-11-103" href="#__codelineno-11-103"></a><span class="nv">$S3</span><span class="w"> </span>rm<span class="w"> </span><span class="s2">&quot;s3://</span><span class="nv">$BUCKET</span><span class="s2">/</span><span class="nv">$PREFIX</span><span class="s2">/&quot;</span><span class="w"> </span>--recursive<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">true</span>
+<a id="__codelineno-11-104" name="__codelineno-11-104" href="#__codelineno-11-104"></a>sql<span class="w"> </span><span class="s2">&quot;DELETE FROM ice.reg.approval_status&quot;</span><span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+<a id="__codelineno-11-105" name="__codelineno-11-105" href="#__codelineno-11-105"></a>step<span class="w"> </span><span class="s2">&quot;s3://</span><span class="nv">$BUCKET</span><span class="s2">/</span><span class="nv">$PREFIX</span><span class="s2">/ 비움&quot;</span>
+<a id="__codelineno-11-106" name="__codelineno-11-106" href="#__codelineno-11-106"></a>
+<a id="__codelineno-11-107" name="__codelineno-11-107" href="#__codelineno-11-107"></a>log<span class="w"> </span><span class="s2">&quot;3/4  Flow 제출&quot;</span>
+<a id="__codelineno-11-108" name="__codelineno-11-108" href="#__codelineno-11-108"></a><span class="nv">JOBID</span><span class="o">=</span><span class="k">$(</span><span class="nv">TOK</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$TOK</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">ONTUL</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$ONTUL</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">SPEC</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$DEMO</span><span class="s2">/schema/flows/approval_status.json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-109" name="__codelineno-11-109" href="#__codelineno-11-109"></a><span class="w">        </span><span class="nv">EP</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$S3_ENDPOINT_INTERNAL</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">AK</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$S3_ACCESS_KEY</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">SK</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$S3_SECRET_KEY</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">RG</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">S3_REGION</span><span class="k">:-</span><span class="nv">us</span><span class="p">-east-1</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-110" name="__codelineno-11-110" href="#__codelineno-11-110"></a><span class="w">        </span>python3<span class="w"> </span><span class="s">&lt;&lt;&#39;PY&#39;</span>
+<a id="__codelineno-11-111" name="__codelineno-11-111" href="#__codelineno-11-111"></a><span class="s">import os,json,urllib.request,time,re</span>
+<a id="__codelineno-11-112" name="__codelineno-11-112" href="#__codelineno-11-112"></a><span class="s">tok=os.environ[&quot;TOK&quot;]; base=os.environ[&quot;ONTUL&quot;]</span>
+<a id="__codelineno-11-113" name="__codelineno-11-113" href="#__codelineno-11-113"></a><span class="s">raw=open(os.environ[&quot;SPEC&quot;],encoding=&quot;utf-8&quot;).read()</span>
+<a id="__codelineno-11-114" name="__codelineno-11-114" href="#__codelineno-11-114"></a><span class="s"># 스펙은 그대로 두고 자격증명만 주입합니다 — 파일에 키를 적어 커밋하지 않기 위해서입니다.</span>
+<a id="__codelineno-11-115" name="__codelineno-11-115" href="#__codelineno-11-115"></a><span class="s">for k,v in ((&quot;S3_ENDPOINT_INTERNAL&quot;,os.environ[&quot;EP&quot;]),(&quot;S3_ACCESS_KEY&quot;,os.environ[&quot;AK&quot;]),</span>
+<a id="__codelineno-11-116" name="__codelineno-11-116" href="#__codelineno-11-116"></a><span class="s">            (&quot;S3_SECRET_KEY&quot;,os.environ[&quot;SK&quot;]),(&quot;S3_REGION&quot;,os.environ[&quot;RG&quot;])):</span>
+<a id="__codelineno-11-117" name="__codelineno-11-117" href="#__codelineno-11-117"></a><span class="s">    raw=raw.replace(&quot;${%s}&quot;%k, v)</span>
+<a id="__codelineno-11-118" name="__codelineno-11-118" href="#__codelineno-11-118"></a><span class="s">cfg=json.loads(raw); cfg.pop(&quot;_comment&quot;,None)</span>
+<a id="__codelineno-11-119" name="__codelineno-11-119" href="#__codelineno-11-119"></a><span class="s">def api(path, body=None, method=&quot;GET&quot;):</span>
+<a id="__codelineno-11-120" name="__codelineno-11-120" href="#__codelineno-11-120"></a><span class="s">  data=json.dumps(body).encode() if body is not None else None</span>
+<a id="__codelineno-11-121" name="__codelineno-11-121" href="#__codelineno-11-121"></a><span class="s">  r=urllib.request.Request(base+path, data=data, method=method)</span>
+<a id="__codelineno-11-122" name="__codelineno-11-122" href="#__codelineno-11-122"></a><span class="s">  r.add_header(&quot;Authorization&quot;,&quot;Bearer &quot;+tok); r.add_header(&quot;Content-Type&quot;,&quot;application/json&quot;)</span>
+<a id="__codelineno-11-123" name="__codelineno-11-123" href="#__codelineno-11-123"></a><span class="s">  return json.load(urllib.request.urlopen(r,timeout=60))</span>
+<a id="__codelineno-11-124" name="__codelineno-11-124" href="#__codelineno-11-124"></a><span class="s">try:</span>
+<a id="__codelineno-11-125" name="__codelineno-11-125" href="#__codelineno-11-125"></a><span class="s">  cfg[&quot;description&quot;] = &quot;approval-stream&quot;</span>
+<a id="__codelineno-11-126" name="__codelineno-11-126" href="#__codelineno-11-126"></a><span class="s">  d=api(&quot;/v1/api/sql&quot;, {&quot;sql&quot;:&quot;SUBMIT STREAMING &quot;+json.dumps(cfg)}, &quot;POST&quot;)</span>
+<a id="__codelineno-11-127" name="__codelineno-11-127" href="#__codelineno-11-127"></a><span class="s">  if d.get(&quot;status&quot;)!=&quot;ok&quot;: print(&quot;ERR:&quot;+str(d)[:300]); raise SystemExit</span>
+<a id="__codelineno-11-128" name="__codelineno-11-128" href="#__codelineno-11-128"></a><span class="s">  want=&quot;streaming-&quot;+(d.get(&quot;queryId&quot;) or &quot;&quot;)[:8]</span>
+<a id="__codelineno-11-129" name="__codelineno-11-129" href="#__codelineno-11-129"></a><span class="s">  for _ in range(20):</span>
+<a id="__codelineno-11-130" name="__codelineno-11-130" href="#__codelineno-11-130"></a><span class="s">    for j in api(&quot;/v1/api/job/list&quot;):</span>
+<a id="__codelineno-11-131" name="__codelineno-11-131" href="#__codelineno-11-131"></a><span class="s">      if j.get(&quot;type&quot;)==&quot;STREAMING&quot; and j.get(&quot;jobName&quot;)==want: print(j[&quot;jobId&quot;]); raise SystemExit</span>
+<a id="__codelineno-11-132" name="__codelineno-11-132" href="#__codelineno-11-132"></a><span class="s">    time.sleep(1)</span>
+<a id="__codelineno-11-133" name="__codelineno-11-133" href="#__codelineno-11-133"></a><span class="s">  print(&quot;ERR:job never appeared&quot;)</span>
+<a id="__codelineno-11-134" name="__codelineno-11-134" href="#__codelineno-11-134"></a><span class="s">except SystemExit: pass</span>
+<a id="__codelineno-11-135" name="__codelineno-11-135" href="#__codelineno-11-135"></a><span class="s">except Exception as e: print(&quot;ERR:&quot;+str(e)[:300])</span>
+<a id="__codelineno-11-136" name="__codelineno-11-136" href="#__codelineno-11-136"></a><span class="s">PY</span>
+<a id="__codelineno-11-137" name="__codelineno-11-137" href="#__codelineno-11-137"></a><span class="k">)</span>
+<a id="__codelineno-11-138" name="__codelineno-11-138" href="#__codelineno-11-138"></a><span class="k">case</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$JOBID</span><span class="s2">&quot;</span><span class="w"> </span><span class="k">in</span><span class="w"> </span>ERR:*<span class="p">|</span><span class="s2">&quot;&quot;</span><span class="o">)</span><span class="w"> </span>fail<span class="w"> </span><span class="s2">&quot;Flow 제출 실패 (</span><span class="nv">$JOBID</span><span class="s2">)&quot;</span><span class="p">;;</span><span class="w"> </span>*<span class="o">)</span><span class="w"> </span>step<span class="w"> </span><span class="s2">&quot;Flow 기동 </span><span class="nv">$JOBID</span><span class="s2">&quot;</span><span class="p">;;</span><span class="w"> </span><span class="k">esac</span>
+<a id="__codelineno-11-139" name="__codelineno-11-139" href="#__codelineno-11-139"></a>
+<a id="__codelineno-11-140" name="__codelineno-11-140" href="#__codelineno-11-140"></a>log<span class="w"> </span><span class="s2">&quot;4/4  1차 이벤트 — 결재 3건이 각각 다른 단계에 있습니다&quot;</span>
+<a id="__codelineno-11-141" name="__codelineno-11-141" href="#__codelineno-11-141"></a>emit<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="s">&lt;&lt;&#39;JSON&#39;</span>
+<a id="__codelineno-11-142" name="__codelineno-11-142" href="#__codelineno-11-142"></a><span class="s">{&quot;approval_id&quot;:&quot;APV-2026-0142&quot;,&quot;doc_no&quot;:&quot;HR-REG-003&quot;,&quot;version&quot;:4,&quot;step&quot;:&quot;REVIEW&quot;,&quot;step_seq&quot;:2,&quot;drafter&quot;:&quot;20170003&quot;,&quot;owner_dept&quot;:&quot;HR&quot;,&quot;summary&quot;:&quot;육아지원규정 제4차 개정 — 돌봄휴가 20일→25일 확대&quot;,&quot;expected_from&quot;:&quot;2026-09-01&quot;,&quot;updated_at&quot;:&quot;2026-08-21 11:05:00&quot;}</span>
+<a id="__codelineno-11-143" name="__codelineno-11-143" href="#__codelineno-11-143"></a><span class="s">{&quot;approval_id&quot;:&quot;APV-2026-0151&quot;,&quot;doc_no&quot;:&quot;SEC-GDL-001&quot;,&quot;version&quot;:3,&quot;step&quot;:&quot;REVIEW&quot;,&quot;step_seq&quot;:2,&quot;drafter&quot;:&quot;20190004&quot;,&quot;owner_dept&quot;:&quot;SEC&quot;,&quot;summary&quot;:&quot;보안점검 주기 단축 개정안&quot;,&quot;expected_from&quot;:&quot;2026-10-01&quot;,&quot;updated_at&quot;:&quot;2026-08-21 11:12:00&quot;}</span>
+<a id="__codelineno-11-144" name="__codelineno-11-144" href="#__codelineno-11-144"></a><span class="s">{&quot;approval_id&quot;:&quot;APV-2026-0163&quot;,&quot;doc_no&quot;:&quot;FIN-GDL-001&quot;,&quot;version&quot;:2,&quot;step&quot;:&quot;DRAFT&quot;,&quot;step_seq&quot;:1,&quot;drafter&quot;:&quot;20210001&quot;,&quot;owner_dept&quot;:&quot;FIN&quot;,&quot;summary&quot;:&quot;국내출장비 일비 인상&quot;,&quot;expected_from&quot;:&quot;2026-11-01&quot;,&quot;updated_at&quot;:&quot;2026-08-21 11:30:00&quot;}</span>
+<a id="__codelineno-11-145" name="__codelineno-11-145" href="#__codelineno-11-145"></a><span class="s">JSON</span>
+<a id="__codelineno-11-146" name="__codelineno-11-146" href="#__codelineno-11-146"></a>
+<a id="__codelineno-11-147" name="__codelineno-11-147" href="#__codelineno-11-147"></a><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">30</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-11-148" name="__codelineno-11-148" href="#__codelineno-11-148"></a><span class="w">  </span><span class="nv">n</span><span class="o">=</span><span class="k">$(</span>sql<span class="w"> </span><span class="s2">&quot;SELECT count(*) FROM ice.reg.approval_status&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-149" name="__codelineno-11-149" href="#__codelineno-11-149"></a><span class="w">      </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys,json;r=(json.load(sys.stdin).get(&#39;rows&#39;) or [[0]]);print(r[0][0] if r else 0)&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="k">)</span>
+<a id="__codelineno-11-150" name="__codelineno-11-150" href="#__codelineno-11-150"></a><span class="w">  </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">n</span><span class="k">:-</span><span class="nv">0</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;3&quot;</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">break</span><span class="p">;</span><span class="w"> </span>sleep<span class="w"> </span><span class="m">3</span>
+<a id="__codelineno-11-151" name="__codelineno-11-151" href="#__codelineno-11-151"></a><span class="k">done</span>
+<a id="__codelineno-11-152" name="__codelineno-11-152" href="#__codelineno-11-152"></a>sql<span class="w"> </span><span class="s2">&quot;SELECT approval_id, doc_no, version, step FROM ice.reg.approval_status ORDER BY 1&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-153" name="__codelineno-11-153" href="#__codelineno-11-153"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<a id="__codelineno-11-154" name="__codelineno-11-154" href="#__codelineno-11-154"></a><span class="s2">import sys,json; d=json.load(sys.stdin); rows=d.get(&#39;rows&#39;) or []</span>
+<a id="__codelineno-11-155" name="__codelineno-11-155" href="#__codelineno-11-155"></a><span class="s2">print(&#39;  진행 중인 개정:&#39;)</span>
+<a id="__codelineno-11-156" name="__codelineno-11-156" href="#__codelineno-11-156"></a><span class="s2">for r in rows: print(&#39;   &#39;, r)&quot;</span>
+<a id="__codelineno-11-157" name="__codelineno-11-157" href="#__codelineno-11-157"></a>
+<a id="__codelineno-11-158" name="__codelineno-11-158" href="#__codelineno-11-158"></a>log<span class="w"> </span><span class="s2">&quot;완료 — Flow 는 계속 돕니다&quot;</span>
+<a id="__codelineno-11-159" name="__codelineno-11-159" href="#__codelineno-11-159"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  다음 단계를 흘려보내려면:  bash infra/flow.sh advance&quot;</span>
+<a id="__codelineno-11-160" name="__codelineno-11-160" href="#__codelineno-11-160"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  멈추려면:                  bash infra/flow.sh stop&quot;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>bash<span class="w"> </span>infra/flow.sh<span class="w">            </span><span class="c1"># 기동 + 1차 이벤트</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>bash<span class="w"> </span>infra/flow.sh<span class="w"> </span>advance<span class="w">    </span><span class="c1"># 후속 단계 — upsert 가 도는 것을 봅니다</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>bash<span class="w"> </span>infra/flow.sh<span class="w">            </span><span class="c1"># start, plus a first batch of events</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>bash<span class="w"> </span>infra/flow.sh<span class="w"> </span>advance<span class="w">    </span><span class="c1"># later stages — watch the upsert happen</span>
 <a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>bash<span class="w"> </span>infra/flow.sh<span class="w"> </span>stop
 </code></pre></div>
-<p>이것이 에이전트의 <code>pending_revision</code> 툴이 읽는 표입니다. 규정 표에는 <strong>이미
-시행된 것</strong>만 있으므로, 다음 달 시행 예정인 승인된 개정은 그 표에서 보이지
-않습니다 — 오늘 기준으로는 맞고 결정에는 틀린 답이 나오는 자리입니다.</p>
+<p>This is the table the agent's <code>pending_revision</code> tool reads. The regulations
+tables hold only what is <strong>already</strong> in force, so an approved revision taking
+effect next month is invisible to them — which is exactly where an answer is
+correct today and wrong for the decision being made.</p>
 <hr />
-<p>다음: <a href="../iam/">IAM 과 리트리버</a> — 같은 질문에 사람마다 다른 답이 나오는 이유.</p>
+<p>Next: <a href="../iam/">IAM and retrievers</a> — why the same question gets different answers.</p>
 
 
 
