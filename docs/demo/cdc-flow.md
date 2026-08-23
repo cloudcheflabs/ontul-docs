@@ -30,24 +30,26 @@ underneath them changes.
 ```json
 {
   "_comment": [
-    "ERP → Iceberg, 실시간 CDC.",
+    "ERP → Iceberg, by live CDC.",
     "",
-    "데모 초기에는 ontul 이 Postgres 를 JDBC 로 직접 읽었습니다. 시연은 되지만",
-    "실제 조직이 하는 방식은 아닙니다 — 분석 질의가 OLTP 의 buffer cache 를",
-    "쓸어내고, 워커마다 커넥션을 열고, 무엇보다 **과거가 없습니다**. 덮어써진",
-    "값은 되돌릴 수 없으니 '2025년 2월에는 며칠이었나' 를 물을 데가 없습니다.",
+    "Early on, Ontul read Postgres directly over JDBC. That demonstrates fine and is",
+    "not what a real organisation does — analytical queries sweep the OLTP buffer",
+    "cache, every worker opens a connection, and above all **there is no past**. An",
+    "overwritten value cannot be recovered, so there is nowhere to ask 'how many days",
+    "was it in February 2025'.",
     "",
-    "그래서 Debezium 이 WAL 을 읽어 Iceberg 로 흘립니다. 시맨틱 뷰와 IAM 정책은",
-    "그대로 두고 그 아래만 갈아끼웁니다 — 뷰가 원천을 가리고 있어서 가능한",
-    "교체이고, 이 층을 둔 이유이기도 합니다.",
+    "So Debezium reads the WAL and streams it into Iceberg. The semantic views and the",
+    "IAM policies stay exactly as they are and only what is underneath changes — a",
+    "swap that is possible because the views hide the source, which is also why that",
+    "layer exists.",
     "",
-    "테이블마다 Flow 하나입니다. ontul 의 Flow 는 싱크 테이블이 하나라서",
-    "그렇고, Postgres 쪽에는 Flow 당 복제 슬롯이 하나씩 생깁니다.",
+    "One Flow per table. An Ontul Flow has a single sink table, and each Flow creates",
+    "one replication slot on the Postgres side.",
     "",
-    "upsertKeys 가 PK 이고 cdc.apply 가 켜져 있으므로, update 는 행을 교체하고",
-    "delete 는 행을 지웁니다 — append 로 쌓이지 않습니다. 이게 동작하려면",
-    "coordinated 커밋이 equality delete 를 같이 실어야 하는데, 그게 안 되던",
-    "결함이 8e82f3f 입니다."
+    "upsertKeys is the primary key and cdc.apply is on, so an update replaces the row",
+    "and a delete removes it — nothing piles up as an append. For that to work the",
+    "coordinated commit has to carry the equality deletes along with the data, which",
+    "is the defect fixed in 8e82f3f."
   ],
   "tables": [
     {
@@ -97,11 +99,11 @@ underneath them changes.
     "username": "erp",
     "password": "${ERP_PASSWORD}",
     "snapshot": "initial",
-    "_snapshot_note": "initial = 현재 상태를 한 번 다 읽고 그 뒤로 증분. 이게 없으면 Flow 를 켠 시점 이후의 변경만 들어와 표가 비어 보입니다."
+    "_snapshot_note": "initial reads the current state once and then goes incremental. Without it only changes made after the Flow started arrive, and the table looks empty."
   },
   "sink": {
     "type": "table",
-    "_write_note": "write.mode=cdc 가 op 컬럼(__op)을 보고 c/u/r 은 upsert, d 는 삭제로 가릅니다. keys 는 Flow 마다 다르므로 제출할 때 채워집니다.",
+    "_write_note": "write.mode=cdc reads the op column (__op) and routes c/u/r to an upsert and d to a delete. keys differ per Flow and are filled in at submission time.",
     "write": {
       "mode": "cdc",
       "opColumn": "__op",
@@ -130,18 +132,19 @@ underneath them changes.
 
 ```bash
 #!/usr/bin/env bash
-# ERP → Iceberg, ontul Flow 로.
+# ERP → Iceberg, over Ontul Flow.
 #
-#   bash infra/cdc.sh            # 5개 Flow 기동 + 초기 스냅샷 확인
-#   bash infra/cdc.sh verify     # 원천과 대상 행 수 비교
-#   bash infra/cdc.sh change     # ERP 에 UPDATE/DELETE 를 넣고 반영되는지 확인
+#   bash infra/cdc.sh            # start 5 Flows and check the initial snapshot
+#   bash infra/cdc.sh verify     # compare row counts, source against target
+#   bash infra/cdc.sh change     # apply an UPDATE/DELETE in ERP and watch it land
 #   bash infra/cdc.sh stop
 #
-# JDBC 직결을 대체합니다. 시맨틱 뷰는 그대로 두고 아래만 바뀝니다.
+# Replaces the direct JDBC connection. The semantic views stay as they are; only
+# what is underneath them changes.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 DEMO=$(pwd)
-. out/stack.env 2>/dev/null || { echo "out/stack.env 없음 — infra/up.sh 먼저"; exit 1; }
+. out/stack.env 2>/dev/null || { echo "no out/stack.env — run infra/up.sh first"; exit 1; }
 
 ONTUL=${ONTUL_URL:-http://localhost:8080}
 ADMIN_PW="${ONTUL_ADMIN_PASSWORD:-regdemo-admin-2026}"
@@ -152,12 +155,12 @@ MODE=${1:-start}
 log(){ printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 step(){ printf '\033[1;32m  ok\033[0m %s\n' "$*"; }
 warn(){ printf '\033[1;33m  ..\033[0m %s\n' "$*"; }
-fail(){ printf '\033[1;31m  실패\033[0m %s\n' "$*"; exit 1; }
+fail(){ printf '\033[1;31m  failed\033[0m %s\n' "$*"; exit 1; }
 
 TOK=$(curl -s -m 30 -XPOST "$ONTUL/admin/auth/login" -H 'Content-Type: application/json' \
       -d "{\"username\":\"admin\",\"password\":\"$ADMIN_PW\"}" \
       | python3 -c "import sys,json;print(json.load(sys.stdin).get('accessToken',''))" 2>/dev/null)
-[ -n "$TOK" ] || fail "ontul 로그인 실패"
+[ -n "$TOK" ] || fail "ontul login failed"
 AH="Authorization: Bearer $TOK"
 
 sql(){ curl -s -m 120 -XPOST "$ONTUL/admin/query/execute" -H "$AH" -H 'Content-Type: application/json' \
@@ -171,11 +174,11 @@ tables(){ python3 -c "
 import json;d=json.load(open('$SPEC',encoding='utf-8'))
 for t in d['tables']: print(t['source'], t['sink'], ','.join(t['keys']))"; }
 
-# 자기 것만 죽입니다. 스트리밍 잡을 전부 죽이면 이 스크립트가 남의
-# 파이프라인을 끕니다 — 실제로 그랬습니다: graph_flow 가 띄운 2개를 cdc 가
-# 죽이고, cdc 가 띄운 5개를 flow 가 죽여서, 세 스크립트를 차례로 돌리면 마지막
-# 하나만 살아남았습니다. 각 스크립트가 성공을 보고했기 때문에 아무도 눈치채지
-# 못했습니다.
+# Kills only its own. Killing every streaming job means this script takes down
+# someone else's pipeline — which is exactly what happened: cdc killed the two
+# graph_flow had started, flow killed the five cdc had started, and running the
+# three scripts in sequence left only the last one alive. Nobody noticed, because
+# each script reported success.
 streaming_jobs(){ curl -s -m 30 "$ONTUL/v1/api/job/list" -H "$AH" \
   | python3 -c "
 import sys, json
@@ -188,11 +191,11 @@ for j in json.load(sys.stdin):
 " 2>/dev/null; }
 
 if [ "$MODE" = "stop" ]; then
-  log "Flow 중지 + 복제 슬롯 정리"
+  log "stopping the Flows and cleaning up replication slots"
   for jid in $(streaming_jobs); do curl -s -XPOST "$ONTUL/v1/api/job/kill/$jid" -H "$AH" -o /dev/null; step "kill $jid"; done
-  # 슬롯을 남기면 Postgres 가 WAL 을 계속 붙들고 디스크가 찹니다.
+  # A slot left behind makes Postgres hold on to WAL until the disk fills.
   for s in $(pg "SELECT slot_name FROM pg_replication_slots WHERE slot_name LIKE 'ontul_%';"); do
-    pg "SELECT pg_drop_replication_slot('$s');" >/dev/null && step "슬롯 삭제 $s"
+    pg "SELECT pg_drop_replication_slot('$s');" >/dev/null && step "dropped slot $s"
   done
   exit 0
 fi
@@ -207,18 +210,18 @@ except ValueError:
 print('1' if ok else '0')" "$1" "$2"; }
 
 if [ "$MODE" = "verify" ]; then
-  log "원천 대 대상 — 행 수"
+  log "source vs target — row counts"
   tables | while read -r src sink keys; do
     t=${src#public.}
     a=$(pg "SELECT count(*) FROM $t;"); b=$(count "$sink")
     if [ "$a" = "$b" ]; then step "$t: $a = $b"
-    else printf '\033[1;31m  차이\033[0m %s: 원천 %s, Iceberg %s\n' "$t" "$a" "$b"; fi
+    else printf '\033[1;31m  differs\033[0m %s: source %s, Iceberg %s\n' "$t" "$a" "$b"; fi
   done
 
-  # 행 수만 보는 검증은 이 파이프라인에서 통과해 놓고 틀린 적이 있습니다. Debezium 이
-  # NUMERIC 을 base64 바이트로 보내던 동안 572 = 572 였고 값은 전부 "ALQ=" 였습니다.
-  # 그래서 값도 읽습니다 — 숫자 하나, 문자 하나.
-  log "값 비교"
+  # A count-only check has passed here while being wrong. While Debezium was
+  # sending NUMERIC as base64 bytes, 572 = 572 held and every value read "ALQ=".
+  # So values are read too — one number, one string.
+  log "compared by value"
   emp=$(pg "SELECT emp_no FROM hr_leave_balance ORDER BY emp_no, lv_typ_cd LIMIT 1;")
   typ=$(pg "SELECT lv_typ_cd FROM hr_leave_balance WHERE emp_no='$emp' ORDER BY lv_typ_cd LIMIT 1;")
   src_v=$(pg "SELECT grant_days || '|' || used_days FROM hr_leave_balance WHERE emp_no='$emp' AND lv_typ_cd='$typ';")
@@ -228,9 +231,9 @@ import sys,json
 d=json.load(sys.stdin); r=(d.get('rows') or [[None,None]])[0]
 print('|'.join('' if x is None else str(x) for x in r[:2]))" 2>/dev/null)
   if [ "$(num_eq "$src_v" "$ice_v")" = "1" ]; then
-    step "hr_leave_balance($emp,$typ) 수치 일치 — 원천 $src_v, Iceberg $ice_v"
+    step "hr_leave_balance($emp,$typ) figures match — source $src_v, Iceberg $ice_v"
   else
-    printf '\033[1;31m  불일치\033[0m hr_leave_balance(%s,%s): 원천 %s, Iceberg %s\n' "$emp" "$typ" "$src_v" "$ice_v"
+    printf '\033[1;31m  mismatch\033[0m hr_leave_balance(%s,%s): source %s, Iceberg %s\n' "$emp" "$typ" "$src_v" "$ice_v"
   fi
 
   nm_src=$(pg "SELECT emp_nm FROM hr_employee WHERE emp_no='$emp';")
@@ -239,38 +242,38 @@ print('|'.join('' if x is None else str(x) for x in r[:2]))" 2>/dev/null)
 import sys,json
 d=json.load(sys.stdin); r=d.get('rows') or []
 print(r[0][0] if r else '')" 2>/dev/null)
-  if [ "$nm_src" = "$nm_ice" ]; then step "hr_employee($emp) 성명 일치 — $nm_src"
-  else printf '\033[1;31m  불일치\033[0m hr_employee(%s): 원천 %s, Iceberg %s\n' "$emp" "$nm_src" "$nm_ice"; fi
+  if [ "$nm_src" = "$nm_ice" ]; then step "hr_employee($emp) name matches — $nm_src"
+  else printf '\033[1;31m  mismatch\033[0m hr_employee(%s): source %s, Iceberg %s\n' "$emp" "$nm_src" "$nm_ice"; fi
   exit 0
 fi
 
 if [ "$MODE" = "change" ]; then
-  # CDC 가 append 가 아니라는 것을 보이는 부분입니다. update 는 행을 교체하고
-  # delete 는 지웁니다 — 행 수가 늘지 않아야 정상입니다.
-  log "ERP 에 변경을 넣습니다"
+  # This is what shows the CDC is not an append. An update replaces the row and a
+  # delete removes it — the row count must not grow.
+  log "applying changes in ERP"
   before=$(count ice.erp.hr_leave_balance)
   emp=$(pg "SELECT emp_no FROM hr_leave_balance ORDER BY emp_no LIMIT 1;")
   pg "UPDATE hr_leave_balance SET used_days = used_days + 1 WHERE emp_no = '$emp';" >/dev/null
-  step "UPDATE hr_leave_balance (사번 $emp)"
+  step "UPDATE hr_leave_balance (employee $emp)"
   pg "DELETE FROM fi_expense WHERE exp_id = (SELECT exp_id FROM fi_expense ORDER BY exp_id LIMIT 1);" >/dev/null
-  step "DELETE fi_expense 1건"
-  warn "커밋 간격 + 스냅샷 반영 대기 (25초)"
+  step "DELETE one fi_expense row"
+  warn "waiting for the commit interval and the snapshot (25s)"
   sleep 25
   after=$(count ice.erp.hr_leave_balance)
-  if [ "$before" = "$after" ]; then step "hr_leave_balance 행 수 유지: $before (update 가 교체됨)"
-  else printf '\033[1;31m  회귀\033[0m hr_leave_balance %s → %s — upsert 가 append 로 격하됐습니다\n' "$before" "$after"; fi
+  if [ "$before" = "$after" ]; then step "hr_leave_balance row count held at $before (the update replaced a row)"
+  else printf '\033[1;31m  regression\033[0m hr_leave_balance %s → %s — the upsert degraded into an append\n' "$before" "$after"; fi
   bash "$0" verify
   exit 0
 fi
 
-log "1/3  기존 Flow 와 슬롯 정리"
-for jid in $(streaming_jobs); do curl -s -XPOST "$ONTUL/v1/api/job/kill/$jid" -H "$AH" -o /dev/null; step "이전 잡 kill $jid"; done
+log "1/3  clearing previous Flows and slots"
+for jid in $(streaming_jobs); do curl -s -XPOST "$ONTUL/v1/api/job/kill/$jid" -H "$AH" -o /dev/null; step "killed previous job $jid"; done
 for s in $(pg "SELECT slot_name FROM pg_replication_slots WHERE slot_name LIKE 'ontul_%';"); do
-  pg "SELECT pg_drop_replication_slot('$s');" >/dev/null && step "슬롯 삭제 $s"
+  pg "SELECT pg_drop_replication_slot('$s');" >/dev/null && step "dropped slot $s"
 done
-sql "CREATE SCHEMA IF NOT EXISTS ice.erp" >/dev/null; step "ice.erp 스키마"
+sql "CREATE SCHEMA IF NOT EXISTS ice.erp" >/dev/null; step "ice.erp schema"
 
-log "2/3  테이블당 Flow 제출"
+log "2/3  submitting one Flow per table"
 tables | while read -r src sink keys; do
   JOBID=$(TOK="$TOK" ONTUL="$ONTUL" SPEC="$SPEC" SRC="$src" SINK="$sink" KEYS="$keys" PW="$ERP_PW" python3 <<'PY'
 import os, json, urllib.request, time
@@ -289,7 +292,7 @@ def api(path, body=None, method="GET"):
   r.add_header("Authorization","Bearer "+tok); r.add_header("Content-Type","application/json")
   return json.load(urllib.request.urlopen(r,timeout=90))
 try:
-  # 나중에 이 묶음만 골라 끌 수 있도록 이름표를 답니다.
+  # Labelled so this group can be picked out and stopped on its own later.
   cfg["description"] = "erp-cdc:" + str(cfg.get("source", {}).get("table") or "")
   d=api("/v1/api/sql", {"sql":"SUBMIT STREAMING "+json.dumps(cfg)}, "POST")
   if d.get("status")!="ok": print("ERR:"+str(d)[:220]); raise SystemExit
@@ -303,11 +306,11 @@ except SystemExit: pass
 except Exception as e: print("ERR:"+str(e)[:220])
 PY
 )
-  case "$JOBID" in ERR:*|"") printf '\033[1;31m  실패\033[0m %s -> %s (%s)\n' "$src" "$sink" "$JOBID";;
+  case "$JOBID" in ERR:*|"") printf '\033[1;31m  failed\033[0m %s -> %s (%s)\n' "$src" "$sink" "$JOBID";;
                    *) step "$src → $sink  [$JOBID]";; esac
 done
 
-log "3/3  초기 스냅샷 대기"
+log "3/3  waiting for the initial snapshot"
 for i in $(seq 1 40); do
   n=$(count ice.erp.hr_employee)
   [ "$n" != "ERR" ] && [ "${n:-0}" -ge 300 ] 2>/dev/null && break
@@ -315,8 +318,8 @@ for i in $(seq 1 40); do
 done
 bash "$0" verify
 echo
-echo "  변경이 반영되는지 보려면:  bash infra/cdc.sh change"
-echo "  멈추려면:                  bash infra/cdc.sh stop"
+echo "  To watch a change propagate:  bash infra/cdc.sh change"
+echo "  To stop:                      bash infra/cdc.sh stop"
 ```
 
 
@@ -367,30 +370,31 @@ fix the graph was "run the job again".
 ```json
 {
   "_comment": [
-    "그래프 서빙 동기화 — ice.reg.graph_edges → NeorunBase doc_edges.",
+    "Graph serving sync — ice.reg.graph_edges → NeorunBase doc_edges.",
     "",
-    "온톨로지의 derives_from 링크는 GRAPH 바인딩이라 NeorunBase 인스턴스",
-    "그래프를 순회합니다. 그 그래프를 채우는 것이 이 Flow 입니다.",
+    "The ontology's derives_from link is a GRAPH binding, so it traverses",
+    "NeorunBase's instance graph. This Flow is what fills it.",
     "",
-    "배치 잡이 NeorunBase 에 직접 쓰지 않는 이유가 여기 있습니다. Iceberg 가",
-    "기록의 원본이고 NeorunBase 는 다시 만들 수 있는 파생 서빙 계층입니다 —",
-    "서빙을 날려도 Flow 가 스냅샷부터 다시 읽어 채웁니다. 관계가 언제 어떻게",
-    "바뀌었는지는 Iceberg 스냅샷에 남고, 그건 잡을 다시 돌려서는 얻을 수",
-    "없는 것입니다.",
+    "This is why the batch job does not write to NeorunBase directly. Iceberg is the",
+    "system of record and NeorunBase is a derived serving layer that can be rebuilt:",
+    "destroy serving and the Flow reads it back from the snapshots. When and how the",
+    "relations changed stays in the Iceberg history, which re-running the job could",
+    "never give you.",
     "",
-    "source.mode=changelog: 배치 잡은 지우고 다시 넣습니다. append 로 읽으면",
-    "삭제가 보이지 않아 서빙에 옛 엣지가 남습니다 — 인용이 사라진 규정이 계속",
-    "근거로 따라와도 아무도 오류를 보지 못합니다.",
+    "source.mode=changelog: the batch job deletes and re-inserts. Read as append and",
+    "the deletes are invisible, so stale edges survive in serving — a regulation whose",
+    "citation disappeared keeps trailing along as an authority and nobody sees an",
+    "error.",
     "",
-    "sink 가 neorunbase 가 아니라 jdbc 인 것이 핵심입니다. neorunbase 싱크는",
-    "REST 대량 삽입이라 덧붙이기만 합니다 — 전량 재작성 소스와 붙이면 같은",
-    "엣지가 계속 쌓입니다. jdbc 싱크의 mode=cdc 는 __op 를 보고 c/u/r 은",
-    "키 기준 upsert, d 는 삭제로 적용해서, 서빙이 원본의 복제본으로 유지됩니다.",
-    "NeorunBase 는 Postgres 와이어 프로토콜을 서빙하므로 그대로 붙습니다.",
+    "The sink being jdbc rather than neorunbase is the crux. The neorunbase sink is a",
+    "REST bulk insert and only appends; against a source that rewrites itself in full,",
+    "the same edges pile up. The jdbc sink in mode=cdc reads __op and applies c/u/r as",
+    "an upsert on the key and d as a delete, so serving stays a replica of the source.",
+    "NeorunBase serves the PostgreSQL wire protocol, so it attaches directly.",
     "",
-    "snapshot=all: 기존 행까지 전부 읽고 그 뒤로 이어갑니다. 기본값인",
-    "latest 는 Flow 가 시작한 뒤에 추가된 것만 흘려보내므로, 이미 쌓여",
-    "있는 관계는 서빙에 영영 도달하지 않습니다."
+    "snapshot=all reads the existing rows as well and then continues. The default,",
+    "latest, streams only what is added after the Flow starts — so relations already",
+    "built would never reach serving."
   ],
   "source": {
     "type": "iceberg",
@@ -421,14 +425,14 @@ fix the graph was "run the job again".
 ```json
 {
   "_comment": [
-    "그래프 노드 동기화 — ice.reg.graph_nodes → NeorunBase doc_nodes.",
+    "Graph node sync — ice.reg.graph_nodes → NeorunBase doc_nodes.",
     "",
-    "엣지와 같은 이유로 같은 모양입니다. 노드가 없으면 순회는 되지만 결과에",
-    "제목이 없어서, 에이전트는 근거를 찾고도 그것을 부를 이름이 없습니다.",
+    "Same shape as the edges, for the same reason. Without the nodes the traversal",
+    "still works but the results have no titles, so the agent finds the authority and",
+    "has no name to call it by.",
     "",
-    "snapshot=all: 기존 행까지 전부 읽고 그 뒤로 이어갑니다. 기본값인",
-    "latest 는 Flow 가 시작한 뒤에 추가된 것만 흘려보내므로, 이미 쌓여",
-    "있는 관계는 서빙에 영영 도달하지 않습니다."
+    "snapshot=all reads the existing rows as well and then continues. The default,",
+    "latest, streams only what is added after the Flow starts."
   ],
   "source": {
     "type": "iceberg",
@@ -475,18 +479,19 @@ fix the graph was "run the job again".
 
 ```bash
 #!/usr/bin/env bash
-# 그래프 서빙 Flow — ice.reg.graph_{nodes,edges} → NeorunBase.
+# Graph serving Flows — ice.reg.graph_{nodes,edges} → NeorunBase.
 #
-#   bash infra/graph_flow.sh          # 두 Flow 기동 + 반영 확인
+#   bash infra/graph_flow.sh          # start both Flows and check they landed
 #   bash infra/graph_flow.sh stop
 #
-# 배치 잡(build_graph_job)은 관계를 Iceberg 에 씁니다. NeorunBase 를 채우는
-# 것은 이 Flow 이고, 온톨로지의 derives_from(GRAPH 바인딩)이 순회하는 것도
-# 그렇게 채워진 그래프입니다. 서빙을 날려도 Flow 가 스냅샷부터 다시 읽습니다.
+# The batch job (build_graph_job) writes the relations into Iceberg. These Flows
+# are what fill NeorunBase, and the graph the ontology's derives_from link (a
+# GRAPH binding) traverses is the one they filled. Destroy serving and the Flows
+# read it back from the snapshots.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 DEMO=$(pwd)
-. out/stack.env 2>/dev/null || { echo "out/stack.env 없음 — infra/up.sh 먼저"; exit 1; }
+. out/stack.env 2>/dev/null || { echo "no out/stack.env — run infra/up.sh first"; exit 1; }
 
 ONTUL=${ONTUL_URL:-http://localhost:8080}
 ADMIN_PW="${ONTUL_ADMIN_PASSWORD:-regdemo-admin-2026}"
@@ -494,16 +499,16 @@ MODE=${1:-start}
 
 log(){ printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 step(){ printf '\033[1;32m  ok\033[0m %s\n' "$*"; }
-fail(){ printf '\033[1;31m  실패\033[0m %s\n' "$*"; exit 1; }
+fail(){ printf '\033[1;31m  failed\033[0m %s\n' "$*"; exit 1; }
 
 TOK=$(curl -s -XPOST "$ONTUL/admin/auth/login" -H 'Content-Type: application/json' \
       -d "{\"username\":\"admin\",\"password\":\"$ADMIN_PW\"}" \
       | python3 -c "import sys,json;print(json.load(sys.stdin).get('accessToken',''))" 2>/dev/null)
-[ -n "$TOK" ] || fail "ontul 로그인 실패"
+[ -n "$TOK" ] || fail "ontul login failed"
 AH="Authorization: Bearer $TOK"
 
-# 이름으로 골라 죽입니다. 결재 Flow 와 CDC Flow 가 같이 돌고 있으므로,
-# STREAMING 을 전부 kill 하면 이 스크립트가 남의 파이프라인을 끕니다.
+# Killed by label. The approval Flow and the CDC Flows are running alongside
+# these, so killing every STREAMING job would take down someone else's pipeline.
 kill_graph_flows(){
   curl -s "$ONTUL/v1/api/job/list" -H "$AH" | python3 -c "
 import sys, json
@@ -517,7 +522,7 @@ for j in json.load(sys.stdin):
 }
 
 if [ "$MODE" = "stop" ]; then
-  log "그래프 Flow 중지"
+  log "stopping the graph Flows"
   kill_graph_flows
   exit 0
 fi
@@ -529,14 +534,14 @@ submit(){ # submit <spec> <label>
 import os, json, urllib.request, time
 tok = os.environ["TOK"]; base = os.environ["ONTUL"]; label = os.environ["LABEL"]
 raw = open(os.environ["SPEC"], encoding="utf-8").read()
-# 스펙은 그대로 두고 자격증명만 주입합니다 — 파일에 비밀번호를 적어
-# 커밋하지 않기 위해서입니다.
+# The spec is left as it is and only the credentials are injected, so that no
+# password is written into a committed file.
 for k, v in (("NEORUNBASE_INTERNAL_HOST", os.environ["NB_HOST"]),
              ("NEORUNBASE_PASSWORD", os.environ["NB_PW"])):
     raw = raw.replace("${%s}" % k, v)
 cfg = json.loads(raw)
 cfg.pop("_comment", None)
-# 잡 이름에 label 을 실어둡니다 — 나중에 이 Flow 만 골라 끄기 위해서입니다.
+# The label rides along on the job so these Flows can be picked out later.
 cfg["description"] = label
 
 def api(path, body=None, method="GET"):
@@ -564,17 +569,17 @@ except Exception as e:
 PY
 }
 
-log "1/2  이전 그래프 Flow 정리"
+log "1/2  clearing previous graph Flows"
 kill_graph_flows
 
-log "2/2  Flow 기동"
+log "2/2  starting the Flows"
 for spec_label in "graph_nodes.json:graph-nodes" "graph_serving.json:graph-edges"; do
   spec=${spec_label%%:*}; label=${spec_label##*:}
   jid=$(submit "$DEMO/schema/flows/$spec" "$label")
-  case "$jid" in ERR:*|"") fail "$label 제출 실패 ($jid)";; *) step "$label 기동 $jid";; esac
+  case "$jid" in ERR:*|"") fail "$label submit failed ($jid)";; *) step "$label started $jid";; esac
 done
 
-log "반영 확인 — NeorunBase 쪽 행 수"
+log "checking it landed — row counts in NeorunBase"
 for i in $(seq 1 40); do
   N=$(PGPASSWORD="${NEORUNBASE_PASSWORD:-Regdemo12345}" psql -h localhost -p 5434 -U admin \
         -d neorunbase -t -A -c "SELECT count(*) FROM doc_nodes" 2>/dev/null | head -1)
@@ -584,11 +589,11 @@ for i in $(seq 1 40); do
   sleep 3
 done
 step "doc_nodes=${N:-0}  doc_edges=${E:-0}"
-[ "${E:-0}" -gt 0 ] || fail "엣지가 서빙에 도달하지 않았습니다 — 순회 리트리버와 온톨로지 GRAPH 링크가 빈 결과를 냅니다"
+[ "${E:-0}" -gt 0 ] || fail "no edges reached serving — the traversal retrievers and the ontology GRAPH link will return nothing"
 
 echo
-echo "  Flow 는 계속 돕니다. 배치 잡이 관계를 다시 만들면 서빙이 따라옵니다."
-echo "  멈추려면:  bash infra/graph_flow.sh stop"
+echo "  The Flows keep running. Rebuild the relations and serving follows."
+echo "  To stop:  bash infra/graph_flow.sh stop"
 ```
 
 
@@ -622,20 +627,22 @@ Flow keeps `ice.reg.approval_status` upserted from those events.
 ```json
 {
   "_comment": [
-    "결재 이벤트 스트림 → ice.reg.approval_status 상시 upsert.",
+    "The approval event stream, upserted continuously into ice.reg.approval_status.",
     "",
-    "source: 결재 시스템이 단계마다 newline-JSON 한 줄을 S3 프리픽스에 떨굽니다.",
-    "  실제 조직에서는 Kafka 인 경우가 많지만, 이 데모는 파일 소스로 둡니다 —",
-    "  브로커를 하나 더 띄우지 않고도 Flow 의 성질(증분 소비, 체크포인트, 재기동",
-    "  후 이어받기)이 그대로 드러나기 때문입니다.",
+    "source: the approval system drops one newline-JSON line into an S3 prefix per",
+    "  stage. In a real organisation this is usually Kafka; the demo uses a file",
+    "  source because the properties that matter — incremental consumption,",
+    "  checkpointing, resuming after a restart — are all visible without standing up",
+    "  another broker.",
     "",
-    "sink: type=table 이 Iceberg 싱크입니다. upsertKeys 가 approval_id 이므로",
-    "  같은 결재건의 후속 단계는 새 행이 아니라 **기존 행의 교체**가 됩니다.",
+    "sink: type=table is the Iceberg sink. upsertKeys is approval_id, so a later",
+    "  stage of the same approval **replaces the existing row** rather than adding one.",
     "",
-    "ontul.streaming.exactly.once: 마스터가 단일 커미터가 되어 모든 워커의",
-    "  파일을 한 커밋으로 씁니다. upsert 와 함께 쓰면 데이터 파일과 equality",
-    "  delete 파일이 같은 RowDelta 로 나가므로, 새 상태가 보이는 순간 이전",
-    "  상태가 사라집니다 — 둘 다 보이는 중간 상태가 없습니다."
+    "ontul.streaming.exactly.once: the master becomes the single committer and writes",
+    "  every worker's files in one commit. Combined with upsert, the data files and",
+    "  the equality-delete files go out in the same RowDelta, so the previous state",
+    "  disappears at the instant the new one becomes visible — there is no window in",
+    "  which both are readable."
   ],
   "source": {
     "type": "file",
@@ -652,7 +659,9 @@ Flow keeps `ice.reg.approval_status` upserted from those events.
   "sink": {
     "type": "table",
     "table": "ice.reg.approval_status",
-    "upsertKeys": ["approval_id"]
+    "upsertKeys": [
+      "approval_id"
+    ]
   },
   "ontul.streaming.exactly.once": "true",
   "commitIntervalMs": 2000,
@@ -672,18 +681,18 @@ Flow keeps `ice.reg.approval_status` upserted from those events.
 
 ```bash
 #!/usr/bin/env bash
-# 결재 스트림 Flow — ontul Flow 를 데모 스택에 얹습니다.
+# The approval event stream — an Ontul Flow on top of the demo stack.
 #
-#   bash infra/flow.sh          # 테이블 + Flow 기동 + 1차 이벤트
-#   bash infra/flow.sh advance  # 후속 단계 이벤트 (upsert 가 도는 것을 보여줍니다)
+#   bash infra/flow.sh          # create the table, start the Flow, emit a first batch
+#   bash infra/flow.sh advance  # later-stage events — watch the upsert happen
 #   bash infra/flow.sh stop
 #
-# 배치 파이프라인(index.sh)과 다른 점은 한 가지입니다: 이건 끝나지 않습니다.
-# 잡을 띄워두면 새 이벤트 파일이 도착하는 대로 표가 바뀝니다.
+# One thing separates this from the batch pipeline: it does not end. Leave the
+# job running and the table changes as new event files arrive.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 DEMO=$(pwd)
-. out/stack.env 2>/dev/null || { echo "out/stack.env 가 없습니다 — infra/up.sh 를 먼저 실행하세요"; exit 1; }
+. out/stack.env 2>/dev/null || { echo "no out/stack.env — run infra/up.sh first"; exit 1; }
 
 ONTUL=${ONTUL_URL:-http://localhost:8080}
 ADMIN_PW="${ONTUL_ADMIN_PASSWORD:-regdemo-admin-2026}"
@@ -693,7 +702,7 @@ MODE=${1:-start}
 
 log(){ printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 step(){ printf '\033[1;32m  ok\033[0m %s\n' "$*"; }
-fail(){ printf '\033[1;31m  실패\033[0m %s\n' "$*"; exit 1; }
+fail(){ printf '\033[1;31m  failed\033[0m %s\n' "$*"; exit 1; }
 
 export AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY AWS_SECRET_ACCESS_KEY=$S3_SECRET_KEY
 export AWS_DEFAULT_REGION=${S3_REGION:-us-east-1}
@@ -703,20 +712,21 @@ S3="aws --endpoint-url $S3_ENDPOINT_HOST s3"
 TOK=$(curl -s -XPOST "$ONTUL/admin/auth/login" -H 'Content-Type: application/json' \
       -d "{\"username\":\"admin\",\"password\":\"$ADMIN_PW\"}" \
       | python3 -c "import sys,json;print(json.load(sys.stdin).get('accessToken',''))" 2>/dev/null)
-[ -n "$TOK" ] || fail "ontul 로그인 실패"
+[ -n "$TOK" ] || fail "ontul login failed"
 AH="Authorization: Bearer $TOK"
 
-# 상태 줄이 아니라 본문을 봅니다 — /admin/query/execute 는 실패해도 200 입니다.
+# Reads the body rather than the status line — /admin/query/execute answers 200
+# even when the statement failed.
 sql(){ curl -s -XPOST "$ONTUL/admin/query/execute" -H "$AH" -H 'Content-Type: application/json' \
         -d "$(python3 -c "import json,sys;print(json.dumps({'sql':sys.argv[1]}))" "$1")"; }
 sql_ok(){ local out; out=$(sql "$1")
   case "$out" in *'"status":"error"'*) fail "$2: $(echo "$out" | head -c 200)";; esac; step "$2"; }
 
-# 자기 것만 죽입니다. 스트리밍 잡을 전부 죽이면 이 스크립트가 남의
-# 파이프라인을 끕니다 — 실제로 그랬습니다: graph_flow 가 띄운 2개를 cdc 가
-# 죽이고, cdc 가 띄운 5개를 flow 가 죽여서, 세 스크립트를 차례로 돌리면 마지막
-# 하나만 살아남았습니다. 각 스크립트가 성공을 보고했기 때문에 아무도 눈치채지
-# 못했습니다.
+# Kills only its own. Killing every streaming job means this script takes down
+# someone else's pipeline — which is exactly what happened: cdc killed the two
+# graph_flow had started, flow killed the five cdc had started, and running the
+# three scripts in sequence left only the last one alive. Nobody noticed, because
+# each script reported success.
 jobs_streaming(){ curl -s "$ONTUL/v1/api/job/list" -H "$AH" \
   | python3 -c "
 import sys, json
@@ -729,62 +739,65 @@ for j in json.load(sys.stdin):
 " 2>/dev/null; }
 
 if [ "$MODE" = "stop" ]; then
-  log "Flow 중지"
+  log "stopping the Flow"
   for jid in $(jobs_streaming); do curl -s -XPOST "$ONTUL/v1/api/job/kill/$jid" -H "$AH" -o /dev/null; step "kill $jid"; done
   exit 0
 fi
 
-# ── 이벤트 생성 ───────────────────────────────────────────────────────────────
-# 실제 결재 건을 흉내냅니다. 대상 규정은 원장에 실재하는 문서라야 에이전트가
-# 현행 버전과 나란히 놓고 답할 수 있습니다.
+# ── Emitting events ─────────────────────────────────────────────────────────
+# Modelled on real approval records. The regulation each one targets has to exist
+# in the ledger, or the agent cannot place it beside the current version.
 emit(){ # emit <seq> <<'JSON' ... JSON
   local seq=$1 tmp; tmp=$(mktemp); cat > "$tmp"
   $S3 cp "$tmp" "s3://$BUCKET/$PREFIX/evt-$(printf '%05d' "$seq").json" >/dev/null 2>&1 \
-    && step "이벤트 배치 $seq 업로드" || fail "업로드 실패"
+    && step "uploaded event batch $seq" || fail "upload failed"
   rm -f "$tmp"
 }
 
 if [ "$MODE" = "advance" ]; then
-  log "후속 단계 이벤트 — 같은 결재건이 다음 단계로"
-  # 같은 approval_id 입니다. append 라면 행이 늘어나고, upsert 라면 교체됩니다.
+  log "later-stage events — the same approvals move on"
+  # Same approval_id. An append would add rows; an upsert replaces them.
   emit 2 <<'JSON'
 {"approval_id":"APV-2026-0142","doc_no":"HR-REG-003","version":4,"step":"APPROVED","step_seq":3,"drafter":"20170003","owner_dept":"HR","summary":"육아지원규정 제4차 개정 — 돌봄휴가 20일→25일 확대","expected_from":"2026-09-01","updated_at":"2026-08-21 14:20:00"}
 {"approval_id":"APV-2026-0151","doc_no":"SEC-GDL-001","version":3,"step":"REJECTED","step_seq":3,"drafter":"20190004","owner_dept":"SEC","summary":"보안점검 주기 단축 개정안","expected_from":"2026-10-01","updated_at":"2026-08-21 14:25:00"}
 JSON
-  log "확인"
+  log "checking"
   sleep 8
   sql "SELECT approval_id, doc_no, step, step_seq FROM ice.reg.approval_status ORDER BY 1" \
     | python3 -c "
 import sys,json; d=json.load(sys.stdin); rows=d.get('rows') or []
-print('  현재 결재 상태:')
+print('  approval status now:')
 for r in rows: print('   ', r)
-print('  행 수:', len(rows), '(3건이면 upsert, 5건이면 append 로 격하된 것입니다)')"
+print('  rows:', len(rows), '(3 means upsert; 5 means it degraded into an append)')"
   exit 0
 fi
 
-log "1/4  대상 테이블"
-# 줄 앞이 아니라 줄 어디에 있든 -- 뒤를 잘라냅니다. 컬럼 뒤 주석이 그대로
-# 남으면 파서는 다음 컬럼까지 주석으로 삼켜 "Failed to parse CREATE TABLE" 만
-# 돌려줍니다 — 어느 줄이 문제인지는 알려주지 않습니다.
-# 끝의 세미콜론도 뗍니다. ontul 의 CREATE TABLE 파서는 SELECT 와 달리 그것을
-# 받지 못하고 "Failed to parse CREATE TABLE statement" 만 돌려줍니다.
+log "1/4  the target table"
+# Strips everything after -- wherever it appears, not only at the start of a
+# line. A trailing comment after a column definition makes the parser swallow the
+# next column along with it and answer "Failed to parse CREATE TABLE" — without
+# saying which line.
+# The trailing semicolon goes too. Ontul's CREATE TABLE parser, unlike its
+# SELECT parser, does not accept one and answers "Failed to parse CREATE TABLE
+# statement".
 DDL=$(sed 's/--.*$//' "$DEMO/schema/iceberg/40_approval_stream.sql" | tr '\n' ' ' | sed 's/  */ /g; s/^ *//; s/ *$//; s/;$//')
-sql_ok "$DDL" "ice.reg.approval_status 준비"
+sql_ok "$DDL" "ice.reg.approval_status ready"
 
-log "2/4  기존 Flow 정리 + 이벤트 프리픽스 비우기"
-for jid in $(jobs_streaming); do curl -s -XPOST "$ONTUL/v1/api/job/kill/$jid" -H "$AH" -o /dev/null; step "이전 잡 kill $jid"; done
+log "2/4  clearing previous Flows and emptying the event prefix"
+for jid in $(jobs_streaming); do curl -s -XPOST "$ONTUL/v1/api/job/kill/$jid" -H "$AH" -o /dev/null; step "killed previous job $jid"; done
 $S3 rm "s3://$BUCKET/$PREFIX/" --recursive >/dev/null 2>&1 || true
 sql "DELETE FROM ice.reg.approval_status" >/dev/null 2>&1
-step "s3://$BUCKET/$PREFIX/ 비움"
+step "emptied s3://$BUCKET/$PREFIX/"
 
-log "3/4  Flow 제출"
+log "3/4  submitting the Flow"
 JOBID=$(TOK="$TOK" ONTUL="$ONTUL" SPEC="$DEMO/schema/flows/approval_status.json" \
         EP="$S3_ENDPOINT_INTERNAL" AK="$S3_ACCESS_KEY" SK="$S3_SECRET_KEY" RG="${S3_REGION:-us-east-1}" \
         python3 <<'PY'
 import os,json,urllib.request,time,re
 tok=os.environ["TOK"]; base=os.environ["ONTUL"]
 raw=open(os.environ["SPEC"],encoding="utf-8").read()
-# 스펙은 그대로 두고 자격증명만 주입합니다 — 파일에 키를 적어 커밋하지 않기 위해서입니다.
+# The spec is left as it is and only the credentials are injected, so that no key
+# is written into a committed file.
 for k,v in (("S3_ENDPOINT_INTERNAL",os.environ["EP"]),("S3_ACCESS_KEY",os.environ["AK"]),
             ("S3_SECRET_KEY",os.environ["SK"]),("S3_REGION",os.environ["RG"])):
     raw=raw.replace("${%s}"%k, v)
@@ -808,9 +821,9 @@ except SystemExit: pass
 except Exception as e: print("ERR:"+str(e)[:300])
 PY
 )
-case "$JOBID" in ERR:*|"") fail "Flow 제출 실패 ($JOBID)";; *) step "Flow 기동 $JOBID";; esac
+case "$JOBID" in ERR:*|"") fail "Flow submit failed ($JOBID)";; *) step "Flow started $JOBID";; esac
 
-log "4/4  1차 이벤트 — 결재 3건이 각각 다른 단계에 있습니다"
+log "4/4  first events — three approvals, each at a different stage"
 emit 1 <<'JSON'
 {"approval_id":"APV-2026-0142","doc_no":"HR-REG-003","version":4,"step":"REVIEW","step_seq":2,"drafter":"20170003","owner_dept":"HR","summary":"육아지원규정 제4차 개정 — 돌봄휴가 20일→25일 확대","expected_from":"2026-09-01","updated_at":"2026-08-21 11:05:00"}
 {"approval_id":"APV-2026-0151","doc_no":"SEC-GDL-001","version":3,"step":"REVIEW","step_seq":2,"drafter":"20190004","owner_dept":"SEC","summary":"보안점검 주기 단축 개정안","expected_from":"2026-10-01","updated_at":"2026-08-21 11:12:00"}
@@ -825,12 +838,12 @@ done
 sql "SELECT approval_id, doc_no, version, step FROM ice.reg.approval_status ORDER BY 1" \
   | python3 -c "
 import sys,json; d=json.load(sys.stdin); rows=d.get('rows') or []
-print('  진행 중인 개정:')
+print('  revisions in flight:')
 for r in rows: print('   ', r)"
 
-log "완료 — Flow 는 계속 돕니다"
-echo "  다음 단계를 흘려보내려면:  bash infra/flow.sh advance"
-echo "  멈추려면:                  bash infra/flow.sh stop"
+log "done — the Flow keeps running"
+echo "  To push the next stage through:  bash infra/flow.sh advance"
+echo "  To stop:                         bash infra/flow.sh stop"
 ```
 
 

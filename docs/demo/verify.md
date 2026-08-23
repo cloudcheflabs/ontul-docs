@@ -33,12 +33,12 @@ ok()   { echo "  PASS: $1"; PASS=$((PASS+1)); }
 bad()  { echo "  FAIL: $1${2:+ -> $2}"; FAIL=$((FAIL+1)); }
 check() { [ "$1" = "1" ] && ok "$2" || bad "$2" "${3:-}"; }
 
-echo "=== 1. 시드 ==="
+echo "=== 1. seed ==="
 [ -f "$OUT/ground_truth.json" ] || (cd seed/src && PYTHONPATH=. python3 -m regdemo_seed --out "$(cd ../.. && pwd)/$OUT")
 FILES=$(python3 -c "import json;print(json.load(open('$OUT/ground_truth.json'))['counts']['total_files'])")
-check "$([ "$FILES" -gt 400 ] && echo 1 || echo 0)" "코퍼스 $FILES 개 파일"
+check "$([ "$FILES" -gt 400 ] && echo 1 || echo 0)" "corpus: $FILES files"
 
-echo "=== 2. 스택 ==="
+echo "=== 2. stack ==="
 # The stack is brought up by infra/up.sh across four compose projects; this only
 # checks that what should be running is. Starting it here would hide a teardown.
 for c in nrn-iceberg-api-1 regdemo-polaris nrn-iceberg-coordinator-1 \
@@ -48,14 +48,14 @@ for c in nrn-iceberg-api-1 regdemo-polaris nrn-iceberg-coordinator-1 \
   check "$([ "$st" = "running" ] && echo 1 || echo 0)" "$c ($st)"
 done
 
-echo "=== 3. 임베딩 서비스 신원 ==="
+echo "=== 3. embedding service identity ==="
 FP=$(curl -sf http://localhost:8100/fingerprint | python3 -c "import sys,json;print(json.load(sys.stdin)['fingerprint'])")
 check "$([ -n "$FP" ] && echo 1 || echo 0)" "fingerprint: $FP"
 # A service that cannot name its own revision must refuse to serve, because a
 # vector it produces cannot be pinned to a generation.
-check "$(echo "$FP" | grep -qv '@:' && echo 1 || echo 0)" "revision 해석됨"
+check "$(echo "$FP" | grep -qv '@:' && echo 1 || echo 0)" "revision resolved"
 
-echo "=== 4. 원장과 인덱스 ==="
+echo "=== 4. ledger and index ==="
 source "$OUT/stack.env"
 TOKEN=$(curl -sf -X POST "$ONTUL/admin/auth/login" -H 'Content-Type: application/json' \
   -d "{\"username\":\"admin\",\"password\":\"${ONTUL_ADMIN_PASSWORD:-regdemo-admin-2026}\"}" \
@@ -71,10 +71,10 @@ print(rows[0][0] if rows and rows[0] else '')
 " 2>/dev/null; }
 
 CH=$(q "SELECT count(*) FROM ice.reg.doc_chunks")
-check "$([ "${CH:-0}" -gt 700 ] && echo 1 || echo 0)" "청크 ${CH:-0}"
+check "$([ "${CH:-0}" -gt 700 ] && echo 1 || echo 0)" "chunks ${CH:-0}"
 VEC=$(PGPASSWORD="${NEORUNBASE_PASSWORD:-Regdemo12345}" psql -h localhost -p 5434 -U admin \
         -d neorunbase -t -A -c "SELECT count(*) FROM doc_vectors_gen1" 2>/dev/null | head -1)
-check "$([ "${VEC:-0}" = "${CH:-1}" ] && echo 1 || echo 0)" "벡터 ${VEC:-0} = 청크 ${CH:-0}"
+check "$([ "${VEC:-0}" = "${CH:-1}" ] && echo 1 || echo 0)" "vectors ${VEC:-0} = chunks ${CH:-0}"
 
 # The scenario the whole corpus is built around: the approval date wins over the
 # date printed in the document.
@@ -85,11 +85,11 @@ from datetime import date, timedelta
 v = sys.argv[1].strip()
 print((date(1970,1,1)+timedelta(days=int(v))).isoformat() if v.isdigit() else v[:10])
 " "${EFF:-}")
-check "$([ "$EFF" = "2025-03-15" ] && echo 1 || echo 0)" "HR-REG-003 v3 시행일 $EFF (부칙 2025-01-01 아님)"
+check "$([ "$EFF" = "2025-03-15" ] && echo 1 || echo 0)" "HR-REG-003 v3 effective $EFF (not the 2025-01-01 the document prints)"
 
-echo "=== 5. 시나리오 ==="
+echo "=== 5. scenarios ==="
 python3 tests/run_cases.py --ground-truth "$OUT/ground_truth.json" --json "$OUT/case_results.json" \
-  && ok "시나리오 전건 통과" || bad "시나리오 실패 — $OUT/case_results.json 참조"
+  && ok "all scenarios passed" || bad "scenarios failed — see $OUT/case_results.json"
 
 echo
 echo "================================================"
@@ -192,10 +192,10 @@ def check(expect: dict, answer: str, tools: list[str], ontul=None, caller=None) 
             bad.append("row_count needs a cluster connection")
         else:
             try:
-                # 관리자로 봅니다. 이건 시나리오가 아니라 검사이고, 질문자에게
-                # 보이지 않는 표를 확인해야 할 때가 있습니다 — 개정 요청 원장이
-                # 그렇습니다. 질문자 권한으로 보면 "행이 없다" 와 "볼 수 없다"
-                # 가 같은 실패로 보입니다.
+                # Read as admin. This is a check, not a scenario, and sometimes it has
+                # to look at a table the asking persona cannot see — the revision-request
+                # ledger is one. Read with the persona's rights, "there is no row" and
+                # "you may not see it" look like the same failure.
                 from regdemo_agent.client import Caller as _C
                 ontul.register_password(
                     "admin", os.environ.get("ONTUL_ADMIN_PASSWORD", "regdemo-admin-2026"))
@@ -215,12 +215,13 @@ def check(expect: dict, answer: str, tools: list[str], ontul=None, caller=None) 
             # Usually the figure from a superseded version — the reason this
             # assertion exists at all.
             bad.append(f"present but must not be: {s!r}")
-    # 질문에 대한 답이 먼저 와야 합니다.
+    # The answer to the question asked has to come first.
     #
-    # "2025년 2월 기준" 을 물었는데 그 시점 값이 15일이고 현재 값이 20일이면,
-    # 20일 을 아예 말하지 말라고 하는 것은 과합니다 — 어느 판의 값인지 밝히면서
-    # 대조로 덧붙이는 것은 더 나은 답입니다. 막아야 하는 것은 **묻은 시점의
-    # 값으로 오해되는 것**이므로, 후보 숫자들 중 무엇이 먼저 나오는지를 봅니다.
+    # Asked "as of February 2025", where the value then was 15 days and the value now
+    # is 20, forbidding 20 entirely is too blunt — naming which version each figure
+    # belongs to and adding the current one as a contrast is the better answer. What
+    # has to be prevented is a reader taking today's figure for the asked date, so
+    # the check is which of the candidate figures appears first.
     if lead := expect.get("leads_with"):
         first, pos = None, len(answer) + 1
         for cand in expect.get("among", []):
@@ -247,8 +248,9 @@ def check(expect: dict, answer: str, tools: list[str], ontul=None, caller=None) 
         if (v := cite.get("version")) and not re.search(rf"제\s*{v}\s*차", answer):
             bad.append(f"version {v} not cited")
 
-    # "없다" 를 한국어로 말하는 방법은 하나가 아닙니다. 좁게 잡으면 정확한 답이
-    # 실패로 기록되고, 그러면 스위트가 답이 아니라 표현을 채점하게 됩니다.
+    # There is more than one way to say "not found" in Korean. Match too narrowly
+    # and a correct answer is recorded as a failure — at which point the suite is
+    # scoring phrasing rather than answers.
     if expect.get("indicates_not_found") and not re.search(
             r"찾지 못|없습니다|없음|않습니다|확인되지 않|등록되어 있지", answer):
         bad.append("did not say it could not find an answer")
@@ -416,7 +418,8 @@ if __name__ == "__main__":
 ```yaml
 # The claim the whole demo rests on: an expired regulation is not a candidate.
 #
-# These assert on a *number*, not on a citation. 홍가은 has used 12 of 20 days,
+# These assert on a *number*, not on a citation. The employee has used 12 of 20
+# days,
 # so the answer is 8 — and 3 if the superseded 15-day version is read instead.
 # A citation check would pass on a wrong answer that happens to name a document;
 # an arithmetic check cannot.
@@ -441,8 +444,9 @@ cases:
   - id: as_of_before_approval
     ask: 2025년 2월 기준으로는 육아휴직이 며칠이었어?
     expect:
-      # 물은 시점의 값이 답이고, 먼저 와야 합니다. 현재 값을 대조로 덧붙이는
-      # 것까지 막지는 않습니다 — 어느 판의 값인지 밝히는 답이 더 낫습니다.
+      # The value as of the date asked is the answer, and it has to come first.
+      # Adding today's value as a contrast is not forbidden — an answer that names
+      # which version each figure belongs to is the better one.
       contains: ['15일']
       leads_with: '15일'
       among: ['15일', '20일', '25일']
@@ -462,10 +466,12 @@ cases:
       indicates_not_found: true
       not_contains: ["일까지", "가능합니다"]
 
-  # ── 진행 중인 개정 (ontul Flow 로 실시간 반영) ──────────────────────────────
-  # 앞의 케이스들은 "이미 시행된 것" 안에서의 시간 정합성을 봅니다. 이 두 건은
-  # 반대편입니다: 아직 시행되지 않은 변경을 답에 포함시키는가. 원장에는 없고
-  # 결재 스트림에만 있는 사실이라, 배치 테이블만 읽는 구현은 통과할 수 없습니다.
+  # ── Revisions in flight, arriving live through an Ontul Flow ──────────────
+  # The cases above test temporal correctness within what has already taken effect.
+  # These two test the other side: does the answer include a change that has not
+  # taken effect yet. That fact is absent from the ledger and present only in the
+  # approval stream, so an implementation reading only the batch tables cannot
+  # pass.
   - id: pending_revision_disclosed
     ask: 육아휴직 며칠까지 쓸 수 있어? 곧 바뀌는 것도 있으면 알려줘.
     expect:
@@ -473,7 +479,7 @@ cases:
       tools_used: [pending_revision]
 
   - id: pending_not_yet_in_force
-    # 승인은 났지만 시행 전입니다. "지금 25일"이라고 답하면 틀립니다.
+    # Approved but not yet in force. Answering "25 days, now" would be wrong.
     ask: 지금 당장 육아휴직 25일 쓸 수 있어?
     expect:
       contains: ["2026-09-01"]
@@ -533,13 +539,14 @@ cases:
     caller: {user: cho, emp_no: "${HR_EMP_NO}", dept: HR, clearance: hr}
     ask: 징계 양정기준 알려줘
     expect:
-      # 같은 질문, 같은 문서. 홍가은에게는 이 문서번호가 나오면 안 되고
-      # (restricted_regulation_absent), 인사팀에게는 나와야 합니다.
+      # Same question, same document. This document number must not appear for the
+      # ordinary employee (restricted_regulation_absent) and must appear for HR.
       #
-      # "찾았다" 는 말이 아니라 **문서를 지목했는가** 로 봅니다. 이 코퍼스의
-      # HR-GDL-003 v3 에는 양정 등급표 본문이 없어서, 정확한 답은 "지침은 이것이고
-      # 등급표 본문은 확인되지 않는다" 입니다 — 그건 접근 통제가 실패한 것이
-      # 아니라 에이전트가 없는 내용을 지어내지 않은 것입니다.
+      # Judged on whether the document was **named**, not on the word "found". In
+      # this corpus HR-GDL-003 v3 has no body text for the scale itself, so the
+      # correct answer is "this is the guideline, and the table of grades is not in
+      # what I can see" — which is the agent not inventing missing content, not a
+      # failure of access control.
       contains: ["HR-GDL-003"]
       cites: {doc_no: "HR-GDL-003"}
 ```
@@ -599,11 +606,12 @@ cases:
 **`demo/tests/cases/04_ontology.yaml`**
 
 ```yaml
-# 온톨로지 — 객체 · 링크 · 액션.
+# Ontology — objects, links, actions.
 #
-# 앞의 세 묶음은 "검색이 옳은 답을 주는가" 를 봅니다. 이 묶음은 다른 것을
-# 봅니다: 에이전트가 SQL 을 짜지 않고 **개체를 이름으로** 다룰 수 있는가, 그리고
-# 읽기만 하던 것이 **거버넌스가 붙은 쓰기** 로 넘어갈 때 그 경계가 지켜지는가.
+# The three suites before this one ask whether search returns the right answer.
+# This one asks something else: can the agent handle entities **by name** without
+# writing SQL, and when read-only turns into a **governed write**, does the
+# boundary hold.
 suite: 온톨로지
 caller: {user: hong, emp_no: "${DEMO_EMP_NO}", dept: DEV, clearance: none}
 
@@ -611,30 +619,32 @@ cases:
   - id: object_identity
     ask: HR-REG-003이 무슨 규정이고 몇 차 개정까지 있어?
     expect:
-      # 본문 검색이 아니라 객체 조회입니다. 답에 제목과 판이 같이 나와야 합니다.
+      # An object query, not a body search. The answer has to carry the title and
+      # the versions together.
       tools_used: [describe_regulation]
       contains: ["육아지원규정"]
 
   - id: object_absent
     ask: HR-REG-999는 무슨 규정이야?
     expect:
-      # 없는 개체를 물으면 없다고 해야 합니다. 온톨로지는 선언된 것만 알고,
-      # 모르는 것을 그럴듯하게 지어내지 않는 것이 이 계층의 값어치입니다.
+      # Asked about an entity that does not exist, it has to say so. The ontology
+      # knows only what is declared, and not inventing something plausible for what
+      # it does not know is what this layer is worth.
       indicates_not_found: true
 
   - id: graph_link_traversal
     ask: 징계 양정기준의 근거가 되는 상위 규정을 온톨로지로 따라가줘
     expect:
-      # GRAPH 바인딩 — 순회는 NeorunBase 그래프 엔진이 하고, 돌아오는 것은
-      # 규정 객체입니다.
+      # A GRAPH binding — NeorunBase's graph engine does the traversal and what
+      # comes back are regulation objects.
       tools_used: [related_regulations]
       contains: ["HR-REG-001"]
 
   - id: revision_request_written
     ask: 육아지원규정 3차에 대해 돌봄휴가 확대 사유로 개정 요청 넣어줘
     expect:
-      # 읽기 전용이 아닙니다. 이 호출은 원장에 행을 남기고, 누가 언제 불렀는지는
-      # 감사 로그에 남습니다.
+      # Not read-only. This call leaves a row in the ledger, and who called it when
+      # is recorded in the audit log.
       tools_used: [request_regulation_revision]
       contains: ["HR-REG-003"]
       contains_pattern: "접수|요청"
@@ -642,8 +652,9 @@ cases:
   - id: revision_request_idempotent
     ask: 육아지원규정 3차 개정 요청 다시 한 번 넣어줘
     expect:
-      # 같은 (사용자, 규정, 판) 이면 같은 요청입니다. 두 번 물었다고 두 건이
-      # 되면 그 표는 결재 대기열이 아니라 클릭 횟수 기록이 됩니다.
+      # The same (user, regulation, version) is the same request. If asking twice
+      # made two of them, the table would be a record of clicks rather than a queue
+      # of approvals.
       tools_used: [request_regulation_revision]
       row_count: {sql: "SELECT count(*) FROM ice.reg.revision_requests WHERE doc_no = 'HR-REG-003'", equals: 1}
 ```

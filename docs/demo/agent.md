@@ -177,16 +177,16 @@ class OntulClient:
         cols = [c["name"] for c in body.get("columns", [])]
         return [dict(zip(cols, row)) for row in body.get("rows", [])]
 
-    # ── 온톨로지 ────────────────────────────────────────────────────────────
+    # ── Ontology ────────────────────────────────────────────────────────────
     #
-    # 읽기 두 개와 쓰기 하나. SQL 이 아니라 객체 이름으로 부르는 것이 요점입니다 —
-    # 호출하는 쪽은 어느 카탈로그의 어느 테이블인지, 조인을 어떻게 하는지 몰라도
-    # 되고, 서버가 속성 이름을 컬럼으로 옮깁니다. 선언되지 않은 속성을 부르면 SQL
-    # 이 만들어지기 전에 400 으로 거절됩니다.
+    # Two reads and a write. Calling by object name rather than by SQL is the point:
+    # the caller does not have to know which catalog holds which table or how the
+    # join goes, and the server maps property names onto columns. Referencing an
+    # undeclared property is rejected with a 400 before any SQL is built.
 
     def object_query(self, fqn: str, caller: Caller, filters: dict | None = None,
                      select: list[str] | None = None, limit: int = 20) -> list[dict]:
-        """객체 타입의 인스턴스를 속성 이름으로 조회합니다."""
+        """Instances of an object type, filtered and projected by property name."""
         payload: dict[str, Any] = {"limit": limit}
         if filters:
             payload["filters"] = filters
@@ -202,7 +202,7 @@ class OntulClient:
     def link_traverse(self, fqn: str, caller: Caller, source_key: Any,
                       select: list[str] | None = None, max_depth: int = 1,
                       limit: int = 20) -> list[dict]:
-        """링크를 따라 이어진 객체들을 가져옵니다 (JOIN 또는 GRAPH)."""
+        """The objects reachable across a link (JOIN or GRAPH)."""
         payload: dict[str, Any] = {"sourceKey": str(source_key), "limit": limit,
                                    "maxDepth": max_depth}
         if select:
@@ -216,11 +216,12 @@ class OntulClient:
 
     def action_invoke(self, fqn: str, caller: Caller, args: dict,
                       idempotency_key: str | None = None) -> dict:
-        """액션을 호출합니다 — 검증 · 인가 · 멱등 · 감사가 붙은 쓰기.
+        """Invoke an action — a write with validation, authorization, idempotency and
+        audit attached.
 
-        멱등 키를 주면 같은 키의 재시도는 다시 쓰지 않고 이전 결과를 돌려줍니다.
-        에이전트는 재시도를 하기 마련이고, 두 번 쓰이는 요청은 두 건의 요청으로
-        보입니다.
+        Given an idempotency key, a retry with the same key does not write again but
+        returns the earlier result. Agents retry, and a request written twice looks
+        like two requests.
         """
         payload: dict[str, Any] = {"args": args}
         if idempotency_key:
@@ -296,7 +297,7 @@ def build_tools(client: OntulClient, caller: Caller) -> list:
         """Search company regulations for the rule that answers a question.
 
         Returns only regulations in force on the given date (today if omitted),
-        and only documents 인사팀 has marked as citable — so a meeting note that
+        and only documents HR has marked as citable — so a meeting note that
         mentions the topic will not come back.
 
         Args:
@@ -347,7 +348,8 @@ def build_tools(client: OntulClient, caller: Caller) -> list:
             return f"{doc_no}: {d} 시점에 유효한 버전이 없습니다."
         r = rows[0]
         # Rendered back to a date. The engine returns epoch days, and an answer
-        # that says "시행 20162" is worse than no answer — it looks like a fact.
+        # that prints an epoch day where a date belongs is worse than no answer —
+        # it looks like a fact.
         out = (f"{r['doc_no']} {r['title']} 제{r['version']}차 개정, "
                f"시행 {_as_iso(r['effective_from'])}")
         if r.get("date_mismatch"):
@@ -425,7 +427,8 @@ def build_tools(client: OntulClient, caller: Caller) -> list:
 
         Views: semantic.hr.employees, semantic.hr.leave_balance,
         semantic.hr.expenses, semantic.hr.purchase_orders.
-        Columns are Korean: 사번, 성명, 부서, 휴가종류, 부여일수_ERP, 사용일수, 금액.
+        The columns are Korean identifiers: 사번, 성명, 부서, 휴가종류, 부여일수_ERP,
+        사용일수, 금액.
 
         Args:
             question_sql: a SELECT against one of those views
@@ -473,9 +476,9 @@ def build_tools(client: OntulClient, caller: Caller) -> list:
                 f'FROM semantic.reg.pending_revisions{where} ORDER BY 1', caller)
         except RuntimeError as e:
             return f"결재 현황 조회 실패: {e}"
-        # REJECTED is deliberately kept rather than filtered out. "제출됐지만
-        # 반려됨"은 "그런 개정은 없음"과 다른 사실이고, 물어본 사람이 알아야
-        # 하는 쪽은 대개 전자입니다.
+        # REJECTED is deliberately kept rather than filtered out. "submitted and
+        # rejected" is a different fact from "there is no such revision", and the
+        # first is usually the one the person asking needs.
         if not rows:
             return ("진행 중인 개정 결재가 없습니다."
                     if doc_no.strip() else "진행 중인 개정 결재가 없습니다.")
@@ -487,21 +490,22 @@ def build_tools(client: OntulClient, caller: Caller) -> list:
                 f"기안 {r.get('기안자사번')})")
         return "\n".join(out)
 
-    # ── 온톨로지 ────────────────────────────────────────────────────────────
+    # ── Ontology ────────────────────────────────────────────────────────────
     #
-    # 위의 툴들은 SQL 이나 리트리버로 갑니다. 아래 셋은 온톨로지로 갑니다 —
-    # 객체 이름과 속성 이름만 쓰고, 어느 테이블인지도 어떻게 조인하는지도
-    # 모델이 알 필요가 없습니다. 그리고 마지막 하나는 읽기가 아니라 쓰기입니다.
+    # The tools above go through SQL or a retriever. The three below go through the
+    # ontology: object names and property names only, with the model needing to know
+    # neither the table nor the join. And the last of them is a write, not a read.
 
     @beta_tool
     def describe_regulation(doc_no: str) -> str:
-        """규정 한 건의 신원과 그 판들.
+        """What a named regulation is, and every version it has.
 
-        본문을 찾는 것이 아니라 "이 규정이 무엇이고 몇 차까지 있는가" 를 봅니다.
-        근거를 따라가기 전에 대상이 실재하는지 확인하는 데도 씁니다.
+        Not a search of the body text — this answers "what is this regulation and how
+        many revisions does it have". Also used to confirm a document exists before
+        tracing its authority.
 
         Args:
-            doc_no: 문서번호, 예: HR-REG-003
+            doc_no: document number, e.g. HR-REG-003
         """
         try:
             regs = client.object_query(
@@ -528,14 +532,16 @@ def build_tools(client: OntulClient, caller: Caller) -> list:
 
     @beta_tool
     def related_regulations(doc_no: str, depth: int = 2) -> str:
-        """근거 관계를 따라 이어진 규정들 — 온톨로지 그래프 링크로.
+        """Regulations reached by following the authority relation — through the
+        ontology's graph link.
 
-        trace_authority 와 같은 그래프를 보지만 부르는 방법이 다릅니다: 리트리버
-        가 아니라 객체와 링크로 가고, 결과는 규정 객체입니다.
+        The same graph trace_authority sees, reached a different way: through objects
+        and links rather than a retriever, and what comes back are regulation
+        objects.
 
         Args:
-            doc_no: 출발 문서번호
-            depth: 몇 단계까지 따라갈지 (기본 2)
+            doc_no: the document to start from
+            depth: how many hops to follow (default 2)
         """
         seed = _doc_id(doc_no)
         if seed is None:
@@ -553,16 +559,17 @@ def build_tools(client: OntulClient, caller: Caller) -> list:
 
     @beta_tool
     def request_regulation_revision(doc_no: str, version: int, reason: str) -> str:
-        """규정 개정을 요청합니다 — 원장에 기록되는 쓰기.
+        """Request a revision to a regulation — a write, recorded in the ledger.
 
-        읽기만 하는 다른 툴들과 다릅니다. 이건 실제로 기록을 남기므로, 사용자가
-        개정을 요청해 달라고 명시했을 때만 부르십시오. 같은 규정의 같은 판에
-        대한 두 번째 요청은 새 요청이 아니라 같은 요청으로 처리됩니다.
+        Unlike every other tool here, this changes something. Call it only when the
+        person has asked for a revision to be requested. A second request against the
+        same version of the same regulation is treated as the same request, not a new
+        one.
 
         Args:
-            doc_no: 개정할 규정 번호
-            version: 현재 시행 중인 판
-            reason: 요청 사유
+            doc_no: the regulation to revise
+            version: the version currently in force
+            reason: why the revision is being requested
         """
         try:
             res = client.action_invoke(
@@ -570,8 +577,8 @@ def build_tools(client: OntulClient, caller: Caller) -> list:
                 {"doc_no": doc_no, "version": int(version), "reason": reason},
                 idempotency_key=f"{caller.user_id}:{doc_no}:v{version}")
         except RuntimeError as e:
-            # 권한이 없으면 여기로 옵니다. 모델이 다시 시도하지 않도록 분명히
-            # 말해 줍니다 — 표현을 바꿔서 통과할 수 있는 종류가 아닙니다.
+            # Lack of authorization lands here. Said plainly so the model does not try
+            # again — this is not the kind of refusal a rephrasing gets past.
             return f"개정 요청이 거부되었습니다: {e}"
         return (f"{doc_no} 제{version}차에 대한 개정 요청을 접수했습니다. "
                 f"사유: {reason} (처리 {res.get('commandTag') or 'OK'})")
@@ -803,7 +810,7 @@ def ask(question: str, caller: Caller, ontul: OntulClient,
         if message.stop_reason == "refusal":
             # A 200 with no usable content. Reading content[0] here would raise
             # something unrelated and hide what actually happened.
-            return "요청이 거부되었습니다."
+            return "The request was refused."
         # Prose in a message that also calls a tool is commentary on the way to
         # the answer; prose in a message that calls none IS the answer, and
         # emitting it here as well would show it twice.
@@ -822,7 +829,7 @@ def ask(question: str, caller: Caller, ontul: OntulClient,
         final = message
 
     if final is None:
-        return "응답을 받지 못했습니다."
+        return "No response was returned."
     return "\n".join(b.text for b in final.content if b.type == "text").strip()
 
 
@@ -868,7 +875,7 @@ def main(argv: list[str] | None = None) -> int:
         print(ask(" ".join(args.question), caller, ontul, args.verbose))
         return 0
 
-    print(f"질문을 입력하세요 (사번 {args.emp_no}, {args.dept}). 종료: Ctrl-D")
+    print(f"Ask a question (employee {args.emp_no}, {args.dept}). Ctrl-D to exit.")
     while True:
         try:
             q = input("\n> ").strip()
@@ -1070,12 +1077,12 @@ def main() -> int:
         print("ANTHROPIC_API_KEY is not set — the page will load and every "
               "question will fail.", file=sys.stderr)
     srv = ThreadingHTTPServer((host, port), Handler)
-    print(f"규정 에이전트 채팅: http://{host}:{port}")
-    print(f"페르소나: {', '.join(p['id'] + '(' + p['name'] + ')' for p in PERSONAS)}")
+    print(f"regulation agent chat: http://{host}:{port}")
+    print(f"personas: {', '.join(p['id'] + '(' + p['name'] + ')' for p in PERSONAS)}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
-        print("\n종료")
+        print("\nstopped")
     return 0
 
 

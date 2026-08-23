@@ -23,82 +23,90 @@ Iceberg snapshots.
 
 ```sql
 -- ============================================================================
--- 원장 (ledger) — 문서 메타와 버전
+-- The ledger — document identity and versions
 --
--- 이 파일의 테이블은 "무엇이 사실인가"를 담습니다. 벡터·인덱스·그래프 엣지는
--- 전부 여기서 다시 만들어낼 수 있는 파생물이므로 원장에 두지 않습니다.
+-- The tables in this file hold what is true. Vectors, indexes and graph edges are
+-- all derivatives that can be rebuilt from here, so none of them live in the
+-- ledger.
 -- ============================================================================
 
 CREATE SCHEMA IF NOT EXISTS ice.reg;
 
--- ── 문서 (버전 무관한 정체성) ────────────────────────────────────────────────
--- doc_no 는 파일명이 아니라 문서 자체의 식별자입니다. 실제 조직에서 파일명은
--- "인사규정_v2_최종_수정.pdf" 처럼 신뢰할 수 없으므로, 매칭은 규정 목록
--- (엑셀 마스터)을 통해 이루어지고 그 결과만 여기에 남습니다.
+-- ── Documents: identity, independent of version ─────────────────────────────
+-- doc_no identifies the document itself, not the file. In a real organisation a
+-- filename like "인사규정_v2_최종_수정.pdf" cannot be trusted, so matching goes
+-- through the register (the master spreadsheet) and only its result lands here.
 CREATE TABLE IF NOT EXISTS ice.reg.documents (
-    doc_id          BIGINT,     -- 그래프 정점 id. 업무 키는 doc_no 이고 이건 대리키입니다 —
-                                -- 그래프 엔진의 정점은 숫자여야 하고, 그 숫자를 그래프를
-                                -- 만들 때마다 새로 매기면 어제 만든 엣지를 오늘 해석할 수
-                                -- 없습니다. 원장이 부여하면 한 번 정해지고 계속 같습니다.
+    doc_id          BIGINT,     -- Graph vertex id. doc_no is the business key; this is a
+                                -- surrogate. A graph engine's vertices have to be numbers,
+                                -- and renumbering them on every rebuild means an edge
+                                -- written yesterday cannot be read today. Assigned by the
+                                -- ledger, it is decided once and stays.
     doc_no          VARCHAR,    -- HR-REG-003
     title           VARCHAR,
-    doc_class       VARCHAR,    -- RULE(취업규칙) / REGULATION(규정) / GUIDELINE(지침)
-    tier            INT,        -- 1=최상위 2=규정 3=지침. 문서번호에 인코딩된 값과 일치해야 함
-    owner_dept      VARCHAR,    -- 소관 부서 코드 (org.py 의 DEPTS 와 조인)
-    is_official     BOOLEAN,    -- 인사팀이 "답변 근거가 될 수 있다"고 지정한 문서
-                                -- ↑ 논의의 '최소 큐레이션'. 300명 문서 전부를 믿지 않는다.
-    sensitivity     VARCHAR,    -- PUBLIC / INTERNAL / RESTRICTED
-                                -- ↑ RESTRICTED 는 IAM 행 필터로 후보군에서 배제
+    doc_class       VARCHAR,    -- RULE / REGULATION / GUIDELINE
+    tier            INT,        -- 1=top level, 2=regulation, 3=guideline; must agree with
+                                -- what the document number encodes
+    owner_dept      VARCHAR,    -- Owning department code (joins org.py's DEPTS)
+    is_official     BOOLEAN,    -- Marked by HR as citable as the basis for an answer.
+                                -- The minimum curation: not every document a 300-person
+                                -- company produces is trusted.
+    sensitivity     VARCHAR,    -- The classification the register carries.
+                                -- Restricted documents are excluded from the candidate
+                                -- set by an IAM row filter, not by the pipeline.
     source_system   VARCHAR,    -- onedrive / groupware / erp_attachment
     created_at      TIMESTAMP,
     updated_at      TIMESTAMP
 );
 
--- ── 버전 (시간 정합성의 심장) ────────────────────────────────────────────────
--- effective_from 은 문서 본문이 아니라 전자결재 승인일에서 옵니다. 본문 부칙의
--- "2025년 1월 1일부터 시행"은 초안 작성 시점에 쓰인 값이고, 결재가 미뤄지면
--- 틀립니다. 그래서 두 값을 따로 보관하고 불일치를 명시적으로 표시합니다.
+-- ── Versions: the heart of temporal correctness ─────────────────────────────
+-- effective_from comes from the approval system, not from the document body. The
+-- "in force from 1 January 2025" printed in the 부칙 was written when the draft
+-- was, and becomes false the moment approval slips. So both values are kept and
+-- the disagreement is flagged explicitly.
 CREATE TABLE IF NOT EXISTS ice.reg.doc_versions (
     doc_no          VARCHAR,
     version         INT,
     status          VARCHAR,    -- DRAFT / EFFECTIVE / SUPERSEDED / ABOLISHED
-    effective_from  DATE,       -- 권위: 전자결재 최종 승인일
-    effective_to    DATE,       -- NULL = 현재 유효. 후속 버전 시행일 - 1일
-    stated_from     DATE,       -- 참고: 문서 부칙에 적힌 시행일
-    date_mismatch   BOOLEAN,    -- effective_from <> stated_from → 인사팀 확인 대상
-    approval_id     VARCHAR,    -- 전자결재 문서 ID (MySQL 그룹웨어와 조인)
+    effective_from  DATE,       -- Authoritative: the approval system's completion date
+    effective_to    DATE,       -- NULL means still current; otherwise the next version's date
+    stated_from     DATE,       -- For reference: the date printed in the document
+    date_mismatch   BOOLEAN,    -- effective_from <> stated_from — a queue for HR to review
+    approval_id     VARCHAR,    -- The approval record's id (joins the MySQL system)
     s3_uri          VARCHAR,
     file_format     VARCHAR,    -- pdf / docx / hwpx / xlsx
-    sha256          VARCHAR,    -- 같은 규정의 작성본(.docx)/공표본(.pdf) 중복 판별
-    is_authoritative BOOLEAN,   -- 같은 sha 그룹에서 공표본 우선
+    sha256          VARCHAR,    -- Distinguishes the drafted .docx from the published .pdf
+    is_authoritative BOOLEAN,   -- Within a sha group, the published form wins
     page_count      INT,
     ingested_at     TIMESTAMP
 );
 
--- ── 관계 ─────────────────────────────────────────────────────────────────────
--- 추출이 아니라 파싱의 결과입니다. 출처(source)를 남기는 이유는 신뢰도가
--- 다르기 때문입니다: 규정목록 엑셀 > 본문 정규식 > LLM 추정.
+-- ── Relations ───────────────────────────────────────────────────────────────
+-- The result of parsing rather than extraction. `source` is recorded because the
+-- confidence differs: the register spreadsheet beats a body regex, which beats an
+-- LLM's guess.
 CREATE TABLE IF NOT EXISTS ice.reg.doc_relations (
     src_doc_no      VARCHAR,
-    src_version     INT,        -- NULL 이면 문서 단위 관계
+    src_version     INT,        -- NULL means the relation is at document level
     dst_doc_no      VARCHAR,
     dst_version     INT,
     rel_type        VARCHAR,    -- SUPERSEDES / REFERENCES / CHILD_OF
-    src_article     VARCHAR,    -- REFERENCES 인 경우 "제12조"
+    src_article     VARCHAR,    -- For REFERENCES, the citing article
     source          VARCHAR,    -- MASTER_XLSX / BODY_REGEX / APPROVAL
-    confidence      DOUBLE,     -- 본문 파싱은 1.0 미만. 검증 대상 선별에 사용
+    confidence      DOUBLE,     -- Below 1.0 for body parsing; used to pick what to verify
     valid_from      DATE,
     created_at      TIMESTAMP
 );
 
--- ── 인입 로그 ────────────────────────────────────────────────────────────────
--- 파이프라인 각 단계의 성패. 조용히 건너뛴 파일이 없는지 확인하는 근거입니다.
+-- ── Ingest log ──────────────────────────────────────────────────────────────
+-- Success or failure of each pipeline stage. The evidence for checking that no
+-- file was skipped quietly.
 CREATE TABLE IF NOT EXISTS ice.reg.ingest_log (
     run_id          VARCHAR,
     s3_uri          VARCHAR,
     stage           VARCHAR,    -- discover / extract / chunk / embed / merge
     status          VARCHAR,    -- ok / skipped / error
-    reason          VARCHAR,    -- skipped 사유: duplicate_sha / image_only_pdf / no_doc_no
+    reason          VARCHAR,    -- Why skipped: duplicate_sha / image_only_pdf / no_doc_no
     elapsed_ms      BIGINT,
     error           VARCHAR,
     ran_at          TIMESTAMP
@@ -117,18 +125,18 @@ CREATE TABLE IF NOT EXISTS ice.reg.ingest_log (
 
 ```sql
 -- ============================================================================
--- 청크 — 모델 무관
+-- Chunks — independent of any embedding model
 --
--- 여기에 임베딩 컬럼이 없는 것이 의도입니다. 조문을 어떻게 잘랐는지는 임베딩
--- 모델이 무엇이든 동일하므로, 모델을 바꿔도 이 테이블은 다시 쓰지 않습니다.
--- 벡터는 세대별 파생 테이블(NeorunBase)로 나갑니다.
+-- The absence of an embedding column here is deliberate. How an article was split
+-- is the same whatever model embeds it, so changing models does not rewrite this
+-- table. Vectors go into per-generation derived tables in NeorunBase.
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS ice.reg.doc_chunks (
     chunk_id        VARCHAR,    -- {doc_no}#{version}#{ordinal}
-    -- 숫자 키를 따로 두는 이유는 검색 엔진 쪽 제약입니다. NeorunBase 의 FTS 인덱스는
-    -- 숫자 기본키를 요구하고, HYBRID_SEARCH 는 그 기본키를 결과로 돌려줍니다.
-    -- chunk_id 는 사람이 읽는 이름이고, 이건 기계가 조인하는 키입니다.
+    -- A separate numeric key exists because of the search engine. NeorunBase's FTS
+    -- index requires a numeric primary key, and HYBRID_SEARCH returns that key.
+    -- chunk_id is the name a human reads; this is what the machine joins on.
     chunk_pk        BIGINT,
     doc_no          VARCHAR,
     version         INT,
@@ -136,27 +144,28 @@ CREATE TABLE IF NOT EXISTS ice.reg.doc_chunks (
     -- a column that must be quoted in every query it appears in is a papercut
     -- paid forever to save one rename now.
     ordinal_no      INT,
-    article_no      VARCHAR,    -- "제12조" — 조문 단위 청킹이므로 대개 1:1
-    article_title   VARCHAR,    -- "(휴가의 종류)"
+    article_no      VARCHAR,    -- The article; chunking is per article, so usually 1:1
+    article_title   VARCHAR,    -- The article's heading
     page_from       INT,
     page_to         INT,
 
-    -- 원문과 치환본을 나란히 둡니다. 컬럼 마스킹이 이 둘 사이의 스왑으로
-    -- 동작합니다: 권한이 없으면 text 를 요청해도 text_redacted 값이 나옵니다.
-    -- 텍스트 전체를 가리면 검색 자체가 무의미해지므로, 가리는 것은 PII 뿐입니다.
+    -- The original and a redacted twin, side by side. Column masking works as a
+    -- swap between them: without clearance, asking for `text` returns
+    -- `text_redacted`. Masking the whole body would make search pointless, so only
+    -- the PII is hidden.
     text            VARCHAR,
     text_redacted   VARCHAR,
-    pii_types       VARCHAR,    -- JSON 배열: ["RRN","PHONE","NAME"] — 없으면 "[]"
+    pii_types       VARCHAR,    -- JSON array: ["RRN","PHONE","NAME"], or "[]" when none
 
     token_count     INT,
     created_at      TIMESTAMP
 );
 
--- ── 임베딩 세대 ──────────────────────────────────────────────────────────────
--- VECTOR(n) 은 컬럼당 차원이 고정이라 두 세대가 한 컬럼을 공유할 수 없습니다.
--- 그래서 세대를 레지스트리로 관리하고, NeorunBase 에는 세대별 테이블
--- (doc_vectors_<generation_id>) 을 만듭니다. 모델 교체는 옆에 새 세대를 지어
--- 검증한 뒤 리트리버가 보는 세대를 전환하는 덧붙이기 작업이 됩니다.
+-- ── Embedding generations ───────────────────────────────────────────────────
+-- VECTOR(n) fixes the dimension per column, so two generations cannot share one.
+-- Generations are therefore kept in a registry and NeorunBase gets a table per
+-- generation (doc_vectors_<generation_id>). Swapping models becomes additive:
+-- build the new generation alongside, verify it, then point the retriever at it.
 CREATE TABLE IF NOT EXISTS ice.reg.embedding_generations (
     generation_id   VARCHAR,    -- gen1, gen2 …
     fingerprint     VARCHAR,    -- BAAI/bge-m3@<revision>:1024:l2
@@ -164,7 +173,7 @@ CREATE TABLE IF NOT EXISTS ice.reg.embedding_generations (
     model_revision  VARCHAR,
     dim             INT,
     normalize       BOOLEAN,
-    distance        VARCHAR,    -- cosine — NeorunBase HNSW 인덱스 메트릭과 일치해야 함
+    distance        VARCHAR,    -- cosine; must match the NeorunBase HNSW index metric
     target_table    VARCHAR,    -- nb.public.doc_vectors_gen1
     status          VARCHAR,    -- BUILDING / ACTIVE / RETIRED
     chunk_count     BIGINT,
@@ -180,40 +189,40 @@ CREATE TABLE IF NOT EXISTS ice.reg.embedding_generations (
 
 ```sql
 -- ============================================================================
--- 인입 대기열 — 파이프라인이 무엇을 처리해야 하는지의 원장
+-- The ingest queue — the record of what the pipeline still has to process
 --
--- 이 테이블이 있는 이유는 규모입니다. 이전 파이프라인은 드라이버가 S3 를
--- 나열하고, 파일을 열고, 청킹하고, 결과를 밀어 넣었습니다. 442건이면 됩니다.
--- 수만 건이면 한 대가 병목이고, 수억 건이면 드라이버 메모리에 목록조차 들어가지
--- 않습니다.
+-- This table exists because of scale. The earlier pipeline had the driver list
+-- S3, open each file, chunk it and push the results. That works for 442 files. At
+-- tens of thousands one machine is the bottleneck, and at hundreds of millions the
+-- listing alone does not fit in the driver's memory.
 --
--- 목록을 테이블로 만들면 그 다음이 전부 SQL 이 됩니다:
+-- Turn the listing into a table and everything after it becomes SQL:
 --
 --   INSERT INTO ice.reg.doc_chunks
 --   SELECT q.s3_uri, c.* FROM ice.reg.ingest_queue q,
 --          UNNEST(extract_chunks(q.s3_uri)) AS c
 --
--- 드라이버는 아무것도 들고 있지 않고, 워커가 각자 맡은 split 의 객체만 읽습니다.
--- 442건이든 수억 건이든 같은 문장입니다.
+-- The driver holds nothing; each worker reads only the objects in its own split.
+-- The statement is the same at 442 files and at hundreds of millions.
 --
--- status 를 두는 이유는 재시도입니다. 파이프라인이 중간에 죽었을 때 처음부터
--- 다시 하지 않으려면 어디까지 했는지가 데이터에 남아야 하고, 로그에 남으면
--- 그건 조회할 수 없는 상태입니다.
+-- `status` exists for retries. Resuming after a pipeline dies halfway means how
+-- far it got has to be in the data — in a log it is a state that cannot be
+-- queried.
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS ice.reg.ingest_queue (
-    s3_uri          VARCHAR,   -- 객체 하나 = 행 하나
+    s3_uri          VARCHAR,   -- One object, one row
     bucket          VARCHAR,
     object_key      VARCHAR,
     size_bytes      BIGINT,
-    etag            VARCHAR,   -- 내용이 바뀌었는지의 판별자. 같은 etag 는 재처리 불필요
+    etag            VARCHAR,   -- Whether the content changed; the same etag needs no rework
     file_format     VARCHAR,   -- pdf / docx / xlsx / hwpx
     discovered_at   TIMESTAMP,
     status          VARCHAR,   -- PENDING / EXTRACTED / FAILED / SKIPPED
     attempt         INT,
-    error           VARCHAR,   -- FAILED 의 사유. 조용히 건너뛴 파일이 없어야 합니다
+    error           VARCHAR,   -- Why it FAILED. No file may be skipped quietly
     processed_at    TIMESTAMP,
-    run_id          VARCHAR    -- 어느 실행이 이 행을 처리했는지 — lineage 의 시작점
+    run_id          VARCHAR    -- Which run processed this row — where lineage starts
 )
 WITH (identifier_fields = ARRAY['s3_uri']);
 ```
@@ -225,33 +234,35 @@ WITH (identifier_fields = ARRAY['s3_uri']);
 
 ```sql
 -- ============================================================================
--- 결재 진행 중인 개정 (streaming)
+-- Revisions currently in approval (streaming)
 --
--- 원장(01_documents.sql)은 이미 **끝난** 일을 담습니다 — 승인이 떨어져 시행에
--- 들어간 버전들. 그런데 실무에서 오답이 나오는 자리는 대개 그 반대편입니다:
--- 지금 결재가 돌고 있는 개정을 모르는 채 현행 규정을 그대로 읊어버리는 경우.
--- 답 자체는 맞지만 "곧 바뀝니다"를 빠뜨린 답입니다.
+-- The ledger (01_documents.sql) holds what has already **happened** — versions
+-- that were approved and took effect. But in practice the wrong answers tend to
+-- come from the other side: reciting the current regulation without knowing that a
+-- revision is in approval right now. The answer is correct and omits "this is
+-- about to change".
 --
--- 이 테이블은 배치가 아니라 ontul Flow 가 채웁니다. 결재 시스템이 단계마다
--- 이벤트를 내보내고(기안→검토→승인→시행), Flow 가 approval_id 로 upsert 해서
--- **건별 최신 상태 한 줄**만 유지합니다. 단계 이력이 아니라 현재 상태가
--- 필요하기 때문입니다 — "지금 어디까지 왔나"에 답하려면 최신 한 줄이면 됩니다.
+-- This table is filled by an Ontul Flow, not a batch. The approval system emits an
+-- event per stage (drafted → reviewed → approved → in force) and the Flow upserts
+-- on approval_id, keeping **one row per approval, at its latest state**. What is
+-- needed is the current state, not the stage history: answering "where has this
+-- got to" takes one row.
 --
--- identifier_fields 가 upsert 의 키입니다. 이게 없으면 Flow 는 equality delete
--- 를 쓸 수 없고, 단계가 바뀔 때마다 같은 건이 한 줄씩 쌓여 "검토 중"과
--- "승인됨"이 동시에 참인 표가 됩니다.
+-- identifier_fields is the upsert key. Without it the Flow cannot write equality
+-- deletes, and each stage change appends another row for the same approval — a
+-- table in which "under review" and "approved" are simultaneously true.
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS ice.reg.approval_status (
-    approval_id      VARCHAR,   -- 전자결재 문서 ID. 개정 1건 = 1행
-    doc_no           VARCHAR,   -- 대상 규정 (ice.reg.documents 와 조인)
-    version          INT,       -- 이 결재가 만들려는 차수 (현행 + 1)
+    approval_id      VARCHAR,   -- The approval record's id. One revision, one row
+    doc_no           VARCHAR,   -- The regulation it targets (joins ice.reg.documents)
+    version          INT,       -- The revision this approval would produce (current + 1)
     step             VARCHAR,   -- DRAFT / REVIEW / APPROVED / EFFECTIVE / REJECTED
-    step_seq         INT,       -- 단계 순번. 이벤트가 뒤늦게 도착해도 순서를 알 수 있게
-    drafter          VARCHAR,   -- 기안자 사번
+    step_seq         INT,       -- Stage number, so a late-arriving event is still ordered
+    drafter          VARCHAR,   -- The drafter's employee number
     owner_dept       VARCHAR,
-    summary          VARCHAR,   -- 개정 요지 한 줄
-    expected_from    DATE,      -- 예정 시행일. 승인 전이므로 어디까지나 예정
+    summary          VARCHAR,   -- One line on what the revision changes
+    expected_from    DATE,      -- Expected effective date; before approval it is only that
     updated_at       TIMESTAMP
 )
 WITH (identifier_fields = ARRAY['approval_id']);
@@ -263,22 +274,25 @@ WITH (identifier_fields = ARRAY['approval_id']);
 **`demo/schema/iceberg/60_revision_requests.sql`**
 
 ```sql
--- 개정 요청 원장.
+-- The revision-request ledger.
 --
--- 온톨로지 액션 request_revision 이 쓰는 곳입니다. 파생 서빙 계층이 아니라
--- Iceberg 에 쓰는 것이 요점입니다 — NeorunBase 는 파이프라인이 언제든 다시
--- 만들 수 있는 사본이고, 다시 만들면 사라질 곳에 남긴 기록은 기록이 아닙니다.
+-- This is what the ontology action request_revision writes to. Writing into
+-- Iceberg rather than into the derived serving layer is the point: NeorunBase is
+-- a copy the pipeline can rebuild at any time, and a record left somewhere that
+-- disappears on a rebuild is not a record.
 --
--- "누가 언제" 가 이 표에 없는 이유가 중요합니다. 액션의 SQL 템플릿은 선언된
--- 파라미터만 치환하므로 세션 사용자를 넣을 자리가 없고, 그렇다고 requested_by
--- 를 파라미터로 받으면 남의 이름으로 요청할 수 있게 됩니다 — 위조 가능한 칸이
--- 진짜 기록 옆에 앉아 있는 것이 아무 칸도 없는 것보다 나쁩니다. 호출자와 시각은
--- 플랫폼의 감사 로그가 기록하고, 그건 호출자가 고칠 수 없습니다.
+-- Why "who and when" is not in this table matters. An action's SQL template
+-- substitutes only its declared parameters, so there is no slot for the session
+-- user — and taking requested_by as a parameter would let anyone file under
+-- someone else's name. A forgeable column sitting beside real ones is worse than
+-- no column at all. The caller and the time are recorded by the platform's audit
+-- log, which the caller cannot edit:
 --
 --   SELECT * FROM ontul.audit WHERE action = 'action:invoke'
 --
--- request_id 는 (규정, 판) 하나당 하나입니다. 같은 판에 대한 두 번째 요청은 새
--- 요청이 아니라 같은 요청이고, 멱등 키가 그것을 그대로 돌려줍니다.
+-- request_id is one per (regulation, version). A second request against the same
+-- version is not a new request but the same one, and the idempotency key returns
+-- it unchanged.
 CREATE TABLE IF NOT EXISTS ice.reg.revision_requests (
     request_id    VARCHAR,
     doc_no        VARCHAR,
@@ -294,20 +308,22 @@ CREATE TABLE IF NOT EXISTS ice.reg.revision_requests (
 **`demo/schema/iceberg/61_graph_projection.sql`**
 
 ```sql
--- 그래프의 서빙 투영.
+-- The graph, projected for serving.
 --
--- ice.reg.doc_relations 는 "무엇이 무엇의 근거인가" 라는 의미 관계이고, 아래
--- 두 표는 그 관계를 NeorunBase 그래프 엔진이 받는 모양 그대로 담습니다. 굳이
--- 두 벌인 이유는 온톨로지 문서가 말하는 원칙 때문입니다 — Iceberg 가 기록의
--- 원본이고 NeorunBase 는 언제든 다시 만들 수 있는 파생 서빙 계층입니다.
+-- ice.reg.doc_relations holds the semantic relation — what is the basis for what.
+-- The two tables below hold that same relation in the exact shape NeorunBase's
+-- graph engine consumes. Keeping two copies is deliberate, and it follows the
+-- principle the ontology documentation states: Iceberg is the system of record
+-- and NeorunBase is a derived serving layer that can be rebuilt at any time.
 --
--- 그래서 배치 잡은 NeorunBase 에 직접 쓰지 않습니다. 여기에 쓰고, Flow 가
--- 이걸 보고 서빙 그래프를 따라오게 합니다. 차이는 운영에서 드러납니다:
--- NeorunBase 를 날리고 다시 세워도 잡을 다시 돌릴 필요가 없고, 관계가 언제
--- 어떻게 바뀌었는지는 Iceberg 스냅샷에 남습니다.
+-- So the batch job does not write to NeorunBase. It writes here, and a Flow keeps
+-- serving in step with it. The difference shows up in operation: NeorunBase can
+-- be destroyed and rebuilt without re-running the job, and when and how the
+-- relations changed is in the Iceberg snapshots.
 --
--- 대리키(doc_id, edge_pk)를 레이크 쪽에서 부여합니다. 서빙 쪽에서 매기면 다시
--- 세울 때마다 값이 달라져서, 그래프를 가리키는 무엇도 안정적으로 남지 않습니다.
+-- The surrogate keys (doc_id, edge_pk) are assigned on the lake side. Assign them
+-- in serving and they change on every rebuild, leaving nothing that can point at
+-- the graph and still mean the same thing tomorrow.
 CREATE TABLE IF NOT EXISTS ice.reg.graph_nodes (
     doc_id       BIGINT,
     doc_no       VARCHAR,
@@ -460,7 +476,7 @@ superseded text is **absent** — not ranked lower, not present at all.
 
 ```sql
 -- ============================================================================
--- 시간 정합성 — the demo's central claim, expressed as a view
+-- Temporal correctness — the demo's central claim, expressed as a view
 --
 -- Ranking cannot make this safe. A superseded regulation that is a better
 -- lexical and semantic match for "육아휴직 며칠?" than anything else will win a
@@ -521,9 +537,9 @@ WHERE v.status = 'EFFECTIVE'
 
 
 -- ── What an agent may cite ───────────────────────────────────────────────────
--- The minimal curation from the discussion: 인사팀 marks the few dozen documents
+-- The minimal curation: HR marks the few dozen documents
 -- that may serve as grounds for an answer. Without it, a meeting note that
--- mentions 휴가 competes with the regulation that defines it — and on vector
+-- mentions leave competes with the regulation that defines it — and on vector
 -- similarity alone it sometimes wins.
 CREATE OR REPLACE VIEW semantic.reg.citable_chunks AS
 SELECT * FROM semantic.reg.effective_chunks
@@ -566,11 +582,11 @@ WHERE date_mismatch = TRUE
 ORDER BY ABS(effective_from - stated_from) DESC;
 
 
--- ── 문서번호 → 그래프 노드 id ────────────────────────────────────────────────
--- GRAPH_NEIGHBORS 는 숫자 seed 로 출발하는데, 질문하는 사람에게 그 숫자를 알
--- 이유가 없습니다. 그래서 도구가 문서번호로 조회해 seed 를 얻는데, 그 조회가
--- nb.public.doc_nodes 를 직접 겨누고 있었습니다 — 에이전트가 읽는 것 중 유일하게
--- 시맨틱 레이어 밖이었고, 따라서 정책이 닿지 않는 통로였습니다.
+-- ── Document number → graph vertex id ──────────────────────────────────────
+-- GRAPH_NEIGHBORS starts from a numeric seed, and the person asking has no reason
+-- to know that number. So the tool looks it up by document number — but that
+-- lookup pointed straight at nb.public.doc_nodes, the one thing the agent read
+-- from outside the semantic layer, and therefore a path no policy reached.
 CREATE OR REPLACE VIEW semantic.reg.doc_index AS
 SELECT doc_id, doc_no, title, tier, owner_dept, is_official, sensitivity
 FROM nb.public.doc_nodes;
@@ -585,11 +601,12 @@ The ERP-side views. This is where federated queries join documents to records.
 -- ============================================================================
 -- ERP semantic layer — making an ERP legible
 --
--- 원천은 ice.erp.* 입니다 — Postgres 가 아니라 그 Postgres 를 CDC 로 흘려 받은
--- Iceberg 테이블입니다 (infra/cdc.sh). 뷰가 원천을 가리고 있어서 아래를
--- 갈아끼워도 정책과 도구는 그대로였습니다. 직접 붙이지 않는 이유는 부하보다
--- 넓습니다: 분석 질의가 OLTP 를 흔들고, 워커마다 커넥션을 열고, 무엇보다
--- 덮어써진 값은 되돌릴 수 없어 "그때는 며칠이었나" 를 물을 데가 없습니다.
+-- The source is ice.erp.* — not Postgres itself but the Iceberg tables that
+-- Postgres feeds by CDC (infra/cdc.sh). The views hide the source, so swapping
+-- what is underneath left the policies and the tools untouched. The reasons not
+-- to connect directly go wider than load: analytical queries disturb the OLTP
+-- system, every worker opens a connection, and above all an overwritten value
+-- cannot be recovered — there is nowhere left to ask "how many was it then".
 --
 -- The source columns are lv_typ_cd, emp_sts_cd, grd_cd. An agent cannot read
 -- those, and asking an LLM to guess what G4 means is how a plausible wrong
@@ -666,7 +683,7 @@ JOIN ice.erp.hr_org o      ON o.dept_cd = e.dept_cd;
 
 
 -- ── Purchase orders with the approver's ceiling attached ─────────────────────
--- The ceiling is a fact of the 구매 규정; keeping it in the view means "was this
+-- The ceiling is a fact of the purchasing regulation; keeping it in the view means "was this
 -- approved by someone entitled to?" is a comparison rather than an inference.
 CREATE OR REPLACE VIEW semantic.hr.purchase_orders AS
 SELECT
@@ -688,10 +705,11 @@ JOIN ice.erp.hr_employee r ON r.emp_no = p.req_emp_no
 JOIN ice.erp.hr_employee a ON a.emp_no = p.apr_emp_no;
 
 
--- ── 결재 진행 중인 개정 (ontul Flow 가 채우는 스트림 테이블 위) ──────────────
--- 원장 뷰들과 같은 자리에 두는 이유는 권한 때문입니다. 에이전트가 쓰는 모든
--- 읽기는 시맨틱 레이어를 지나가고, 정책도 거기에 붙습니다. 스트림 테이블을
--- 직접 읽게 하면 그 한 곳만 규칙 밖에 놓입니다.
+-- ── Revisions in approval, over the stream table an Ontul Flow fills ────────
+-- It sits alongside the ledger views for one reason: authorization. Every read the
+-- agent makes goes through the semantic layer, and that is where the policies
+-- attach. Reading the stream table directly would leave exactly one place outside
+-- the rules.
 CREATE SCHEMA IF NOT EXISTS semantic.reg;
 
 CREATE OR REPLACE VIEW semantic.reg.pending_revisions AS
@@ -699,12 +717,14 @@ SELECT
     a.approval_id   AS "결재번호",
     a.doc_no        AS "문서번호",
     d.title         AS "제목",
-    -- CAST 가 붙은 이유는 tests/known-issues/row-filter-changes-a-column-type.md
-    -- 에 있습니다. 요약하면: 이 컬럼은 조인을 거치며 INTEGER 로 선언되고 BIGINT
-    -- 로 재유도되는데, 평소에는 두 경로 중 하나만 돌아서 드러나지 않습니다. IAM
-    -- 행 필터가 파생 테이블을 한 겹 씌우는 순간 둘 다 돌고, 플래너가 타입이
-    -- 보존되지 않았다며 400 을 냅니다 — 접근 권한이 **적은** 사용자만 실패하고,
-    -- 오류 메시지는 정책이 아니라 뷰를 가리킵니다.
+    -- The CAST is explained in
+    -- tests/known-issues/row-filter-changes-a-column-type.md. In short: this column
+    -- is declared INTEGER and re-derived as BIGINT through the join, and normally
+    -- only one of those two paths runs so the disagreement never shows. The moment
+    -- an IAM row filter wraps the view in a derived table, both run and the planner
+    -- rejects the query for not preserving datatypes — a 400 that only the caller
+    -- with **less** access sees, whose message points at the view rather than at
+    -- the policy.
     CAST(a.version AS INTEGER) AS "개정차수",
     CASE a.step WHEN 'DRAFT' THEN '기안' WHEN 'REVIEW' THEN '검토'
                 WHEN 'APPROVED' THEN '승인' WHEN 'EFFECTIVE' THEN '시행'
@@ -715,10 +735,11 @@ SELECT
     a.drafter       AS "기안자사번",
     a.owner_dept    AS "소관부서",
     a.updated_at    AS "갱신시각",
-    -- 정책이 semantic.reg.* 전체에 sensitivity 조건을 겁니다. 대외비 문서의
-    -- 개정 건도 일반 직원에게는 보이지 않아야 하므로 조건이 걸릴 자리를
-    -- 뷰가 제공해야 합니다. 아직 원장에 없는 문서의 결재는 INTERNAL 로 봅니다
-    -- — NULL 이면 조건이 UNKNOWN 이 되어 행이 조용히 사라집니다.
+    -- The policy puts a sensitivity condition on all of semantic.reg.*. A revision
+    -- of a restricted document must not be visible to an ordinary employee either,
+    -- so the view has to provide somewhere for that condition to attach. An
+    -- approval for a document not yet in the ledger is treated as INTERNAL: with
+    -- NULL the condition evaluates UNKNOWN and the row disappears silently.
     COALESCE(d.sensitivity, 'INTERNAL') AS sensitivity
 FROM ice.reg.approval_status a
 LEFT JOIN ice.reg.documents d ON d.doc_no = a.doc_no;
@@ -835,7 +856,7 @@ vector comparable.
     "dialect": "ontul",
     "batchSize": "64",
     "timeoutMs": "180000",
-    "_timeout_comment": "배치 하나가 64개 청크이고, CPU 로 도는 e5-base 는 그 한 배치에 수 초가 걸립니다. 여기에 CDC/그래프 Flow 가 같은 머신에서 함께 돌면 30초로는 모자랍니다 — 그 결과가 'request timed out' 이고, 실패하는 것은 임베딩 서비스가 아니라 색인 잡 전체입니다. 여유를 주는 편이 낫습니다: 모델이 실제로 죽었다면 어차피 연결 단계에서 드러납니다."
+    "_timeout_comment": "A batch is 64 chunks, and e5-base on CPU takes several seconds for one of them. With the CDC and graph Flows sharing the machine, 30 seconds is not enough — the result is 'request timed out', and what fails is not the embedding service but the whole indexing job. Better to leave headroom: if the model is genuinely dead, that shows up at connection time anyway."
   }
 }
 ```
@@ -853,7 +874,7 @@ vector comparable.
   "_comment": "ERP, read live rather than copied into the lake. A leave balance is only worth quoting if it is the balance right now — an overnight snapshot would let the agent state a number that was true yesterday with the same confidence as one that is true today.",
   "connectionId": "erp",
   "type": "JDBC",
-  "description": "ERP (PostgreSQL) — 인사·근태·경비, federated",
+  "description": "ERP (PostgreSQL) — HR, attendance and expenses, federated",
   "properties": {
     "url": "jdbc:postgresql://regdemo-erp:5432/erp",
     "driver": "org.postgresql.Driver",
@@ -867,10 +888,10 @@ vector comparable.
 
 ```json
 {
-  "_comment": "전자결재. Authoritative for when a regulation actually took effect: the approval record is what makes a rule binding, and it routinely disagrees with the date printed in the document's 부칙. HR-REG-003 v3 states 2025-01-01 and was approved 2025-03-15 — ten weeks in which citing the document would have been wrong.",
+  "_comment": "The approval system. Authoritative for when a regulation actually took effect: the approval record is what makes a rule binding, and it routinely disagrees with the date printed in the document's 부칙. HR-REG-003 v3 states 2025-01-01 and was approved 2025-03-15 — ten weeks in which citing the document would have been wrong.",
   "connectionId": "groupware",
   "type": "JDBC",
-  "description": "전자결재 (MySQL) — 결재 이력, CDC 소스",
+  "description": "The approval system (MySQL) — approval history, and the CDC source",
   "properties": {
     "url": "jdbc:mysql://regdemo-groupware:3306/groupware?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul",
     "driver": "com.mysql.cj.jdbc.Driver",
@@ -887,7 +908,7 @@ vector comparable.
   "_comment": "The training system has an API and no database. Not every source worth joining will hand you a JDBC URL, and the ones that will not are usually the ones holding the compliance evidence.",
   "connectionId": "lms",
   "type": "REST",
-  "description": "교육 이수 (SaaS LMS) — rest-operation 경유",
+  "description": "Training records (a SaaS LMS) — reached through a rest-operation",
   "properties": {
     "baseUrl": "http://regdemo-lms:8000",
     "authType": "none",
@@ -1073,9 +1094,10 @@ post /admin/catalogs "$(cat <<JSON
 JSON
 )" "ice (iceberg via polaris)"
 
-# NeorunBase 카탈로그는 여기서 등록하지 않습니다. 커넥터는 등록하는 순간의 테이블
-# 목록을 잡는데, 첫 설치에서는 NeorunBase 에 아직 테이블이 하나도 없습니다. 스키마를
-# 만든 뒤(3단계 끝)에 등록해야 테이블이 보입니다.
+# The NeorunBase catalog is not registered here. The connector captures the table
+# list at the moment of registration, and on a first install NeorunBase has no
+# tables yet. Registering after the schema exists (end of step 3) is what makes
+# them visible.
 
 # ── 2. Connections. The embedding connection is the one that matters most:
 #    it is the single definition of the vector space, and both indexing and
@@ -1113,11 +1135,11 @@ PY
 )
   [ -n "$body" ] || fail "could not build a body for $(basename "$f") — see the error above"
   cid=$(python3 -c "import json,sys;print(json.loads(sys.argv[1])['connectionId'])" "$body")
-  # 이미 있으면 지우고 다시 만듭니다. post 는 "already exists" 를 성공으로
-  # 취급하는데, 그건 재실행을 허용하려는 것이지 **바뀐 정의를 무시하려는**
-  # 것이 아닙니다. 파일에서 타임아웃이나 모델 리비전을 고치고 이 스크립트를
-  # 다시 돌렸을 때 아무 일도 일어나지 않으면, 고친 사람은 반영됐다고 믿고
-  # 반영되지 않은 채로 계속 갑니다.
+  # Deleted and recreated if it already exists. `post` treats "already exists" as
+  # success, and that exists to make re-runs safe — not to **ignore a changed
+  # definition**. Edit a timeout or a model revision in the file, run this again,
+  # and if nothing happens the person who edited it believes it took effect when
+  # it did not.
   curl -s -X DELETE "$ONTUL/admin/connections/$cid" "${AUTH[@]}" -o /dev/null
   post /admin/connections "$body" "$(basename "$f" .json)"
 done
@@ -1131,7 +1153,7 @@ done
 post /admin/catalogs '{"name":"erp","config":{"connector":"jdbc","connectionId":"erp"}}' \
   "erp (postgres, federated)"
 post /admin/catalogs '{"name":"gw","config":{"connector":"jdbc","connectionId":"groupware"}}' \
-  "gw (mysql — 결재, the authority on effective dates)"
+  "gw (mysql — the approval system, the authority on effective dates)"
 
 # ── 3. Schema. Iceberg first — the semantic views read from it, and a view over
 #    a table that does not exist yet fails at definition time, not at query time.
@@ -1169,13 +1191,13 @@ PGPASSWORD="${NEORUNBASE_PASSWORD:-Regdemo12345}" psql -v ON_ERROR_STOP=1 -q \
   -f /tmp/regdemo-nb-schema.sql || fail "neorunbase schema failed"
 step "  applied"
 
-# 이제 테이블이 있으니 카탈로그를 등록합니다.
+# The tables exist now, so the catalog can be registered.
 #
-# jdbcUrl 이지 host/port/database 가 아닙니다. 커넥터는 'jdbcUrl' 또는
-# 'endpoint' 만 읽고 그 밖의 키는 보지 않습니다 — 둘 다 없으면 등록은 성공하고
-# 테이블이 0개가 되어, 이후 모든 질의가 설정 이야기가 아니라 "Object 'nb' not
-# found" 로 실패합니다. preferQueryMode=simple 은 NeorunBase 가 simple query
-# 프로토콜을 서빙하기 때문입니다.
+# jdbcUrl, not host/port/database. The connector reads 'jdbcUrl' or 'endpoint'
+# and nothing else — given neither it registers happily and then discovers zero
+# tables, so every query against it fails with "Object 'nb' not found" rather than
+# with anything about configuration. preferQueryMode=simple because NeorunBase
+# serves the simple query protocol.
 post /admin/catalogs "$(cat <<JSON
 {"name":"nb","config":{"connector":"neorunbase",
    "jdbcUrl":"jdbc:postgresql://$NEORUNBASE_INTERNAL_HOST:5432/neorunbase?preferQueryMode=simple",
@@ -1184,8 +1206,9 @@ post /admin/catalogs "$(cat <<JSON
 JSON
 )" "nb (neorunbase — vectors + korean fts)"
 
-# 등록됐는데 테이블이 0개면 등록된 것이 아닙니다. 여기서 멈춰야 잘못된 설정이
-# 한참 뒤의 엉뚱한 오류가 아니라 그 자리에서 드러납니다.
+# A catalog that registered but resolved no tables is not registered in any sense
+# that matters. Stopping here turns a silent misconfiguration into a failure at
+# the point it happened, rather than an unrelated error much later.
 NBT=$(curl -sf --max-time 20 "$ONTUL/admin/catalogs" "${AUTH[@]}" | python3 -c "
 import sys, json
 print(next((c.get('tableCount', 0) for c in json.load(sys.stdin) if c.get('name') == 'nb'), 0))
@@ -1259,7 +1282,7 @@ add_person() {  # add_person <username> <group> <emp_no> <dept> <clearance>
 }
 
 add_person hong  agent_caller_group  "$DEMO_EMP" DEV none
-# A real DEV 부장. The department attribute drives the row filter, so a persona
+# A real DEV manager. The department attribute drives the row filter, so a persona
 # whose attribute disagrees with their own ERP record would still "work" while
 # demonstrating the wrong thing.
 add_person park  dept_manager_group  20150010    DEV manager
@@ -1292,10 +1315,10 @@ print(json.dumps({k:v for k,v in d.items() if not k.startswith('_')}))
   post /api/v1/retrievers "$body" "$(basename "$f" .json)"
 done
 
-# ── 온톨로지. 객체 → 링크 → 액션 순서가 강제입니다: 링크는 양쪽 객체 타입이
-#    이미 있어야 하고, 액션은 자기가 다루는 객체 타입이 있어야 합니다.
-#    파일 이름의 숫자가 그 순서입니다.
-log "5/6  온톨로지 (객체 · 링크 · 액션)"
+# ── The ontology. Objects → links → actions is mandatory: a link needs both
+#    endpoint object types to exist, and an action needs the object type it
+#    operates on. The numbers in the filenames are that order.
+log "5/6  Ontology (objects · links · actions)"
 for f in "$DEMO"/schema/ontology/*.json; do
   [ -f "$f" ] || continue
   body=$(python3 -c "

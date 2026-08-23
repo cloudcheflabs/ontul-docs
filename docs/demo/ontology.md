@@ -21,36 +21,40 @@ difference in this demo.
 **`demo/schema/ontology/README.md`**
 
 ```markdown
-# 온톨로지 — 객체 · 링크 · 액션
+# The ontology — objects · links · actions
 
-시맨틱 뷰는 *지표* 를, 리트리버는 *검색* 을 큐레이션합니다. 온톨로지는
-*개체와 그 개체에 할 수 있는 일* 을 큐레이션합니다. 이 데모에서 그 차이가
-드러나는 지점은 셋입니다.
+A semantic view curates *metrics*; a retriever curates *retrieval*. The ontology
+curates **the entities and what can be done to them**. Three places show the
+difference in this demo.
 
-**1. 에이전트가 SQL 을 짜지 않아도 됩니다.** "HR-REG-003 알려줘" 는
-`object-types/reg.ontology.Regulation/query` 에 `{"filters":{"doc_no":"HR-REG-003"}}`
-입니다. 컬럼 이름도, 조인도, 어느 카탈로그인지도 몰라도 됩니다. 이름은
-`doc_no` 이지 `documents.doc_no` 가 아니고, 그 매핑은 서버가 압니다.
+**1. The agent does not have to write SQL.** "Tell me about HR-REG-003" becomes
+`object-types/reg.ontology.Regulation/query` with
+`{"filters":{"doc_no":"HR-REG-003"}}`. Column names, joins and which catalog it
+lives in are all unnecessary. The name is `doc_no`, not `documents.doc_no`, and
+the server knows the mapping.
 
-**2. 같은 관계를 두 가지 방식으로 따라갑니다.** `has_version` 은 JOIN 입니다 —
-규정과 그 버전은 키가 같고, 엔진이 SQL 로 풉니다. `derives_from` 은 GRAPH
-입니다 — 지침이 어느 규정을 근거로 삼는지는 NeorunBase 의 인스턴스 그래프에
-엣지로 있고, 순회는 그래프 엔진이 합니다. 애플리케이션 쪽 루프가 아닙니다.
+**2. The same relationship is followed two ways.** `has_version` is a JOIN — a
+regulation and its versions share a key and the engine resolves it in SQL.
+`derives_from` is a GRAPH — which regulation a guideline takes its authority from
+is an edge in NeorunBase's instance graph, and the graph engine does the walking.
+Not an application-side loop.
 
-**3. 쓰기가 있습니다.** `request_revision` 은 개정 요청을 원장(Iceberg)에
-기록합니다. 파생 계층이 아니라 원본에 씁니다 — NeorunBase 는 다시 만들 수 있는
-서빙 계층이고, 다시 만들면 사라질 곳에 기록을 남기는 것은 기록이 아닙니다.
-IAM 이 그대로 적용되므로, 규정을 읽을 수 없는 사람은 그 규정의 개정을 요청할
-수도 없습니다.
+**3. There is a write.** `request_revision` records a revision request in the
+ledger (Iceberg). It writes to the record of fact rather than the derived layer —
+NeorunBase is a rebuildable serving copy, and a record left somewhere that
+disappears on a rebuild is not a record. IAM applies unchanged, so someone who
+cannot read a regulation cannot request a revision to it either.
 
-| 파일 | 내용 |
+| File | Contents |
 |---|---|
-| `01_object_regulation.json` | `Regulation` — `ice.reg.documents` |
-| `02_object_version.json` | `RegulationVersion` — `ice.reg.doc_versions` |
-| `03_object_employee.json` | `Employee` — `ice.erp.hr_employee` (CDC 로 들어온 ERP) |
+| `01_object_regulation.json` | `Regulation` — reads `semantic.reg.doc_index` |
+| `02_object_version.json` | `RegulationVersion` — reads `semantic.reg.version_history` |
+| `03_object_employee.json` | `Employee` — reads `semantic.hr.employees` (ERP, arrived by CDC) |
+| `04_object_regulation_node.json` | `RegulationNode` — the graph vertex, in NeorunBase |
 | `10_link_has_version.json` | `Regulation ─has_version→ RegulationVersion` (JOIN) |
-| `11_link_derives_from.json` | `Regulation ─derives_from→ Regulation` (GRAPH) |
-| `20_action_request_revision.json` | 개정 요청 — Iceberg 에 DML 로 기록 |
+| `11_link_derives_from.json` | `RegulationNode ─derives_from→ RegulationNode` (GRAPH) |
+| `12_link_vertex.json` | `Regulation ─vertex→ RegulationNode` (JOIN) |
+| `20_action_request_revision.json` | The revision request — DML into Iceberg |
 ```
 
 
@@ -66,7 +70,7 @@ IAM 이 그대로 적용되므로, 규정을 읽을 수 없는 사람은 그 규
 
 ```json
 {
-  "_comment": "규정 한 건. 읽는 곳이 원장이 아니라 시맨틱 뷰인 것이 중요합니다 — 정책이 한 곳에만 있게 하려는 것입니다. 원장을 직접 읽게 하면 분류 조건과 마스킹을 온톨로지 쪽에 한 벌 더 써야 하고, 한 벌 더 쓰는 순간 두 벌이 갈라집니다. 실제로 갈라졌고, 제한 규정이 객체 경로로 새어 나갔습니다.\n\ndoc_no 가 업무 키이고 doc_id 는 그래프 정점 id 입니다: derives_from(GRAPH 바인딩) 순회는 숫자 정점에서 출발하므로, doc_no 로 객체를 찾은 다음 그 doc_id 로 순회합니다.",
+  "_comment": "One regulation. It reads a governed semantic view rather than the raw ledger, so that the policy exists in exactly one place. Reading the ledger directly would mean writing the classification condition and the masking a second time on the ontology side — and the moment there are two copies they diverge. They did: restricted regulations leaked through the object path.\n\ndoc_no is the business key and doc_id is the graph vertex id: derives_from (a GRAPH binding) traverses from a numeric vertex, so the object is found by doc_no and then traversed from its doc_id.",
   "catalog": "reg",
   "schema": "ontology",
   "name": "Regulation",
@@ -160,7 +164,7 @@ the object path while search correctly refused them.
 
 ```json
 {
-  "_comment": "규정의 한 판. effective_from 은 부칙이 아니라 결재 승인일입니다 — 이 데모 전체가 그 구분 위에 서 있습니다. 읽는 곳은 시맨틱 뷰이고, 그래서 분류 조건이 여기에도 그대로 적용됩니다.",
+  "_comment": "One version of a regulation. effective_from is the approval date, not the date printed in the document — this whole demo rests on that distinction. It reads a semantic view, so the classification condition applies here too.",
   "catalog": "reg",
   "schema": "ontology",
   "name": "RegulationVersion",
@@ -271,7 +275,7 @@ the object path while search correctly refused them.
 
 ```json
 {
-  "_comment": "직원. CDC 로 Iceberg 에 들어온 ERP 사본을 읽되, 원장이 아니라 시맨틱 뷰를 읽습니다 — 그 뷰에 사번 행 필터와 주민등록번호 Deny 가 걸려 있습니다. 원장을 직접 열어 주면 온톨로지 경로가 그 정책을 우회하는 뒷문이 됩니다.",
+  "_comment": "An employee. The ERP copy that arrived by CDC into Iceberg, read through a semantic view rather than the ledger: that view carries the employee-number row filter and the national-ID deny. Opening the ledger directly would make the ontology path a back door around those policies.",
   "catalog": "reg",
   "schema": "ontology",
   "name": "Employee",
@@ -340,22 +344,76 @@ the object path while search correctly refused them.
 
 ```json
 {
-  "_comment": "그래프 위의 규정 — 서빙 쪽 정점입니다. Regulation 과 같은 개체를 가리키지만 읽는 곳이 다릅니다: Regulation 은 원장(Iceberg)이고 이쪽은 NeorunBase 의 doc_nodes 입니다. 굳이 나눈 이유는 GRAPH 순회가 이웃 정점을 NeorunBase 안에서 대상 테이블에 조인해 돌려주기 때문입니다 — 대상이 Iceberg 테이블이면 'Table not found: ice.reg.documents' 가 됩니다. 정점 id 는 원장이 부여한 doc_id 그대로라, 두 객체는 같은 번호로 서로를 가리킵니다.",
+  "_comment": "The same regulation as it appears on the graph — a serving-side vertex. It points at the same entity as Regulation but reads a different place: Regulation reads the ledger (Iceberg) and this reads NeorunBase's doc_nodes. They are separate because GRAPH traversal joins the neighbouring vertices to the target table inside NeorunBase, and an Iceberg table cannot be found there — the result is 'Table not found: ice.reg.documents'. The vertex id is the doc_id the ledger assigned, so the two objects refer to each other by the same number.",
   "catalog": "reg",
   "schema": "ontology",
   "name": "RegulationNode",
   "readSource": "nb.public.doc_nodes",
-  "primaryKey": ["doc_id"],
-  "properties": [
-    {"name": "doc_id", "type": "long", "column": "doc_id", "synonyms": ["정점 id"]},
-    {"name": "doc_no", "type": "string", "column": "doc_no", "synonyms": ["규정번호"]},
-    {"name": "title", "type": "string", "column": "title", "synonyms": ["제목"]},
-    {"name": "tier", "type": "long", "column": "tier", "synonyms": ["위계"]},
-    {"name": "owner_dept", "type": "string", "column": "owner_dept", "synonyms": ["소관부서"]},
-    {"name": "is_official", "type": "boolean", "column": "is_official", "synonyms": ["공식"]},
-    {"name": "sensitivity", "type": "string", "column": "sensitivity", "synonyms": ["민감도"]}
+  "primaryKey": [
+    "doc_id"
   ],
-  "tags": ["regulation", "graph"],
+  "properties": [
+    {
+      "name": "doc_id",
+      "type": "long",
+      "column": "doc_id",
+      "synonyms": [
+        "정점 id"
+      ]
+    },
+    {
+      "name": "doc_no",
+      "type": "string",
+      "column": "doc_no",
+      "synonyms": [
+        "규정번호"
+      ]
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "column": "title",
+      "synonyms": [
+        "제목"
+      ]
+    },
+    {
+      "name": "tier",
+      "type": "long",
+      "column": "tier",
+      "synonyms": [
+        "위계"
+      ]
+    },
+    {
+      "name": "owner_dept",
+      "type": "string",
+      "column": "owner_dept",
+      "synonyms": [
+        "소관부서"
+      ]
+    },
+    {
+      "name": "is_official",
+      "type": "boolean",
+      "column": "is_official",
+      "synonyms": [
+        "공식"
+      ]
+    },
+    {
+      "name": "sensitivity",
+      "type": "string",
+      "column": "sensitivity",
+      "synonyms": [
+        "민감도"
+      ]
+    }
+  ],
+  "tags": [
+    "regulation",
+    "graph"
+  ],
   "status": "CERTIFIED"
 }
 ```
@@ -380,14 +438,18 @@ the object path while search correctly refused them.
 
 ```json
 {
-  "_comment": "규정과 그 판. 키가 같으니 JOIN 으로 풉니다 — 엔진이 SQL 로 만들고, 그래프 엔진은 관여하지 않습니다.",
+  "_comment": "A regulation and its versions. They share a key, so this resolves as a JOIN — the engine builds the SQL and the graph engine is not involved.",
   "catalog": "reg",
   "schema": "ontology",
   "name": "has_version",
   "fromObjectType": "reg.ontology.Regulation",
   "toObjectType": "reg.ontology.RegulationVersion",
   "cardinality": "ONE_TO_MANY",
-  "binding": {"mode": "JOIN", "fromKey": "doc_no", "toKey": "doc_no"}
+  "binding": {
+    "mode": "JOIN",
+    "fromKey": "doc_no",
+    "toKey": "doc_no"
+  }
 }
 ```
 
@@ -418,7 +480,7 @@ reviewable.
 
 ```json
 {
-  "_comment": "지침이 어느 규정을 근거로 삼는가. 이건 조인으로 풀 수 없습니다 — 근거 관계는 본문에서 뽑아 NeorunBase 인스턴스 그래프에 엣지로 넣은 것이고, 여러 단계를 따라가야 답이 됩니다. 순회는 그래프 엔진이 하고 애플리케이션은 결과만 받습니다. 양쪽 끝이 RegulationNode 인 이유는 순회가 이웃 정점을 NeorunBase 안에서 대상 테이블에 조인하기 때문입니다 — Iceberg 테이블을 대상으로 두면 거기서 찾지 못합니다.",
+  "_comment": "Which regulation a guideline derives its authority from. This cannot be resolved by a join: the authority relation was extracted from the body text and written as edges into NeorunBase's instance graph, and answering takes several hops. The graph engine walks it; the application only receives the result. Both endpoints are RegulationNode because traversal joins the neighbouring vertices to the target table inside NeorunBase, and an Iceberg table cannot be found there.",
   "catalog": "reg",
   "schema": "ontology",
   "name": "derives_from",
@@ -461,7 +523,7 @@ an application loop fetching neighbours and querying again.
 
 ```json
 {
-  "_comment": "원장의 규정과 그래프 위의 같은 규정을 잇습니다. doc_no 로 맞물리는 JOIN 이고, 에이전트가 'HR-GDL-003 의 근거를 따라가라' 를 수행하는 경로가 이것입니다: Regulation 을 찾고 → vertex 로 정점을 얻고 → derives_from 으로 순회합니다.",
+  "_comment": "Connects the regulation in the ledger to the same regulation on the graph. A JOIN on doc_no. This is the path an agent takes to 'follow the authority behind HR-GDL-003': find the Regulation, get its vertex, then traverse derives_from.",
   "catalog": "reg",
   "schema": "ontology",
   "name": "vertex",
@@ -487,7 +549,7 @@ an application loop fetching neighbours and querying again.
 
 ```json
 {
-  "_comment": "규정 개정 요청. 에이전트가 SQL 을 짜서 INSERT 하는 것과 다른 점은 넷입니다 — 파라미터가 검증되고, 호출자가 인가되고, 멱등 키로 재시도가 안전하고, 실행이 감사에 남습니다. 요청자를 파라미터로 두지 않은 것도 같은 이유입니다: 남의 이름으로 요청할 수 있으면 감사 자료가 아닙니다. 누가 언제 불렀는지는 감사 로그가 기록합니다.",
+  "_comment": "Requesting a revision to a regulation. Four things separate this from the agent writing its own INSERT: the parameters are validated, the caller is authorized, the idempotency key makes a retry safe, and the invocation is audited. The requester is not a parameter for the same reason — if anyone can file under someone else's name, the table is not an audit record.",
   "catalog": "reg",
   "schema": "ontology",
   "name": "request_revision",
@@ -498,19 +560,19 @@ an application loop fetching neighbours and querying again.
       "name": "doc_no",
       "type": "STRING",
       "required": true,
-      "description": "개정을 요청할 규정 번호"
+      "description": "The regulation to request a revision to"
     },
     {
       "name": "version",
       "type": "LONG",
       "required": true,
-      "description": "현재 시행 중인 판"
+      "description": "The version currently in force"
     },
     {
       "name": "reason",
       "type": "STRING",
       "required": true,
-      "description": "요청 사유"
+      "description": "Why the revision is being requested"
     }
   ],
   "sqlTemplate": "INSERT INTO ice.reg.revision_requests (request_id, doc_no, version, reason, status) SELECT ${doc_no} || '-v' || CAST(${version} AS VARCHAR), ${doc_no}, CAST(${version} AS INTEGER), ${reason}, 'REQUESTED'",
@@ -534,22 +596,25 @@ The target table.
 **`demo/schema/iceberg/60_revision_requests.sql`**
 
 ```sql
--- 개정 요청 원장.
+-- The revision-request ledger.
 --
--- 온톨로지 액션 request_revision 이 쓰는 곳입니다. 파생 서빙 계층이 아니라
--- Iceberg 에 쓰는 것이 요점입니다 — NeorunBase 는 파이프라인이 언제든 다시
--- 만들 수 있는 사본이고, 다시 만들면 사라질 곳에 남긴 기록은 기록이 아닙니다.
+-- This is what the ontology action request_revision writes to. Writing into
+-- Iceberg rather than into the derived serving layer is the point: NeorunBase is
+-- a copy the pipeline can rebuild at any time, and a record left somewhere that
+-- disappears on a rebuild is not a record.
 --
--- "누가 언제" 가 이 표에 없는 이유가 중요합니다. 액션의 SQL 템플릿은 선언된
--- 파라미터만 치환하므로 세션 사용자를 넣을 자리가 없고, 그렇다고 requested_by
--- 를 파라미터로 받으면 남의 이름으로 요청할 수 있게 됩니다 — 위조 가능한 칸이
--- 진짜 기록 옆에 앉아 있는 것이 아무 칸도 없는 것보다 나쁩니다. 호출자와 시각은
--- 플랫폼의 감사 로그가 기록하고, 그건 호출자가 고칠 수 없습니다.
+-- Why "who and when" is not in this table matters. An action's SQL template
+-- substitutes only its declared parameters, so there is no slot for the session
+-- user — and taking requested_by as a parameter would let anyone file under
+-- someone else's name. A forgeable column sitting beside real ones is worse than
+-- no column at all. The caller and the time are recorded by the platform's audit
+-- log, which the caller cannot edit:
 --
 --   SELECT * FROM ontul.audit WHERE action = 'action:invoke'
 --
--- request_id 는 (규정, 판) 하나당 하나입니다. 같은 판에 대한 두 번째 요청은 새
--- 요청이 아니라 같은 요청이고, 멱등 키가 그것을 그대로 돌려줍니다.
+-- request_id is one per (regulation, version). A second request against the same
+-- version is not a new request but the same one, and the idempotency key returns
+-- it unchanged.
 CREATE TABLE IF NOT EXISTS ice.reg.revision_requests (
     request_id    VARCHAR,
     doc_no        VARCHAR,

@@ -50,7 +50,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
       ],
       "Condition": "sensitivity <> '대외비'",
       "_condition_note": "'대외비', not 'RESTRICTED'. The ledger stores the classification the documents themselves use, and a filter written against a value that never occurs is always true — so the policy read as if it excluded restricted regulations while excluding nothing at all. Nothing errors on a comparison to a value that does not exist.",
-      "_ontology_note": "온톨로지 객체 조회는 읽기 원본에 대해 data:SelectTable 을 요구합니다. 객체가 시맨틱 뷰를 읽으므로 이 한 문장이 SQL 경로와 온톨로지 경로를 모두 덮습니다 — 분류 조건도 한 번만 쓰면 됩니다."
+      "_ontology_note": "An ontology object query requires data:SelectTable on the read source. Because the objects read semantic views, this single statement covers both the SQL path and the ontology path — and the classification condition only has to be written once."
     },
     {
       "Sid": "InvokeRetrievers",
@@ -65,11 +65,11 @@ could not be found and 조태윤 gets the document. There are not two retrievers
         "data:table:semantic.rag.*"
       ],
       "Condition": "sensitivity <> '대외비'",
-      "_condition_note": "리트리버는 semantic.rag.* 이고 규정 뷰는 semantic.reg.* 라, 뷰에만 조건을 걸면 검색 경로가 그 조건을 지나치지 않습니다. 실제로 그래서 일반 직원에게 대외비 규정이 검색되었습니다. 조건은 읽기 경로마다 필요합니다."
+      "_condition_note": "The retrievers are semantic.rag.* and the regulation views are semantic.reg.*, so a condition written only on the views is never passed through on the search path. That is exactly how an ordinary employee got restricted regulations back from search. The condition is needed on every read path."
     },
     {
       "Sid": "RequestRevision",
-      "_comment": "개정 요청은 에이전트가 할 수 있는 유일한 쓰기입니다. 액션 호출은 그 자체로 인가 대상이고(ontology:InvokeAction), 실행되는 것은 관리자가 작성한 SQL 템플릿뿐입니다 — 호출자가 문장을 고를 수 없습니다.",
+      "_comment": "Requesting a revision is the only write the agent can make. Invoking an action is itself an authorization decision (ontology:InvokeAction), and what executes is an admin-authored SQL template — the caller does not choose the statement.",
       "Effect": "Allow",
       "Action": [
         "ontology:InvokeAction",
@@ -133,7 +133,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
     },
     {
       "Sid": "OntologyGraphVertex",
-      "_comment": "RegulationNode 만 서빙 표를 직접 읽습니다. GRAPH 순회가 이웃 정점을 NeorunBase 안에서 조인하기 때문에 대상이 그 카탈로그에 있어야 하고, 시맨틱 뷰로 바꿀 수 없습니다. 본문은 담기지 않고 제목과 위계만 있습니다.",
+      "_comment": "RegulationNode is the only object that reads a serving table directly. GRAPH traversal joins the neighbouring vertices inside NeorunBase, so the target has to live in that catalog and cannot be swapped for a semantic view. It holds no body text — only titles and tiers.",
       "Effect": "Allow",
       "Action": [
         "data:Select",
@@ -155,7 +155,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
 
 ```json
 {
-  "_comment": "부서장. Sees the team, but not what the team earns — a manager needs headcount and leave, not compensation.",
+  "_comment": "A department manager. Sees the team, but not what the team earns — a manager needs headcount and leave, not compensation.",
   "Version": "2024-01-01",
   "Statement": [
     {
@@ -176,7 +176,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
         "data:table:semantic.hr.purchase_orders"
       ],
       "Condition": "\"부서코드\" = '${user.attr.dept}'",
-      "_ontology_note": "온톨로지 객체 조회는 같은 대상에 대해 data:SelectTable 을 요구합니다 — SELECT 는 data:Select 를, 객체 경로는 data:SelectTable 을 봅니다. 읽기의 철자가 둘이라 한쪽만 적으면 이유를 말하지 않는 403 이 됩니다."
+      "_ontology_note": "An ontology object query requires data:SelectTable on the same target — a SELECT is checked against data:Select and the object path against data:SelectTable. Reading has two spellings, so writing only one of them yields a 403 that does not say why."
     },
     {
       "Sid": "InvokeRetrievers",
@@ -191,7 +191,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
         "data:table:semantic.rag.*"
       ],
       "Condition": "sensitivity <> '대외비'",
-      "_condition_note": "리트리버는 semantic.rag.* 이고 규정 뷰는 semantic.reg.* 라, 뷰에만 조건을 걸면 검색 경로가 그 조건을 지나치지 않습니다. 실제로 그래서 일반 직원에게 대외비 규정이 검색되었습니다. 조건은 읽기 경로마다 필요합니다."
+      "_condition_note": "The retrievers are semantic.rag.* and the regulation views are semantic.reg.*, so a condition written only on the views is never passed through on the search path. That is exactly how an ordinary employee got restricted regulations back from search. The condition is needed on every read path."
     },
     {
       "Sid": "InternalRegulations",
@@ -206,7 +206,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
       ],
       "Condition": "sensitivity <> '대외비'",
       "_condition_note": "'대외비', not 'RESTRICTED'. The ledger stores the classification the documents themselves use, and a filter written against a value that never occurs is always true — so the policy read as if it excluded restricted regulations while excluding nothing at all. Nothing errors on a comparison to a value that does not exist.",
-      "_ontology_note": "온톨로지 객체 조회는 같은 대상에 대해 data:SelectTable 을 요구합니다 — SELECT 는 data:Select 를, 객체 경로는 data:SelectTable 을 봅니다. 읽기의 철자가 둘이라 한쪽만 적으면 이유를 말하지 않는 403 이 됩니다."
+      "_ontology_note": "An ontology object query requires data:SelectTable on the same target — a SELECT is checked against data:Select and the object path against data:SelectTable. Reading has two spellings, so writing only one of them yields a 403 that does not say why."
     },
     {
       "Sid": "NationalIdRemoved",
@@ -220,7 +220,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
     },
     {
       "Sid": "OntologyGraphVertex",
-      "_comment": "GRAPH 순회는 이웃 정점을 NeorunBase 안에서 조인하므로 대상이 그 카탈로그에 있어야 합니다. 시맨틱 뷰로 대체할 수 없는 유일한 자리입니다.",
+      "_comment": "GRAPH traversal joins the neighbouring vertices inside NeorunBase, so the target has to live in that catalog. It is the one place a semantic view cannot stand in.",
       "Effect": "Allow",
       "Action": [
         "data:Select",
@@ -242,7 +242,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
 
 ```json
 {
-  "_comment": "인사팀. Sees every row and the restricted regulations, and still does not get raw national IDs — breadth of access is not the same as needing an identifier in the clear.",
+  "_comment": "HR. Sees every row and the restricted regulations, and still does not get raw national IDs — breadth of access is not the same as needing an identifier in the clear.",
   "Version": "2024-01-01",
   "Statement": [
     {
@@ -256,7 +256,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
         "semantic.hr.*",
         "data:table:semantic.hr.*"
       ],
-      "_ontology_note": "온톨로지 객체 조회는 같은 대상에 대해 data:SelectTable 을 요구합니다 — SELECT 는 data:Select 를, 객체 경로는 data:SelectTable 을 봅니다. 읽기의 철자가 둘이라 한쪽만 적으면 이유를 말하지 않는 403 이 됩니다."
+      "_ontology_note": "An ontology object query requires data:SelectTable on the same target — a SELECT is checked against data:Select and the object path against data:SelectTable. Reading has two spellings, so writing only one of them yields a 403 that does not say why."
     },
     {
       "Sid": "InvokeRetrievers",
@@ -270,7 +270,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
         "semantic.rag.*",
         "data:table:semantic.rag.*"
       ],
-      "_condition_note": "인사팀에는 조건이 없습니다 — 대외비 규정도 검색 결과에 나와야 합니다. 그게 이 페르소나의 차이입니다."
+      "_condition_note": "HR carries no condition here — restricted regulations have to appear in search results. That is what distinguishes this persona."
     },
     {
       "Sid": "AllRegulationsIncludingRestricted",
@@ -283,7 +283,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
         "semantic.reg.*",
         "data:table:semantic.reg.*"
       ],
-      "_ontology_note": "온톨로지 객체 조회는 같은 대상에 대해 data:SelectTable 을 요구합니다 — SELECT 는 data:Select 를, 객체 경로는 data:SelectTable 을 봅니다. 읽기의 철자가 둘이라 한쪽만 적으면 이유를 말하지 않는 403 이 됩니다."
+      "_ontology_note": "An ontology object query requires data:SelectTable on the same target — a SELECT is checked against data:Select and the object path against data:SelectTable. Reading has two spellings, so writing only one of them yields a 403 that does not say why."
     },
     {
       "Sid": "NationalIdStillRemoved",
@@ -304,7 +304,7 @@ could not be found and 조태윤 gets the document. There are not two retrievers
     },
     {
       "Sid": "OntologyGraphVertex",
-      "_comment": "GRAPH 순회는 이웃 정점을 NeorunBase 안에서 조인하므로 대상이 그 카탈로그에 있어야 합니다. 시맨틱 뷰로 대체할 수 없는 유일한 자리입니다.",
+      "_comment": "GRAPH traversal joins the neighbouring vertices inside NeorunBase, so the target has to live in that catalog. It is the one place a semantic view cannot stand in.",
       "Effect": "Allow",
       "Action": [
         "data:Select",
@@ -427,7 +427,7 @@ write SQL; it calls the name.
 
 ```json
 {
-  "_comment": "Hybrid retrieval over currently-effective, citable regulation text. The caller passes a question; it never passes a vector — embedding happens server-side through the same connection that built the index, so an agent cannot introduce a second vector space by using a different model.\n\n분류 조건이 템플릿 안에 있습니다. IAM 행 필터는 SQL 경로(semantic.reg.*)에는 걸리지만 리트리버 호출 경로에는 적용되지 않아서, 뷰에만 걸어 두면 일반 직원에게 대외비 규정이 그대로 검색됩니다 — 실제로 그랬습니다. ${user.attr.clearance} 는 호출자의 IAM 속성이고 리터럴로 치환되므로 호출자가 조작할 수 없습니다.",
+  "_comment": "Hybrid retrieval over currently-effective, citable regulation text. The caller passes a question; it never passes a vector — embedding happens server-side through the same connection that built the index, so an agent cannot introduce a second vector space by using a different model.\n\nThe classification predicate is inside the template. An IAM row filter applies on the SQL path (semantic.reg.*) but not when a retriever is invoked, so a condition written only on the views leaves restricted regulations searchable by an ordinary employee — which is exactly what happened. ${user.attr.clearance} is the caller's IAM attribute, substituted as a literal, so the caller cannot influence it.",
   "catalog": "semantic",
   "schema": "rag",
   "name": "regulation_search",
@@ -464,39 +464,39 @@ write SQL; it calls the name.
   "outputColumns": [
     {
       "name": "chunk_id",
-      "description": "청크 식별자 {doc_no}#{version}#{ordinal}"
+      "description": "Chunk identifier, {doc_no}#{version}#{ordinal}"
     },
     {
       "name": "doc_no",
-      "description": "문서번호"
+      "description": "Document number"
     },
     {
       "name": "version",
-      "description": "버전"
+      "description": "Version"
     },
     {
       "name": "article_no",
-      "description": "조문"
+      "description": "Article"
     },
     {
       "name": "body",
-      "description": "조문 본문"
+      "description": "Article text"
     },
     {
       "name": "effective_from",
-      "description": "시행일 (전자결재 승인일)"
+      "description": "Effective from — the approval date"
     },
     {
       "name": "effective_to",
-      "description": "종료일 — NULL 이면 현행"
+      "description": "Effective to — NULL means still current"
     },
     {
       "name": "owner_dept",
-      "description": "소관 부서"
+      "description": "Owning department"
     },
     {
       "name": "score",
-      "description": "하이브리드 융합 점수"
+      "description": "Hybrid fusion score"
     }
   ],
   "_temporal_note": "The date predicate sits outside HYBRID_SEARCH but inside the same statement, so it filters the joined rows rather than the top-k. A superseded version can still consume a slot — which is why the retriever asks for more than it returns and why the view, not the ranking, is what removes expired text.",
@@ -556,23 +556,23 @@ write SQL; it calls the name.
   "outputColumns": [
     {
       "name": "doc_no",
-      "description": "문서번호"
+      "description": "Document number"
     },
     {
       "name": "title",
-      "description": "문서 제목"
+      "description": "Document title"
     },
     {
       "name": "tier",
-      "description": "1=최상위 2=규정 3=지침"
+      "description": "1 = top level, 2 = regulation, 3 = guideline"
     },
     {
       "name": "owner_dept",
-      "description": "소관 부서"
+      "description": "Owning department"
     },
     {
       "name": "depth",
-      "description": "시작 문서로부터의 거리"
+      "description": "Distance from the starting document"
     }
   ],
   "_paramtype_note": "Param types are the retriever's own (STRING / INT / NUMBER / BOOL / VECTOR / IDENT), not SQL types. They decide how a value is rendered into the template — STRING is quoted and escaped, INT is validated as a long and rendered bare — which is what keeps a caller from reaching past the template.",
@@ -587,7 +587,7 @@ write SQL; it calls the name.
 
 ```json
 {
-  "_comment": "The reverse traversal: which guidelines depend on this regulation. This is the question 인사팀 actually has before a revision — and the one that made a document graph worth building, since neither the ledger nor the ERP can answer it alone.",
+  "_comment": "The reverse traversal: which guidelines depend on this regulation. This is the question HR actually has before a revision — and the one that made a document graph worth building, since neither the ledger nor the ERP can answer it alone.",
   "catalog": "semantic",
   "schema": "rag",
   "name": "impact_analysis",
@@ -611,26 +611,26 @@ write SQL; it calls the name.
   "outputColumns": [
     {
       "name": "doc_no",
-      "description": "문서번호"
+      "description": "Document number"
     },
     {
       "name": "title",
-      "description": "문서 제목"
+      "description": "Document title"
     },
     {
       "name": "tier",
-      "description": "1=최상위 2=규정 3=지침"
+      "description": "1 = top level, 2 = regulation, 3 = guideline"
     },
     {
       "name": "owner_dept",
-      "description": "소관 부서"
+      "description": "Owning department"
     },
     {
       "name": "depth",
-      "description": "시작 문서로부터의 거리"
+      "description": "Distance from the starting document"
     }
   ],
-  "_comment_2": "Both CHILD_OF and REFERENCES are followed inbound: a guideline that merely cites 제12조 is affected by a change to 제12조 just as much as one that derives from it, and only one of those relationships is hierarchical.",
+  "_comment_2": "Both CHILD_OF and REFERENCES are followed inbound: a guideline that merely cites an article is affected by a change to it just as much as one that derives from it, and only one of those relationships is hierarchical.",
   "_paramtype_note": "Param types are the retriever's own (STRING / INT / NUMBER / BOOL / VECTOR / IDENT), not SQL types. They decide how a value is rendered into the template — STRING is quoted and escaped, INT is validated as a long and rendered bare — which is what keeps a caller from reaching past the template.",
   "_graph_note": "Walks DEPENDED_ON_BY — the CHILD_OF edges stored in reverse. The traversal only expands src → dst, so 'what depends on this' cannot be the same rows read backwards; it has to be rows. Same facts, one direction each."
 }

@@ -163,8 +163,8 @@ def main(argv: list[str] | None = None) -> int:
             # them quietly.
             #
             # PROTECTED documents are exempt. The scenarios turn on being able to
-            # read what a superseded version actually said — "2025년 2월 기준으로는
-            # 며칠이었어?" has no answer if that version exists only as an image.
+            # read what a superseded version actually said — an as-of question has no
+            # answer if that version exists only as an image.
             # Losing the corpus's central evidence to a random 10% would make the
             # demo depend on a seed, which is a worse defect than the one being
             # injected.
@@ -272,21 +272,22 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(truth, ensure_ascii=False, indent=2), encoding="utf-8")
 
     c = truth["counts"]
-    print(f"규정 {c['regulations']}건 · 버전 {c['regulation_versions']}개 "
-          f"→ 파일 {c['regulation_files']}개")
-    print(f"일반 문서 {c['general_documents']}건")
-    print(f"총 파일 {c['total_files']}개  ({out})")
-    print(f"파일명 충돌 {len(collisions)}건 (드라이브처럼 ' (n)' 로 회피)")
-    print(f"목록 결함 {sum(len(v) for v in defects.values())}건 · "
-          f"스캔본 {len(truth['expected']['scanned_files'])}개 · "
-          f"PII {len(truth['expected']['pii_files'])}개")
+    print(f"regulations {c['regulations']} · versions {c['regulation_versions']} "
+          f"→ files {c['regulation_files']}")
+    print(f"general documents {c['general_documents']}")
+    print(f"files in total {c['total_files']}  ({out})")
+    print(f"name collisions {len(collisions)} (resolved with ' (n)', as a drive would)")
+    print(f"register defects {sum(len(v) for v in defects.values())} · "
+          f"scanned-only {len(truth['expected']['scanned_files'])} · "
+          f"with PII {len(truth['expected']['pii_files'])}")
     d = erp_facts["demo_employee"]
-    print(f"ERP {erp_facts['counts']['employees']}명 · 결재 {gw_facts['counts']['approvals']}건 "
-          f"(시행일 불일치 {len(gw_facts['date_mismatches'])}) · "
-          f"교육 이수 {lms_facts['counts']['completions']}건")
-    print(f"시나리오: {d['name']}({d['emp_no']}) 육아휴직 잔여 "
-          f"{d['correct_remaining']}일 — 폐기 버전으로 답하면 "
-          f"{d['wrong_remaining_if_superseded']}일")
+    print(f"ERP {erp_facts['counts']['employees']} employees · "
+          f"approvals {gw_facts['counts']['approvals']} "
+          f"({len(gw_facts['date_mismatches'])} with date conflicts) · "
+          f"training records {lms_facts['counts']['completions']}")
+    print(f"the scenario: {d['name']} ({d['emp_no']}) has "
+          f"{d['correct_remaining']} childcare days left — "
+          f"{d['wrong_remaining_if_superseded']} if answered from the superseded version")
     return 0
 
 
@@ -355,8 +356,9 @@ TOTAL_HEADCOUNT = sum(d.headcount for d in DEPTS)   # 300
 
 
 # ── Employees ────────────────────────────────────────────────────────────────
-# Grade drives both the purchase-approval limit (구매 규정) and leave entitlement
-# (인사 규정), so the document corpus and the ERP rows must agree on it.
+# Grade drives both the purchase-approval limit and the leave entitlement, each set
+# by its own regulation — so the document corpus and the ERP rows have to agree on
+# it.
 GRADES = ["사원", "대리", "과장", "차장", "부장", "이사"]
 GRADE_WEIGHTS = [0.34, 0.26, 0.20, 0.11, 0.07, 0.02]
 
@@ -395,7 +397,7 @@ def build_employees(rng: random.Random) -> list[Employee]:
             seq[year] = seq.get(year, 0) + 1
             emp_no = f"{year}{seq[year]:04d}"
             svc = (TODAY - hired).days // 365
-            # Seniority bounded by service years: a one-year 부장 would break the
+            # Seniority bounded by service years: a one-year manager would break the
             # approval-limit scenario, which keys off grade.
             cap = min(len(GRADES) - 1, 1 + svc // 3)
             grade = rng.choices(GRADES[: cap + 1], weights=GRADE_WEIGHTS[: cap + 1])[0]
@@ -487,8 +489,9 @@ class Regulation:
 
 
 # ── The one regulation the demo turns on ─────────────────────────────────────
-# 육아휴직: v2 says 15 days, v3 says 20. v3 was approved on 2025-03-15 but its
-# 부칙 claims 2025-01-01 — so between January and March the answer was still 15,
+# Childcare leave: v2 says 15 days, v3 says 20. v3 was approved on 2025-03-15 but
+# its supplementary provision claims 2025-01-01 — so between January and March the
+# answer was still 15,
 # and a pipeline that trusts the document body gets that window wrong.
 LEAVE_DAYS_OLD, LEAVE_DAYS_NEW = 15, 20
 
@@ -659,7 +662,7 @@ result of matching against it reaches the ledger.
 **`demo/seed/src/regdemo_seed/master.py`**
 
 ```python
-"""규정 목록 — the register the 인사팀 actually maintains, as a spreadsheet.
+"""The register — the list HR actually maintains, as a spreadsheet.
 
 This is the master for document identity: filenames are unreliable, so doc_no is
 recovered by matching a file against this list. It is also the reason the
@@ -728,7 +731,7 @@ def build(regs: list[Regulation], rng: random.Random, out: Path) -> dict:
             continue
 
         title = reg.title
-        # 2. The register's 문서명 drifted from the document's own title.
+        # 2. The register's title drifted from the document's own.
         #    Forced for a fixed share of rows: leaving it to chance means a seed
         #    can produce zero of them, and the matcher then goes untested on the
         #    case it exists to handle.
@@ -902,7 +905,8 @@ def render_pdf(reg: Regulation, v: Version, extra_body: list[str] | None = None)
     for extra in (extra_body or []):
         flow.append(Paragraph(extra, st["body"]))
 
-    # 부칙 — where a document states its own effective date, and where a
+    # The supplementary provision — where a document states its own effective date,
+    # and where a
     # supersession is written in prose rather than as a link.
     flow += [Spacer(1, 14), Paragraph("부      칙", st["art_h"])]
     flow.append(Paragraph(
@@ -1048,7 +1052,7 @@ def build(rng: random.Random, employees: list[Employee], n: int = 300) -> list[G
         by_dept.setdefault(e.dept, []).append(e)
 
     docs: list[GeneralDoc] = []
-    # Weight by headcount so 개발팀 produces more paper than 법무팀 — which also
+    # Weight by headcount so the larger departments produce more paper — which also
     # means the noise is not uniformly distributed across the search space.
     weights = [d.headcount for d in DEPTS]
     for _ in range(n):
@@ -1062,7 +1066,7 @@ def build(rng: random.Random, employees: list[Employee], n: int = 300) -> list[G
 
         paras = [rng.choice(FILLER) for _ in range(rng.randint(2, 4))]
         # Roughly a third mention regulation vocabulary. These are the documents
-        # a naive retriever surfaces for "휴가 며칠?".
+        # a naive retriever surfaces for a question about leave.
         if rng.random() < 0.35:
             paras.insert(rng.randint(0, len(paras)), rng.choice(DECOYS))
 
@@ -1246,8 +1250,8 @@ CREATE TABLE pu_purchase_order (
                        req_rows))
 
     # ── Expenses: some deliberately over the lodging cap ─────────────────────
-    # FIN-GDL-001 caps 부장 이상 at 120,000/night. Rows above it exist so
-    # "이 청구가 규정에 맞나?" has both compliant and non-compliant cases.
+    # FIN-GDL-001 caps managers and above at 120,000 a night. Rows above that cap
+    # exist so "does this claim comply?" has both compliant and non-compliant cases.
     exp_rows, violations = [], []
     for e in rng.sample(active, 120):
         for _ in range(rng.randint(1, 3)):
@@ -1304,7 +1308,8 @@ CREATE TABLE pu_purchase_order (
 **`demo/seed/src/regdemo_seed/groupware.py`**
 
 ```python
-"""전자결재 — MySQL. The authoritative source for when a regulation took effect.
+"""The approval system — MySQL. The authoritative source for when a regulation
+took effect.
 
 A document's 부칙 states an effective date written while it was still a draft.
 If the approval then slips, that date is wrong and nothing in the document says
@@ -1433,7 +1438,7 @@ CREATE TABLE gw_approval_line (
 **`demo/seed/src/regdemo_seed/training.py`**
 
 ```python
-"""교육 이수 — served over REST by a mock SaaS, not a database.
+"""Training records — served over REST by a mock SaaS, not a database.
 
 Plenty of HR systems are SaaS with an API and no database access, so one source
 in the demo is reachable only through the rest-operation connector. It also
@@ -1512,17 +1517,17 @@ files locally, so this script creates the state of "already on the drive".
 ```bash
 #!/usr/bin/env bash
 ##
-## 원본 문서를 오브젝트 스토리지에 올립니다.
+## Put the original documents into object storage.
 ##
 ##   bash infra/upload.sh
 ##
-## 파이프라인의 일부가 아니라 그 앞에 있는 일입니다. 실제 회사에서 규정 문서는
-## 이미 공유 드라이브나 오브젝트 스토리지에 있고, 파이프라인은 그것을 발견해서
-## 읽습니다. 이 데모에서는 seed 가 파일을 로컬에 만들기 때문에, "드라이브에
-## 놓여 있는 상태" 를 이 스크립트가 만듭니다.
+## This is not part of the pipeline; it is what happens before it. In a real
+## company the regulation documents already sit on a shared drive or in object
+## storage, and the pipeline discovers and reads them there. Here the seed writes
+## the files locally, so this script creates the state of "already on the drive".
 ##
-## 키는 out/documents/ 아래 상대 경로를 그대로 corpus/ 밑에 붙입니다. discover
-## 잡이 그 접두어를 훑기 때문에, 경로 규칙이 곧 파이프라인의 입력 범위입니다.
+## Keys are the path under out/documents/ appended to corpus/. The discover job
+## walks that prefix, so the path convention is the pipeline's input scope.
 ##
 set -euo pipefail
 DEMO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -1538,7 +1543,7 @@ from botocore.config import Config
 
 root = pathlib.Path(sys.argv[1])
 if not root.is_dir():
-    raise SystemExit(f"{root} 없음 — 'make seed' 를 먼저 실행하십시오")
+    raise SystemExit(f"{root} not found — run 'make seed' first")
 
 s3 = boto3.client(
     "s3",
@@ -1549,8 +1554,8 @@ s3 = boto3.client(
     config=Config(s3={"addressing_style": "path"}))
 
 bucket = "iceberg-warehouse"
-# 이미 올라간 것은 다시 올리지 않습니다. 코퍼스는 442개 파일이고, 파이프라인을
-# 다시 돌릴 때마다 전부 올릴 이유가 없습니다.
+# Objects already uploaded are not sent again. The corpus is 446 files, and there
+# is no reason to re-upload all of them every time the pipeline is re-run.
 have = set()
 token = None
 while True:
@@ -1572,9 +1577,9 @@ for p in sorted(x for x in root.rglob("*") if x.is_file()):
     s3.put_object(Bucket=bucket, Key=key, Body=p.read_bytes())
     sent += 1
     if sent % 50 == 0:
-        print(f"  {sent} 개 업로드")
+        print(f"  {sent} uploaded")
 
-print(f"  업로드 {sent} · 이미 있음 {skipped} · 총 {sent + skipped} 개  →  s3://{bucket}/corpus/")
+print(f"  uploaded {sent} · already there {skipped} · {sent + skipped} total  →  s3://{bucket}/corpus/")
 PY
 ```
 
