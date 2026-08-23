@@ -981,7 +981,7 @@ Meeting notes, announcements, memos. They exist so that the demo can show search
 ```python
 """The 300 documents that are not regulations.
 
-These are the point of the corpus, not filler. A 300-person company holds a few
+These are the point of the corpus, not filler. A mid-sized company holds a few
 dozen governed regulations and hundreds of meeting notes, reports and decks —
 and plenty of those mention 휴가, 출장비 or 보안 in passing. An index that treats
 every document as an equally valid source answers "휴가 며칠?" from a meeting

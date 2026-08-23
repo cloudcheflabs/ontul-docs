@@ -18,7 +18,7 @@ documentation is the only copy you get.
 
 ## Why this demo exists
 
-A 300-person company holds a few dozen governed regulations buried in hundreds of
+A mid-sized company holds a few dozen governed regulations buried in hundreds of
 meeting notes, several versions of each, and filenames that lie about which
 version they are. An index that treats all of it alike answers *"육아휴직 며칠?"*
 with a number that was correct two years ago — and nothing in the answer marks it

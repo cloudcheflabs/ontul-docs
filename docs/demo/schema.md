@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS ice.reg.documents (
                                 -- what the document number encodes
     owner_dept      VARCHAR,    -- Owning department code (joins org.py's DEPTS)
     is_official     BOOLEAN,    -- Marked by HR as citable as the basis for an answer.
-                                -- The minimum curation: not every document a 300-person
+                                -- The minimum curation: not every document a
                                 -- company produces is trusted.
     sensitivity     VARCHAR,    -- The classification the register carries.
                                 -- Restricted documents are excluded from the candidate
