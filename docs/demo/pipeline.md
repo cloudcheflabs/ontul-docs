@@ -1,60 +1,39 @@
-# 파이프라인 — kiok DAG 로 도는 분산 인덱싱
+# The pipeline — distributed indexing on a kiok DAG
 
-한두 건이면 셸 스크립트로 충분합니다. 수만·수십억 건이면 다릅니다. 이 데모의
-인덱싱은 **kiok DAG** 가 순서를 들고, 무거운 일은 전부 **Ontul 워커**가 합니다.
+For a handful of documents a shell script is enough. For tens of thousands it is
+not. Here a **kiok DAG** holds the order and the heavy work happens on **Ontul
+workers**.
 
 ```text
-    discover ──► chunk ──► effective_dates ──► vectors_clear ──► vectors ──┐
-                    └────► graph ───────────────────────────────────────────┴──► generation
+    discover ──► chunk ──► effective_dates ──► … ──► vectors ──┐
+                    └────► graph ────────────────────────────────┴──► generation
 ```
 
-| 태스크 | 종류 | 하는 일 |
+| Task | Kind | What it does |
 |---|---|---|
-| `discover` | Ontul PYTHON | S3 를 훑어 인입 대기열을 채웁니다 |
-| `chunk` | Ontul BATCH SQL | `UNNEST(extract_chunks(uri))` — 드라이버는 데이터를 들지 않습니다 |
-| `effective_dates` | Ontul BATCH SQL | 전자결재와 **연합 조인**해 승인일을 확정합니다 |
-| `vectors_clear` | Ontul PYTHON | 세대 테이블을 비웁니다 |
-| `vectors` | Ontul BATCH SQL | `embed_passage()` 를 Arrow 배치마다 평가합니다 |
-| `graph` | Ontul PYTHON | 본문 인용에서 근거 관계를 뽑아 레이크에 씁니다 |
-| `generation` | Ontul BATCH SQL | 이 세대의 신원을 기록합니다 |
+| `discover` | Ontul PYTHON | Walks S3 and fills the ingest queue |
+| `chunk` | Ontul BATCH SQL | `UNNEST(extract_chunks(uri))` — the driver holds no data |
+| `effective_dates` | Ontul BATCH SQL | **Federated join** against the approval system to settle the date |
+| `close_versions` | Ontul PYTHON | Closes each version at the next one's effective date |
+| `vectors_clear` | Ontul PYTHON | Empties the generation's table |
+| `vectors` | Ontul BATCH SQL | Evaluates `embed_passage()` per Arrow batch |
+| `graph` | Ontul PYTHON | Extracts authority relations from citations in the text |
+| `generation` | Ontul BATCH SQL | Records this generation's identity |
 
-!!! quote "왜 kiok 인가"
-    셸 스크립트의 줄 순서는 조회할 수 없습니다. 어느 단계가 어디서 멈췄는지,
-    무엇만 다시 돌리면 되는지, 어제 실행과 오늘 실행이 어떻게 달랐는지가 아무
-    데도 남지 않습니다. DAG 로 옮기면 그게 전부 데이터가 됩니다.
+!!! quote "Why a scheduler"
+    A shell script's line order cannot be queried. Which step stopped, what needs
+    re-running, how yesterday's run differed from today's — none of it is
+    recorded anywhere. Moving to a DAG turns all of that into data.
 
-![kiok DAG](../images/demo/kiok-dag.png)
+![The kiok DAG](../images/demo/kiok-dag.png)
 
 ---
 
-## DAG 정의
+## The DAG definition
 
 **`demo/schema/dags/regdemo_index.yaml`**
 
 ```yaml
-# 규정 인덱싱 파이프라인.
-#
-# 이 파일이 있기 전에는 단계 사이의 의존 순서가 infra/index.sh 라는 셸 스크립트
-# 안에만 있었습니다. 한 번 돌리기에는 충분하지만 파이프라인이라고 하기는
-# 어렵습니다 — 어느 단계가 어디서 멈췄는지, 무엇만 다시 돌리면 되는지, 어제
-# 실행과 오늘 실행이 어떻게 달랐는지가 아무 데도 남지 않습니다.
-#
-#   discover ─→ chunk ─→ effective_dates ─→ vectors ─→ generation
-#                   └──→ graph ───────────────────────────┘
-#
-# 무거운 일은 전부 ontul 워커가 합니다. kiok 은 순서를 지키고 결과를 기록할
-# 뿐이라 데이터를 들고 있지 않습니다.
-#
-# 두 가지가 이 파일에 명시적으로 없습니다:
-#
-#   토큰 — ${conn.regdemoOntul.*} 참조만 있습니다. kiok 이 태스크 실행 직전에
-#   워커에서 KMS 암호화 커넥션 저장소에서 풀어주므로, 저장된 DagSpec 에도 admin
-#   UI 의 Source 탭에도 값이 남지 않습니다. 그래서 이 파일은 그대로 커밋됩니다.
-#   넣는 값도 로그인 JWT 가 아니라 만료되지 않는 사용자 토큰(OTOK…)입니다 —
-#   JWT 는 15분이면 끝나서 스케줄로 도는 DAG 의 다음 실행을 깨뜨립니다.
-#
-#   의존은 requires 입니다. depends_on 으로 적었을 때 kiok 은 모르는 키를 조용히
-#   버렸고, 파일은 순서가 있어 보이는데 여섯 태스크가 전부 동시에 돌았습니다.
 dag:
   id: regdemo_index
   default_timeout: 30m
@@ -104,13 +83,56 @@ tasks:
     ontul.token: ${conn.regdemoOntul.token}
     ontul.jobType: BATCH
     ontul.pollIntervalMs: '2000'
-  script: 'UPDATE ice.reg.ingest_queue SET status = ''EXTRACTED'' WHERE status = ''PENDING''
-
-    '
-- id: vectors_clear
+  script: "MERGE INTO ice.reg.doc_versions v\nUSING (\n    SELECT doc_no,\n           ver            \
+    \  AS version,\n           apr_id,\n           complete_dt      AS approved_on,\n           stated_dt\
+    \        AS stated_on,\n           \n           \n           \n           \n           (complete_dt\
+    \ <> stated_dt) AS mismatch\n    FROM gw.groupware.gw_approval\n    WHERE sts_cd = 'CMPL'\n) a\nON\
+    \ v.doc_no = a.doc_no AND v.version = a.version\nWHEN MATCHED THEN UPDATE SET\n    effective_from\
+    \ = a.approved_on,\n    stated_from    = a.stated_on,\n    date_mismatch  = a.mismatch,\n    approval_id\
+    \    = a.apr_id,\n    status         = 'EFFECTIVE'\n"
+- id: drafts_pending
   type: ontul
   requires:
   - effective_dates
+  config:
+    ontul.url: ${conn.regdemoOntul.url}
+    ontul.token: ${conn.regdemoOntul.token}
+    ontul.jobType: BATCH
+    ontul.pollIntervalMs: '2000'
+  script: "MERGE INTO ice.reg.doc_versions v\nUSING (\n    SELECT doc_no, ver AS version, apr_id\n   \
+    \ FROM gw.groupware.gw_approval\n    WHERE sts_cd <> 'CMPL'\n) p\nON v.doc_no = p.doc_no AND v.version\
+    \ = p.version\nWHEN MATCHED THEN UPDATE SET\n    effective_from = NULL,\n    approval_id    = p.apr_id,\n\
+    \    status         = 'DRAFT'\n"
+- id: queue_done
+  type: ontul
+  requires:
+  - drafts_pending
+  config:
+    ontul.url: ${conn.regdemoOntul.url}
+    ontul.token: ${conn.regdemoOntul.token}
+    ontul.jobType: BATCH
+    ontul.pollIntervalMs: '2000'
+  script: 'UPDATE ice.reg.ingest_queue SET status = ''EXTRACTED'' WHERE status = ''PENDING''
+
+    '
+- id: close_versions
+  type: ontul
+  requires:
+  - queue_done
+  timeout: 10m
+  config:
+    ontul.url: ${conn.regdemoOntul.url}
+    ontul.token: ${conn.regdemoOntul.token}
+    ontul.jobType: PYTHON
+    ontul.scriptPath: ${conn.regdemoJobs.close_versions_job}
+    ontul.jobConfig:
+      ontul.job.driver.mode: worker
+      ontul.deps.s3.connectionId: regdemoS3
+    ontul.pollIntervalMs: '2000'
+- id: vectors_clear
+  type: ontul
+  requires:
+  - close_versions
   timeout: 10m
   config:
     ontul.url: ${conn.regdemoOntul.url}
@@ -174,24 +196,26 @@ tasks:
 ```
 
 
-!!! danger "`requires` 이지 `depends_on` 이 아닙니다"
-    kiok 은 모르는 키를 **조용히 버립니다**. `depends_on` 으로 적었을 때 파일은
-    순서가 있어 보이는데 여섯 태스크가 전부 동시에 돌았고, 실행은 빨랐고,
-    아무것도 실패하지 않았습니다. 그래프 화면에 선이 없는 것이 유일한 단서였습니다.
+!!! danger "It is `requires`, not `depends_on`"
+    kiok **silently drops** keys it does not know. Written as `depends_on`, the
+    file looked ordered while all six tasks ran at once; the run was fast and
+    nothing failed. The only clue was that the graph view had no edges in it.
 
-!!! note "토큰이 파일에 없습니다"
-    `${conn.regdemoOntul.token}` 참조만 있습니다. kiok 이 태스크 실행 직전에
-    워커에서 KMS 암호화 커넥션 저장소에서 풀어주므로, 저장된 DagSpec 에도 admin
-    UI 에도 값이 남지 않습니다. 그래서 이 파일은 그대로 커밋됩니다. 넣는 값도
-    로그인 JWT 가 아니라 만료되지 않는 사용자 토큰(`OTOK…`)입니다 — JWT 는
-    15분이면 끝나서 스케줄로 도는 DAG 의 다음 실행을 깨뜨립니다.
+!!! note "The token is not in the file"
+    Only a `${conn.regdemoOntul.token}` reference is. kiok resolves it on the
+    worker from the KMS-encrypted connection store just before the task runs, so
+    the value appears neither in the stored DagSpec nor in the admin UI — which
+    is why this file is committed as-is. The value is a non-expiring user token
+    (`OTOK…`), not a login JWT: a JWT lasts fifteen minutes and would break the
+    next scheduled run.
 
 ---
 
-## 1. 원장 적재 (로컬 파이썬)
+## 1. Loading the ledger (local Python)
 
-이 단계만 로컬에서 돕니다. PDF/DOCX/XLSX 를 읽고 규정 목록과 대조하는 일은
-파일시스템과 포맷 라이브러리가 필요하고, 결과는 원장 몇만 행입니다.
+This is the one stage that runs locally. Reading PDF/DOCX/XLSX and matching
+against the register needs a filesystem and format libraries, and the result is a
+few tens of thousands of ledger rows.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e pipeline
@@ -496,7 +520,21 @@ def main(argv=None) -> int:
             m.doc_no, reg.title, reg.kind,
             int(m.doc_no.split("-")[-1][0]) if m.doc_no.split("-")[-1][:1].isdigit() else 2,
             reg.dept,
-            reg.sensitivity != "RESTRICTED",   # is_official — RESTRICTED never becomes an answer
+            # is_official — 규정 목록에서 "답변의 근거가 될 수 있다" 고 지정한 문서인가.
+            #
+            # 분류(대외비/사내한/공개)와 다른 축입니다. 이 플래그는 문서가
+            # 인용 가능한 규정인지를 말하고, 누가 볼 수 있는지는 IAM 이 정합니다.
+            # 한때 여기서 분류를 겸했는데 — 대외비면 is_official=False — 그러면
+            # 인사팀도 그 규정을 인용하지 못합니다. 색인에서 빼는 것과 사람마다
+            # 다르게 보이는 것은 다른 일이고, 뒤엣것은 정책만 할 수 있습니다.
+            # 규정 목록에 있다는 것이 곧 큐레이션입니다. 목록에 없는 파일 —
+            # 회의록, 공지, 메모 — 은 애초에 documents 행이 되지 않습니다.
+            #
+            # 분류(대외비/사내한/공개)와는 다른 축입니다. 한때 여기서 분류를
+            # 겸했는데 — 대외비면 False — 그러면 인사팀도 그 규정을 인용하지
+            # 못합니다. 색인에서 빼는 것과 사람마다 다르게 보이는 것은 다른
+            # 일이고, 뒤엣것은 정책만 할 수 있습니다.
+            True,
             reg.sensitivity, "onedrive",
         ))
 
@@ -635,16 +673,16 @@ if __name__ == "__main__":
 ```
 
 
-!!! danger "청크는 여기서 싣지 않습니다"
-    예전에는 이 잡이 청크까지 실었습니다. DAG 의 `chunk` 태스크도 같은 청크를
-    싣기 때문에 818개가 1636개가 되었고 — **행 수를 세는 모든 검사가 통과했습니다.**
-    유일한 증상은 답이 같은 조항을 두 번 인용하는 것이었습니다.
+!!! danger "Chunks are not loaded here"
+    They used to be. The DAG's `chunk` task loads the same chunks, so 818 became
+    1636 — and **every count-based check still passed**. The only visible symptom
+    was an answer citing the same clause twice.
 
-    그리고 청크를 지웠으면 인입 대기열도 되돌려야 합니다. 대기열이 `EXTRACTED`
-    라고 말하는 채로 두면 다음 실행이 빈 대기열을 비우고 성공을 보고합니다 —
-    원장은 새것이고 색인은 비어 있고 아무도 실패했다고 하지 않습니다.
+    And clearing those chunks means the ingest queue has to be reset too. Left
+    saying `EXTRACTED`, the next run drains an empty queue and reports success:
+    the ledger is fresh, the index is empty, and nothing says anything failed.
 
-### 추출기
+### The extractors
 
 **`demo/pipeline/src/regdemo_pipeline/extract/__init__.py`**
 
@@ -910,7 +948,7 @@ def extract(path: Path, s3_key: str) -> Extracted:
 ```
 
 
-### 청킹 — 조 단위
+### Chunking, by article
 
 **`demo/pipeline/src/regdemo_pipeline/chunk/split.py`**
 
@@ -995,7 +1033,7 @@ def chunk(sections: list[Section]) -> list[Chunk]:
 ```
 
 
-### PII 탐지
+### PII detection
 
 **`demo/pipeline/src/regdemo_pipeline/pii/detect.py`**
 
@@ -1070,11 +1108,12 @@ def redact(text: str) -> Redaction:
 
 ---
 
-## 2. UDF 등록
+## 2. Registering the UDFs
 
-`chunk` 태스크가 `extract_chunks(uri)` 를 부릅니다. **GLOBAL 스코프**로 등록해야
-합니다 — 세션 스코프는 등록한 연결에서만 보이는데, 스케줄러의 태스크는 자기
-연결을 따로 열기 때문에 `No match found for function signature` 로 끝납니다.
+The `chunk` task calls `extract_chunks(uri)`. It has to be registered at **GLOBAL
+scope**: a session-scoped UDF is visible only to the connection that registered
+it, and the scheduler's task opens its own — which ends as
+`No match found for function signature`.
 
 **`demo/pipeline/src/regdemo_pipeline/jobs/register_udfs.py`**
 
@@ -1233,8 +1272,8 @@ if __name__ == "__main__":
 ```
 
 
-UDF 본체입니다. cloudpickle 이 함수를 **값으로** 직렬화하므로 워커에 이 모듈이
-설치돼 있을 필요는 없습니다.
+The UDF body. cloudpickle serialises the function **by value**, so the module does
+not have to be installed on the worker.
 
 **`demo/pipeline/src/regdemo_pipeline/udf/extract_chunks.py`**
 
@@ -1402,9 +1441,10 @@ def _split_articles(pages: list) -> list:
 
 ---
 
-## 3. 잡 소스 게시
+## 3. Publishing the job sources
 
-PYTHON 잡의 스크립트는 S3 에 올리고 DAG 는 커넥션을 통해 참조합니다.
+A PYTHON job's script is uploaded to S3 and the DAG refers to it through a
+connection.
 
 **`demo/pipeline/jobs/publish.sh`**
 
@@ -1475,16 +1515,16 @@ case "$code" in 2*) echo "  kiok 커넥션 regdemoJobs 갱신";;
 ```
 
 
-!!! danger "내용 해시를 키에 넣는 이유"
-    Ontul 의 dep 페처는 "같은 키면 같은 내용" 을 전제로 워커에 캐시합니다.
-    고정 경로에 덮어쓰면 고친 스크립트가 **영영 실행되지 않습니다** — 아무 오류도
-    없이 옛 코드가 계속 돕니다.
+!!! danger "Why the key is content-addressed"
+    Ontul's dependency fetcher caches on the worker assuming that the same key
+    means the same bytes. Overwrite a fixed path and the fixed script **never
+    runs again** — with no error at all, the old code keeps running.
 
 ---
 
-## 4. 분산 잡들
+## 4. The distributed jobs
 
-### discover — S3 를 훑어 대기열 채우기
+### discover — walk S3, fill the queue
 
 **`demo/pipeline/jobs/discover_job.py`**
 
@@ -1597,7 +1637,7 @@ if __name__ == "__main__":
 ```
 
 
-### 분산 청킹 (SQL 경로의 파이썬 판)
+### Distributed chunking (the Python form of the SQL path)
 
 **`demo/pipeline/src/regdemo_pipeline/jobs/chunk_distributed.py`**
 
@@ -1766,7 +1806,7 @@ if __name__ == "__main__":
 ```
 
 
-### 시행일 확정 — 연합 조인
+### Settling the effective dates — a federated join
 
 **`demo/jobs/20_effective_dates.sql`**
 
@@ -1844,7 +1884,112 @@ WHEN MATCHED THEN UPDATE SET
 ```
 
 
-승인일이 확정되면 이전 판을 닫습니다.
+Once the approval dates land, the previous versions are closed.
+
+**`demo/pipeline/jobs/close_versions_job.py`**
+
+```python
+"""버전을 닫는 ontul PYTHON 잡 — effective_to 를 다음 판의 시행일로.
+
+kiok DAG 가 ``ontul.jobType: PYTHON`` 으로 이 스크립트의 s3:// URI 를 가리키고,
+ontul 워커가 내려받아 실행합니다.
+
+클러스터에서 SQL 로 하지 않는 이유는 취향이 아니라 엔진 제약입니다. "다음
+버전" 은 ``nxt.version > cur.version`` 이라는 부등호 자기조인인데, SELECT 레벨
+조인은 등가 조건 하나만 실행합니다. 우회로도 막혀 있습니다 — 윈도우 함수(LEAD)는
+미지원이고, 버전번호를 이어붙인 복합키는 번호가 연속일 때만 맞는데 실제로는
+연속이 아닙니다. 승인 121건에 파일이 있는 버전은 102개뿐이고, 빈 자리가 생기면
+effective_to 가 NULL 로 남습니다. NULL 은 "현행" 을 뜻하므로, 폐지된 규정이
+현행으로 답변됩니다 — 이 데모가 막으려는 바로 그 실패입니다.
+
+남는 일은 문서당 102행을 정렬하는 것뿐입니다. 그게 분산이 필요하다고 말하는
+쪽이 오히려 정직하지 않습니다. 분산이 값어치를 하는 곳은 청크 수천 개를
+임베딩하는 vectors 태스크입니다.
+"""
+import sys
+from collections import defaultdict
+from datetime import date, timedelta
+
+EPOCH = date(1970, 1, 1)
+
+
+def args():
+    return dict(a.split("=", 1) for a in sys.argv[1:] if "=" in a)
+
+
+def as_date(value):
+    """엔진이 DATE 컬럼으로 돌려주는 것을 정규화합니다.
+
+    DATE 에 CAST(d AS VARCHAR) 를 하면 저장된 값 — epoch 이후 일수 — 이 그대로
+    나옵니다. '2022-05-15' 를 기대한 자리에 '19112' 가 오고, 그것으로 만든
+    리터럴은 거부됩니다. 어느 경로가 어느 형태를 내는지에 기대지 않고 둘 다
+    받습니다.
+    """
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return (EPOCH + timedelta(days=value)).isoformat()
+    text = str(value).strip()
+    if text.isdigit():
+        return (EPOCH + timedelta(days=int(text))).isoformat()
+    return text[:10] or None
+
+
+def main():
+    p = args()
+    from ontul.session import OntulSession
+
+    s = OntulSession(host=p.get("ontul_host", "ontul-master-1"),
+                     port=int(p.get("ontul_port", "47470")))
+
+    rows = s.source("SELECT doc_no, version, effective_from FROM ice.reg.doc_versions "
+                    "WHERE effective_from IS NOT NULL").to_pylist()
+    if not rows:
+        # 조용히 성공하면 모든 버전의 effective_to 가 NULL 로 남고, NULL 은
+        # "현행" 입니다 — 폐지본이 전부 현행으로 답변됩니다.
+        raise SystemExit("시행일이 있는 버전이 하나도 없습니다 — effective_dates 가 먼저 돌아야 합니다")
+
+    by_doc = defaultdict(list)
+    for r in rows:
+        d = as_date(r.get("effective_from"))
+        if d:
+            by_doc[r["doc_no"]].append((int(r["version"]), d))
+
+    updates = []
+    for doc_no, vs in by_doc.items():
+        # 시행일 순입니다. 버전 번호 순이 아닙니다 — 번호가 큰 판이 먼저 시행된
+        # 경우가 실제로 있고(반려 후 재상신), 그때 번호로 정렬하면 아직 오지
+        # 않은 날짜로 앞 판을 닫게 됩니다.
+        vs.sort(key=lambda x: (x[1], x[0]))
+        for (ver, _), (_, nxt_from) in zip(vs, vs[1:]):
+            updates.append((doc_no, ver, nxt_from))
+
+    if not updates:
+        print("closed 0 versions (문서마다 판이 하나뿐입니다)")
+        return
+
+    def lit(v):
+        return "NULL" if v is None else "'" + str(v).replace("'", "''") + "'"
+
+    values = ", ".join(
+        f"({lit(d)}, {v}, DATE {lit(t)})" for d, v, t in updates)
+    res = s.execute(
+        "MERGE INTO ice.reg.doc_versions v USING ("
+        f"  SELECT * FROM (VALUES {values}) AS t(doc_no, version, closes_on)"
+        ") c ON v.doc_no = c.doc_no AND v.version = c.version "
+        "WHEN MATCHED THEN UPDATE SET effective_to = c.closes_on, status = 'SUPERSEDED'")
+    if res.get("status") != "ok":
+        raise SystemExit(f"close failed: {res.get('message')}")
+
+    print(f"closed {len(updates)} superseded version(s) across {len(by_doc)} document(s)")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+
+The local equivalent, kept for the single-node path.
 
 **`demo/pipeline/src/regdemo_pipeline/jobs/close_versions.py`**
 
@@ -1963,7 +2108,7 @@ if __name__ == "__main__":
 ```
 
 
-### 벡터 세대 비우기
+### Clearing the vector generation
 
 **`demo/pipeline/jobs/clear_vectors_job.py`**
 
@@ -2017,17 +2162,17 @@ if __name__ == "__main__":
 ```
 
 
-!!! note "이 한 단계만 Ontul 을 통과하지 않습니다"
-    NeorunBase 는 JDBC 카탈로그가 아니라서 Ontul 을 통한 `DELETE` 가 거부됩니다
-    (`Not a JDBC catalog: nb`). 그래서 벡터 테이블은 NeorunBase 자기 프로토콜로
-    비웁니다.
+!!! note "The one step that does not go through Ontul"
+    NeorunBase is not a JDBC catalog, so a `DELETE` through Ontul is refused
+    (`Not a JDBC catalog: nb`). The vector table is emptied over NeorunBase's own
+    protocol.
 
-### 임베딩 — BATCH SQL
+### Embedding — as BATCH SQL
 
-PYTHON 잡이 아닙니다. Ontul 은 PYTHON 잡을 워커 **하나**에 보내므로, 파이썬으로
-쓰면 분산되는 것처럼 보이면서 아무것도 분산되지 않습니다. BATCH SQL 은 스캔과
-함께 퍼지고 `embed_passage()` 를 Arrow 배치마다 평가합니다 — 데이터가 이미 있는
-곳에서요.
+Not as a PYTHON job. Ontul dispatches PYTHON jobs to a **single** worker, so
+writing this in Python would parallelise nothing while looking like it should.
+BATCH SQL spreads with the scan and evaluates `embed_passage()` per Arrow batch —
+where the data already is.
 
 **`demo/jobs/10_index_vectors.sql`**
 
@@ -2115,7 +2260,7 @@ WHEN NOT MATCHED THEN INSERT
 ```
 
 
-### 그래프 — 근거 관계
+### The graph — authority relations
 
 **`demo/pipeline/jobs/build_graph_job.py`**
 
@@ -2262,7 +2407,7 @@ if __name__ == "__main__":
 ```
 
 
-같은 로직의 로컬 판입니다.
+The same logic in local form.
 
 **`demo/pipeline/src/regdemo_pipeline/jobs/build_graph.py`**
 
@@ -2400,7 +2545,7 @@ if __name__ == "__main__":
 ```
 
 
-관계 등록 헬퍼.
+The register helper.
 
 **`demo/pipeline/src/regdemo_pipeline/relations/register.py`**
 
@@ -2535,7 +2680,7 @@ def unregistered_rows(register: list[RegisterRow], matched: set[str]) -> list[st
 
 ---
 
-## 5. 실행
+## 5. Running it
 
 **`demo/infra/pipeline.sh`**
 
@@ -2762,10 +2907,6 @@ verified from a separate connection
   build_graph_job -> cacca440c425
   clear_vectors_job -> 8092e80a5531
   discover_job -> b572e5d46118
-  kiok 커넥션 regdemoJobs 갱신
-
-== 1/2  DAG 등록
-  ok regdemo_index 등록
 
 == 2/2  실행
   ok runId=regdemo_index-1787451103180-9
@@ -2773,12 +2914,12 @@ verified from a separate connection
 파이프라인 SUCCESS
 ```
 
-확인:
+Check it:
 
 ```sql
 SELECT count(*) FROM ice.reg.doc_chunks;                                   -- 818
 SELECT count(*) FROM (SELECT chunk_id FROM ice.reg.doc_chunks
-                      GROUP BY chunk_id HAVING count(*) > 1) t;            -- 0  (멱등)
+                      GROUP BY chunk_id HAVING count(*) > 1) t;            -- 0  (idempotent)
 ```
 
 ```bash
@@ -2786,11 +2927,11 @@ psql -h localhost -p 5434 -U admin -d neorunbase \
   -c "SELECT count(*) FROM doc_vectors_gen1"   # 818
 ```
 
-![kiok 실행 이력](../images/demo/kiok-executions.png)
+![kiok run history](../images/demo/kiok-executions.png)
 
 ---
 
-## 임베딩 모델
+## The embedding model
 
 **`demo/pipeline/src/regdemo_pipeline/embed/model.py`**
 
@@ -3010,4 +3151,4 @@ if __name__ == "__main__":
 
 ---
 
-다음: [CDC 와 Flow](cdc-flow.md) — 끝나지 않는 잡들.
+Next: [CDC and Flow](cdc-flow.md) — the jobs that never finish.

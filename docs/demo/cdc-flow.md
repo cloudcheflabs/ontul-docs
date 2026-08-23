@@ -1,28 +1,29 @@
-# CDC 와 Flow — 끝나지 않는 잡들
+# CDC and Flow — the jobs that never finish
 
-배치 파이프라인과 다른 점은 하나입니다: **이건 끝나지 않습니다.** 띄워두면 원천이
-바뀌는 대로 표가 따라옵니다.
+One thing separates these from the batch pipeline: **they do not end.** Leave
+them running and the tables follow their sources.
 
-이 데모에는 Flow 가 세 묶음 있습니다.
+There are three groups.
 
-| Flow | 소스 → 싱크 | 왜 |
+| Flow | Source → sink | Why |
 |---|---|---|
-| ERP CDC ×5 | PostgreSQL → Iceberg | 운영계에 조회 부하를 얹지 않고 시점을 일관되게 |
-| 그래프 서빙 ×2 | Iceberg → NeorunBase | 서빙은 파생물이어야 하므로 |
-| 결재 이벤트 | S3(JSON) → Iceberg | 규정이 시행되는 진짜 계기 |
+| ERP CDC ×5 | PostgreSQL → Iceberg | No analytical load on the operational system, and one consistent point in time |
+| Graph serving ×2 | Iceberg → NeorunBase | Because serving has to be a derivative |
+| Approval events | S3 (JSON) → Iceberg | The real trigger for a regulation taking effect |
 
 ---
 
 ## 1. ERP → Iceberg (CDC)
 
-### 왜 직접 붙지 않는가
+### Why not connect directly
 
-읽기만 하면 괜찮을 것 같지만, 현장에서는 대개 거절당합니다. 운영 ERP 에 분석
-질의가 붙는 것을 반기는 조직은 드뭅니다. 그리고 직접 붙으면 **시점이 흔들립니다** —
-질의마다 다른 순간의 데이터를 보게 되고, 규정과 대조하는 답에서는 그게 틀린
-숫자로 나타납니다.
+Read-only access sounds harmless and is usually refused anyway — few organisations
+welcome analytical queries against a production ERP. And connecting directly makes
+the **point in time slip**: each query sees a different instant, which shows up as
+a wrong number in any answer that compares records against a regulation.
 
-그래서 CDC 로 Iceberg 에 모으고, 시맨틱 뷰는 그대로 둡니다. 아래만 바뀝니다.
+So CDC collects into Iceberg and the semantic views stay as they are. Only what is
+underneath them changes.
 
 **`demo/schema/flows/erp_cdc.json`**
 
@@ -117,13 +118,13 @@
 ```
 
 
-!!! danger "`decimal.handling.mode` 를 기본값으로 두면"
-    Debezium 의 기본값은 NUMERIC 을 **base64 로 인코딩한 unscaled 바이트**로
-    보냅니다. 그러면 18.0 이 들어갈 자리에 `"ALQ="` 같은 문자열이 들어가는데 —
-    **행 수는 정확히 일치합니다.** 개수를 세는 모든 검사가 통과하면서 모든 값이
-    틀립니다.
+!!! danger "Leaving `decimal.handling.mode` at its default"
+    Debezium's default encodes a NUMERIC as **base64 unscaled bytes**. A column
+    that should read 18.0 arrives downstream as the string `"ALQ="` — and **the
+    row counts match exactly**. Every count-based check passes while every value
+    is wrong.
 
-    이 데모의 검증이 개수가 아니라 **값**을 비교하는 이유입니다.
+    That is why the verification on this page compares values, not counts.
 
 **`demo/infra/cdc.sh`**
 
@@ -170,8 +171,21 @@ tables(){ python3 -c "
 import json;d=json.load(open('$SPEC',encoding='utf-8'))
 for t in d['tables']: print(t['source'], t['sink'], ','.join(t['keys']))"; }
 
+# 자기 것만 죽입니다. 스트리밍 잡을 전부 죽이면 이 스크립트가 남의
+# 파이프라인을 끕니다 — 실제로 그랬습니다: graph_flow 가 띄운 2개를 cdc 가
+# 죽이고, cdc 가 띄운 5개를 flow 가 죽여서, 세 스크립트를 차례로 돌리면 마지막
+# 하나만 살아남았습니다. 각 스크립트가 성공을 보고했기 때문에 아무도 눈치채지
+# 못했습니다.
 streaming_jobs(){ curl -s -m 30 "$ONTUL/v1/api/job/list" -H "$AH" \
-  | python3 -c "import sys,json;[print(j['jobId']) for j in json.load(sys.stdin) if j.get('type')=='STREAMING']" 2>/dev/null; }
+  | python3 -c "
+import sys, json
+for j in json.load(sys.stdin):
+    if j.get('type') != 'STREAMING':
+        continue
+    tag = (j.get('description') or '') + ' ' + (j.get('jobName') or '')
+    if 'erp-cdc' in tag:
+        print(j['jobId'])
+" 2>/dev/null; }
 
 if [ "$MODE" = "stop" ]; then
   log "Flow 중지 + 복제 슬롯 정리"
@@ -275,6 +289,8 @@ def api(path, body=None, method="GET"):
   r.add_header("Authorization","Bearer "+tok); r.add_header("Content-Type","application/json")
   return json.load(urllib.request.urlopen(r,timeout=90))
 try:
+  # 나중에 이 묶음만 골라 끌 수 있도록 이름표를 답니다.
+  cfg["description"] = "erp-cdc:" + str(cfg.get("source", {}).get("table") or "")
   d=api("/v1/api/sql", {"sql":"SUBMIT STREAMING "+json.dumps(cfg)}, "POST")
   if d.get("status")!="ok": print("ERR:"+str(d)[:220]); raise SystemExit
   want="streaming-"+(d.get("queryId") or "")[:8]
@@ -309,26 +325,26 @@ bash infra/cdc.sh
 ```
 
 ```text
-== 2/3  테이블당 Flow 제출
+== 2/3  Flow per table
   ok public.hr_employee → ice.erp.hr_employee  [f5fb5c96…]
   ok public.hr_org → ice.erp.hr_org            [61a06d47…]
   ok public.hr_leave_balance → …               [db339d92…]
   ok public.fi_expense → …                     [9a3e92f2…]
   ok public.pu_purchase_order → …              [ec7017ce…]
 
-== 원천 대 대상 — 행 수
+== source vs target — row counts
   ok hr_employee: 300 = 300
   ok hr_org: 12 = 12
   ok hr_leave_balance: 572 = 572
   ok fi_expense: 240 = 240
   ok pu_purchase_order: 90 = 90
 
-== 값 비교
-  ok hr_leave_balance(20090001,ANN) 수치 일치 — 원천 23.0|23.0, Iceberg 23.0|23.0
-  ok hr_employee(20090001) 성명 일치 — 조태윤
+== compared by value
+  ok hr_leave_balance(20090001,ANN) — source 23.0|23.0, Iceberg 23.0|23.0
+  ok hr_employee(20090001) name matches
 ```
 
-변경이 따라오는지 보려면:
+To watch a change propagate:
 
 ```bash
 bash infra/cdc.sh change
@@ -336,15 +352,15 @@ bash infra/cdc.sh change
 
 ---
 
-## 2. 그래프 → 서빙
+## 2. The graph → serving
 
-온톨로지의 `derives_from` 링크는 GRAPH 바인딩이라 NeorunBase 인스턴스 그래프를
-순회합니다. 그 그래프를 채우는 것이 이 Flow 입니다.
+The ontology's `derives_from` link is a GRAPH binding, so it traverses
+NeorunBase's instance graph. These Flows are what fill that graph.
 
-**배치 잡은 NeorunBase 에 직접 쓰지 않습니다.** 예전에는 그랬고, 그게 나쁜 이유는
-서빙 계층이 기록의 원본이 되어 버리기 때문입니다 — 다시 세우면 관계가 사라지고,
-언제 어떻게 바뀌었는지는 아무 데도 남지 않고, 그래프를 고치는 방법이 "잡을 다시
-돌린다" 하나뿐입니다.
+**The batch job does not write to NeorunBase.** It used to, and that was wrong
+because it made the serving layer the system of record: rebuild it and the
+relations were gone, no history of what changed when existed, and the only way to
+fix the graph was "run the job again".
 
 **`demo/schema/flows/graph_serving.json`**
 
@@ -440,20 +456,20 @@ bash infra/cdc.sh change
 ```
 
 
-!!! danger "`snapshot` 값을 잘못 쓰면 조용히 아무것도 안 옵니다"
-    이 필드가 받는 값은 `latest` 와 `all` 뿐입니다. `earliest` 처럼 그럴듯한
-    값을 적으면 **알아보지 못한 채 `latest` 로 동작**해서, Flow 는 건강하게 돌고
-    체크포인트도 남기면서 기존 행을 하나도 흘려보내지 않습니다. 유휴 소스와
-    구분되지 않습니다.
+!!! danger "A wrong `snapshot` value delivers nothing, quietly"
+    The field accepts `latest` and `all`. A plausible-looking value such as
+    `earliest` was **silently treated as `latest`**, so the Flow ran healthily,
+    checkpointed, and delivered none of the existing rows. Indistinguishable from
+    an idle source.
 
-    (Ontul 1.0.0 부터는 모르는 값을 거절합니다.)
+    (Ontul 1.0.0 rejects unrecognised values.)
 
-!!! note "싱크가 `neorunbase` 가 아니라 `jdbc` 인 이유"
-    `neorunbase` 싱크는 REST 대량 삽입이라 **덧붙이기만** 합니다. 전량 재작성
-    소스와 붙이면 같은 엣지가 계속 쌓입니다. `jdbc` 싱크의 `mode: cdc` 는
-    `__op` 를 보고 c/u/r 은 키 기준 upsert, d 는 삭제로 적용해서 서빙이 원본의
-    복제본으로 유지됩니다. NeorunBase 는 Postgres 와이어 프로토콜을 서빙하므로
-    그대로 붙습니다.
+!!! note "Why the sink is `jdbc` and not `neorunbase`"
+    The `neorunbase` sink is a REST bulk insert — it only **appends**. Point it at
+    a source that rewrites its table in full and the same edges pile up. The
+    `jdbc` sink in `mode: cdc` reads `__op` and applies c/u/r as an upsert on the
+    key and d as a delete, so serving stays a replica of the source. NeorunBase
+    serves the PostgreSQL wire protocol, so it attaches directly.
 
 **`demo/infra/graph_flow.sh`**
 
@@ -577,29 +593,29 @@ echo "  멈추려면:  bash infra/graph_flow.sh stop"
 
 
 ```bash
-bash infra/graph_flow.sh      # 파이프라인보다 먼저
+bash infra/graph_flow.sh      # before the pipeline
 ```
 
-!!! warning "순서가 있습니다"
-    `changelog` 모드는 **시작한 시점부터** 변경을 봅니다. 파이프라인을 먼저
-    돌리고 Flow 를 나중에 띄우면 이미 만들어진 관계는 서빙에 도달하지 않습니다.
-    Flow 를 먼저 띄우고, 파이프라인이 채우게 하십시오.
+!!! warning "There is an order here"
+    `changelog` mode sees changes **from the moment it starts**. Run the pipeline
+    first and start the Flow afterwards, and the relations already built never
+    reach serving. Start the Flows, then let the pipeline fill them.
 
-확인:
+Check it:
 
 ```bash
 psql -h localhost -p 5434 -U admin -d neorunbase -c "SELECT count(*) FROM doc_nodes"  # 50
 psql -h localhost -p 5434 -U admin -d neorunbase -c "SELECT count(*) FROM doc_edges"  # 116
 ```
 
-![Flow 화면](../images/demo/ontul-flow.png)
+![The Flow page](../images/demo/ontul-flow.png)
 
 ---
 
-## 3. 결재 이벤트 스트림
+## 3. The approval event stream
 
-규정이 시행되는 진짜 계기는 결재 행이 바뀌는 것입니다. 이 Flow 는 그것을
-`ice.reg.approval_status` 에 상시 upsert 합니다.
+What actually makes a regulation take effect is an approval row changing. This
+Flow keeps `ice.reg.approval_status` upserted from those events.
 
 **`demo/schema/flows/approval_status.json`**
 
@@ -646,11 +662,11 @@ psql -h localhost -p 5434 -U admin -d neorunbase -c "SELECT count(*) FROM doc_ed
 ```
 
 
-!!! note "exactly-once 와 upsert 를 같이 쓸 때"
-    마스터가 단일 커미터가 되어 모든 워커의 파일을 한 커밋으로 씁니다. upsert 와
-    함께 쓰면 데이터 파일과 equality delete 파일이 **같은 RowDelta 로** 나가므로,
-    새 상태가 보이는 순간 이전 상태가 사라집니다 — 둘 다 보이는 중간 상태가
-    없습니다.
+!!! note "exactly-once together with upsert"
+    The master becomes the single committer and writes every worker's files in one
+    commit. Combined with upsert, the data files and the equality-delete files go
+    out in the **same RowDelta**, so the previous state disappears at the instant
+    the new one becomes visible — there is no window where both are readable.
 
 **`demo/infra/flow.sh`**
 
@@ -696,8 +712,21 @@ sql(){ curl -s -XPOST "$ONTUL/admin/query/execute" -H "$AH" -H 'Content-Type: ap
 sql_ok(){ local out; out=$(sql "$1")
   case "$out" in *'"status":"error"'*) fail "$2: $(echo "$out" | head -c 200)";; esac; step "$2"; }
 
+# 자기 것만 죽입니다. 스트리밍 잡을 전부 죽이면 이 스크립트가 남의
+# 파이프라인을 끕니다 — 실제로 그랬습니다: graph_flow 가 띄운 2개를 cdc 가
+# 죽이고, cdc 가 띄운 5개를 flow 가 죽여서, 세 스크립트를 차례로 돌리면 마지막
+# 하나만 살아남았습니다. 각 스크립트가 성공을 보고했기 때문에 아무도 눈치채지
+# 못했습니다.
 jobs_streaming(){ curl -s "$ONTUL/v1/api/job/list" -H "$AH" \
-  | python3 -c "import sys,json;[print(j['jobId']) for j in json.load(sys.stdin) if j.get('type')=='STREAMING']" 2>/dev/null; }
+  | python3 -c "
+import sys, json
+for j in json.load(sys.stdin):
+    if j.get('type') != 'STREAMING':
+        continue
+    tag = (j.get('description') or '') + ' ' + (j.get('jobName') or '')
+    if 'approval-stream' in tag:
+        print(j['jobId'])
+" 2>/dev/null; }
 
 if [ "$MODE" = "stop" ]; then
   log "Flow 중지"
@@ -766,6 +795,7 @@ def api(path, body=None, method="GET"):
   r.add_header("Authorization","Bearer "+tok); r.add_header("Content-Type","application/json")
   return json.load(urllib.request.urlopen(r,timeout=60))
 try:
+  cfg["description"] = "approval-stream"
   d=api("/v1/api/sql", {"sql":"SUBMIT STREAMING "+json.dumps(cfg)}, "POST")
   if d.get("status")!="ok": print("ERR:"+str(d)[:300]); raise SystemExit
   want="streaming-"+(d.get("queryId") or "")[:8]
@@ -805,15 +835,16 @@ echo "  멈추려면:                  bash infra/flow.sh stop"
 
 
 ```bash
-bash infra/flow.sh            # 기동 + 1차 이벤트
-bash infra/flow.sh advance    # 후속 단계 — upsert 가 도는 것을 봅니다
+bash infra/flow.sh            # start, plus a first batch of events
+bash infra/flow.sh advance    # later stages — watch the upsert happen
 bash infra/flow.sh stop
 ```
 
-이것이 에이전트의 `pending_revision` 툴이 읽는 표입니다. 규정 표에는 **이미
-시행된 것**만 있으므로, 다음 달 시행 예정인 승인된 개정은 그 표에서 보이지
-않습니다 — 오늘 기준으로는 맞고 결정에는 틀린 답이 나오는 자리입니다.
+This is the table the agent's `pending_revision` tool reads. The regulations
+tables hold only what is **already** in force, so an approved revision taking
+effect next month is invisible to them — which is exactly where an answer is
+correct today and wrong for the decision being made.
 
 ---
 
-다음: [IAM 과 리트리버](iam.md) — 같은 질문에 사람마다 다른 답이 나오는 이유.
+Next: [IAM and retrievers](iam.md) — why the same question gets different answers.

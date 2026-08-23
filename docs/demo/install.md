@@ -1,30 +1,31 @@
-# 설치 — 릴리스 배포본으로 스택 세우기
+# Install — standing the stack up from release tarballs
 
-이 데모의 컴포넌트는 넷입니다. 공식 Docker 이미지는 발행하지 않으므로, **각
-제품의 릴리스 tarball 을 내려받아 이미지를 직접 굽는 것이 설치 경로**입니다.
-소스 저장소는 필요 없습니다.
+Four cloudcheflabs products make up this demo. **No official Docker images are
+published**, so the install path is to download each product's release tarball
+and build the image from it. You do not need a source checkout for any of it.
 
-| 제품 | 역할 | 릴리스 |
+| Product | Role here | Release |
 |---|---|---|
-| ShannonStore | S3 오브젝트 스토리지 | `cloudcheflabs/shannonstore-pack` |
-| NeorunBase | 벡터 · 한국어 FTS · 그래프 · OLTP 서빙 | `cloudcheflabs/neorunbase-pack` |
-| Ontul | 연합 · 시맨틱 · 온톨로지 · IAM · Flow | `cloudcheflabs/ontul-pack` |
-| kiok | 배치 스케줄러 | `cloudcheflabs/kiok-pack` |
+| ShannonStore | S3 object storage | `cloudcheflabs/shannonstore-pack` |
+| NeorunBase | vector · Korean FTS · graph · OLTP serving | `cloudcheflabs/neorunbase-pack` |
+| Ontul | federation · semantic layer · ontology · IAM · Flow | `cloudcheflabs/ontul-pack` |
+| kiok | batch scheduler | `cloudcheflabs/kiok-pack` |
 
-여기에 Apache Polaris(Iceberg REST 카탈로그)와 원천들 — ERP(PostgreSQL),
-전자결재(MySQL), 교육이수(REST), 임베딩 서비스 — 이 붙습니다.
+Apache Polaris (the Iceberg REST catalog) joins them, along with the source
+systems: ERP on PostgreSQL, the approval system on MySQL, a training-records SaaS
+over REST, and the embedding service.
 
-!!! warning "필요한 것"
-    Docker 에 **10GB 이상** 할당된 머신, `python3.11`, `psql`, `aws` CLI,
-    그리고 에이전트를 돌리려면 `ANTHROPIC_API_KEY`. 배포본 합계가 약 1.2GB 이고
-    이미지를 굽고 나면 디스크 25GB 정도 씁니다.
+!!! warning "What you need"
+    A machine with **at least 10 GB given to Docker**, plus `python3.11`, `psql`
+    and the `aws` CLI. `ANTHROPIC_API_KEY` only if you want to run the agent. The
+    tarballs total about 1.2 GB and the built images take roughly 25 GB.
 
 ---
 
-## 1. 배포본 내려받기
+## 1. Fetch the distributions
 
-각 저장소에 `<name>-pack` 이 있고 그 안에 `<name>-archive` 라는 고정 태그가
-하나 있습니다. 최신 빌드는 항상 같은 URL 에 있습니다.
+Each product has a `<name>-pack` repository holding one rolling tag,
+`<name>-archive`, so the current build is always at the same URL.
 
 **`demo/infra/dist/fetch.sh`**
 
@@ -85,11 +86,11 @@ bash infra/dist/fetch.sh
 
 ---
 
-## 2. 이미지 Dockerfile
+## 2. The image Dockerfiles
 
-세 제품은 tarball 구조가 같습니다 — `bin/`, `conf/`, `lib/`, `admin-ui/` 를
-그대로 담고 있어서 풀어서 `/app` 에 놓으면 끝입니다. 그래서 Dockerfile 도
-하나입니다.
+Three of the products have identically shaped tarballs — `bin/`, `conf/`, `lib/`,
+`admin-ui/` — so unpacking one into `/app` is the whole build, and one Dockerfile
+serves all three.
 
 **`demo/infra/dist/Dockerfile`**
 
@@ -130,7 +131,7 @@ ENV SHANNONSTORE_FOREGROUND=true \
 ```
 
 
-kiok 만 역할 스위치가 하나 더 필요합니다.
+kiok needs one extra thing: a switch for which role the container runs.
 
 **`demo/infra/dist/Dockerfile.kiok`**
 
@@ -172,10 +173,12 @@ esac
 ```
 
 
-Ontul 이미지는 제품 배포본에 **이 파이프라인이 쓰는 파이썬 의존성**을 얹습니다.
-추출이 Python UDF 로 돌고, UDF 는 워커가 자기 시스템 파이썬으로 실행하기
-때문입니다. 제품 이미지가 아니라 여기에 두는 것이 요점입니다 — Ontul 이 PDF
-파서를 같이 배포할 이유는 없고, 실제 프로젝트도 잡 이미지는 따로 만듭니다.
+The Ontul image is the product distribution plus **this pipeline's Python
+dependencies**. Extraction runs as a Python UDF and the worker executes UDFs with
+its own system Python, so pdfplumber and friends have to be inside the container
+rather than in the client's virtualenv. Keeping them here instead of in the
+product image is the point: Ontul has no business shipping a PDF parser, and a
+real project builds its own job image for exactly this reason.
 
 **`demo/infra/dist/Dockerfile.ontul`**
 
@@ -239,21 +242,21 @@ EXPOSE 8080 47470 19999 29999
 ```
 
 
-!!! danger "파이썬 버전은 맞춰야 합니다"
-    cloudpickle 은 함수를 값으로 직렬화하는데 code 객체의 레이아웃이 버전마다
-    다릅니다. 3.11 클라이언트가 컨테이너의 3.10 을 만나면
-    `code expected at most 16 arguments, got 18` 로 끝나는데, 이 메시지에는
-    파이썬도 버전도 나오지 않습니다. PySpark 와 같은 규칙입니다 — 드라이버와
-    실행기는 같은 인터프리터를 씁니다.
+!!! danger "The Python versions have to match"
+    cloudpickle serialises a function by value, and a code object's layout is
+    version-specific. A 3.11 client against the container's 3.10 fails with
+    `code expected at most 16 arguments, got 18` — a message that mentions
+    neither Python nor a version. It is the same rule PySpark has: driver and
+    executor run the same interpreter.
 
 ---
 
-## 3. compose 파일
+## 3. The compose files
 
-네 제품이 각자 compose 프로젝트를 가집니다. 이름을 나눠 둔 이유는 정리할 때
-**이 데모가 띄운 것만** 내리기 위해서입니다.
+Each product gets its own compose project. The names are kept distinct so that
+tearing down later removes **only what this demo started**.
 
-### ShannonStore — 네트워크의 주인
+### ShannonStore — it owns the network
 
 **`demo/infra/compose/shannonstore.yml`**
 
@@ -437,12 +440,13 @@ networks:
 ```
 
 
-`setup` 컨테이너가 하는 일이 기동 순서를 결정합니다. ShannonStore 는 켜질 때
-S3 자격증명을 갖고 있지 않습니다 — admin 으로 로그인해서 IAM 키를 발급받고, 그
-키로 버킷을 만들고, 키를 볼륨에 적어 둡니다. Polaris 는 그 키를 **받아서
-시작해야 하고 나중에 바꿀 수 없습니다.** 그래서 순서는 취향이 아니라 제약입니다.
+What the `setup` container does is what fixes the startup order. ShannonStore
+holds no S3 credentials when it boots: it logs in as admin, mints an IAM key,
+creates the bucket with it, and writes the key to a volume. Polaris has to be
+**started with** that key and cannot be told about it afterwards. The ordering is
+a constraint, not a preference.
 
-### NeorunBase — 서빙
+### NeorunBase — the serving layer
 
 **`demo/infra/compose/neorunbase.yml`**
 
@@ -655,7 +659,12 @@ services:
       # Arrow allocates off-heap. The heap cap is deliberately below what the
       # worker could use so the batch pipeline stays in direct memory, where
       # embed_passage() hands its FixedSizeList straight to the vector.
-      JAVA_OPTS: "-Xms512m -Xmx1280m -XX:+UseG1GC -XX:MaxMetaspaceSize=256m -XX:MaxDirectMemorySize=768m"
+      # 워커가 마스터보다 큽니다. 이 스택에서 워커 하나가 동시에 지는 짐이
+      # 그만큼입니다 — CDC 5 + 그래프 2 + 결재 1, 여덟 개의 스트리밍 잡이 상주한
+      # 상태에서 임베딩 배치가 청크 800여 개를 Arrow 배치로 밀어 넣습니다.
+      # 1280m 에서는 색인 도중 워커가 죽었고, 그때 나오는 말은 메모리가 아니라
+      # "Worker … failed and retry exhausted: null" 이라 원인을 가리키지 않습니다.
+      JAVA_OPTS: "-Xms768m -Xmx2560m -XX:+UseG1GC -XX:MaxMetaspaceSize=384m -XX:MaxDirectMemorySize=1024m"
     depends_on:
       # service_started, not service_healthy — this saves a minute, it does not
       # avoid a deadlock. The master holds /admin/ready until a worker registers
@@ -758,10 +767,10 @@ networks:
 ```
 
 
-### 원천들
+### The source systems
 
-ERP(PostgreSQL), 전자결재(MySQL), 교육이수(REST), 임베딩 서비스는 데모 루트의
-compose 에 있습니다.
+ERP (PostgreSQL), the approval system (MySQL), training records (REST) and the
+embedding service live in the demo's own root compose file.
 
 **`demo/docker-compose.yml`**
 
@@ -900,7 +909,8 @@ volumes:
 ```
 
 
-임베딩 서비스는 모델 가중치를 **이미지에 구워** 넣고 오프라인으로 고정합니다.
+The embedding service **bakes the model weights into its image** and pins itself
+offline.
 
 **`demo/infra/embed-svc/Dockerfile`**
 
@@ -1076,15 +1086,15 @@ def embed(req: EmbedRequest) -> EmbedResponse:
 ```
 
 
-!!! note "왜 오프라인인가"
-    규정 본문을 외부 API 로 보내서 무슨 내용인지 알아보게 할 수는 없습니다.
-    `HF_HUB_OFFLINE=1` / `TRANSFORMERS_OFFLINE=1` 은 취향이 아니라 이 데모가
-    성립하기 위한 조건이고, 서비스는 자기가 어느 리비전을 적재했는지 증명하지
-    못하면 요청을 거부합니다 — 리비전을 말할 수 없는 벡터는 어느 세대에 속하는지
-    고정할 수 없기 때문입니다.
+!!! note "Why offline is not a preference here"
+    You cannot send a corpus of internal regulations to a third-party API to find
+    out what it says. `HF_HUB_OFFLINE=1` / `TRANSFORMERS_OFFLINE=1` is a condition
+    of the demo existing at all. The service also refuses to serve unless it can
+    prove which revision it loaded — a vector whose model revision cannot be
+    named cannot be pinned to a generation.
 
-교육이수는 데이터베이스가 없는 SaaS 를 흉내 냅니다. Ontul 의 REST 커넥터가
-붙는 대상입니다.
+Training records stand in for a SaaS with no database of its own. It is what
+Ontul's REST connector attaches to.
 
 **`demo/infra/mock-saas/Dockerfile`**
 
@@ -1166,7 +1176,7 @@ def outstanding(course_id: str) -> dict:
 
 ---
 
-## 4. 기동
+## 4. Bring it up
 
 **`demo/infra/up.sh`**
 
@@ -1526,30 +1536,32 @@ bash infra/up.sh
   ShannonStore S3   http://localhost:28000
   NeorunBase        psql -h localhost -p 5434 -U admin -d neorunbase
   Embedding         http://localhost:8100
-  ERP / 전자결재     :55432 / :33306
-  LMS               http://localhost:8200
-  kiok (스케줄러)    http://localhost:18081
+  ERP / approvals   :55432 / :33306
+  Training records  http://localhost:8200
+  kiok (scheduler)  http://localhost:18081
 ```
 
-### 이 스크립트에 들어 있는 것들이 왜 거기 있는가
+### Why the odd-looking lines in that script are there
 
-전체를 지우고 배포본만으로 다시 세워 보면, 손으로 한 번 하고 잊어버린 것들이
-드러납니다. 아래는 그렇게 나온 것들입니다.
+Tearing the whole thing down and rebuilding it from tarballs is what surfaced
+these. Each one was something an operator did by hand once and would not have
+remembered.
 
-- **`NEORUNBASE_MASTER_KEY`** — 제품 Dockerfile 의 ENV 로 들어 있던 값입니다.
-  compose 에 명시하지 않으면 코디네이터가 KMS 초기화에서 `SecurityException`
-  으로 즉시 죽습니다.
-- **코디네이터의 `$$ICEBERG_OPTS`** — 빠뜨리면 NeorunBase 가 **Iceberg 없이**
-  조용히 뜹니다. 아무것도 실패하지 않고, 나중에 벡터 테이블이 비어 있을 뿐입니다.
-- **ZooKeeper chroot `/kiok`** — Curator 는 접속 문자열에 붙은 chroot 자체를
-  만들어 주지 않습니다. 없으면 kiok 마스터가 `NoNode for /kiok` 로 죽는데,
-  ZooKeeper 문제처럼 읽힙니다.
-- **kiok 기동 단계 자체** — 어느 스크립트에도 없었습니다. 처음 한 번 손으로
-  띄우고 그대로 돌아가고 있었습니다.
+- **`NEORUNBASE_MASTER_KEY`** used to arrive as an `ENV` in the product
+  Dockerfile. Without it in compose, the coordinator dies immediately in KMS
+  initialisation with a `SecurityException`.
+- **The coordinator's `$$ICEBERG_OPTS`.** Omit it and NeorunBase comes up
+  **without Iceberg**, quietly. Nothing fails; the vector table is simply empty
+  much later.
+- **The ZooKeeper chroot `/kiok`.** Curator does not create the chroot named in a
+  connect string. Without it the kiok master dies with `NoNode for /kiok`, which
+  reads as a ZooKeeper problem and is not one.
+- **Bringing kiok up at all.** It was in no script. Someone started it by hand
+  once and it kept running.
 
 ---
 
-## 5. 정리
+## 5. Tear down
 
 **`demo/infra/down.sh`**
 
@@ -1580,10 +1592,12 @@ echo "  done — out/stack.env removed; the corpus in out/ is kept"
 ```
 
 
-프로젝트 이름을 나눠 둔 덕분에 이 데모가 띄운 것만 내려갑니다. 볼륨도 같이
-지웁니다 — Iceberg 카탈로그는 Polaris 에, 테이블은 ShannonStore 에 있어서 한쪽만
-남기면 없는 파일을 가리키는 카탈로그나 아무도 모르는 파일이 남습니다.
+The distinct project names are what make this specific: only what this demo
+started comes down. Volumes go with the containers — the Iceberg catalog lives in
+Polaris and the tables live in ShannonStore, so keeping one without the other
+leaves either a catalog pointing at files that are gone, or files no catalog
+knows about.
 
 ---
 
-다음: [코퍼스](corpus.md) — 이 데모가 무엇을 읽는가.
+Next: [the corpus](corpus.md) — what this demo actually reads.

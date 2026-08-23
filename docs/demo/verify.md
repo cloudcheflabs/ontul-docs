@@ -1,16 +1,17 @@
-# 검증 — 무엇을 어떻게 확인하는가
+# Verification — what is checked, and how
 
-이 데모의 검사는 두 가지 원칙을 따릅니다.
+The checks here follow two rules.
 
-1. **개수가 아니라 값을 비교합니다.** 이 스택에서 만난 결함 대부분이 "개수는 맞고
-   값이 전부 틀린" 모양이었습니다. CDC 가 모든 숫자를 base64 로 보냈을 때 행 수는
-   정확히 일치했습니다.
-2. **컴포넌트가 자기에 대해 보고한 것이 아니라 원장을 봅니다.** 성공을 보고하고
-   아무것도 남기지 않은 쓰기는, 잘 돌아간 쓰기와 구분되지 않습니다.
+1. **Compare values, not counts.** Most of the defects found in this stack had the
+   shape "the count is right and every value is wrong". When CDC sent every number
+   as base64, the row counts matched exactly.
+2. **Look at the ledger, not at what a component said about itself.** A write that
+   reports success and leaves nothing behind is indistinguishable from one that
+   worked.
 
 ---
 
-## 단계별 확인
+## Stage by stage
 
 **`demo/tests/e2e.sh`**
 
@@ -102,35 +103,37 @@ echo "================================================"
 bash tests/e2e.sh
 ```
 
-각 단계가 다음 단계 전에 무언가를 단언합니다. 반쯤 실린 원장 위에 만든 색인은
-**괜찮아 보이는 틀린 답**을 내놓고, 그건 나중에 진단하기 비쌉니다.
+Each stage asserts something before the next one runs. An index built on a
+half-loaded ledger produces answers that look fine and are wrong, and that is
+expensive to diagnose later.
 
-### 핵심 단언
+### The assertions that matter
 
 ```bash
-# 코퍼스가 실제로 생성됐는가
+# the corpus was actually generated
 FILES=$(python3 -c "import json;print(json.load(open('out/ground_truth.json'))['counts']['total_files'])")
 [ "$FILES" -gt 400 ]
 
-# 임베딩 서비스가 자기 리비전을 말할 수 있는가
-#   말하지 못하면 서빙을 거부해야 합니다 — 리비전 없는 벡터는 세대를 고정할 수 없습니다
+# the embedding service can name its own revision
+#   if it cannot, it must refuse to serve — a vector whose revision is unknown
+#   cannot be pinned to a generation
 curl -sf http://localhost:8100/fingerprint
 
-# 벡터 수 = 청크 수
+# vector count == chunk count
 CH=$(… SELECT count(*) FROM ice.reg.doc_chunks)                  # 818
 VEC=$(psql … -c "SELECT count(*) FROM doc_vectors_gen1")         # 818
 
-# 이 데모 전체가 걸려 있는 한 줄
+# the one line this whole demo rests on
 EFF=$(… SELECT effective_from FROM ice.reg.doc_versions
         WHERE doc_no='HR-REG-003' AND version=3)
-[ "$EFF" = "2025-03-15" ]     # 문서 부칙의 2025-01-01 이 아니라
+[ "$EFF" = "2025-03-15" ]     # not the 2025-01-01 printed in the document
 ```
 
 ---
 
-## 시나리오
+## The scenarios
 
-에이전트에게 실제로 물어보고 답을 채점합니다.
+Ask the agent for real and score the answer.
 
 **`demo/tests/run_cases.py`**
 
@@ -212,6 +215,21 @@ def check(expect: dict, answer: str, tools: list[str], ontul=None, caller=None) 
             # Usually the figure from a superseded version — the reason this
             # assertion exists at all.
             bad.append(f"present but must not be: {s!r}")
+    # 질문에 대한 답이 먼저 와야 합니다.
+    #
+    # "2025년 2월 기준" 을 물었는데 그 시점 값이 15일이고 현재 값이 20일이면,
+    # 20일 을 아예 말하지 말라고 하는 것은 과합니다 — 어느 판의 값인지 밝히면서
+    # 대조로 덧붙이는 것은 더 나은 답입니다. 막아야 하는 것은 **묻은 시점의
+    # 값으로 오해되는 것**이므로, 후보 숫자들 중 무엇이 먼저 나오는지를 봅니다.
+    if lead := expect.get("leads_with"):
+        first, pos = None, len(answer) + 1
+        for cand in expect.get("among", []):
+            i = answer.find(cand)
+            if 0 <= i < pos:
+                first, pos = cand, i
+        if first != lead:
+            bad.append(f"leads with {first!r}, expected {lead!r}")
+
     if p := expect.get("contains_pattern"):
         if not re.search(p, answer):
             bad.append(f"pattern not found: {p}")
@@ -229,8 +247,10 @@ def check(expect: dict, answer: str, tools: list[str], ontul=None, caller=None) 
         if (v := cite.get("version")) and not re.search(rf"제\s*{v}\s*차", answer):
             bad.append(f"version {v} not cited")
 
+    # "없다" 를 한국어로 말하는 방법은 하나가 아닙니다. 좁게 잡으면 정확한 답이
+    # 실패로 기록되고, 그러면 스위트가 답이 아니라 표현을 채점하게 됩니다.
     if expect.get("indicates_not_found") and not re.search(
-            r"찾지 못|없습니다|확인되지 않", answer):
+            r"찾지 못|없습니다|없음|않습니다|확인되지 않|등록되어 있지", answer):
         bad.append("did not say it could not find an answer")
     if expect.get("indicates_found") and re.search(r"찾지 못|없습니다", answer):
         bad.append("said not found where access should have allowed it")
@@ -389,7 +409,7 @@ if __name__ == "__main__":
 ```
 
 
-### 시간 정합성
+### Temporal correctness
 
 **`demo/tests/cases/01_temporal.yaml`**
 
@@ -419,13 +439,14 @@ cases:
       tools_used: [search_regulations, query_hr]
 
   - id: as_of_before_approval
-    # The document's 부칙 claims 2025-01-01; approval landed 2025-03-15. In
-    # February the old version was still in force, and a pipeline that trusts
-    # the document body gets this window wrong with no way to notice.
     ask: 2025년 2월 기준으로는 육아휴직이 며칠이었어?
     expect:
-      contains: ["15일"]
-      not_contains: ["20일"]
+      # 물은 시점의 값이 답이고, 먼저 와야 합니다. 현재 값을 대조로 덧붙이는
+      # 것까지 막지는 않습니다 — 어느 판의 값인지 밝히는 답이 더 낫습니다.
+      contains: ['15일']
+      leads_with: '15일'
+      among: ['15일', '20일', '25일']
+      cites: {doc_no: 'HR-REG-003', version: 2}
 
   - id: date_conflict_disclosed
     ask: 육아지원규정은 언제부터 시행이야?
@@ -460,7 +481,7 @@ cases:
 ```
 
 
-### 접근 통제
+### Access control
 
 **`demo/tests/cases/02_access.yaml`**
 
@@ -512,11 +533,19 @@ cases:
     caller: {user: cho, emp_no: "${HR_EMP_NO}", dept: HR, clearance: hr}
     ask: 징계 양정기준 알려줘
     expect:
-      indicates_found: true         # same question, different identity
+      # 같은 질문, 같은 문서. 홍가은에게는 이 문서번호가 나오면 안 되고
+      # (restricted_regulation_absent), 인사팀에게는 나와야 합니다.
+      #
+      # "찾았다" 는 말이 아니라 **문서를 지목했는가** 로 봅니다. 이 코퍼스의
+      # HR-GDL-003 v3 에는 양정 등급표 본문이 없어서, 정확한 답은 "지침은 이것이고
+      # 등급표 본문은 확인되지 않는다" 입니다 — 그건 접근 통제가 실패한 것이
+      # 아니라 에이전트가 없는 내용을 지어내지 않은 것입니다.
+      contains: ["HR-GDL-003"]
+      cites: {doc_no: "HR-GDL-003"}
 ```
 
 
-### 그래프와 연합
+### Graph and federation
 
 **`demo/tests/cases/03_graph_and_erp.yaml`**
 
@@ -565,7 +594,7 @@ cases:
 ```
 
 
-### 온톨로지
+### Ontology
 
 **`demo/tests/cases/04_ontology.yaml`**
 
@@ -627,42 +656,44 @@ ANTHROPIC_API_KEY=... .venv/bin/python tests/run_cases.py \
 
 ---
 
-## 측정값
+## Measured
 
-16GB 머신에서 Docker 에 10.7GB 를 준 상태입니다.
+On a 16 GB machine with 10.7 GB given to Docker.
 
 | | |
 |---|---|
-| 원본 문서 | 446 → 인식 123, 미매칭 319, 스캔 전용 4 |
-| 원장 | 문서 50 · 버전 104 |
-| 청크 | 818 (중복 0) |
-| 벡터 | 818 × 768 dim |
-| 그래프 | 노드 50 · 엣지 116 |
-| 시행일 불일치 | 21 |
-| ERP CDC | 5 tables / 1,214 rows, 값 대조 |
-| DAG 한 바퀴 | 약 50–60초 |
+| Source documents | 446 → 123 matched, 319 unmatched, 4 scan-only |
+| Ledger | 50 documents · 104 versions |
+| Chunks | 818, none duplicated |
+| Vectors | 818 × 768 dim |
+| Graph | 50 nodes · 116 edges |
+| Effective-date conflicts | 21 |
+| ERP CDC | 5 tables / 1,214 rows, compared by value |
+| One DAG run | about 50–70 seconds |
 
-![Iceberg 상태](../images/demo/ontul-iceberg-health.png)
+![Iceberg health](../images/demo/ontul-iceberg-health.png)
 
 ---
 
-## 이 데모를 만들며 나온 결함들
+## The defects found while building this
 
-전부 같은 모양이었습니다 — **뭔가 잘못됐는데 아무도 말해주지 않는 것.**
+All the same shape — **something went wrong and nobody was told.**
 
-| 무엇 | 어떻게 보였나 |
+| What | How it looked |
 |---|---|
-| Polaris 토큰 만료 | 모든 질의가 **성공**하고 원장이 통째로 빈 것처럼 보임 |
-| Flow 의 모르는 snapshot 값 | 건강하게 돌고 체크포인트도 남기면서 0행 전달 |
-| 싱크 필수 필드 누락 | 싱크도 필드도 언급하지 않는 Jackson NPE, 그리고 무한 재시작 |
-| GRAPH 순회의 `ORDER BY` | NeorunBase 파서가 거부 — 모든 그래프 링크가 실패 |
-| 로컬 ingest + DAG 이중 청킹 | 818 → 1636, 개수 검사는 전부 통과 |
-| 청크는 지웠는데 대기열은 그대로 | 다음 실행이 빈 대기열을 비우고 성공 보고 |
-| CDC decimal 기본값 | 모든 숫자가 base64 문자열, 행 수는 정확히 일치 |
-| `depends_on` (kiok 은 `requires`) | 여섯 태스크가 동시에 돌고 빨랐고 아무도 실패하지 않음 |
-| dep 페처의 고정 경로 캐시 | 고친 스크립트가 영영 실행되지 않고 옛 코드가 계속 돎 |
-| 존재하지 않는 분류값에 건 정책 | 제한 규정을 걸러내는 것처럼 읽히면서 아무것도 안 거름 |
+| Iceberg's refresh loop stops after one failure | A catalog that served all day suddenly 401s, credentials still valid |
+| A scan whose splits could not be planned | Every query **succeeded** over an apparently empty ledger |
+| An unrecognised Flow snapshot value | Ran healthily, checkpointed, delivered 0 rows |
+| A sink missing a required field | A Jackson NPE naming neither the sink nor the field, then restarting forever |
+| `ORDER BY` in the GRAPH traversal SQL | NeorunBase refused it — every graph link failed |
+| Local ingest and the DAG both loading chunks | 818 became 1636 and every count check passed |
+| Chunks cleared, ingest queue left claiming otherwise | The next run drained an empty queue and reported success |
+| CDC's default decimal encoding | Every number a base64 string, row counts exactly right |
+| `depends_on` where kiok reads `requires` | Six tasks ran at once, quickly, with nothing failing |
+| The dependency fetcher caching a fixed path | The edited script never ran again; the old code kept going |
+| A policy filtering on a classification that does not exist | Read as if it excluded restricted regulations while excluding nothing |
+| A row filter on the view but not on the retriever | An employee refused the text in SQL got it from search seconds later |
 
-이 목록이 이 데모가 존재하는 이유이기도 합니다. 규정 답변 시스템에서 가장 비싼
-실패는 멈추는 것이 아니라 **그럴듯하게 틀리는 것**이고, 그건 만드는 과정에서도
-똑같이 나타납니다.
+That list is also why the demo exists. The most expensive failure in a
+regulation-answering system is not stopping — it is **being plausibly wrong** —
+and the same thing turns out to be true of building one.

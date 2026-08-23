@@ -1,31 +1,32 @@
-# 코퍼스 — 실제 공유 드라이브를 닮게 만들기
+# The corpus — deliberately messy
 
-색인 파이프라인의 진짜 일은 "PDF 에서 글자를 뽑는 것" 이 아닙니다. **어떤 파일이
-어느 규정의 몇 차 개정인지 알아내는 것**입니다. 실제 조직에서 파일명은
-`[최종]육아지원규정(2022.06.01).pdf` 이고, 그 파일은 최종본이 아니라 폐지된
-버전입니다.
+The real work in an indexing pipeline is not pulling text out of a PDF. It is
+working out **which regulation a file is, and which revision of it**. In a real
+organisation the filename reads `[최종]육아지원규정(2022.06.01).pdf` — "final" —
+and the file is a superseded version.
 
-그래서 이 데모의 코퍼스는 깨끗하지 않습니다 — 일부러 그렇습니다.
+So this corpus is not clean. On purpose.
 
-| 결함 | 개수 | 왜 넣었나 |
+| Defect | Count | Why it is here |
 |---|---|---|
-| 파일명 난장 | — | `[최종]…(2022.06.01).pdf` 가 **폐지본**을 가리킵니다 |
-| 파일명 충돌 | 31 | 드라이브가 하듯 ` (2)` 가 붙고, 그 사실이 기록됩니다 |
-| 목록 결함 | 19 | 미등록 · 유령행 · 제목 불일치 · 구버전 |
-| 스캔 전용 PDF | 6 | `image_only_pdf` 로 **보고**하지 조용히 버리지 않습니다 |
-| PII 포함 문서 | 37 | 자유 텍스트라, 마스킹은 치환본으로 갈아끼웁니다 |
-| 시행일 불일치 | 27 | 결재 승인일 ≠ 문서 부칙 |
+| Lying filenames | — | `[최종]…(2022.06.01).pdf` names the **superseded** version |
+| Name collisions | 31 | Resolved the way a drive resolves them, ` (2)`, and recorded |
+| Register defects | 19 | Unregistered · phantom rows · title mismatch · stale version |
+| Scan-only PDFs | 6 | **Reported** as `image_only_pdf`, never silently dropped |
+| Documents with PII | 37 | Free text, so masking swaps in a redacted twin |
+| Effective-date conflicts | 27 | Approval date ≠ the date printed in the document |
 
-일부러 만든 것은 전부 `out/ground_truth.json` 에 남습니다. 매칭과 추출을
-**점수로** 볼 수 있게 하려는 것입니다.
+Everything deliberate is recorded in `out/ground_truth.json`, so matching and
+extraction can be **scored** rather than eyeballed.
 
-!!! quote "지금 값"
-    446개 파일 중 123개 인식, **오식별 0**. 뒤쪽 숫자가 더 중요합니다 — 문서번호를
-    잘못 붙이면 한 규정의 본문이 다른 규정의 근거로 쓰이고, 그건 조용히 틀립니다.
+!!! quote "Where it stands"
+    123 of 446 files matched, **0 misidentified**. The second number matters more:
+    a wrong document number makes one regulation's text serve as another's
+    evidence, and it fails silently.
 
 ---
 
-## 생성기
+## The generator
 
 ```bash
 make seed
@@ -68,7 +69,7 @@ clean: ## Remove generated output
 ```
 
 
-### 진입점
+### Entry point
 
 **`demo/seed/src/regdemo_seed/__main__.py`**
 
@@ -294,11 +295,12 @@ if __name__ == "__main__":
 ```
 
 
-### 조직 — 식별자의 주인
+### The organisation — one owner for identifiers
 
-사번은 한 곳에서만 만듭니다. ERP 도 전자결재도 교육이수도 이 사번을 씁니다 —
-소스마다 다른 사번 체계를 쓰면 연합 질의가 조인되지 않고, 그건 데모가 아니라
-데이터 정합성 실습이 됩니다.
+Employee numbers are minted in exactly one place. ERP, the approval system and
+the training records all use them. If each source invented its own scheme the
+federated queries would not join, and the demo would be an exercise in data
+reconciliation rather than a demo.
 
 **`demo/seed/src/regdemo_seed/org.py`**
 
@@ -417,7 +419,7 @@ def rng() -> random.Random:
 ```
 
 
-### 규정 원장
+### The regulations
 
 **`demo/seed/src/regdemo_seed/regulations.py`**
 
@@ -649,9 +651,10 @@ def build(rng: random.Random) -> list[Regulation]:
 ```
 
 
-### 규정 목록 (엑셀 마스터)
+### The register (the master spreadsheet)
 
-파일명이 신뢰할 수 없으므로 **목록이 권위**입니다. 대조 결과만 원장에 남습니다.
+Filenames cannot be trusted, so **the register is the authority**. Only the
+result of matching against it reaches the ledger.
 
 **`demo/seed/src/regdemo_seed/master.py`**
 
@@ -762,7 +765,7 @@ def build(regs: list[Regulation], rng: random.Random, out: Path) -> dict:
 ```
 
 
-### 문서 렌더링 — PDF · DOCX · XLSX
+### Rendering — PDF, DOCX, XLSX
 
 **`demo/seed/src/regdemo_seed/render.py`**
 
@@ -964,10 +967,10 @@ def render_scanned_pdf(reg: Regulation, v: Version) -> bytes:
 ```
 
 
-### 잡문서 300건
+### 300 documents that are not regulations
 
-규정이 아닌 것들입니다. 회의록, 공지, 메모 — 검색이 이것들을 근거로 삼지 않아야
-한다는 것을 보이기 위해 있습니다.
+Meeting notes, announcements, memos. They exist so that the demo can show search
+*not* citing them.
 
 **`demo/seed/src/regdemo_seed/general.py`**
 
@@ -1296,7 +1299,7 @@ CREATE TABLE pu_purchase_order (
 ```
 
 
-### 전자결재 — 시행일의 권위
+### The approval system — the authority on effective dates
 
 **`demo/seed/src/regdemo_seed/groupware.py`**
 
@@ -1425,7 +1428,7 @@ CREATE TABLE gw_approval_line (
 ```
 
 
-### 교육 이수
+### Training records
 
 **`demo/seed/src/regdemo_seed/training.py`**
 
@@ -1497,12 +1500,12 @@ def build(regs: list[Regulation], employees: list[Employee],
 
 ---
 
-## 원본을 오브젝트 스토리지로
+## Putting the originals in object storage
 
-파이프라인의 일부가 아니라 그 **앞**에 있는 일입니다. 실제 회사에서 규정 문서는
-이미 공유 드라이브나 오브젝트 스토리지에 있고, 파이프라인은 그것을 발견해서
-읽습니다. 이 데모에서는 seed 가 파일을 로컬에 만들기 때문에, "드라이브에 놓여
-있는 상태" 를 이 스크립트가 만듭니다.
+This is not part of the pipeline; it is what happens *before* it. In a real
+company the regulation documents already sit on a shared drive or in object
+storage, and the pipeline discovers and reads them there. Here the seed writes
+files locally, so this script creates the state of "already on the drive".
 
 **`demo/infra/upload.sh`**
 
@@ -1586,4 +1589,4 @@ bash infra/upload.sh
 
 ---
 
-다음: [스키마](schema.md) — 이 문서들이 어디에 어떤 모양으로 앉는가.
+Next: [the schema](schema.md) — where these documents land, and in what shape.

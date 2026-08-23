@@ -1,32 +1,34 @@
-# IAM 과 리트리버 — 같은 질문, 다른 답
+# IAM and retrievers — same question, different answer
 
-에이전트는 **질문한 사람으로 실행됩니다.** 넓은 권한을 가진 서비스 계정으로 읽고
-나중에 거르는 것이 아닙니다. 그 사람이 볼 수 없는 행은 에이전트도 볼 수 없고,
-질문을 어떻게 바꿔 물어도 그대로입니다.
+The agent **runs as the person asking**. It is not a service account with broad
+access that filters afterwards: a row that caller cannot read is a row the agent
+cannot read, and that stays true however the question is phrased.
 
-"박부장 연봉 알려줘" 가 아무것도 돌려주지 않는 이유는 프롬프트에 그렇게 적혀
-있어서가 아니라 **행 필터** 때문입니다. 프롬프트는 협상할 수 있고, 이건 없습니다.
+"박부장 연봉 알려줘" ("tell me the manager's salary") returns nothing because of a
+**row filter**, not because the prompt says so. Prompts are negotiable; this is
+not.
 
 ---
 
-## 세 페르소나
+## Three personas
 
-| | 사번 | 부서 | clearance | 볼 수 있는 것 |
+| | Employee no. | Dept | Clearance | Can see |
 |---|---|---|---|---|
-| 홍가은 | 20170003 | DEV | none | 자기 기록, 공개·내부 규정 |
-| 박부장 | 20150010 | DEV | manager | 자기 부서 구성원 기록 |
-| 조태윤 | 20090001 | HR | hr | 전사 인사 기록, 제한 규정 |
+| 홍가은 | 20170003 | DEV | none | Their own records; public and internal regulations |
+| 박부장 | 20150010 | DEV | manager | Their department's records too |
+| 조태윤 | 20090001 | HR | hr | Company-wide HR records; restricted regulations |
 
-같은 질문 *"징계 양정기준 알려줘"* 에 홍가은은 "찾지 못했습니다", 조태윤은 본문을
-받습니다. 리트리버가 두 벌 있는 것이 아니라 **행 필터가 후보군을 다르게 만듭니다.**
+Asked the same question — *"tell me the disciplinary scale"* — 홍가은 is told it
+could not be found and 조태윤 gets the document. There are not two retrievers: the
+**row filter makes the candidate set different**.
 
-![IAM 화면](../images/demo/ontul-iam.png)
+![The IAM page](../images/demo/ontul-iam.png)
 
 ---
 
-## 정책
+## The policies
 
-### 에이전트 호출자 — 기본 페르소나
+### The agent caller — the baseline persona
 
 **`demo/schema/iam/01_agent_caller.json`**
 
@@ -38,10 +40,17 @@
     {
       "Sid": "ReadCitableRegulations",
       "Effect": "Allow",
-      "Action": "data:Select",
-      "Resource": "semantic.reg.*",
+      "Action": [
+        "data:Select",
+        "data:SelectTable"
+      ],
+      "Resource": [
+        "semantic.reg.*",
+        "data:table:semantic.reg.*"
+      ],
       "Condition": "sensitivity <> '대외비'",
-      "_condition_note": "'대외비', not 'RESTRICTED'. The ledger stores the classification the documents themselves use, and a filter written against a value that never occurs is always true — so the policy read as if it excluded restricted regulations while excluding nothing at all. Nothing errors on a comparison to a value that does not exist."
+      "_condition_note": "'대외비', not 'RESTRICTED'. The ledger stores the classification the documents themselves use, and a filter written against a value that never occurs is always true — so the policy read as if it excluded restricted regulations while excluding nothing at all. Nothing errors on a comparison to a value that does not exist.",
+      "_ontology_note": "온톨로지 객체 조회는 읽기 원본에 대해 data:SelectTable 을 요구합니다. 객체가 시맨틱 뷰를 읽으므로 이 한 문장이 SQL 경로와 온톨로지 경로를 모두 덮습니다 — 분류 조건도 한 번만 쓰면 됩니다."
     },
     {
       "Sid": "InvokeRetrievers",
@@ -54,17 +63,39 @@
       "Resource": [
         "semantic.rag.*",
         "data:table:semantic.rag.*"
+      ],
+      "Condition": "sensitivity <> '대외비'",
+      "_condition_note": "리트리버는 semantic.rag.* 이고 규정 뷰는 semantic.reg.* 라, 뷰에만 조건을 걸면 검색 경로가 그 조건을 지나치지 않습니다. 실제로 그래서 일반 직원에게 대외비 규정이 검색되었습니다. 조건은 읽기 경로마다 필요합니다."
+    },
+    {
+      "Sid": "RequestRevision",
+      "_comment": "개정 요청은 에이전트가 할 수 있는 유일한 쓰기입니다. 액션 호출은 그 자체로 인가 대상이고(ontology:InvokeAction), 실행되는 것은 관리자가 작성한 SQL 템플릿뿐입니다 — 호출자가 문장을 고를 수 없습니다.",
+      "Effect": "Allow",
+      "Action": [
+        "ontology:InvokeAction",
+        "data:Insert"
+      ],
+      "Resource": [
+        "reg.ontology.request_revision",
+        "ice.reg.revision_requests",
+        "data:table:ice.reg.revision_requests"
       ]
     },
     {
       "Sid": "OwnHrRecordOnly",
       "_comment": "The reason this is a row filter and not a prompt rule: '박부장 연봉 알려줘' has to return nothing, and it has to keep returning nothing when the question is rephrased.",
       "Effect": "Allow",
-      "Action": "data:Select",
+      "Action": [
+        "data:Select",
+        "data:SelectTable"
+      ],
       "Resource": [
         "semantic.hr.employees",
         "semantic.hr.leave_balance",
-        "semantic.hr.expenses"
+        "semantic.hr.expenses",
+        "data:table:semantic.hr.employees",
+        "data:table:semantic.hr.leave_balance",
+        "data:table:semantic.hr.expenses"
       ],
       "Condition": "\"사번\" = '${user.attr.emp_no}'",
       "_identifier_note": "Korean identifiers are double-quoted. Ontul's SQL lexer rejects a bare 사번 outright — the error is a lexical one at the column position and says nothing about identifiers, so it reads like a broken policy rather than a quoting rule."
@@ -99,13 +130,26 @@
       "MaskedColumns": {
         "text": "CASE WHEN '${user.attr.clearance}' IN ('hr','security') THEN text ELSE text_redacted END"
       }
+    },
+    {
+      "Sid": "OntologyGraphVertex",
+      "_comment": "RegulationNode 만 서빙 표를 직접 읽습니다. GRAPH 순회가 이웃 정점을 NeorunBase 안에서 조인하기 때문에 대상이 그 카탈로그에 있어야 하고, 시맨틱 뷰로 바꿀 수 없습니다. 본문은 담기지 않고 제목과 위계만 있습니다.",
+      "Effect": "Allow",
+      "Action": [
+        "data:Select",
+        "data:SelectTable"
+      ],
+      "Resource": [
+        "nb.public.doc_nodes",
+        "data:table:nb.public.doc_nodes"
+      ]
     }
   ]
 }
 ```
 
 
-### 부서장
+### Department manager
 
 **`demo/schema/iam/02_dept_manager.json`**
 
@@ -117,14 +161,22 @@
     {
       "Sid": "TeamRows",
       "Effect": "Allow",
-      "Action": "data:Select",
+      "Action": [
+        "data:Select",
+        "data:SelectTable"
+      ],
       "Resource": [
         "semantic.hr.employees",
         "semantic.hr.leave_balance",
         "semantic.hr.expenses",
-        "semantic.hr.purchase_orders"
+        "semantic.hr.purchase_orders",
+        "data:table:semantic.hr.employees",
+        "data:table:semantic.hr.leave_balance",
+        "data:table:semantic.hr.expenses",
+        "data:table:semantic.hr.purchase_orders"
       ],
-      "Condition": "\"부서코드\" = '${user.attr.dept}'"
+      "Condition": "\"부서코드\" = '${user.attr.dept}'",
+      "_ontology_note": "온톨로지 객체 조회는 같은 대상에 대해 data:SelectTable 을 요구합니다 — SELECT 는 data:Select 를, 객체 경로는 data:SelectTable 을 봅니다. 읽기의 철자가 둘이라 한쪽만 적으면 이유를 말하지 않는 403 이 됩니다."
     },
     {
       "Sid": "InvokeRetrievers",
@@ -137,15 +189,24 @@
       "Resource": [
         "semantic.rag.*",
         "data:table:semantic.rag.*"
-      ]
+      ],
+      "Condition": "sensitivity <> '대외비'",
+      "_condition_note": "리트리버는 semantic.rag.* 이고 규정 뷰는 semantic.reg.* 라, 뷰에만 조건을 걸면 검색 경로가 그 조건을 지나치지 않습니다. 실제로 그래서 일반 직원에게 대외비 규정이 검색되었습니다. 조건은 읽기 경로마다 필요합니다."
     },
     {
       "Sid": "InternalRegulations",
       "Effect": "Allow",
-      "Action": "data:Select",
-      "Resource": "semantic.reg.*",
+      "Action": [
+        "data:Select",
+        "data:SelectTable"
+      ],
+      "Resource": [
+        "semantic.reg.*",
+        "data:table:semantic.reg.*"
+      ],
       "Condition": "sensitivity <> '대외비'",
-      "_condition_note": "'대외비', not 'RESTRICTED'. The ledger stores the classification the documents themselves use, and a filter written against a value that never occurs is always true — so the policy read as if it excluded restricted regulations while excluding nothing at all. Nothing errors on a comparison to a value that does not exist."
+      "_condition_note": "'대외비', not 'RESTRICTED'. The ledger stores the classification the documents themselves use, and a filter written against a value that never occurs is always true — so the policy read as if it excluded restricted regulations while excluding nothing at all. Nothing errors on a comparison to a value that does not exist.",
+      "_ontology_note": "온톨로지 객체 조회는 같은 대상에 대해 data:SelectTable 을 요구합니다 — SELECT 는 data:Select 를, 객체 경로는 data:SelectTable 을 봅니다. 읽기의 철자가 둘이라 한쪽만 적으면 이유를 말하지 않는 403 이 됩니다."
     },
     {
       "Sid": "NationalIdRemoved",
@@ -156,13 +217,26 @@
         "주민등록번호",
         "rrn"
       ]
+    },
+    {
+      "Sid": "OntologyGraphVertex",
+      "_comment": "GRAPH 순회는 이웃 정점을 NeorunBase 안에서 조인하므로 대상이 그 카탈로그에 있어야 합니다. 시맨틱 뷰로 대체할 수 없는 유일한 자리입니다.",
+      "Effect": "Allow",
+      "Action": [
+        "data:Select",
+        "data:SelectTable"
+      ],
+      "Resource": [
+        "nb.public.doc_nodes",
+        "data:table:nb.public.doc_nodes"
+      ]
     }
   ]
 }
 ```
 
 
-### 인사팀
+### HR
 
 **`demo/schema/iam/03_hr_staff.json`**
 
@@ -174,8 +248,15 @@
     {
       "Sid": "AllHrRows",
       "Effect": "Allow",
-      "Action": "data:Select",
-      "Resource": "semantic.hr.*"
+      "Action": [
+        "data:Select",
+        "data:SelectTable"
+      ],
+      "Resource": [
+        "semantic.hr.*",
+        "data:table:semantic.hr.*"
+      ],
+      "_ontology_note": "온톨로지 객체 조회는 같은 대상에 대해 data:SelectTable 을 요구합니다 — SELECT 는 data:Select 를, 객체 경로는 data:SelectTable 을 봅니다. 읽기의 철자가 둘이라 한쪽만 적으면 이유를 말하지 않는 403 이 됩니다."
     },
     {
       "Sid": "InvokeRetrievers",
@@ -188,13 +269,21 @@
       "Resource": [
         "semantic.rag.*",
         "data:table:semantic.rag.*"
-      ]
+      ],
+      "_condition_note": "인사팀에는 조건이 없습니다 — 대외비 규정도 검색 결과에 나와야 합니다. 그게 이 페르소나의 차이입니다."
     },
     {
       "Sid": "AllRegulationsIncludingRestricted",
       "Effect": "Allow",
-      "Action": "data:Select",
-      "Resource": "semantic.reg.*"
+      "Action": [
+        "data:Select",
+        "data:SelectTable"
+      ],
+      "Resource": [
+        "semantic.reg.*",
+        "data:table:semantic.reg.*"
+      ],
+      "_ontology_note": "온톨로지 객체 조회는 같은 대상에 대해 data:SelectTable 을 요구합니다 — SELECT 는 data:Select 를, 객체 경로는 data:SelectTable 을 봅니다. 읽기의 철자가 둘이라 한쪽만 적으면 이유를 말하지 않는 403 이 됩니다."
     },
     {
       "Sid": "NationalIdStillRemoved",
@@ -212,13 +301,26 @@
       "Effect": "Allow",
       "Action": "ontology:Certify",
       "Resource": "ontology.reg.*"
+    },
+    {
+      "Sid": "OntologyGraphVertex",
+      "_comment": "GRAPH 순회는 이웃 정점을 NeorunBase 안에서 조인하므로 대상이 그 카탈로그에 있어야 합니다. 시맨틱 뷰로 대체할 수 없는 유일한 자리입니다.",
+      "Effect": "Allow",
+      "Action": [
+        "data:Select",
+        "data:SelectTable"
+      ],
+      "Resource": [
+        "nb.public.doc_nodes",
+        "data:table:nb.public.doc_nodes"
+      ]
     }
   ]
 }
 ```
 
 
-### 색인 잡
+### The indexing job
 
 **`demo/schema/iam/04_indexer.json`**
 
@@ -289,43 +391,43 @@ So sensitive columns split into two kinds:
 
 ---
 
-## 민감 컬럼이 두 갈래인 이유
+## Why sensitive columns split two ways
 
-마스킹은 **출력 스키마**에 적용됩니다(`QueryService` 가 `node.getOutputSchema()`
-를 봅니다). 그래서 마스킹된 컬럼에 대한 술어는 여전히 평가되고, 추측을 확인해
-줍니다:
+Masking applies to the **output schema** — `QueryService` inspects
+`node.getOutputSchema()`. So a predicate on a masked column still evaluates, and
+still confirms a guess:
 
 ```sql
 SELECT 성명 FROM semantic.hr.employees WHERE 주민등록번호 LIKE '901010%'
 ```
 
-성명은 마스킹돼 있어도, 이 질의가 행을 돌려주면 그 사람의 생년월일을 알아낸
-것입니다. 그래서 민감 컬럼은 성질에 따라 갈립니다.
+Even with the name masked, a row coming back tells you that person's date of
+birth. So sensitive columns divide by nature:
 
-| 성질 | 기법 |
+| Nature | Mechanism |
 |---|---|
-| 존재 자체를 숨겨야 함 | `Deny` + `Columns` — 주민등록번호 |
-| 값은 보이되 무디게 | `Mask` — 연락처, 규정 본문 |
+| Existence itself must be hidden | `Deny` + `Columns` — national ID |
+| Value shown but blunted | `Mask` — phone numbers, regulation prose |
 
-인사팀도 주민등록번호 원본은 받지 못합니다. **접근 범위가 넓다는 것과 식별자를
-평문으로 볼 필요가 있다는 것은 다릅니다.**
+Not even HR gets national IDs in the clear. **Breadth of access and needing an
+identifier in plaintext are different things.**
 
 ---
 
-## 리트리버
+## Retrievers
 
-리트리버는 백엔드 네이티브 검색 질의를 **이름 붙여 놓은 것**입니다. 에이전트는
-SQL 을 짜지 않고 이름을 부릅니다.
+A retriever is a backend-native search query **given a name**. The agent does not
+write SQL; it calls the name.
 
-![리트리버 화면](../images/demo/ontul-retrievers.png)
+![The retrievers page](../images/demo/ontul-retrievers.png)
 
-### 규정 검색 — 하이브리드
+### Regulation search — hybrid
 
 **`demo/schema/retrievers/01_regulation_search.json`**
 
 ```json
 {
-  "_comment": "Hybrid retrieval over currently-effective, citable regulation text. The caller passes a question; it never passes a vector — embedding happens server-side through the same connection that built the index, so an agent cannot introduce a second vector space by using a different model.",
+  "_comment": "Hybrid retrieval over currently-effective, citable regulation text. The caller passes a question; it never passes a vector — embedding happens server-side through the same connection that built the index, so an agent cannot introduce a second vector space by using a different model.\n\n분류 조건이 템플릿 안에 있습니다. IAM 행 필터는 SQL 경로(semantic.reg.*)에는 걸리지만 리트리버 호출 경로에는 적용되지 않아서, 뷰에만 걸어 두면 일반 직원에게 대외비 규정이 그대로 검색됩니다 — 실제로 그랬습니다. ${user.attr.clearance} 는 호출자의 IAM 속성이고 리터럴로 치환되므로 호출자가 조작할 수 없습니다.",
   "catalog": "semantic",
   "schema": "rag",
   "name": "regulation_search",
@@ -358,7 +460,7 @@ SQL 을 짜지 않고 이름을 부릅니다.
       "default": ""
     }
   ],
-  "sqlTemplate": "SELECT v.chunk_id AS chunk_id, v.doc_no AS doc_no, v.version AS version, v.article_no AS article_no, v.body AS body, v.effective_from AS effective_from, v.effective_to AS effective_to, v.owner_dept AS owner_dept, h.score AS score FROM HYBRID_SEARCH(table => 'public.doc_vectors_gen1', ts_query => ${q}, ts_index => 'ix_gen1_fts', vec_query => embed_query('emb_main', ${q}), vec_index => 'ix_gen1_ann', alpha => 0.4, beta => 0.6, k => 60) h JOIN doc_vectors_gen1 v ON v.chunk_pk = h.id WHERE v.is_official = TRUE AND v.effective_from <= COALESCE(CAST(NULLIF(${as_of}, '') AS DATE), CURRENT_DATE) AND (v.effective_to IS NULL OR v.effective_to > COALESCE(CAST(NULLIF(${as_of}, '') AS DATE), CURRENT_DATE)) ORDER BY 9 DESC LIMIT ${k}",
+  "sqlTemplate": "SELECT v.chunk_id AS chunk_id, v.doc_no AS doc_no, v.version AS version, v.article_no AS article_no, v.body AS body, v.effective_from AS effective_from, v.effective_to AS effective_to, v.owner_dept AS owner_dept, h.score AS score FROM HYBRID_SEARCH(table => 'public.doc_vectors_gen1', ts_query => ${q}, ts_index => 'ix_gen1_fts', vec_query => embed_query('emb_main', ${q}), vec_index => 'ix_gen1_ann', alpha => 0.4, beta => 0.6, k => 60) h JOIN doc_vectors_gen1 v ON v.chunk_pk = h.id WHERE v.is_official = TRUE AND (v.sensitivity <> '대외비' OR ${user.attr.clearance} IN ('hr','security')) AND v.effective_from <= COALESCE(CAST(NULLIF(${as_of}, '') AS DATE), CURRENT_DATE) AND (v.effective_to IS NULL OR v.effective_to > COALESCE(CAST(NULLIF(${as_of}, '') AS DATE), CURRENT_DATE)) ORDER BY 9 DESC LIMIT ${k}",
   "outputColumns": [
     {
       "name": "chunk_id",
@@ -409,11 +511,22 @@ SQL 을 짜지 않고 이름을 부릅니다.
 ```
 
 
-!!! danger "시간 조건은 검색 안에 있어야 합니다"
-    top-k 를 뽑고 나서 시행일로 거르면 k 개보다 적게 남고, 때로는 하나도 남지
-    않습니다. 폐지본이 상위를 차지했기 때문입니다 — 그게 자기가 답하던 질문이니까요.
+!!! danger "The temporal predicate has to be inside the search"
+    Take the top k and filter by effective date afterwards and fewer than k rows
+    survive — sometimes none. The superseded version took the top slots, because
+    it is the best answer to the question it used to answer.
 
-### 근거 추적
+!!! note "And so does the classification predicate"
+    A row filter written for `semantic.reg.*` applies when a query names that
+    view. Invoking a retriever does not name it — the retriever renders its own
+    SQL against the backing engine. Written only on the view, the filter is
+    absent from the path the agent actually uses, and an ordinary employee gets
+    restricted text back from search seconds after being refused it in SQL.
+
+    The retriever binds the caller's IAM attributes as `${user.attr.X}` and
+    carries the predicate itself.
+
+### Tracing authority
 
 **`demo/schema/retrievers/02_authority_trace.json`**
 
@@ -468,7 +581,7 @@ SQL 을 짜지 않고 이름을 부릅니다.
 ```
 
 
-### 영향 분석
+### Impact analysis
 
 **`demo/schema/retrievers/03_impact_analysis.json`**
 
@@ -556,17 +669,17 @@ pattern never matched", which is why it is written down here.
 
 ---
 
-## 감사와 리니지
+## Audit and lineage
 
-모든 질의가 감사에 남습니다 — 누가, 무엇을, 어느 테이블에 대해.
+Every query is audited — who, what, against which tables.
 
-![감사 로그](../images/demo/ontul-audit.png)
+![The audit log](../images/demo/ontul-audit.png)
 
-리니지는 컬럼 단위까지 남습니다. 어떤 답의 근거가 어느 파일에서 왔는지를 되짚을
-수 있어야, 규정 답변이 감사 대상이 될 때 대응할 수 있습니다.
+Lineage goes down to the column. Being able to retrace which file an answer came
+from is what makes a regulation answer defensible when it is audited.
 
-![데이터 리니지](../images/demo/ontul-lineage.png)
+![Data lineage](../images/demo/ontul-lineage.png)
 
 ---
 
-다음: [온톨로지](ontology.md) — 개체를 이름으로 다루고, 쓰기까지.
+Next: [the ontology](ontology.md) — entities by name, and a governed write.
