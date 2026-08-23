@@ -34,6 +34,31 @@ workers**.
 **`demo/schema/dags/regdemo_index.yaml`**
 
 ```yaml
+# The regulation indexing pipeline.
+#
+# Before this file existed, the dependency order between stages lived only inside
+# a shell script. That is enough to run once but hard to call a pipeline: which
+# stage stopped and where, what needs re-running, how yesterday's run differed
+# from today's — none of it is recorded anywhere.
+#
+#   discover ─→ chunk ─→ effective_dates ─→ … ─→ vectors ─→ generation
+#                   └──→ graph ────────────────────────────────┘
+#
+# Every heavy thing happens on an Ontul worker. kiok keeps the order and records
+# the results, so it holds no data.
+#
+# Two things are deliberately absent from this file:
+#
+#   Tokens. Only ${conn.regdemoOntul.*} references appear. kiok resolves them on
+#   the worker from the KMS-encrypted connection store just before the task runs,
+#   so no value survives in the stored DagSpec or in the admin UI's Source tab.
+#   That is why this file is committed as it is. The value is also a non-expiring
+#   user token (OTOK…) rather than a login JWT — a JWT lasts fifteen minutes and
+#   would break the next scheduled run.
+#
+#   The dependency key is `requires`. Written as `depends_on`, kiok silently
+#   dropped a key it did not recognise: the file looked ordered while all six
+#   tasks ran at once.
 dag:
   id: regdemo_index
   default_timeout: 30m
@@ -239,7 +264,8 @@ instead of behind the connection that the retriever also names, which is the one
 thing that guarantees an index and a query are comparable.
 
 It does not decide when a regulation took effect. That comes from the approval
-system and is applied by jobs/20_effective_dates.sql. A document's 부칙 states an
+system and is applied by jobs/20_effective_dates.sql. A document's supplementary
+provision states an
 intended date; the approval is what makes it binding, and the two disagree often
 enough that trusting the document is a real source of wrong answers.
 
@@ -520,20 +546,20 @@ def main(argv=None) -> int:
             m.doc_no, reg.title, reg.kind,
             int(m.doc_no.split("-")[-1][0]) if m.doc_no.split("-")[-1][:1].isdigit() else 2,
             reg.dept,
-            # is_official — 규정 목록에서 "답변의 근거가 될 수 있다" 고 지정한 문서인가.
+            # is_official — is this a document the register marks as citable as the
+            # basis for an answer?
             #
-            # 분류(대외비/사내한/공개)와 다른 축입니다. 이 플래그는 문서가
-            # 인용 가능한 규정인지를 말하고, 누가 볼 수 있는지는 IAM 이 정합니다.
-            # 한때 여기서 분류를 겸했는데 — 대외비면 is_official=False — 그러면
-            # 인사팀도 그 규정을 인용하지 못합니다. 색인에서 빼는 것과 사람마다
-            # 다르게 보이는 것은 다른 일이고, 뒤엣것은 정책만 할 수 있습니다.
-            # 규정 목록에 있다는 것이 곧 큐레이션입니다. 목록에 없는 파일 —
-            # 회의록, 공지, 메모 — 은 애초에 documents 행이 되지 않습니다.
+            # A different axis from the classification. This flag says whether the
+            # document is a citable regulation; who may see it is decided by IAM.
+            # It once doubled as the classification — restricted meant
+            # is_official=False — and that stopped HR from citing those regulations
+            # too. Excluding a document from the index and showing it to different
+            # people differently are different jobs, and only policy can do the
+            # second.
             #
-            # 분류(대외비/사내한/공개)와는 다른 축입니다. 한때 여기서 분류를
-            # 겸했는데 — 대외비면 False — 그러면 인사팀도 그 규정을 인용하지
-            # 못합니다. 색인에서 빼는 것과 사람마다 다르게 보이는 것은 다른
-            # 일이고, 뒤엣것은 정책만 할 수 있습니다.
+            # Membership of the register is the curation. Files that are not in it —
+            # meeting notes, announcements, memos — never become a documents row at
+            # all.
             True,
             reg.sensitivity, "onedrive",
         ))
@@ -607,9 +633,9 @@ def main(argv=None) -> int:
     # that they were made.
     o.sql("UPDATE ice.reg.ingest_queue SET status = 'PENDING' WHERE status = 'EXTRACTED'")
 
-    # 그래프 정점 id 는 여기서 부여합니다. doc_no 로 정렬해서 매기므로 같은
-    # 규정 집합에 대해 항상 같은 값이 나오고, 그래프를 다시 만들어도 어제의
-    # 엣지가 여전히 같은 문서를 가리킵니다.
+    # The graph vertex ids are assigned here. Numbered in doc_no order, so the same
+    # set of regulations always produces the same values and an edge written
+    # yesterday still points at the same document after the graph is rebuilt.
     doc_ids = {d: i + 1 for i, d in enumerate(sorted(doc_rows))}
     n = o.insert("ice.reg.documents",
                  ["doc_id", "doc_no", "title", "doc_class", "tier", "owner_dept",
@@ -641,7 +667,7 @@ def main(argv=None) -> int:
                      chunk_rows)
         print(f"  doc_chunks     {n}   (--with-chunks; the DAG normally does this)")
     else:
-        print(f"  doc_chunks     0     (DAG 의 chunk 태스크가 채웁니다; 이 실행에서 뜯은 {st.chunks} 개는 버립니다)")
+        print(f"  doc_chunks     0     (the DAG's chunk task fills these; the {st.chunks} extracted here are discarded)")
 
     n = o.insert("ice.reg.ingest_log",
                  ["run_id", "s3_uri", "stage", "status", "reason", "elapsed_ms", "error", "ran_at"],
@@ -743,9 +769,9 @@ class Route(Enum):
 
 @dataclass
 class Section:
-    """A 조 where the document has them, otherwise a paragraph block."""
-    article_no: str | None      # "제12조"
-    title: str | None           # "(휴가의 종류)"
+    """An article where the document has them, otherwise a paragraph block."""
+    article_no: str | None      # the article number, as printed in the document
+    title: str | None           # the article heading, in parentheses
     text: str
     page_from: int
     page_to: int
@@ -778,11 +804,11 @@ def sha256_of(data: bytes) -> str:
 
 
 def split_articles(text: str, page_from: int = 1, page_to: int = 1) -> list[Section]:
-    """Split on 조 boundaries.
+    """Split on article boundaries.
 
-    Article-level chunks are the right unit here: a 조 is what a regulation
+    Article-level chunks are the right unit here: an article is what a regulation
     citation points at, so a retrieved chunk maps onto something a person can
-    verify. Text before the first 조 (cover page, metadata table) is dropped —
+    verify. Text before the first article (cover page, metadata table) is dropped —
     it is layout, not content.
     """
     lines = [ln.strip() for ln in text.splitlines()]
@@ -814,7 +840,7 @@ def split_articles(text: str, page_from: int = 1, page_to: int = 1) -> list[Sect
 def parse_header(text: str) -> tuple[str | None, int | None, str | None]:
     """Recover doc_no / version / stated date from the running header.
 
-    Filenames are unreliable — "[최종]…(2022.06.01).pdf" names a superseded
+    Filenames are unreliable — one marked "final" with a date in it names a superseded
     version — so identity comes from the page header and, authoritatively, from
     matching against the register.
     """
@@ -858,7 +884,7 @@ def extract(path: Path, s3_key: str) -> Extracted:
     out.header_doc_no, out.header_version, out.header_stated_date = parse_header(full)
     out.sections = split_articles(full, 1, out.page_count)
     if not out.sections:
-        # No 조 structure — a general document. Keep it as one block per page so
+        # No article structure — a general document. Keep it as one block per page so
         # it is still searchable, but it carries no article citation.
         out.sections = [
             __import__("regdemo_pipeline.extract.base", fromlist=["Section"]).Section(
@@ -896,7 +922,7 @@ def extract(path: Path, s3_key: str) -> Extracted:
         if not t:
             continue
         # A heading styled as such already tells us it starts a section; keep the
-        # text as-is so the shared 조 splitter sees the same shape it sees in PDF.
+        # text as-is so the shared article splitter sees the same shape it sees in PDF.
         lines.append(t)
 
     # Tables travel with the prose that surrounds them rather than being embedded
@@ -955,13 +981,13 @@ def extract(path: Path, s3_key: str) -> Extracted:
 ```python
 """Chunking.
 
-One 조 is one chunk wherever a document has them: it is the unit a citation
+One article is one chunk wherever a document has them: it is the unit a citation
 points at, so a retrieved chunk maps onto something a person can open and check.
-General documents have no 조, so they fall back to paragraph blocks bounded by
+General documents have no articles, so they fall back to paragraph blocks bounded by
 token budget.
 
 Long articles are split, but on sentence boundaries and with the article number
-carried onto every part — a fragment that cannot say which 조 it came from is
+carried onto every part — a fragment that cannot say which article it came from is
 useless as an answer's evidence no matter how well it matches.
 """
 from __future__ import annotations
@@ -1018,7 +1044,8 @@ def chunk(sections: list[Section]) -> list[Chunk]:
         pieces = _split_long(sec.text)
         for i, piece in enumerate(pieces):
             # The article number and title ride on the text itself, not only in
-            # metadata: the embedding sees them, so "제12조 육아휴직" matches a
+            # metadata: the embedding sees them, so an article number and its heading
+            # together match a
             # query naming the article as well as one naming the topic.
             head = ""
             if sec.article_no:
@@ -1055,7 +1082,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-# 주민등록번호. Deny rather than mask on the ERP side, but in prose it has to be
+# National ID numbers. Denied rather than masked on the ERP side, but in prose
+# they have to be
 # redacted in place — there is no column to remove.
 RRN = re.compile(r"\b(\d{6})-([1-4]\d{6})\b")
 PHONE = re.compile(r"\b(01[016-9])-?(\d{3,4})-?(\d{4})\b")
@@ -1118,19 +1146,20 @@ it, and the scheduler's task opens its own — which ends as
 **`demo/pipeline/src/regdemo_pipeline/jobs/register_udfs.py`**
 
 ```python
-"""파이프라인이 쓰는 UDF 를 클러스터에 등록합니다.
+"""Register the UDFs the pipeline uses with the cluster.
 
-세션 스코프로 등록하면 등록한 연결에서만 보입니다. 탐색할 때는 그게 맞지만
-파이프라인에는 맞지 않습니다 — 스케줄러의 태스크는 자기 연결을 따로 열기
-때문에 함수가 없다고 나옵니다. GLOBAL 은 서버에 영속되어 세션과 재시작을
-모두 넘깁니다.
+Registered at session scope, a UDF is visible only to the connection that
+registered it. That is right while exploring and wrong for a pipeline: the
+scheduler's task opens its own connection and is told the function does not
+exist. GLOBAL persists on the server and survives both sessions and restarts.
 
     python -m regdemo_pipeline.jobs.register_udfs --out ./out
 
-cloudpickle 이 함수를 값으로 직렬화하므로 워커에 이 모듈이 설치돼 있을 필요는
-없습니다. 대신 클라이언트와 워커의 파이썬 버전이 같아야 합니다 — code object
-구조가 버전마다 달라서, 어긋나면 "code expected at most 16 arguments" 라는,
-파이썬도 버전도 언급하지 않는 오류가 납니다.
+cloudpickle serialises the function by value, so this module does not have to be
+installed on the worker. What does have to match is the Python version on both
+sides: a code object's layout is version-specific, and a mismatch produces
+"code expected at most 16 arguments" — a message that mentions neither Python nor
+a version.
 """
 from __future__ import annotations
 
@@ -1157,8 +1186,9 @@ def main(argv=None) -> int:
     from ontul.session import OntulSession
     from ..udf import extract_chunks as mod
 
-    # 참조가 아니라 값으로. 참조 직렬화는 워커에 같은 모듈이 설치돼 있기를
-    # 요구하고, 그러면 추출기를 고칠 때마다 이미지를 다시 만들어야 합니다.
+    # By value, not by reference. Serialising by reference would require the same
+    # module to be installed on the worker, which means rebuilding the image every
+    # time the extractor changes.
     cloudpickle.register_pickle_by_value(mod)
 
     s3cfg = {
@@ -1169,7 +1199,7 @@ def main(argv=None) -> int:
     }
 
     def extract_chunks(s3_uri):
-        # 워커에는 stack.env 가 없으므로 자격증명이 클로저를 타고 갑니다.
+        # The worker has no stack.env, so the credentials travel in the closure.
         os.environ.setdefault("REGDEMO_S3_ENDPOINT", s3cfg["endpoint"])
         os.environ.setdefault("REGDEMO_S3_ACCESS_KEY", s3cfg["access_key"])
         os.environ.setdefault("REGDEMO_S3_SECRET_KEY", s3cfg["secret_key"])
@@ -1177,9 +1207,9 @@ def main(argv=None) -> int:
         return mod.extract_chunks(s3_uri)
 
     def jfield(doc, key):
-        # 청크가 JSON 으로 다니는 이유: 엔진이 구조체 배열의 원소 타입을 스키마로
-        # 실어 나르지 않고, JSON_VALUE 도 구현돼 있지 않습니다. 필드가 하나 늘어도
-        # DDL 이 필요 없다는 이점은 덤입니다.
+        # Chunks travel as JSON because the engine does not carry the element type of
+        # a struct array in the schema, and JSON_VALUE is not implemented either.
+        # Not needing DDL when a field is added is a bonus.
         import json as _json
         if not doc:
             return None
@@ -1189,33 +1219,35 @@ def main(argv=None) -> int:
             return None
         return None if v is None else str(v)
 
-    # ── doc_no 대조 ───────────────────────────────────────────────────────────
-    # 파일명은 신뢰할 수 없습니다 — "[최종]배포 승인지침(2019.10.10).docx" 에는
-    # 문서번호가 없고, "개발 보안코딩 지침 사본.pdf" 는 무엇의 사본인지도 말하지
-    # 않습니다. 그래서 규정목록이 권위이고, 대조 결과만 원장에 남습니다.
+    # ── Matching the document number ────────────────────────────────────────
+    # Filenames cannot be trusted — one marked "final" carries no document number,
+    # and one marked "copy" does not say what it is a copy of. The register is the
+    # authority, and only the result of matching against it reaches the ledger.
     #
-    # 목록을 클로저에 실어 보냅니다. 50행이라 가능하고, 이 함수가 등록될 때의
-    # 목록으로 고정된다는 뜻이기도 합니다 — 규정이 새로 등록되면 UDF 도 다시
-    # 등록해야 합니다. 그 편이 워커가 매 행마다 원장을 조회하는 것보다 낫습니다.
+    # The register travels in the closure. That is possible because it is 50 rows,
+    # and it also means the function is fixed to the register as it stood at
+    # registration — add a regulation and the UDF has to be registered again. That
+    # is better than the worker querying the ledger for every row.
     body = ontul.sql("SELECT doc_no, title FROM ice.reg.documents")
     register = [(r[0], r[1]) for r in (body.get("rows") or []) if r[0] and r[1]]
     if not register:
-        raise SystemExit("규정목록이 비어 있습니다 — 원장에 문서가 없습니다")
-    # 긴 제목을 먼저 봅니다. "출장비 지급지침" 이 "국내출장비 지급지침" 보다
-    # 먼저 맞으면 엉뚱한 문서로 갑니다.
+        raise SystemExit("the register is empty — there are no documents in the ledger")
+    # Longer titles are tried first. A shorter title matching before the longer one
+    # it is contained in would send the match to the wrong document.
     register.sort(key=lambda t: -len(t[1]))
 
     def doc_no_for(object_key):
-        """파일 경로에서 문서번호. 번호가 이름에 있으면 그것을, 없으면 제목 대조."""
+        """The document number from a file path: the number if the name carries one,
+        otherwise a title match."""
         import re as _re
         if not object_key:
             return None
         m = _re.search(r"([A-Z]{2,4}-[A-Z]{3}-\d{3})", object_key)
         if m:
             return m.group(1)
-        # 파일명에서 확장자와 흔한 장식을 걷어낸 줄기로 대조합니다. 원장 제목이
-        # "개발 보안코딩 지침규정" 인데 파일은 "개발 보안codING 지침 사본.pdf" 처럼
-        # 짧은 쪽이라, 제목이 파일명에 들어 있는지만 보면 영영 안 맞습니다.
+        # Matched on a stem with the extension and the usual decorations stripped off.
+        # The ledger title is often longer than what the filename carries, so testing
+        # only whether the title appears in the filename would never match.
         stem = object_key.rsplit("/", 1)[-1]
         stem = _re.sub(r"\.[A-Za-z0-9]+$", "", stem)
         stem = _re.sub(r"[\[(].*?[\])]", " ", stem)
@@ -1229,19 +1261,20 @@ def main(argv=None) -> int:
         return None
 
     def chunk_pk(chunk_id):
-        """chunk_id 에서 안정적인 64비트 정수.
+        """A stable 64-bit integer derived from chunk_id.
 
-        NeorunBase 의 FTS 인덱스는 숫자 기본키를 요구하고, HYBRID_SEARCH 가
-        돌려주는 id 도 이것입니다. 순번을 매기려면 윈도우 함수가 필요한데 엔진에
-        없으므로, 값에서 유도합니다 — 같은 청크는 몇 번을 다시 색인해도 같은
-        키를 받습니다. 그래서 재색인이 기존 행과 충돌하지 않고 교체됩니다.
+        NeorunBase's FTS index requires a numeric primary key, and HYBRID_SEARCH
+        returns that key as its id. Numbering the rows would need a window function,
+        which the engine does not have, so the key is derived from the value instead:
+        the same chunk gets the same key however many times it is re-indexed, and a
+        re-index replaces the existing row rather than colliding with it.
         """
         import hashlib
         if not chunk_id:
             return None
         h = hashlib.blake2b(str(chunk_id).encode("utf-8"), digest_size=8).digest()
-        # 부호 있는 64비트에 맞춥니다. 음수 PK 는 인덱스에는 문제없지만 읽는
-        # 사람에게 혼란스러워서 상위 비트를 떨굽니다.
+        # Kept inside a signed 64-bit range. A negative primary key is fine for the
+        # index and confusing to read, so the top bit is dropped.
         return int.from_bytes(h, "big") & 0x7FFF_FFFF_FFFF_FFFF
 
     host = url.split("//", 1)[-1].split(":")[0]
@@ -1257,8 +1290,9 @@ def main(argv=None) -> int:
     print(f"registered extract_chunks, jfield, doc_no_for, chunk_pk "
           f"(scope={a.scope}, register={len(register)} documents)")
 
-    # 다른 연결에서 실제로 보이는지 확인합니다. 등록이 되었다는 응답과 쓸 수
-    # 있다는 것은 다른 이야기이고, 여기서 확인하지 않으면 DAG 안에서 드러납니다.
+    # Checked from a separate connection. A response saying it registered and the
+    # function actually being usable are different claims; unchecked here, the
+    # difference surfaces inside the DAG.
     probe = ontul.sql("SELECT jfield('{\"k\":\"v\"}', 'k') AS v")
     got = (probe.get("rows") or [[None]])[0][0]
     if got != "v":
@@ -1278,35 +1312,36 @@ not have to be installed on the worker.
 **`demo/pipeline/src/regdemo_pipeline/udf/extract_chunks.py`**
 
 ```python
-"""추출과 청킹을 워커에서 돌리는 UDF.
+"""A UDF that runs extraction and chunking on the workers.
 
-이 모듈이 존재하는 이유는 위치입니다. 같은 코드가
-``regdemo_pipeline.extract`` / ``.chunk`` 에 이미 있지만, 그쪽은 드라이버에서
-돌면서 파일을 열고 결과를 밀어 넣습니다. 파일 수가 늘면 그 한 대가 병목이고,
-더 늘면 목록조차 메모리에 안 들어갑니다.
+This module exists because of where it runs. The same code is already in
+``regdemo_pipeline.extract`` / ``.chunk``, but that version runs on the driver:
+it opens the files and pushes the results. As the file count grows that one
+machine is the bottleneck, and further along the listing alone does not fit in
+memory.
 
-여기 있는 함수는 Ontul 워커의 파이썬 프로세스에서 실행됩니다. 입력은 S3 URI
-한 개, 출력은 그 문서의 청크 배열입니다. 그래서 파이프라인이 이렇게 됩니다::
+The function here executes inside an Ontul worker's Python process. Its input is
+one S3 URI and its output is the chunks of that document, so the pipeline becomes::
 
     INSERT INTO ice.reg.doc_chunks
     SELECT q.s3_uri, c.ordinal_no, c.article_no, c.text
     FROM ice.reg.ingest_queue q,
          UNNEST(extract_chunks(q.s3_uri)) AS c
 
-드라이버는 아무것도 들고 있지 않습니다. 워커가 자기 split 의 행만 보고, 그
-행이 가리키는 객체만 읽습니다.
+The driver holds nothing. Each worker sees only the rows in its own split and
+reads only the objects those rows point at.
 
-반환이 배열인 것이 핵심입니다 — 문서 하나가 청크 여럿이 되는 1→N 을 SQL 로
-표현하려면 UNNEST 가 필요하고, 그게 없으면 결국 드라이버로 돌아옵니다.
+Returning an array is the crux: expressing 1→N in SQL — one document becoming
+many chunks — needs UNNEST, and without it the work ends up back on the driver.
 """
 from __future__ import annotations
 
 import json
 import os
 
-# 워커 프로세스는 UDF 호출마다 새로 뜨지 않습니다. 클라이언트와 추출기를
-# 모듈 수준에 두어 문서마다 다시 만들지 않게 합니다 — 442건에서는 안 보이고
-# 수십만 건에서는 전부인 차이입니다.
+# The worker process is not restarted for each UDF call. Keeping the client and
+# the extractors at module level avoids rebuilding them per document — invisible at
+# 442 files and the whole difference at hundreds of thousands.
 _S3 = None
 
 
@@ -1327,16 +1362,16 @@ def _s3():
 
 
 def extract_chunks(s3_uri: str) -> list:
-    """한 문서를 청크 JSON 문자열의 배열로.
+    """One document, as an array of chunk JSON strings.
 
-    각 원소는 JSON 객체입니다. ARRAY<ROW> 가 아니라 ARRAY<VARCHAR> 인 이유는
-    엔진이 구조체 배열의 원소 타입을 아직 스키마로 실어 나르지 않기 때문이고,
-    JSON 한 겹은 그 제약을 우회하면서 컬럼 추가에도 스키마 변경이 필요 없게
-    합니다.
+    Each element is a JSON object. ARRAY<VARCHAR> rather than ARRAY<ROW> because
+    the engine does not yet carry the element type of a struct array in the schema;
+    a single layer of JSON works around that and also means adding a field needs no
+    schema change.
 
-    실패는 값으로 돌려줍니다 — 예외를 던지면 그 배치 전체가 죽고, 어느
-    문서였는지는 남지 않습니다. 대신 error 를 담은 원소 하나를 내보내
-    파이프라인이 그것을 FAILED 로 기록할 수 있게 합니다.
+    Failures come back as values. Raising would kill the whole batch and leave no
+    record of which document caused it, so instead a single element carrying an
+    error is emitted and the pipeline records it as FAILED.
     """
     if not s3_uri:
         return []
@@ -1369,8 +1404,9 @@ def extract_chunks(s3_uri: str) -> list:
 
 
 def _sections(key: str, body: bytes) -> list:
-    """포맷별 추출. 확장자가 아니라 내용으로 정하지 않는 이유는, 이 코퍼스의
-    파일명이 신뢰할 수 없어도 확장자만은 원본 시스템이 붙인 것이기 때문입니다."""
+    """Extraction per format. Chosen by extension rather than by sniffing content
+    because, unreliable as the filenames in this corpus are, the extension is the
+    one part the originating system put there."""
     import io
     lower = key.lower()
     if lower.endswith(".pdf"):
@@ -1411,9 +1447,9 @@ def _xlsx(buf) -> list:
 
 
 def _split_articles(pages: list) -> list:
-    """조문 경계로 자릅니다. 고정 길이로 자르지 않는 이유는, 답변이 "제3조"를
-    인용해야 하는데 고정 길이 청크는 조문 중간에서 끊겨 인용할 단위가 없기
-    때문입니다."""
+    """Split on article boundaries. Not fixed-length, because an answer has to cite
+    an article and a fixed-length chunk cuts through the middle of one, leaving
+    nothing whole to cite."""
     import re
     article = re.compile(r"^\s*(제\s*\d+\s*조(?:의\s*\d+)?)\s*[\(（]?([^\)）\n]*)[\)）]?")
     out, cur = [], None
@@ -1434,7 +1470,7 @@ def _split_articles(pages: list) -> list:
                        "page_from": page_no, "page_to": page_no, "text": line}
     if cur:
         out.append(cur)
-    # 빈 청크는 인덱스에 들어가면 검색 결과를 차지하면서 아무것도 답하지 않습니다.
+    # An empty chunk in the index takes up a search result and answers nothing.
     return [s for s in out if s.get("text", "").strip()]
 ```
 
@@ -1450,22 +1486,24 @@ connection.
 
 ```bash
 #!/usr/bin/env bash
-# 잡 소스를 S3 에 게시하고, 그 URI 를 kiok 커넥션에 기록합니다.
+# Publish the job sources to S3 and record their URIs in a kiok connection.
 #
 #   bash pipeline/jobs/publish.sh
 #
-# 내용 해시를 키에 넣습니다. ontul 의 dep 페처는 "같은 키면 같은 내용" 을 전제로
-# 워커에 캐시하므로, 고정 경로에 덮어쓰면 고친 스크립트가 영영 실행되지 않습니다 —
-# 아무 오류도 없이 옛 코드가 계속 돕니다. 해시를 키에 넣으면 바뀐 파일은 새 키가
-# 되고, 안 바뀐 파일은 캐시가 그대로 유효합니다.
+# The content hash goes into the key. Ontul's dependency fetcher caches on the
+# worker assuming that the same key means the same bytes, so overwriting a fixed
+# path means an edited script never runs again — with no error at all, the old code
+# keeps going. With the hash in the key, a changed file gets a new key and an
+# unchanged one keeps its valid cache.
 #
-# 그리고 DAG 는 이 경로를 직접 적지 않습니다. 커넥션 regdemoJobs 가 현재 URI 를
-# 들고 DAG 는 ${conn.regdemoJobs.<name>} 로 참조합니다 — 파일이 바뀔 때마다 DAG 를
-# 고치지 않아도 되고, 어느 판이 돌았는지는 커넥션을 보면 됩니다.
+# And the DAG does not name these paths. The regdemoJobs connection holds the
+# current URIs and the DAG refers to ${conn.regdemoJobs.<name>} — so the DAG does
+# not have to be edited every time a file changes, and which version ran can be
+# read off the connection.
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 DEMO=$(pwd)
-. out/stack.env 2>/dev/null || { echo "out/stack.env 없음"; exit 1; }
+. out/stack.env 2>/dev/null || { echo "no out/stack.env"; exit 1; }
 
 KIOK=${KIOK_URL:-http://localhost:18081}
 KIOK_PW=${KIOK_PASSWORD:-Regdemo-kiok-2026}
@@ -1482,17 +1520,17 @@ for f in pipeline/jobs/*.py; do
   sha=$(shasum -a 256 "$f" | cut -c1-12)
   key="$PREFIX/$sha-$base.py"
   aws --endpoint-url "$S3_ENDPOINT_HOST" s3 cp "$f" "s3://$BUCKET/$key" >/dev/null \
-    || { echo "게시 실패: $f"; exit 1; }
+    || { echo "publish failed: $f"; exit 1; }
   NAMES+=("$base"); URIS+=("s3://$BUCKET/$key")
   echo "  $base -> $sha"
 done
 
-# kiok 커넥션에 현재 URI 를 기록합니다.
+# Record the current URIs in the kiok connection.
 KTOK=$(curl -s -m 30 -X POST "$KIOK/api/v1/auth/login" -H 'Content-Type: application/json' \
        -d "{\"user\":\"admin\",\"password\":\"$KIOK_PW\"}" \
      | python3 -c "import sys,json;print(json.load(sys.stdin).get('accessToken',''))" 2>/dev/null)
 if [ -z "$KTOK" ]; then
-  echo "  (kiok 로그인 실패 — 커넥션은 pipeline.sh 가 갱신합니다)"
+  echo "  (kiok login failed — pipeline.sh will update the connection)"
   exit 0
 fi
 BODY=$(python3 - "${NAMES[@]}" -- "${URIS[@]}" <<'PY'
@@ -1510,8 +1548,8 @@ PY
 )
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$KIOK/api/v1/connections" \
         -H "Authorization: Bearer $KTOK" -H 'Content-Type: application/json' -d "$BODY")
-case "$code" in 2*) echo "  kiok 커넥션 regdemoJobs 갱신";;
-  *) echo "  커넥션 갱신 실패 HTTP $code";; esac
+case "$code" in 2*) echo "  kiok connection regdemoJobs updated";;
+  *) echo "  connection update failed HTTP $code";; esac
 ```
 
 
@@ -1529,16 +1567,17 @@ case "$code" in 2*) echo "  kiok 커넥션 regdemoJobs 갱신";;
 **`demo/pipeline/jobs/discover_job.py`**
 
 ```python
-"""S3 를 훑어 인입 대기열을 채우는 ontul PYTHON 잡.
+"""An Ontul PYTHON job that walks S3 and fills the ingest queue.
 
-kiok DAG 가 ``ontul.jobType: PYTHON`` 으로 이 스크립트의 s3:// URI 를 가리키고,
-ontul 워커가 내려받아 실행합니다. 인자는 ``key=value`` 로 argv 에 들어옵니다.
+The kiok DAG points at this script's s3:// URI with ``ontul.jobType: PYTHON``, and
+an Ontul worker downloads and runs it. Arguments arrive in argv as ``key=value``:
 
     prefix=corpus/  bucket=iceberg-warehouse  run_id=...
 
-파이프라인에서 이 단계만 목록을 다룹니다. 읽고·뜯고·자르는 일은 전부 SQL 로
-넘어가고, 그 SQL 이 워커에서 분산됩니다. 목록조차 한 대에 안 들어가는 규모라면
-나뉘는 것은 prefix 이지 파일이 아니어서, 그래서 prefix 를 인자로 받습니다.
+This is the only stage in the pipeline that deals with a listing. Reading, parsing
+and splitting all move into SQL, which the workers distribute. At a scale where
+even the listing does not fit on one machine, what divides is the prefix rather
+than the files — which is why prefix is an argument.
 """
 import os
 import sys
@@ -1570,21 +1609,22 @@ def main():
         region_name=p.get("s3_region", "us-east-1"),
         config=Config(s3={"addressing_style": "path"}))
 
-    # 잡은 워커 안에서 돌고 있으므로 마스터는 이름으로 닿습니다.
+    # The job runs inside a worker, so the master is reachable by name.
     session = OntulSession(host=p.get("ontul_host", "ontul-master-1"),
                            port=int(p.get("ontul_port", "47470")))
 
-    # 이미 큐에 있는 객체는 건드리지 않습니다. 큐의 식별자가 s3_uri 라 다시 넣으면
-    # upsert 가 되어 status 가 PENDING 으로 되돌아가고, 다음 실행이 같은 문서를 또
-    # 청킹합니다 — 청크가 두 배가 되고 기본키가 충돌합니다. 파이프라인을 다시
-    # 돌리는 것이 안전하려면 이 단계가 "새로 도착한 것" 만 보아야 합니다.
+    # Objects already in the queue are left alone. The queue's identifier is s3_uri,
+    # so re-inserting one upserts it, resets status to PENDING, and the next run
+    # chunks the same document again — doubling the chunks and colliding on the
+    # primary key. For re-running the pipeline to be safe, this stage has to look
+    # only at what newly arrived.
     seen = set()
     try:
         rows = session.source("SELECT s3_uri FROM ice.reg.ingest_queue").to_pylist()
         seen = {r["s3_uri"] for r in rows if r.get("s3_uri")}
     except Exception as e:                                   # noqa: BLE001
-        # 큐가 아직 없으면 전부 새 것입니다. 그 외의 실패는 조용히 넘기면 중복을
-        # 만들므로 말은 해둡니다.
+        # If the queue does not exist yet, everything is new. Any other failure would
+        # create duplicates if passed over silently, so it is at least reported.
         print(f"queue not readable yet ({type(e).__name__}) — treating everything as new")
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
@@ -1626,8 +1666,8 @@ def insert(session, rows, now, run_id):
         "INSERT INTO ice.reg.ingest_queue "
         "(s3_uri, bucket, object_key, size_bytes, etag, file_format, discovered_at, "
         " status, attempt, error, processed_at, run_id) VALUES " + values)
-    # execute() 는 실패를 예외가 아니라 상태로 돌려줍니다. 확인하지 않으면 큐가
-    # 비어 있는 채로 다음 단계가 "처리할 것 없음" 으로 성공합니다.
+    # execute() reports failure as a status rather than an exception. Unchecked, the
+    # queue stays empty and the next stage succeeds with "nothing to process".
     if res.get("status") != "ok":
         raise SystemExit(f"queue insert failed: {res.get('message')}")
 
@@ -1642,28 +1682,29 @@ if __name__ == "__main__":
 **`demo/pipeline/src/regdemo_pipeline/jobs/chunk_distributed.py`**
 
 ```python
-"""추출·청킹을 워커에서 돌리는 단계.
+"""The stage that runs extraction and chunking on the workers.
 
-이전 구현은 드라이버가 442개 파일을 열어 청크를 만들고 INSERT 했습니다.
-여기서는 드라이버가 SQL 두 문장을 보내고 끝입니다 — 파일을 여는 것도, 자르는
-것도, 쓰는 것도 워커가 합니다.
+The earlier implementation had the driver open 442 files, build the chunks and
+INSERT them. Here the driver sends two SQL statements and is done — opening the
+files, splitting them and writing the results all happen on the workers.
 
     python -m regdemo_pipeline.jobs.chunk_distributed --run-id <id>
 
-동작 방식:
+How it works:
 
-1. ``extract_chunks`` 를 Python UDF 로 등록합니다. 함수는 cloudpickle 로
-   직렬화되어 질의 계획과 함께 워커로 갑니다. 모듈을 값으로 직렬화하도록
-   지정하는 이유는, 기본값인 참조 직렬화는 워커에 같은 모듈이 설치돼 있기를
-   요구하기 때문입니다 — 그러면 코드를 고칠 때마다 이미지를 다시 만들어야
-   합니다.
+1. ``extract_chunks`` is registered as a Python UDF. The function is serialised
+   with cloudpickle and travels to the workers with the query plan. The module is
+   serialised by value on purpose: the default, by reference, would require the
+   same module to be installed on the worker — which means rebuilding the image
+   every time the code changes.
 
-2. ``UNNEST`` 로 문서 하나를 청크 여럿으로 펼쳐 doc_chunks 에 넣습니다.
-   1→N 을 SQL 안에서 하는 것이 요점입니다. 드라이버로 돌아왔다가 다시
-   나가면 규모가 커질수록 그 왕복이 전부가 됩니다.
+2. ``UNNEST`` expands one document into many chunks and inserts them into
+   doc_chunks. Doing the 1→N inside SQL is the point: coming back to the driver
+   and going out again makes that round trip the whole cost as the corpus grows.
 
-3. 큐의 상태를 갱신합니다. 실패한 문서는 FAILED 로 남고 사유가 붙습니다 —
-   조용히 건너뛴 파일이 없어야 다음 단계의 숫자를 믿을 수 있습니다.
+3. The queue's status is updated. A failed document is left as FAILED with a
+   reason — the numbers in the next stage are only trustworthy if no file was
+   skipped quietly.
 """
 from __future__ import annotations
 
@@ -1812,26 +1853,28 @@ if __name__ == "__main__":
 
 ```sql
 -- ============================================================================
--- 시행일 — 문서가 아니라 결재가 정한다
+-- Effective dates — decided by the approval, not by the document
 --
--- 문서 부칙의 "2025년 1월 1일부터 시행"은 기안 시점에 쓰인 값입니다. 결재가
--- 늦어지면 그 문장은 그대로인 채 사실이 아니게 됩니다. HR-REG-003 v3 이 정확히
--- 그 경우입니다 — 부칙 2025-01-01, 결재 완료 2025-03-15. 그 10주 동안 문서를
--- 그대로 인용하면 아직 시행되지 않은 규정을 현행으로 답하게 됩니다.
+-- The "in force from 1 January 2025" printed in a document's 부칙 was written when
+-- the draft was. If approval slips, that sentence stays where it is and stops
+-- being true. HR-REG-003 v3 is exactly that case: the document says 2025-01-01 and
+-- approval completed 2025-03-15. For those ten weeks, citing the document means
+-- answering with a regulation that had not taken effect.
 --
--- 그래서 두 날짜를 모두 보관하고, 권위는 결재에 둡니다. 불일치는 지우지 않고
--- date_mismatch 로 표시해 인사팀이 확인할 대상으로 남깁니다.
+-- So both dates are kept and the authority is the approval. The disagreement is
+-- not erased but flagged as date_mismatch, leaving a queue for HR to review.
 --
--- 이 조인이 federated 인 것이 핵심입니다. 결재 이력을 레이크로 복사해 두면
--- 복사 시점 이후의 결재는 반영되지 않고, 그 사실은 조용히 틀린 답으로만
--- 드러납니다.
+-- That this join is federated is the point. Copy the approval history into the
+-- lake and approvals after the copy are simply absent — a fact that surfaces only
+-- as a quietly wrong answer.
 -- ============================================================================
 
--- ── 1. 결재 완료본 → 시행일·상태 ────────────────────────────────────────────
--- 불일치는 USING 질의에서 계산해 컬럼으로 넘깁니다. MERGE 의 SET 은 리터럴과
--- 컬럼 참조만 받으므로 식을 그대로 쓸 수 없습니다 — 계산할 곳은 소스 쪽입니다.
--- 미리 계산해 두는 이유는 따로 있습니다: 질의 때마다 두 날짜를 비교하게 하면
--- 비교를 잊은 질의가 반드시 하나는 생깁니다.
+-- ── 1. Completed approvals → effective date and status ─────────────────────
+-- The mismatch is computed in the USING query and passed through as a column.
+-- MERGE's SET takes only literals and column references, so the expression cannot
+-- go there — the place to compute it is the source side. There is a second reason
+-- to precompute it: leave every query to compare the two dates and one of them
+-- will forget.
 MERGE INTO ice.reg.doc_versions v
 USING (
     SELECT doc_no,
@@ -1839,10 +1882,10 @@ USING (
            apr_id,
            complete_dt      AS approved_on,
            stated_dt        AS stated_on,
-           -- CASE ... THEN TRUE 는 플래너가 IS TRUE 호출로 바꿔 놓는데 실행 엔진에
-           -- 그 함수가 없습니다. 비교식을 그대로 두면 그런 변환이 없습니다.
-           -- stated_dt 가 NULL 이면 결과도 NULL — "다르다"가 아니라 "알 수 없다"이고,
-           -- 그게 맞는 값입니다.
+           -- The planner rewrites CASE ... THEN TRUE into an IS TRUE call, which the
+           -- execution engine does not have. Left as a comparison, no such rewrite
+           -- happens. With stated_dt NULL the result is NULL — "unknown" rather than
+           -- "different", which is the correct value.
            (complete_dt <> stated_dt) AS mismatch
     FROM gw.groupware.gw_approval
     WHERE sts_cd = 'CMPL'
@@ -1855,9 +1898,10 @@ WHEN MATCHED THEN UPDATE SET
     approval_id    = a.apr_id,
     status         = 'EFFECTIVE';
 
--- ── 2. 결재 진행중 → 아직 시행 아님 ─────────────────────────────────────────
--- 상신되었을 뿐 완료되지 않은 개정안이 현행으로 답변되면 안 됩니다. 초안이
--- 존재한다는 사실 자체는 남기되, 시행일은 비워 둡니다.
+-- ── 2. Approvals still in flight → not yet in force ────────────────────────
+-- A revision that was submitted but not completed must not be answered as if it
+-- were current. The fact that a draft exists is kept; the effective date is left
+-- empty.
 MERGE INTO ice.reg.doc_versions v
 USING (
     SELECT doc_no, ver AS version, apr_id
@@ -1870,17 +1914,20 @@ WHEN MATCHED THEN UPDATE SET
     approval_id    = p.apr_id,
     status         = 'DRAFT';
 
--- ── 3. 종료일은 여기에 없습니다 ────────────────────────────────────────────
--- "다음 버전"은 nxt.version > cur.version, 즉 부등호 자기조인입니다. 실행
--- 엔진은 조인당 등가 조건 하나만 처리하므로 플래너가 이 술어를 조인 조건으로
--- 밀어넣는 순간 거부됩니다. 윈도우 함수(LEAD)도 미지원이고, 버전번호를 이어붙인
--- 복합키는 번호가 연속일 때만 맞는데 실제로는 연속이 아닙니다 — 승인 121건에
--- 파일이 있는 버전은 102개뿐입니다. 빈 자리가 생기면 effective_to 가 NULL 로
--- 남고, NULL 은 "현행"을 뜻합니다. 폐지된 규정을 현행으로 답하는 것이야말로 이
--- 데모가 막으려는 실패이므로 여기서 요령을 부리지 않습니다.
+-- ── 3. The end date is not computed here ───────────────────────────────────
+-- "The next version" is nxt.version > cur.version — a self-join on an inequality.
+-- The execution engine handles one equality conjunct per join, so the moment the
+-- planner pushes this predicate into the join condition it is refused. Window
+-- functions (LEAD) are unsupported too, and a composite key built by concatenating
+-- version numbers is only correct while they are contiguous, which they are not:
+-- 121 approvals produced 102 versions that have a file. A gap leaves effective_to
+-- NULL, and NULL means "current" — answering with a superseded regulation as
+-- though it were current is precisely the failure this demo exists to prevent, so
+-- this is not a place to be clever.
 --
--- 대신 jobs/close_versions.py 가 102행을 정렬해 닫습니다. 분산이 값어치를 하는
--- 곳은 6,000 청크를 임베딩하는 10_index_vectors.sql 입니다.
+-- Instead close_versions sorts those 102 rows and closes them. The place where
+-- distribution earns its keep is 10_index_vectors.sql, embedding thousands of
+-- chunks.
 ```
 
 
@@ -1889,22 +1936,25 @@ Once the approval dates land, the previous versions are closed.
 **`demo/pipeline/jobs/close_versions_job.py`**
 
 ```python
-"""버전을 닫는 ontul PYTHON 잡 — effective_to 를 다음 판의 시행일로.
+"""An Ontul PYTHON job that closes each version — effective_to becomes the next
+version's effective date.
 
-kiok DAG 가 ``ontul.jobType: PYTHON`` 으로 이 스크립트의 s3:// URI 를 가리키고,
-ontul 워커가 내려받아 실행합니다.
+The kiok DAG points at this script's s3:// URI with ``ontul.jobType: PYTHON`` and
+an Ontul worker downloads and runs it.
 
-클러스터에서 SQL 로 하지 않는 이유는 취향이 아니라 엔진 제약입니다. "다음
-버전" 은 ``nxt.version > cur.version`` 이라는 부등호 자기조인인데, SELECT 레벨
-조인은 등가 조건 하나만 실행합니다. 우회로도 막혀 있습니다 — 윈도우 함수(LEAD)는
-미지원이고, 버전번호를 이어붙인 복합키는 번호가 연속일 때만 맞는데 실제로는
-연속이 아닙니다. 승인 121건에 파일이 있는 버전은 102개뿐이고, 빈 자리가 생기면
-effective_to 가 NULL 로 남습니다. NULL 은 "현행" 을 뜻하므로, 폐지된 규정이
-현행으로 답변됩니다 — 이 데모가 막으려는 바로 그 실패입니다.
+Not doing this in SQL on the cluster is an engine constraint rather than a
+preference. "The next version" is ``nxt.version > cur.version`` — a self-join on
+an inequality — and a SELECT-level join executes a single equality conjunct. The
+escapes are closed too: window functions (LEAD) are unsupported, and a composite
+key built by concatenating version numbers is only correct while they are
+contiguous, which they are not. 121 approvals produced 102 versions that have a
+file. A gap leaves effective_to NULL, and NULL means "current" — so a superseded
+regulation would answer as the current one, which is the exact failure this demo
+exists to prevent.
 
-남는 일은 문서당 102행을 정렬하는 것뿐입니다. 그게 분산이 필요하다고 말하는
-쪽이 오히려 정직하지 않습니다. 분산이 값어치를 하는 곳은 청크 수천 개를
-임베딩하는 vectors 태스크입니다.
+What is left is sorting 102 rows per document. Claiming that needs a cluster would
+be the dishonest part; the place distribution earns its keep is the vectors task,
+embedding thousands of chunks.
 """
 import sys
 from collections import defaultdict
@@ -1918,12 +1968,12 @@ def args():
 
 
 def as_date(value):
-    """엔진이 DATE 컬럼으로 돌려주는 것을 정규화합니다.
+    """Normalise whatever the engine returns for a DATE column.
 
-    DATE 에 CAST(d AS VARCHAR) 를 하면 저장된 값 — epoch 이후 일수 — 이 그대로
-    나옵니다. '2022-05-15' 를 기대한 자리에 '19112' 가 오고, 그것으로 만든
-    리터럴은 거부됩니다. 어느 경로가 어느 형태를 내는지에 기대지 않고 둘 다
-    받습니다.
+    CAST(d AS VARCHAR) on a DATE returns the stored value — days since the epoch —
+    rather than a formatted date, so '19112' arrives where '2022-05-15' was
+    expected and the literal built from it is rejected. Both forms are accepted
+    rather than depending on which one a given path produces.
     """
     if value is None:
         return None
@@ -1945,9 +1995,9 @@ def main():
     rows = s.source("SELECT doc_no, version, effective_from FROM ice.reg.doc_versions "
                     "WHERE effective_from IS NOT NULL").to_pylist()
     if not rows:
-        # 조용히 성공하면 모든 버전의 effective_to 가 NULL 로 남고, NULL 은
-        # "현행" 입니다 — 폐지본이 전부 현행으로 답변됩니다.
-        raise SystemExit("시행일이 있는 버전이 하나도 없습니다 — effective_dates 가 먼저 돌아야 합니다")
+        # Succeeding quietly would leave every version's effective_to at NULL, and
+        # NULL means "current" — every superseded version would answer as current.
+        raise SystemExit("no version has an effective date — effective_dates has to run first")
 
     by_doc = defaultdict(list)
     for r in rows:
@@ -1957,15 +2007,15 @@ def main():
 
     updates = []
     for doc_no, vs in by_doc.items():
-        # 시행일 순입니다. 버전 번호 순이 아닙니다 — 번호가 큰 판이 먼저 시행된
-        # 경우가 실제로 있고(반려 후 재상신), 그때 번호로 정렬하면 아직 오지
-        # 않은 날짜로 앞 판을 닫게 됩니다.
+        # Sorted by effective date, not by version number. A higher-numbered version
+        # taking effect first does happen (rejected, then resubmitted), and sorting by
+        # number then closes an earlier version at a date that has not arrived.
         vs.sort(key=lambda x: (x[1], x[0]))
         for (ver, _), (_, nxt_from) in zip(vs, vs[1:]):
             updates.append((doc_no, ver, nxt_from))
 
     if not updates:
-        print("closed 0 versions (문서마다 판이 하나뿐입니다)")
+        print("closed 0 versions (every document has only one)")
         return
 
     def lit(v):
@@ -2113,16 +2163,17 @@ if __name__ == "__main__":
 **`demo/pipeline/jobs/clear_vectors_job.py`**
 
 ```python
-"""벡터 테이블을 비우는 ontul PYTHON 잡.
+"""An Ontul PYTHON job that empties the vector table.
 
-이 한 단계만 Ontul 을 지나가지 않습니다. NeorunBase 는 JDBC 카탈로그가 아니라서
-``DELETE FROM nb.public.doc_vectors_gen1`` 이 "Not a JDBC catalog: nb" 로 거부됩니다.
-그래서 NeorunBase 자신의 Postgres wire 로 지웁니다.
+This is the one step that does not go through Ontul. NeorunBase is not a JDBC
+catalog, so ``DELETE FROM nb.public.doc_vectors_gen1`` is refused with "Not a JDBC
+catalog: nb". The rows are removed over NeorunBase's own PostgreSQL wire instead.
 
-전량 재색인이라 비우는 단계가 필요합니다. 증분이 자연스럽지만 "이미 임베딩된
-청크" 를 알려면 벡터 테이블을 읽어야 하고, VECTOR 컬럼이 있는 테이블의 읽기가
-아직 깨져 있습니다(tests/known-issues). 비우고 다시 세우면 "일부만 색인된"
-애매한 상태가 생기지 않습니다.
+The clearing step exists because indexing is a full pass. Incremental would be the
+natural thing, but knowing which chunks are already embedded means reading the
+vector table, and reading a table with a VECTOR column is still broken (see
+tests/known-issues). Clearing and rebuilding never leaves the ambiguous state of
+"partly indexed".
 
     host=... port=5434 database=neorunbase user=admin password=...
 """
@@ -2148,8 +2199,9 @@ def main():
         for table in ("doc_vectors_gen1",):
             conn.run(f"DELETE FROM {table}")
             n = conn.run(f"SELECT count(*) FROM {table}")[0][0]
-            # 비웠다는 응답과 비어 있다는 것은 다른 이야기입니다. 남아 있으면
-            # 다음 단계가 중복 위에 색인을 쌓습니다.
+            # A response saying it was cleared and the table actually being empty are
+            # different claims. Anything left behind means the next stage indexes on
+            # top of duplicates.
             if n != 0:
                 raise SystemExit(f"{table} still holds {n} row(s) after DELETE")
             print(f"cleared {table}")
@@ -2190,13 +2242,14 @@ where the data already is.
 -- index and the queries against it cannot come from different weights.
 -- ============================================================================
 
--- 전량 재색인입니다. "아직 임베딩되지 않은 청크만" 이 자연스럽지만, 그러려면
--- 벡터 테이블을 Ontul 이 읽어야 하고 그 읽기가 지금 깨져 있습니다 — VECTOR 컬럼이
--- 있는 테이블은 JDBC 로 못 읽습니다(tests/known-issues 참조). 그래서 재실행
--- 안전성은 infra/index.sh 가 색인 전에 테이블을 비우는 것으로 확보합니다.
+-- A full re-index. "Only the chunks not yet embedded" would be the natural thing,
+-- but it requires Ontul to read the vector table and that read is broken: a table
+-- with a VECTOR column cannot be read over JDBC (see tests/known-issues). So
+-- re-run safety comes from clearing the table before indexing instead.
 --
--- 799 청크에 87 초이므로 증분보다 전량이 단순하고, 무엇보다 "일부만 색인된 상태"
--- 라는 애매한 중간 상태를 만들지 않습니다.
+-- 799 chunks take 87 seconds, so a full pass is simpler than an incremental one
+-- and — more importantly — it never leaves the ambiguous state of "partly
+-- indexed".
 INSERT INTO nb.public.doc_vectors_gen1
     (chunk_pk, chunk_id, doc_no, version, article_no, effective_from, effective_to,
      is_official, sensitivity, owner_dept, body, embedding)
@@ -2214,8 +2267,9 @@ SELECT
     c.text,
     embed_passage('emb_main', c.text)
 FROM ice.reg.doc_chunks c
--- 조인당 등가 조건 하나만 실행 가능하므로 (doc_no, version) 쌍을 한 키로 잇습니다.
--- 이건 정확한 쌍의 동치이지 근사가 아닙니다 — 버전번호가 연속인지와 무관합니다.
+-- Only one equality conjunct executes per join, so the (doc_no, version) pair is
+-- concatenated into a single key. This is exact pair equality, not an
+-- approximation — it does not depend on version numbers being contiguous.
 JOIN ice.reg.doc_versions v
   ON c.doc_no || '#' || CAST(c.version AS VARCHAR)
    = v.doc_no || '#' || CAST(v.version AS VARCHAR)
@@ -2233,8 +2287,9 @@ JOIN ice.reg.documents d ON d.doc_no = c.doc_no;
 -- different model, and the failure mode is not an error — it is slightly worse
 -- retrieval that nobody can explain.
 MERGE INTO ice.reg.embedding_generations g
--- 청크 수는 USING 질의에서 세어 컬럼으로 넘깁니다. SET 은 리터럴과 컬럼 참조만
--- 받으므로 서브쿼리를 그 자리에 둘 수 없습니다 — 셀 곳은 소스 쪽입니다.
+-- The chunk count is computed in the USING query and passed through as a column.
+-- SET accepts only literals and column references, so a subquery cannot sit there
+-- — the place to count is the source side.
 USING (
     SELECT '${EMBED_GENERATION}' AS generation_id,
            count(*)              AS n
@@ -2265,20 +2320,21 @@ WHEN NOT MATCHED THEN INSERT
 **`demo/pipeline/jobs/build_graph_job.py`**
 
 ```python
-"""관계 그래프를 세우는 ontul PYTHON 잡.
+"""An Ontul PYTHON job that builds the relation graph.
 
-문서가 서로를 인용하는 「근거」 조항에서 엣지를 읽습니다. 인용은 본문 텍스트에
-있으므로 청킹이 끝난 뒤에야 가능하고, 그래서 DAG 에서 chunk 뒤에 옵니다.
+Edges are read from the clauses in which one document cites another as its basis.
+Those citations are in the body text, so this is only possible once chunking has
+finished — which is why it comes after `chunk` in the DAG.
 
-    python build_graph_job.py   (ontul 워커가 실행)
+    python build_graph_job.py   (run by an Ontul worker)
 
-인자:
-    ontul_host / ontul_port   마스터 위치 (기본 ontul-master-1:47470)
+Arguments:
+    ontul_host / ontul_port   where the master is (default ontul-master-1:47470)
 
-엣지를 양방향으로 저장하는 이유가 하나 있습니다. GRAPH_NEIGHBORS 는 src → dst
-로만 확장하는데, "무엇에 근거하는가" 와 "무엇이 이것에 의존하는가" 는 같은 엣지를
-반대로 읽는 것입니다. 한 방향만 걸을 수 있으니 다른 방향을 저장해 둡니다 —
-순회 엔진을 하나 더 만드는 것보다 쌉니다.
+Edges are stored in both directions for one reason. GRAPH_NEIGHBORS expands from
+src → dst only, while "what is this based on" and "what depends on this" are the
+same edge read the other way round. Since only one direction can be walked, the
+other is stored — cheaper than writing a second traversal engine.
 """
 import re
 import sys
@@ -2312,10 +2368,11 @@ def main():
     if not docs:
         raise SystemExit("no documents in the ledger — run the ingest first")
 
-    # 순회는 숫자로 출발합니다. doc_no 는 사람이 쓰는 이름으로 남습니다.
-    # 정점 id 는 원장이 들고 있는 값을 그대로 씁니다. 여기서 다시 매기면 같은
-    # 규정이 실행마다 다른 정점이 되고, 그러면 그래프를 가리키는 무엇도 —
-    # 저장된 순회 결과든 온톨로지 호출이든 — 어제 것을 오늘 해석할 수 없습니다.
+    # Traversal starts from a number; doc_no stays the name people use.
+    # The vertex id is whatever the ledger holds. Renumbering here would make the
+    # same regulation a different vertex on every run, and then nothing that points
+    # at the graph — a stored traversal result, an ontology call — could be read
+    # tomorrow with yesterday's meaning.
     doc_id = {d["doc_no"]: int(d["doc_id"]) for d in docs if d.get("doc_id") is not None}
     known = set(doc_id)
 
@@ -2328,8 +2385,8 @@ def main():
             continue
         for target in CITATION.findall(c.get("text") or ""):
             if target == src or target not in known:
-                # 등록되지 않은 문서를 인용하는 것은 그 자체로 발견이지만 엣지는
-                # 아닙니다 — 갈 곳이 없습니다.
+                # Citing an unregistered document is a finding in itself, but not an
+                # edge — there is nowhere for it to lead.
                 continue
             key = (src, target, "CHILD_OF")
             edges.setdefault(key, (doc_id[src], doc_id[target], "CHILD_OF", src, target,
@@ -2353,18 +2410,19 @@ def main():
                 doc_id[doc_no], doc_id[doc_no], "SUPERSEDES", doc_no, doc_no,
                 newer, older, None, "APPROVAL", 1.0)
 
-    # 관계는 레이크에 씁니다 — NeorunBase 가 아니라.
+    # The relations are written to the lake, not to NeorunBase.
     #
-    # 예전에는 이 잡이 nb.public.doc_edges 를 직접 지우고 다시 넣었습니다. 그게
-    # 나쁜 이유는 서빙 계층이 기록의 원본이 되어 버리기 때문입니다: NeorunBase 를
-    # 다시 세우면 관계가 사라지고, 관계가 언제 어떻게 바뀌었는지는 아무 데도
-    # 남지 않고, 그래프를 고치는 방법이 "잡을 다시 돌린다" 하나뿐입니다.
+    # This job used to delete from and insert into nb.public.doc_edges directly.
+    # That is bad because it makes the serving layer the system of record: rebuild
+    # NeorunBase and the relations are gone, when and how they changed is recorded
+    # nowhere, and the only way to fix the graph is "run the job again".
     #
-    # 이제 잡은 Iceberg 에 쓰고, Flow(schema/flows/graph_serving.json)가 그것을
-    # 보고 NeorunBase 를 따라오게 합니다. 온톨로지의 GRAPH 링크가 순회하는 것도
-    # 그렇게 채워진 그래프입니다.
+    # Now the job writes into Iceberg and a Flow
+    # (schema/flows/graph_serving.json) keeps NeorunBase in step with it. The graph
+    # the ontology's GRAPH link traverses is the one that Flow filled.
     #
-    # 그래프는 파생물이라 통째로 다시 세웁니다. 부분 갱신은 사라진 인용을 남깁니다.
+    # The graph is a derivative, so it is rebuilt whole. A partial update leaves
+    # behind citations that no longer exist.
     s.execute("DELETE FROM ice.reg.graph_edges")
     s.execute("DELETE FROM ice.reg.graph_nodes")
 
@@ -2394,10 +2452,10 @@ def main():
     rev = sum(1 for e in edges.values() if e[2] == "DEPENDED_ON_BY")
     sup = sum(1 for e in edges.values() if e[2] == "SUPERSEDES")
     print(f"graph: {len(docs)} nodes, {len(edges)} edges "
-          f"({child} CHILD_OF from 근거 clauses, {rev} reversed, {sup} SUPERSEDES)")
+          f"({child} CHILD_OF from authority clauses, {rev} reversed, {sup} SUPERSEDES)")
     if child == 0:
-        # 조용히 성공하면 순회 리트리버가 빈 결과를 내고, 그건 "근거가 없다" 로
-        # 읽힙니다.
+        # Succeeding quietly would leave the traversal retrievers returning nothing,
+        # which reads as "there is no authority for this".
         raise SystemExit("no authority edges were found — the traversal retrievers "
                          "would return nothing")
 
@@ -2416,7 +2474,8 @@ The same logic in local form.
 Build the relation graph the traversal retrievers walk.
 
 Edges are parsed, not inferred. Every regulation states its own basis in a
-근거 clause — "이 지침은 「HR-REG-002」 제12조에 근거하여 정한다" — and that
+authority clause — "this guideline is established on the basis of «HR-REG-002»
+Article 12" — and that
 sentence is the edge. Reading it out of the text is why doc_relations carries a
 `source` column: an edge from the register is a different kind of claim from one
 read out of a body, and a reviewer checking a chain of authority needs to know
@@ -2424,7 +2483,7 @@ which is which.
 
 Two edge types come out of this:
 
-  CHILD_OF     the 근거 clause: this document derives its authority from that one
+  CHILD_OF     the authority clause: this document derives its authority from that one
   SUPERSEDES   consecutive versions of the same document
 
 The graph lives in NeorunBase because that is where the traversal runs
@@ -2443,7 +2502,7 @@ from pathlib import Path
 
 from .ingest import Ontul, read_stack_env, row
 
-# 「HR-REG-002」 — the bracket form every 근거 clause uses. Matching the brackets
+# «HR-REG-002» — the bracket form every authority clause uses. Matching the brackets
 # rather than the bare pattern avoids picking up a document number that merely
 # appears in prose.
 CITATION = re.compile(r"[「『]\s*([A-Z]{2,4}-[A-Z]{3}-\d{3})\s*[」』]")
@@ -2473,7 +2532,7 @@ def main(argv=None) -> int:
 
     chunks = o.sql("SELECT doc_no, version, article_no, text FROM ice.reg.doc_chunks").get("rows") or []
 
-    # ── CHILD_OF, read out of the 근거 clauses ───────────────────────────────
+    # ── CHILD_OF, read out of the authority clauses ─────────────────────────
     edges: dict[tuple, tuple] = {}
     for doc_no, version, article_no, text in chunks:
         for target in CITATION.findall(text or ""):
@@ -2533,7 +2592,7 @@ def main(argv=None) -> int:
     reverse = sum(1 for e in edges.values() if e[2] == "DEPENDED_ON_BY")
     supersedes = sum(1 for e in edges.values() if e[2] == "SUPERSEDES")
     print(f"graph: {len(node_rows)} nodes, {len(edge_rows)} edges "
-          f"({child} CHILD_OF from 근거 clauses, {reverse} reversed, {supersedes} SUPERSEDES)")
+          f"({child} CHILD_OF from authority clauses, {reverse} reversed, {supersedes} SUPERSEDES)")
     if child == 0:
         print("  no authority edges were found — the traversal retrievers will return nothing")
         return 1
@@ -2562,7 +2621,8 @@ Signal order is by trustworthiness, not convenience:
   1. the running header      — printed by whoever published the document
   2. the register            — maintained, but stale in known ways
   3. the filename            — the least reliable, used only to break ties
-The last one is deliberately weak: "[최종]육아지원규정(2022.06.01).pdf" names a
+The last one is deliberately weak: a file marked "final" with a date in its name
+   names a
 superseded version, and a pipeline that trusts filenames answers with it.
 """
 from __future__ import annotations
@@ -2619,7 +2679,7 @@ def load_register(path: Path) -> list[RegisterRow]:
 
 def _norm(s: str) -> str:
     """Strip the decoration people add to filenames so two spellings of the same
-    title compare equal — 최종, 사본, bracketed dates, spacing, extension."""
+    title compare equal — "final", "copy", bracketed dates, spacing, extension."""
     s = unicodedata.normalize("NFKC", s)
     return NOISE.sub("", s).lower()
 
@@ -2686,19 +2746,20 @@ def unregistered_rows(register: list[RegisterRow], matched: set[str]) -> list[st
 
 ```bash
 #!/usr/bin/env bash
-# 인덱싱 파이프라인을 kiok DAG 로 등록하고 실행합니다.
+# Register the indexing pipeline as a kiok DAG and run it.
 #
-#   bash infra/pipeline.sh            # 등록 + 실행 + 완료까지 대기
-#   bash infra/pipeline.sh register   # 등록만
-#   bash infra/pipeline.sh status     # 최근 실행 상태
+#   bash infra/pipeline.sh            # register, run, wait for completion
+#   bash infra/pipeline.sh register   # register only
+#   bash infra/pipeline.sh status     # status of the latest run
 #
-# index.sh 를 대체합니다. 같은 단계, 같은 순서인데 달라지는 것은 그 순서가 어디에
-# 적혀 있느냐입니다 — 셸 스크립트의 줄 순서가 아니라 조회 가능한 DAG 이고, 실패한
-# 태스크만 다시 돌릴 수 있고, 어제 실행과 오늘 실행을 나란히 놓을 수 있습니다.
+# Replaces index.sh. Same stages, same order; what changes is where that order is
+# written down — a DAG that can be queried rather than the line order of a shell
+# script, so a failed task can be re-run on its own and yesterday's run can be put
+# beside today's.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 DEMO=$(pwd)
-. out/stack.env 2>/dev/null || { echo "out/stack.env 없음 — infra/up.sh 먼저"; exit 1; }
+. out/stack.env 2>/dev/null || { echo "no out/stack.env — run infra/up.sh first"; exit 1; }
 
 KIOK=${KIOK_URL:-http://localhost:18081}
 ONTUL=${ONTUL_URL:-http://localhost:8080}
@@ -2711,45 +2772,47 @@ MODE=${1:-run}
 
 log(){ printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 step(){ printf '\033[1;32m  ok\033[0m %s\n' "$*"; }
-fail(){ printf '\033[1;31m  실패\033[0m %s\n' "$*"; exit 1; }
+fail(){ printf '\033[1;31m  failed\033[0m %s\n' "$*"; exit 1; }
 
-# ── kiok 로그인 (초기 비밀번호는 한 번만 통하므로 회전까지 처리) ──────────────
+# ── kiok login. The initial password works exactly once, so rotation is handled
+#    here too. ────────────────────────────────────────────────────────────────
 tok(){ curl -s -m 30 -X POST "$KIOK/api/v1/auth/login" -H 'Content-Type: application/json' \
         -d "{\"user\":\"admin\",\"password\":\"$1\"}" \
       | python3 -c "import sys,json;print(json.load(sys.stdin).get('accessToken',''))" 2>/dev/null; }
 KTOK=$(tok "$KIOK_PW")
 if [ -z "$KTOK" ]; then
   KTOK=$(tok "$KIOK_INITIAL_PW")
-  [ -n "$KTOK" ] || fail "kiok 로그인 실패"
+  [ -n "$KTOK" ] || fail "kiok login failed"
   curl -sf -m 30 -X POST "$KIOK/api/v1/auth/change-password" -H "Authorization: Bearer $KTOK" \
       -H 'Content-Type: application/json' \
       -d "{\"oldPassword\":\"$KIOK_INITIAL_PW\",\"newPassword\":\"$KIOK_PW\"}" >/dev/null
   KTOK=$(tok "$KIOK_PW")
-  [ -n "$KTOK" ] || fail "비밀번호 회전 후 로그인 실패"
-  step "kiok 기본 비밀번호 회전"
+  [ -n "$KTOK" ] || fail "login failed after rotating the password"
+  step "rotated kiok's default password"
 fi
 KAH="Authorization: Bearer $KTOK"
-step "kiok 인증"
+step "kiok authenticated"
 
-# ── ontul 자격증명을 kiok 커넥션에 넣습니다 ─────────────────────────────────
+# ── Ontul credentials go into a kiok connection ─────────────────────────────
 #
-# DAG 에 토큰을 적어 넣으면 그 값이 저장된 DagSpec 과 admin UI 의 Source 탭에
-# 그대로 남습니다. kiok 은 ${conn.<id>.<key>} 를 태스크 실행 직전에 워커에서
-# 풀어주므로, 참조만 DAG 에 남고 값은 KMS 암호화 저장소에만 있습니다.
+# A token written into the DAG stays in the stored DagSpec and in the admin UI's
+# Source tab. kiok resolves ${conn.<id>.<key>} on the worker just before the task
+# runs, so only the reference is in the DAG and the value lives solely in the
+# KMS-encrypted store.
 #
-# 그리고 넣는 값이 로그인 JWT 가 아니라 액세스 키와 함께 발급되는 사용자
-# 토큰(OTOK…)입니다. JWT 는 15분이면 만료되어, 스케줄로 도는 DAG 라면 다음
-# 실행에서 인증이 깨집니다. OTOK 는 만료되지 않고 `Authorization: Token` 으로
-# 보냅니다.
+# And the value is a user token (OTOK…) issued alongside an access key, not a
+# login JWT. A JWT expires in fifteen minutes, which breaks authentication on the
+# next run of a scheduled DAG. An OTOK does not expire and is sent as
+# `Authorization: Token`.
 OJWT=$(curl -s -m 30 -X POST "$ONTUL/admin/auth/login" -H 'Content-Type: application/json' \
        -d "{\"username\":\"admin\",\"password\":\"$ONTUL_PW\"}" \
      | python3 -c "import sys,json;print(json.load(sys.stdin).get('accessToken',''))" 2>/dev/null)
-[ -n "$OJWT" ] || fail "ontul 로그인 실패"
+[ -n "$OJWT" ] || fail "ontul login failed"
 OTOK=$(curl -s -m 30 -X POST "$ONTUL/admin/iam/keys" -H "Authorization: Bearer $OJWT" \
        -H 'Content-Type: application/json' -d '{"username":"admin"}' \
      | python3 -c "import sys,json;print(json.load(sys.stdin).get('token',''))" 2>/dev/null)
-[ -n "$OTOK" ] || fail "ontul 사용자 토큰 발급 실패"
-step "ontul 사용자 토큰 발급 (${OTOK:0:6}…)"
+[ -n "$OTOK" ] || fail "could not mint an ontul user token"
+step "minted an ontul user token (${OTOK:0:6}…)"
 
 CONN=$(python3 - "$ONTUL_INTERNAL" "$OTOK" <<'PY'
 import json, sys
@@ -2763,11 +2826,12 @@ PY
 )
 code=$(curl -s -o /tmp/kiok-conn.out -w '%{http_code}' -X POST "$KIOK/api/v1/connections" \
         -H "$KAH" -H 'Content-Type: application/json' -d "$CONN")
-case "$code" in 2*) step "kiok 커넥션 regdemoOntul 등록";;
-  *) fail "커넥션 등록 실패 HTTP $code: $(head -c 200 /tmp/kiok-conn.out)";; esac
+case "$code" in 2*) step "kiok connection regdemoOntul registered";;
+  *) fail "connection registration failed HTTP $code: $(head -c 200 /tmp/kiok-conn.out)";; esac
 
-# S3 자격증명도 같은 이유로 커넥션에 둡니다. discover 잡이 워커에서 버킷을
-# 나열하려면 필요한데, DAG 에 적어 넣으면 UI 에 그대로 보입니다.
+# The S3 credentials live in a connection for the same reason. The discover job
+# needs them to list the bucket from the worker, and writing them into the DAG
+# would put them straight in the UI.
 S3CONN=$(python3 - "$S3_ENDPOINT_INTERNAL" "$S3_ACCESS_KEY" "$S3_SECRET_KEY" "${S3_REGION:-us-east-1}" <<'PY'
 import json, sys
 print(json.dumps({
@@ -2781,13 +2845,13 @@ PY
 )
 code=$(curl -s -o /tmp/kiok-conn-s3.out -w '%{http_code}' -X POST "$KIOK/api/v1/connections" \
         -H "$KAH" -H 'Content-Type: application/json' -d "$S3CONN")
-case "$code" in 2*) step "kiok 커넥션 regdemoS3 등록";;
-  *) fail "S3 커넥션 등록 실패 HTTP $code: $(head -c 200 /tmp/kiok-conn-s3.out)";; esac
+case "$code" in 2*) step "kiok connection regdemoS3 registered";;
+  *) fail "S3 connection registration failed HTTP $code: $(head -c 200 /tmp/kiok-conn-s3.out)";; esac
 
-# 같은 id 로 ontul 에도 등록합니다. 업로드는 kiok 이, 다운로드는 ontul 이 하기
-# 때문에 두 저장소 모두 같은 자격증명을 알아야 합니다 — PYTHON 잡의 s3://
-# scriptPath 를 가져오는 쪽은 ontul 이고, 없으면
-# "ontul.deps.s3.connectionId is required to fetch s3:// dep paths" 로 끝납니다.
+# Registered in Ontul under the same id. kiok uploads and Ontul downloads, so
+# both stores have to know the same credentials — Ontul is what fetches a PYTHON
+# job's s3:// scriptPath, and without this it ends at
+# "ontul.deps.s3.connectionId is required to fetch s3:// dep paths".
 OCONN=$(python3 - "$S3_ENDPOINT_INTERNAL" "$S3_ACCESS_KEY" "$S3_SECRET_KEY" "${S3_REGION:-us-east-1}" <<'PY'
 import json, sys
 print(json.dumps({
@@ -2800,8 +2864,8 @@ PY
 )
 code=$(curl -s -o /tmp/ontul-conn-s3.out -w '%{http_code}' -X POST "$ONTUL/admin/connections" \
         -H "Authorization: Bearer $OJWT" -H 'Content-Type: application/json' -d "$OCONN")
-# NeorunBase 자신의 wire 자격증명. 벡터 비우기 한 단계만 Ontul 을 지나가지
-# 않으므로 여기에도 커넥션이 필요합니다.
+# NeorunBase's own wire credentials. Clearing the vectors is the one step that
+# does not go through Ontul, so it needs a connection of its own.
 NBCONN=$(python3 - "${NEORUNBASE_INTERNAL_HOST:-neorun-coordinator-1}" "${NEORUNBASE_PASSWORD:-Regdemo12345}" <<'PY'
 import json, sys
 print(json.dumps({
@@ -2819,54 +2883,57 @@ PY
 )
 curl -s -o /tmp/kiok-conn-nb.out -w '%{http_code}' -X POST "$KIOK/api/v1/connections" \
       -H "$KAH" -H 'Content-Type: application/json' -d "$NBCONN" >/dev/null
-step "kiok 커넥션 regdemoNeorun 등록"
+step "kiok connection regdemoNeorun registered"
 
-case "$code" in 2*) step "ontul 커넥션 regdemoS3 등록";;
-  *) printf '\033[1;33m  ..\033[0m ontul S3 커넥션 HTTP %s (이미 있으면 무시)\n' "$code";; esac
+case "$code" in 2*) step "ontul connection regdemoS3 registered";;
+  *) printf '\033[1;33m  ..\033[0m ontul S3 connection HTTP %s (ignored if it already exists)\n' "$code";; esac
 
 if [ "$MODE" = "status" ]; then
-  log "최근 실행"
+  log "recent runs"
   curl -s -m 30 "$KIOK/api/v1/dags/regdemo_index/runs" -H "$KAH" | python3 -c "
 import sys,json
 try: runs=json.load(sys.stdin)
-except Exception: print('  (없음)'); raise SystemExit
+except Exception: print('  (none)'); raise SystemExit
 runs = runs if isinstance(runs,list) else runs.get('runs',[])
 for r in runs[:5]:
     print('  ', r.get('runId') or r.get('id'), r.get('state'), r.get('startedAt',''))"
   exit 0
 fi
 
-# ── UDF 등록 ────────────────────────────────────────────────────────────────
-# chunk 태스크가 extract_chunks(uri) 를 부릅니다. GLOBAL 스코프로 등록해야
-# 합니다 — 세션 스코프는 등록한 연결에서만 보이는데, 스케줄러의 태스크는 자기
-# 연결을 따로 열기 때문에 "No match found for function signature" 로 끝납니다.
-log "0/2  UDF 등록"
+# ── Register the UDFs ───────────────────────────────────────────────────────
+# The chunk task calls extract_chunks(uri). It has to be registered at GLOBAL
+# scope: a session-scoped UDF is visible only to the connection that registered
+# it, and the scheduler's task opens its own — which ends as
+# "No match found for function signature".
+log "0/2  registering UDFs"
 PYBIN="$DEMO/.venv/bin/python"
-[ -x "$PYBIN" ] || fail "가상환경 없음 — python3 -m venv .venv && .venv/bin/pip install -e pipeline"
+[ -x "$PYBIN" ] || fail "no virtualenv — python3 -m venv .venv && .venv/bin/pip install -e pipeline"
 ( cd "$DEMO/pipeline/src" && PYTHONPATH=. "$PYBIN" -m regdemo_pipeline.jobs.register_udfs \
-    --out "$DEMO/out" --password "$ONTUL_PW" ) || fail "UDF 등록 실패"
+    --out "$DEMO/out" --password "$ONTUL_PW" ) || fail "UDF registration failed"
 
-# ── 잡 소스 게시 ────────────────────────────────────────────────────────────
-# DAG 는 스크립트를 ${conn.regdemoJobs.<name>} 로 참조하고, 그 커넥션은
-# publish.sh 가 채웁니다. 게시하지 않으면 discover 가 시작하자마자 exitCode -1 로
-# 죽는데, 로그에는 왜인지 남지 않습니다 — 참조가 풀리지 않았을 뿐입니다.
-log "0/2  잡 소스 게시"
-bash "$DEMO/pipeline/jobs/publish.sh" || fail "잡 게시 실패"
+# ── Publish the job sources ─────────────────────────────────────────────────
+# The DAG refers to the scripts as ${conn.regdemoJobs.<name>}, and publish.sh
+# fills that connection. Without publishing, discover dies with exitCode -1 the
+# moment it starts and the log does not say why — the reference simply did not
+# resolve.
+log "0/2  publishing job sources"
+bash "$DEMO/pipeline/jobs/publish.sh" || fail "publishing the jobs failed"
 
-log "1/2  DAG 등록"
-# 치환할 것이 없습니다 — DAG 는 ${conn.regdemoOntul.*} 참조만 들고 있고, 값은
-# 위에서 등록한 커넥션에 있습니다. 그래서 이 파일은 그대로 커밋해도 됩니다.
+log "1/2  registering the DAG"
+# Nothing to substitute — the DAG carries only ${conn.regdemoOntul.*} references
+# and the values live in the connections registered above. That is why the file
+# can be committed as it is.
 code=$(curl -s -o /tmp/kiok-dag.out -w '%{http_code}' -X POST "$KIOK/api/v1/dags" \
         -H "$KAH" -H 'Content-Type: application/yaml' --data-binary @"$DAG_FILE")
-case "$code" in 2*) step "regdemo_index 등록";; *) fail "등록 실패 HTTP $code: $(head -c 200 /tmp/kiok-dag.out)";; esac
+case "$code" in 2*) step "regdemo_index registered";; *) fail "registration failed HTTP $code: $(head -c 200 /tmp/kiok-dag.out)";; esac
 
 [ "$MODE" = "register" ] && exit 0
 
-log "2/2  실행"
+log "2/2  running it"
 RUN=$(curl -s -m 60 -X POST "$KIOK/api/v1/dags/regdemo_index/runs" -H "$KAH" \
       -H 'Content-Type: application/json' -d '{}' \
     | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('runId') or d.get('id') or '')" 2>/dev/null)
-[ -n "$RUN" ] || fail "실행 생성 실패"
+[ -n "$RUN" ] || fail "could not create a run"
 step "runId=$RUN"
 
 STATE=""
@@ -2879,7 +2946,8 @@ for i in $(seq 1 120); do
 done
 echo
 
-# 태스크별 결과. 어느 단계에서 멈췄는지가 이 파이프라인의 요점입니다.
+# Per-task results. Knowing which stage stopped is the point of running this as
+# a pipeline at all.
 curl -s -m 30 "$KIOK/api/v1/runs/$RUN/tasks" -H "$KAH" | python3 -c "
 import sys,json
 try: ts=json.load(sys.stdin)
@@ -2889,8 +2957,8 @@ for t in ts:
     mark = 'ok ' if t.get('state')=='SUCCESS' else '   '
     print(f\"  {mark}{t.get('taskId') or t.get('id'):<18} {t.get('state','')}\")"
 
-[ "$STATE" = "SUCCESS" ] && { printf '\033[1;32m파이프라인 SUCCESS\033[0m\n'; exit 0; } \
-                         || { printf '\033[1;31m파이프라인 %s\033[0m\n' "$STATE"; exit 1; }
+[ "$STATE" = "SUCCESS" ] && { printf '\033[1;32mpipeline SUCCESS\033[0m\n'; exit 0; } \
+                         || { printf '\033[1;31mpipeline %s\033[0m\n' "$STATE"; exit 1; }
 ```
 
 
@@ -2953,7 +3021,7 @@ from __future__ import annotations
 import os
 
 # ── The pin ──────────────────────────────────────────────────────────────────
-# Multilingual, 768-dim. Chosen over bge-m3 because 조문-level chunks run
+# Multilingual, 768-dim. Chosen over bge-m3 because article-level chunks run
 # 100–300 tokens, so bge-m3's 8192 window buys nothing while costing ~3x the
 # resident memory — and the model is resident on every worker, not just once.
 MODEL_ID = "intfloat/multilingual-e5-base"
@@ -3067,9 +3135,9 @@ def get(device: str | None = None) -> Encoder:
 Run before wiring anything into a UDF. Answers four questions:
   1. does it load, and how long / how much resident memory (x every worker)
   2. what revision actually loaded (the value to pin in EMBED_MODEL_REVISION)
-  3. throughput on 조문-length Korean text (the real corpus shape)
+  3. throughput on article-length Korean text (the real corpus shape)
   4. does Korean similarity behave — a regulation query must rank its own
-     조문 above an unrelated one, or nothing downstream can work
+     article above an unrelated one, or nothing downstream can work
 
 Usage:  python -m regdemo_pipeline.embed.smoke
 """
@@ -3081,7 +3149,7 @@ import numpy as np
 from . import model
 from .encoder import get
 
-# 조문-length Korean text, shaped like the corpus the pipeline will index.
+# Article-length Korean text, shaped like the corpus the pipeline will index.
 PASSAGES = [
     "제12조(육아휴직) ① 만 8세 이하 자녀를 양육하는 직원은 육아휴직을 신청할 수 있다. "
     "② 육아휴직 기간은 연간 20일 이내로 한다. ③ 신청은 사용 예정일 30일 전까지 인사팀에 제출한다.",
@@ -3109,13 +3177,13 @@ def rss_gb() -> float:
 
 def main() -> int:
     base = rss_gb()
-    print(f"모델      : {model.MODEL_ID}  (선언 차원 {model.DIM})")
+    print(f"model      : {model.MODEL_ID}  (declared dim {model.DIM})")
 
     enc = get()
     rev = enc.resolved_revision()
-    print(f"로드      : {enc.load_seconds:.1f}s  device={enc.device}")
-    print(f"메모리    : +{rss_gb() - base:.2f} GB  (총 {rss_gb():.2f} GB) ← 워커마다 이만큼")
-    print(f"revision  : {rev or '(확인 불가)'}")
+    print(f"load       : {enc.load_seconds:.1f}s  device={enc.device}")
+    print(f"memory     : +{rss_gb() - base:.2f} GB  (total {rss_gb():.2f} GB) — per worker")
+    print(f"revision   : {rev or '(could not determine)'}")
     if rev:
         print(f"fingerprint: {model.fingerprint(rev)}")
 
@@ -3124,23 +3192,23 @@ def main() -> int:
     t0 = time.time()
     vecs = enc.encode_passages(batch, batch_size=16)
     dt = time.time() - t0
-    print(f"\n처리량    : {len(batch)}청크 / {dt:.1f}s = {len(batch)/dt:.0f} 청크/s")
-    print(f"            → 6,000청크 예상 {6000/(len(batch)/dt):.0f}초 (단일 프로세스)")
-    print(f"벡터      : shape={np.array(vecs).shape}  "
-          f"norm={np.linalg.norm(vecs[0]):.4f} (L2 정규화 확인)")
+    print(f"\nthroughput : {len(batch)} chunks / {dt:.1f}s = {len(batch)/dt:.0f} chunks/s")
+    print(f"             → 6,000 chunks in an estimated {6000/(len(batch)/dt):.0f}s (single process)")
+    print(f"vectors    : shape={np.array(vecs).shape}  "
+          f"norm={np.linalg.norm(vecs[0]):.4f} (L2 normalisation confirmed)")
 
     # the check that actually matters: does Korean retrieval rank correctly
     P = np.array(enc.encode_passages(PASSAGES))
-    print("\n한국어 검색 정합성 (질의 → 최상위 조문)")
+    print("\nKorean retrieval sanity (query → top article)")
     ok = 0
     for q, expect in QUERIES:
         sims = P @ enc.encode_query(q)
         top = int(np.argmax(sims))
         hit = top == expect
         ok += hit
-        print(f"  {'PASS' if hit else 'FAIL'}  {q:<24} → 조문#{top} "
-              f"(sim {sims[top]:.3f}, 정답 #{expect} {sims[expect]:.3f})")
-    print(f"\n결과: {ok}/{len(QUERIES)} 통과")
+        print(f"  {'PASS' if hit else 'FAIL'}  {q:<24} → article #{top} "
+              f"(sim {sims[top]:.3f}, expected #{expect} {sims[expect]:.3f})")
+    print(f"\nresult: {ok}/{len(QUERIES)} passed")
     return 0 if ok == len(QUERIES) else 1
 
 

@@ -32,18 +32,18 @@ Each product has a `<name>-pack` repository holding one rolling tag,
 ```bash
 #!/usr/bin/env bash
 ##
-## 컴포넌트 배포본을 내려받습니다.
+## Download the component distributions.
 ##
 ##   bash infra/dist/fetch.sh
 ##
-## 네 제품은 GitHub 릴리스로 배포됩니다. 저장소마다 `<name>-pack` 이 있고 그
-## 안에 `<name>-archive` 라는 고정 태그가 하나 있어서, 최신 빌드는 항상 같은
-## URL 에 있습니다. 공식 Docker 이미지는 발행하지 않기 때문에, 이미지는 여기서
-## 받은 tarball 로 각자 빌드합니다.
+## The four products are released through GitHub. Each has a `<name>-pack`
+## repository holding a single rolling tag, `<name>-archive`, so the current
+## build is always at the same URL. No official Docker images are published, so
+## the images here are built from these tarballs.
 ##
-## 이미 받아 둔 파일은 다시 받지 않습니다. 합쳐서 1GB 가 넘고, 데모를 다시
-## 세울 때마다 내려받을 이유는 없습니다. 새 빌드를 받으려면 해당 tar.gz 를
-## 지우고 다시 실행하십시오.
+## Files already present are not downloaded again. Together they are over a
+## gigabyte, and there is no reason to fetch them every time the demo is rebuilt.
+## To pick up a newer build, delete the tar.gz in question and run this again.
 ##
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -54,22 +54,22 @@ BASE="${COMPONENT_BASE_URL:-https://github.com/cloudcheflabs}"
 for name in shannonstore neorunbase ontul kiok; do
   f="${name}-${VERSION}.tar.gz"
   if [ -s "$f" ]; then
-    printf '  이미 있음  %s (%s)\n' "$f" "$(du -h "$f" | cut -f1)"
+    printf '  have      %s (%s)\n' "$f" "$(du -h "$f" | cut -f1)"
     continue
   fi
   url="$BASE/${name}-pack/releases/download/${name}-archive/${f}"
-  printf '  내려받는 중 %s\n' "$url"
+  printf '  fetching  %s\n' "$url"
   curl -fL -# --retry 3 --retry-delay 2 -o "$f.part" "$url" || {
     rm -f "$f.part"
-    echo "실패: $url" >&2
+    echo "failed: $url" >&2
     exit 1
   }
   mv "$f.part" "$f"
-  printf '  받음        %s (%s)\n' "$f" "$(du -h "$f" | cut -f1)"
+  printf '  got       %s (%s)\n' "$f" "$(du -h "$f" | cut -f1)"
 done
 
 echo
-echo "배포본 준비 완료 — infra/up.sh 가 이 파일들로 이미지를 빌드합니다."
+echo "Distributions ready — infra/up.sh builds the images from these files."
 ```
 
 
@@ -95,17 +95,18 @@ serves all three.
 **`demo/infra/dist/Dockerfile`**
 
 ```dockerfile
-# 배포 tarball 하나로 컴포넌트 이미지를 만듭니다. shannonstore / neorunbase /
-# kiok 이 전부 같은 모양이라 Dockerfile 도 하나입니다 — 각 tarball 은 bin/,
-# conf/, lib/, admin-ui/ 를 그대로 담고 있어서 풀어서 /app 에 놓으면 끝입니다.
+# One release tarball, one component image. ShannonStore, NeorunBase and kiok are
+# shaped identically — each tarball carries bin/, conf/, lib/ and admin-ui/ — so
+# unpacking one into /app is the entire build, and one Dockerfile serves them all.
 #
-# 소스 저장소를 참조하지 않는 것이 요점입니다. 이 데모를 따라 하는 사람에게는
-# 저장소가 없고, 릴리스 tarball 만 있습니다. 빌드 컨텍스트도 이 디렉터리 하나로
-# 닫혀 있어서, fetch.sh 가 받아 둔 tarball 말고는 이미지에 들어갈 것이 없습니다.
+# The point is that no source repository is referenced. Whoever follows this demo
+# has no checkout, only the release tarballs. The build context is closed around
+# this directory too, so nothing but what fetch.sh downloaded can end up in the
+# image.
 FROM eclipse-temurin:17-jre-jammy
 
-# curl 은 헬스체크가, jq 는 setup 스크립트가, netcat 은 기동 순서를 기다리는
-# 쪽이 씁니다. python3 은 kiok 이 태스크를 실행할 때 씁니다.
+# curl for the healthchecks, jq for the setup script, netcat for the waits, and
+# python3 for the tasks kiok runs.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl jq python3 netcat-openbsd && \
     rm -rf /var/lib/apt/lists/*
@@ -121,9 +122,9 @@ RUN tar -xzf /tmp/dist.tar.gz -C /tmp && \
     chmod +x /app/bin/*.sh && \
     mkdir -p /app/data /app/logs
 
-# 세 제품 모두 같은 규칙입니다. FOREGROUND 가 켜져 있으면 start-*.sh 가 JVM 을
-# exec 해서 컨테이너의 1번 프로세스가 되고, 꺼져 있으면 데몬으로 띄운 뒤 스크립트가
-# 끝나 컨테이너가 그대로 종료됩니다.
+# The same rule in all three products: with FOREGROUND set, start-*.sh execs the
+# JVM so it becomes the container's main process. Without it the script starts a
+# daemon, exits, and takes the container down with it.
 ENV SHANNONSTORE_FOREGROUND=true \
     NEORUNBASE_FOREGROUND=true \
     KIOK_FOREGROUND=true \
@@ -136,7 +137,8 @@ kiok needs one extra thing: a switch for which role the container runs.
 **`demo/infra/dist/Dockerfile.kiok`**
 
 ```dockerfile
-# kiok 은 역할 스위치가 하나 더 필요할 뿐, 나머지는 공용 Dockerfile 과 같습니다.
+# kiok needs one thing the shared Dockerfile does not have: a switch for which
+# role the container runs. Everything else is identical.
 FROM eclipse-temurin:17-jre-jammy
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -162,8 +164,8 @@ ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 ```bash
 #!/bin/bash
-# kiok 이미지 하나로 master 와 worker 를 모두 띄웁니다. compose 가 KIOK_ROLE 만
-# 정해 주면 되고, 그 밖의 설정은 전부 환경변수로 들어갑니다.
+# One kiok image runs both master and worker. Compose only has to set KIOK_ROLE;
+# everything else arrives as environment.
 set -e
 case "${KIOK_ROLE}" in
   master) exec /app/bin/start-master.sh ;;
@@ -183,20 +185,24 @@ real project builds its own job image for exactly this reason.
 **`demo/infra/dist/Dockerfile.ontul`**
 
 ```dockerfile
-# 데모의 Ontul 이미지: 제품 배포본 + 이 파이프라인이 쓰는 파이썬 의존성.
+# The demo's Ontul image: the product distribution plus this pipeline's own
+# Python dependencies.
 #
-# 추출은 Python UDF 로 돌고, UDF 는 워커가 자기 시스템 python3 으로 실행합니다.
-# 그래서 pdfplumber 같은 것은 클라이언트의 virtualenv 가 아니라 컨테이너 안에
-# 있어야 합니다. 제품 Dockerfile 이 아니라 여기에 두는 게 요점입니다 — Ontul 이
-# PDF 파서를 같이 배포할 이유는 없고, 실제 프로젝트도 잡 이미지는 따로 만듭니다.
+# Extraction runs as a Python UDF, and the worker executes UDFs with its system
+# python3 — so pdfplumber and friends have to be present in the container, not in
+# the client's virtualenv. Keeping this here rather than in the product
+# Dockerfile is the point: Ontul has no business shipping a PDF parser, and a
+# real project builds its own job image for exactly this reason.
+#
+# Mirrors ../../../Dockerfile. If that file changes, this one follows.
 FROM eclipse-temurin:17-jre-jammy
 
-# 파이썬 3.11. 잡을 제출하는 클라이언트와 같은 버전이어야 합니다.
+# Python 3.11, matching the client that submits the jobs.
 #
-# cloudpickle 은 함수를 값으로 직렬화하는데 code 객체의 레이아웃이 버전마다
-# 다릅니다. 3.11 클라이언트가 jammy 기본 3.10 을 만나면 "code expected at most
-# 16 arguments, got 18" 로 끝나는데, 이 메시지에는 파이썬도 버전도 없습니다.
-# PySpark 와 같은 규칙입니다 — 드라이버와 실행기는 같은 인터프리터를 씁니다.
+# cloudpickle serialises a function by value, and a code object's layout is
+# version-specific — a 3.11 client against jammy's 3.10 fails with "code expected
+# at most 16 arguments, got 18", which names neither Python nor a version. It is
+# the rule PySpark has: driver and executor run the same interpreter.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl jq netcat-openbsd software-properties-common gnupg && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
@@ -205,17 +211,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.11 -m ensurepip --upgrade && \
     rm -rf /var/lib/apt/lists/*
 
-# 워커는 $PYTHON3 이 설정돼 있으면 그것으로 UDF 실행기를 띄웁니다.
+# The worker starts the UDF executor with $PYTHON3 when it is set.
 ENV PYTHON3=/usr/bin/python3.11
 
-# 파이프라인의 추출 의존성. 버전을 고정한 이유는, 추출기가 조용히 다른 텍스트를
-# 내놓기 시작하면 그 아래 모든 답이 바뀌는데 파이프라인은 아무것도 보고하지
-# 않기 때문입니다.
+# The pipeline's extraction dependencies. Pinned, because an extractor that
+# silently starts returning different text changes every downstream answer and
+# nothing about the pipeline reports it.
 #
-# pg8000 은 순수 파이썬 Postgres 클라이언트로, Ontul 을 통과할 수 없는 단 한
-# 단계에 씁니다: NeorunBase 는 JDBC 카탈로그가 아니라서 DELETE 가 거부되고
-# ("Not a JDBC catalog: nb") 벡터 테이블은 NeorunBase 자기 프로토콜로 비워야
-# 합니다.
+# pg8000 is a pure-Python Postgres client, for the one step that cannot go
+# through Ontul: NeorunBase is not a JDBC catalog, so a DELETE against it is
+# refused ("Not a JDBC catalog: nb") and the vector table has to be cleared over
+# NeorunBase's own wire.
 RUN python3.11 -m pip install --no-cache-dir \
         pdfplumber==0.11.4 \
         python-docx==1.1.2 \
@@ -262,21 +268,22 @@ tearing down later removes **only what this demo started**.
 
 ```yaml
 ##
-## ShannonStore — 이 데모의 S3 스토리지이자, 네트워크의 주인입니다.
+## ShannonStore — the demo's S3 storage, and the owner of the network.
 ##
-## 토폴로지는 zk 1 · data 2 · api 1 입니다. nginx 는 없고 S3 엔드포인트가
-## api-server-1:8080 으로 바로 열립니다. EC 는 1+1(데이터+패리티)이라 데이터
-## 노드 두 대에 맞습니다.
+## Topology is zk 1 · data 2 · api 1. There is no nginx; the S3 endpoint is
+## api-server-1:8080 directly. Erasure coding is 1+1 (data+parity), which fits
+## two data nodes.
 ##
-## 힙을 전부 명시한 이유: JVM 은 컨테이너가 보고하는 메모리에서 힙을 정하는데,
-## 여기 컨테이너들은 호스트 전체를 봅니다. JVM 열 개가 각자 "11GB 의 1/4 은
-## 써도 되겠지" 라고 판단하면, 개별 설정은 전부 합리적으로 보이는 채로 머신이
-## 스왑을 시작합니다.
+## Every heap is stated explicitly because a JVM sizes its heap from what the
+## container reports, and these containers see the whole host. Ten JVMs each
+## deciding they may take a quarter of 11 GB is how a machine starts swapping
+## while every individual setting still looks reasonable.
 ##
-## setup 컨테이너가 하는 일이 중요합니다. ShannonStore 는 기동할 때 S3 자격증명을
-## 갖고 있지 않습니다 — admin 으로 로그인해서 IAM 키를 발급받고, 그 키로 버킷을
-## 만들고, 키를 볼륨에 적어 둡니다. Polaris 는 그 키를 받아서 시작해야 하고
-## 나중에 바꿀 수 없기 때문에, 기동 순서는 취향이 아니라 제약입니다.
+## What the setup container does is what fixes the startup order. ShannonStore
+## holds no S3 credentials when it boots: it logs in as admin, mints an IAM key,
+## creates the bucket with it, and writes the key to a volume. Polaris has to be
+## started with that key and cannot be told about it later — so the ordering is a
+## constraint, not a preference.
 ##
 services:
   zookeeper:
@@ -371,18 +378,19 @@ services:
         apk add --no-cache jq > /dev/null 2>&1
         ADMIN=http://api-server-1:8888
         echo "=== ShannonStore Setup ==="
-        echo "[1/3] API 대기..."
+        echo "[1/3] waiting for the API..."
         for i in $$(seq 1 90); do
-          curl -sf $$ADMIN/admin/health > /dev/null 2>&1 && { echo "  준비됨"; break; }
-          [ $$i -eq 90 ] && { echo "  ERROR: 180초 안에 뜨지 않음"; exit 1; }
+          curl -sf $$ADMIN/admin/health > /dev/null 2>&1 && { echo "  ready"; break; }
+          [ $$i -eq 90 ] && { echo "  ERROR: not up within 180s"; exit 1; }
           sleep 2
         done
-        echo "[2/3] 로그인 후 IAM 액세스 키 발급..."
+        echo "[2/3] logging in and minting an IAM access key..."
         LOGIN_RES=$$(curl -sf -X POST $$ADMIN/admin/auth/login \
           -H "Content-Type: application/json" -d '{"userId":"admin","password":"admin"}')
         TOKEN=$$(echo $$LOGIN_RES | jq -r '.token')
-        [ -n "$$TOKEN" ] && [ "$$TOKEN" != "null" ] || { echo "  ERROR: 로그인 실패"; exit 1; }
-        # 초기 비밀번호는 한 번만 통합니다. 회전을 요구하면 회전하고 다시 로그인합니다.
+        [ -n "$$TOKEN" ] && [ "$$TOKEN" != "null" ] || { echo "  ERROR: login failed"; exit 1; }
+        # The initial password works exactly once. If a rotation is demanded,
+        # rotate and log in again.
         if [ "$$(echo $$LOGIN_RES | jq -r '.requirePasswordChange')" = "true" ]; then
           curl -sf -X POST $$ADMIN/admin/auth/change-password \
             -H "Content-Type: application/json" -H "Authorization: Bearer $$TOKEN" \
@@ -400,20 +408,20 @@ services:
             ACCESS_KEY=$$(echo $$KEY_RES | jq -r '.accessKey // empty')
             SECRET_KEY=$$(echo $$KEY_RES | jq -r '.secretKey // empty')
           fi
-          [ -n "$$ACCESS_KEY" ] && [ "$$ACCESS_KEY" != "null" ] && { echo "  발급됨 (시도 $$attempt)"; break; }
+          [ -n "$$ACCESS_KEY" ] && [ "$$ACCESS_KEY" != "null" ] && { echo "  minted (attempt $$attempt)"; break; }
           sleep 2
         done
-        [ -n "$$ACCESS_KEY" ] && [ "$$ACCESS_KEY" != "null" ] || { echo "  ERROR: IAM 키 발급 실패"; exit 1; }
-        # 키는 클러스터 전체에 동기화된 뒤에야 S3 요청에 통합니다.
+        [ -n "$$ACCESS_KEY" ] && [ "$$ACCESS_KEY" != "null" ] || { echo "  ERROR: could not mint an IAM key"; exit 1; }
+        # The key only works for S3 requests once it has synced across the cluster.
         sleep 10
-        echo "[3/3] iceberg-warehouse 버킷 생성..."
+        echo "[3/3] creating the iceberg-warehouse bucket..."
         curl -sf -X POST $$ADMIN/admin/browser/buckets \
           -H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
           -d '{"name":"iceberg-warehouse","versioning":false}'
         echo "$$ACCESS_KEY" > /tmp/setup/access_key
         echo "$$SECRET_KEY" > /tmp/setup/secret_key
         echo "done" > /tmp/setup/ready
-        echo "=== 완료 ==="
+        echo "=== done ==="
         tail -f /dev/null
     volumes:
       - setup-data:/tmp/setup
@@ -452,18 +460,18 @@ a constraint, not a preference.
 
 ```yaml
 ##
-## NeorunBase — 에이전트가 실제로 조회하는 서빙 계층.
+## NeorunBase — the serving layer the agent actually queries.
 ##
-## 코디네이터 1 · 데이터노드 2 이고 ZooKeeper 는 ShannonStore 것을 같이 씁니다.
-## 이 데모에서 컨테이너 하나는 200MB 이고, 앙상블을 하나 더 띄울 이유가 없습니다.
+## Coordinator 1 · datanode 2, sharing ShannonStore's ZooKeeper. A container
+## costs about 200 MB here and there is no reason to run a second ensemble.
 ##
-## 코디네이터가 Postgres 와이어 프로토콜(5432)과 admin HTTP(8080)를 둘 다 엽니다.
-## psql 로 붙을 수 있다는 뜻이고, 이 데모에서 벡터 테이블을 비우는 한 단계가
-## 그 경로를 씁니다 — NeorunBase 는 JDBC 카탈로그가 아니라서 Ontul 을 통한
-## DELETE 가 거부됩니다.
+## The coordinator opens both the PostgreSQL wire protocol (5432) and admin HTTP
+## (8080). That means psql can attach, and one step in this demo uses that path:
+## NeorunBase is not a JDBC catalog, so clearing the vector table through Ontul
+## is refused.
 ##
-## 힙은 코디네이터에 더 줍니다. 계획을 세우고, 카탈로그를 들고, Iceberg 동기화를
-## 돌리는 쪽이 코디네이터입니다. 데이터노드는 샤드만 서빙하니 더 작아도 됩니다.
+## The coordinator gets the larger heap. It plans, holds the catalog and runs the
+## Iceberg sync; the datanodes serve shards and can live smaller.
 ##
 services:
   neorun-datanode-1:
@@ -485,8 +493,8 @@ services:
       - "-Dneorunbase.datanode.data.dir=data/datanode-1/shards"
       - "-Dneorunbase.log.mode=RING_BUFFER"
     environment:
-      # KMS 마스터 키. 코디네이터와 데이터노드가 같은 값을 가져야 합니다 —
-      # 다르면 KMS 초기화 단계에서 SecurityException 으로 즉시 죽습니다.
+      # The KMS master key. Coordinator and datanodes must carry the same value —
+      # a mismatch dies immediately in KMS initialisation with a SecurityException.
       NEORUNBASE_MASTER_KEY: "${NEORUNBASE_MASTER_KEY:-NeorunBaseMasterKey120030300312345}"
       JAVA_OPTS: "-Xms192m -Xmx448m -XX:+UseG1GC -XX:MaxMetaspaceSize=192m"
     networks: [neorun-iceberg-network]
@@ -505,8 +513,8 @@ services:
       - "-Dneorunbase.datanode.data.dir=data/datanode-2/shards"
       - "-Dneorunbase.log.mode=RING_BUFFER"
     environment:
-      # KMS 마스터 키. 코디네이터와 데이터노드가 같은 값을 가져야 합니다 —
-      # 다르면 KMS 초기화 단계에서 SecurityException 으로 즉시 죽습니다.
+      # The KMS master key. Coordinator and datanodes must carry the same value —
+      # a mismatch dies immediately in KMS initialisation with a SecurityException.
       NEORUNBASE_MASTER_KEY: "${NEORUNBASE_MASTER_KEY:-NeorunBaseMasterKey120030300312345}"
       JAVA_OPTS: "-Xms192m -Xmx448m -XX:+UseG1GC -XX:MaxMetaspaceSize=192m"
     networks: [neorun-iceberg-network]
@@ -529,10 +537,10 @@ services:
         -Dneorunbase.log.mode=RING_BUFFER
         $$ICEBERG_OPTS
     environment:
-      # Iceberg 카탈로그 설정은 up.sh 가 만들어 넣습니다. Polaris 자격증명이
-      # 기동할 때마다 새로 발급되기 때문에 compose 에 적어 둘 수가 없습니다.
-      # entrypoint 가 sh -c 인 것도 이것 때문입니다 — 셸이 있어야 이 변수가
-      # 명령줄 인자로 펼쳐집니다.
+      # up.sh builds the Iceberg catalog settings and passes them in. The Polaris
+      # credentials are minted per bring-up, so they cannot be written into compose.
+      # That is also why the entrypoint is sh -c: a shell is needed to expand this
+      # variable into command-line arguments.
       ICEBERG_OPTS: "${ICEBERG_OPTS_1:-}"
       NEORUNBASE_MASTER_KEY: "${NEORUNBASE_MASTER_KEY:-NeorunBaseMasterKey120030300312345}"
       JAVA_OPTS: "-Xms256m -Xmx768m -XX:+UseG1GC -XX:MaxMetaspaceSize=256m"
@@ -659,11 +667,12 @@ services:
       # Arrow allocates off-heap. The heap cap is deliberately below what the
       # worker could use so the batch pipeline stays in direct memory, where
       # embed_passage() hands its FixedSizeList straight to the vector.
-      # 워커가 마스터보다 큽니다. 이 스택에서 워커 하나가 동시에 지는 짐이
-      # 그만큼입니다 — CDC 5 + 그래프 2 + 결재 1, 여덟 개의 스트리밍 잡이 상주한
-      # 상태에서 임베딩 배치가 청크 800여 개를 Arrow 배치로 밀어 넣습니다.
-      # 1280m 에서는 색인 도중 워커가 죽었고, 그때 나오는 말은 메모리가 아니라
-      # "Worker … failed and retry exhausted: null" 이라 원인을 가리키지 않습니다.
+      # The worker gets more than the master, because of how much one worker
+      # carries at once here: eight streaming jobs resident (5 CDC + 2 graph +
+      # 1 approval) while the embedding batch pushes 800-odd chunks through as
+      # Arrow batches. At 1280m the worker died mid-index, and what it says when
+      # it goes is "Worker … failed and retry exhausted: null" — which points at
+      # nothing.
       JAVA_OPTS: "-Xms768m -Xmx2560m -XX:+UseG1GC -XX:MaxMetaspaceSize=384m -XX:MaxDirectMemorySize=1024m"
     depends_on:
       # service_started, not service_healthy — this saves a minute, it does not
@@ -691,19 +700,22 @@ volumes:
 **`demo/infra/compose/kiok.yml`**
 
 ```yaml
-# kiok — 파이프라인의 스케줄러.
+# kiok — the pipeline's scheduler.
 #
-# 지금까지 단계 사이의 의존 순서는 infra/index.sh 라는 셸 스크립트에만 있었습니다.
-# 그건 한 번 돌리기에는 충분하지만 파이프라인이라고 부르기는 어렵습니다 — 어느
-# 단계가 어디서 실패했는지, 무엇을 다시 돌려야 하는지, 어제 것과 오늘 것이 어떻게
-# 달랐는지가 아무 데도 남지 않습니다. DAG 로 옮기면 그게 전부 데이터가 됩니다.
+# Until this existed, the dependency order between stages lived only inside a
+# shell script (infra/index.sh). That is enough to run once but hard to call a
+# pipeline: which stage failed and where, what needs re-running, how yesterday's
+# run differed from today's — none of it is recorded anywhere. Moving to a DAG
+# turns all of that into data.
 #
-# ZooKeeper 는 새로 띄우지 않고 ontul 것을 씁니다. chroot 로 갈라두면 같은 앙상블을
-# 쓰면서 서로의 노드를 보지 않고, 이 데모에서 컨테이너 하나는 200MB 입니다.
+# ZooKeeper is not started again; kiok shares Ontul's under a chroot. Splitting
+# by chroot means the same ensemble is used without either seeing the other's
+# nodes, and a container costs about 200 MB here.
 #
-# 힙을 256m 까지 내린 이유도 같습니다. 이 DAG 는 태스크가 대여섯 개이고 무거운 일은
-# 전부 ontul 워커가 합니다 — kiok 은 순서를 지키고 결과를 기록할 뿐이라 데이터를
-# 들고 있지 않습니다. 동시 태스크가 적으니 G1 보다 Serial 이 상주 비용이 낮습니다.
+# The heap is down at 256m for the same reason. This DAG has half a dozen tasks
+# and every heavy thing happens on an Ontul worker — kiok keeps the order and
+# records the results, so it holds no data. With few concurrent tasks, Serial
+# costs less resident memory than G1.
 services:
   kiok-master:
     build:
@@ -852,8 +864,9 @@ services:
       interval: 10s
       retries: 30
 
-  # ── 전자결재. Authoritative for effective dates — the approval, not the
-  #    document's 부칙, is what makes a regulation binding — and the CDC source
+  # ── The approval system. Authoritative for effective dates — the approval, not
+  #    the date the document prints, is what makes a regulation binding — and the
+  #    CDC source
   #    Flow reacts to when an approval completes ─────────────────────────────
   mysql-groupware:
     image: mysql:8.0
@@ -1109,7 +1122,7 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 **`demo/infra/mock-saas/app.py`**
 
 ```python
-"""교육 이수 SaaS — a source with an API and no database.
+"""The training-records SaaS — a source with an API and no database.
 
 Reached through Ontul's rest-operation connector, so the demo shows that a
 system which never exposes a DB still joins with the rest. The payload is the
@@ -1193,10 +1206,11 @@ def outstanding(course_id: str) -> dict:
 ## belongs to ShannonStore's compose, so everything else joins as external and
 ## must follow it.
 ##
-## 이 스크립트는 소스 저장소를 하나도 참조하지 않습니다. 네 제품은 전부
-## infra/dist/fetch.sh 가 받아 둔 릴리스 tarball 로 이미지를 빌드합니다 —
-## 공식 Docker 이미지는 발행되지 않기 때문에, 배포본을 받아 각자 굽는 것이
-## 유일한 설치 경로이고, 이 데모를 따라 하는 쪽에도 그것만 있으면 됩니다.
+## This script references no source repository. All four products are built into
+## images from the release tarballs infra/dist/fetch.sh downloaded — no official
+## Docker images are published, so fetching the distribution and building it
+## yourself is the only install path, and it is all anyone following this demo
+## needs.
 ##
 set -euo pipefail
 
@@ -1224,11 +1238,11 @@ log()  { printf '\n\033[1m=== %s ===\033[0m\n' "$*"; }
 step() { printf '  %s\n' "$*"; }
 fail() { printf '\033[31mFAIL: %s\033[0m\n' "$*" >&2; exit 1; }
 
-# 배포본이 없으면 여기서 멈추는 편이 낫습니다. 없는 채로 진행하면 docker build 가
-# COPY 에서 "not found" 로 죽는데, 그 메시지는 Docker 문제처럼 읽힙니다.
+# Better to stop here than without them. Carry on and docker build dies at the
+# COPY with "not found", which reads like a Docker problem.
 for n in shannonstore neorunbase ontul kiok; do
   [ -s "$DIST/$n-$COMPONENT_VERSION.tar.gz" ] || \
-    fail "$n-$COMPONENT_VERSION.tar.gz 없음 — 'bash infra/dist/fetch.sh' 를 먼저 실행하십시오"
+    fail "$n-$COMPONENT_VERSION.tar.gz is missing — run 'bash infra/dist/fetch.sh' first"
 done
 [ -f "$DEMO/out/sql/erp_postgres.sql" ] || fail "corpus not generated — run 'make seed' first"
 
@@ -1399,7 +1413,8 @@ PGPASSWORD="$NB_PASSWORD" psql -h localhost -p "$NB_PG_PORT" -U admin -d neorunb
   || fail "neorunbase rotated its password but still refuses the wire protocol"
 step "postgres wire accepts connections"
 
-# ── 5. The sources: the embedding model, ERP, 전자결재, the SaaS with no database.
+# ── 5. The sources: the embedding model, ERP, the approval system, and the SaaS
+#       with no database of its own.
 log "5/7  Sources (embed-svc, ERP, groupware, LMS)"
 S3_ACCESS_KEY="$ACCESS_KEY" S3_SECRET_KEY="$SECRET_KEY" \
   docker compose -p regdemo --project-directory "$DEMO" -f "$DEMO/docker-compose.yml" up -d --build \
@@ -1423,20 +1438,20 @@ for i in $(seq 1 90); do
 done
 step "master ready on :8080"
 
-# ── 7. kiok. 파이프라인의 스케줄러입니다.
+# ── 7. kiok, the pipeline's scheduler.
 #
-# ZooKeeper 는 새로 띄우지 않고 Ontul 것을 chroot(/kiok) 로 갈라 씁니다. 그래서
-# Ontul 다음입니다. 이 DAG 는 태스크가 예닐곱 개이고 무거운 일은 전부 Ontul
-# 워커가 하기 때문에 kiok 은 순서를 지키고 결과를 기록할 뿐이고, 힙 256m 이면
-# 충분합니다.
+# It shares Ontul's ZooKeeper under a chroot (/kiok) rather than starting one, so
+# it comes after Ontul. This DAG has half a dozen tasks and every heavy thing
+# happens on an Ontul worker — kiok keeps the order and records the results, so
+# 256m of heap is plenty.
 log "7/7  kiok (master + worker)"
-# chroot 는 미리 있어야 합니다. Curator 는 접속 문자열에 붙은 chroot 자체는
-# 만들어 주지 않기 때문에, 없으면 마스터가 "NoNode for /kiok" 로 기동하다 죽습니다.
-# ZooKeeper 문제처럼 읽히지만 실제로는 아직 아무도 만들지 않았다는 뜻입니다.
+# The chroot has to exist first. Curator does not create the chroot named in a
+# connect string, so without it the master dies on startup with "NoNode for
+# /kiok" — which reads as a ZooKeeper problem and only means nobody made it yet.
 docker exec regdemo-ontul-zk \
   bash -c 'echo "create /kiok \"\"" | /apache-zookeeper-*-bin/bin/zkCli.sh -server localhost:2181' \
   > /dev/null 2>&1 || true
-step "ZooKeeper chroot /kiok 준비"
+step "ZooKeeper chroot /kiok ready"
 docker compose -p regdemo-kiok --project-directory "$OVR" -f "$OVR/kiok.yml" up -d --build \
   > /tmp/regdemo-kiok.log 2>&1 || { tail -30 /tmp/regdemo-kiok.log; fail "kiok up (see /tmp/regdemo-kiok.log)"; }
 for i in $(seq 1 90); do
@@ -1496,9 +1511,9 @@ cat <<SUMEOF
   ShannonStore S3   http://localhost:28000
   NeorunBase        psql -h localhost -p ${NB_PG_PORT} -U admin -d neorunbase
   Embedding         http://localhost:8100   $FP
-  ERP / 전자결재     :55432 / :33306
+  ERP / approvals   :55432 / :33306
   LMS               http://localhost:8200
-  kiok (스케줄러)    http://localhost:18081
+  kiok (scheduler)  http://localhost:18081
 
   Resolved endpoints written to out/stack.env
   Next:  bash infra/register.sh   (catalogs, connections, schema, IAM)
