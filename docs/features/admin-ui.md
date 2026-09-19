@@ -20,6 +20,18 @@ as the window is open. See [Cluster Maintenance Mode](cluster-maintenance.md).
 
 Built-in SQL editor with syntax highlighting, `Ctrl+Enter` execution, result table, and query history.
 
+### Catalog Browser
+
+Point-and-click walk through a catalog: **Catalogs → Schemas → Tables**, then the selected table's
+column list and a sample of up to 100 rows. It is the counterpart to typing `SHOW SCHEMAS`,
+`SHOW TABLES`, `DESCRIBE` and `SELECT` by hand — for the times you do not yet know what to type.
+
+It drives the same query endpoint the SQL Query page does, because catalog metadata is answered by
+the query engine; there is no separate introspection API, and adding one would give two code paths
+that could disagree about what a table looks like. A statement that fails is shown with the
+statement that failed rather than leaving an empty pane. A table that describes but will not read —
+permissions, a broken storage path — keeps its column list and reports only the preview as failed.
+
 ### Catalogs
 
 Register, unregister, and manage data source catalogs. View connector type, connection ID, table count, and configuration for each catalog.
