@@ -2538,6 +2538,15 @@ Master while leaving reads, settings and job control available; a banner stays o
 as the window is open. See <a href="../cluster-maintenance/">Cluster Maintenance Mode</a>.</p>
 <h3 id="sql-query">SQL Query</h3>
 <p>Built-in SQL editor with syntax highlighting, <code>Ctrl+Enter</code> execution, result table, and query history.</p>
+<h3 id="catalog-browser">Catalog Browser</h3>
+<p>Point-and-click walk through a catalog: <strong>Catalogs → Schemas → Tables</strong>, then the selected table's
+column list and a sample of up to 100 rows. It is the counterpart to typing <code>SHOW SCHEMAS</code>,
+<code>SHOW TABLES</code>, <code>DESCRIBE</code> and <code>SELECT</code> by hand — for the times you do not yet know what to type.</p>
+<p>It drives the same query endpoint the SQL Query page does, because catalog metadata is answered by
+the query engine; there is no separate introspection API, and adding one would give two code paths
+that could disagree about what a table looks like. A statement that fails is shown with the
+statement that failed rather than leaving an empty pane. A table that describes but will not read —
+permissions, a broken storage path — keeps its column list and reports only the preview as failed.</p>
 <h3 id="catalogs">Catalogs</h3>
 <p>Register, unregister, and manage data source catalogs. View connector type, connection ID, table count, and configuration for each catalog.</p>
 <h3 id="connections">Connections</h3>
