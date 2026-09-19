@@ -1072,7 +1072,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> int:
     host = os.environ.get("HOST", "127.0.0.1")
-    port = int(os.environ.get("PORT", "8900"))
+    port = int(os.environ.get("PORT", os.environ.get("AGENT_WEB_PORT", "8900")))
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print("ANTHROPIC_API_KEY is not set — the page will load and every "
               "question will fail.", file=sys.stderr)

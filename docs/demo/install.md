@@ -357,7 +357,7 @@ services:
       SHANNONSTORE_API_S3_EC_PARITY_SHARDS: "1"
       JAVA_OPTS: "-Xms256m -Xmx640m -XX:+UseG1GC -XX:MaxMetaspaceSize=192m"
     ports:
-      - "28000:8080"
+      - "${S3_PORT:-28000}:8080"
     depends_on:
       zookeeper: { condition: service_healthy }
       data-1: { condition: service_started }
@@ -627,7 +627,7 @@ services:
       ONTUL_MASTER_KEY: "regdemo-ontul-master-key-32chars"
       JAVA_OPTS: "-Xms512m -Xmx1280m -XX:+UseG1GC -XX:MaxMetaspaceSize=256m"
     ports:
-      - "8080:8080"     # Admin UI + REST
+      - "${ONTUL_PORT:-8080}:8080"     # Admin UI + REST
       - "47470:47470"   # Arrow Flight SQL
     depends_on:
       ontul-zookeeper:
@@ -725,7 +725,7 @@ services:
     image: regdemo/kiok:${COMPONENT_VERSION:-1.0.0}
     container_name: regdemo-kiok-master
     hostname: kiok-master
-    ports: ["18081:8080"]
+    ports: ["${KIOK_PORT:-18081}:8080"]
     environment:
       KIOK_ROLE: master
       KIOK_MASTER_KEY: regdemo-kiok-master-key-32-chars
@@ -818,7 +818,7 @@ services:
       args:
         EMBED_MODEL_ID: ${EMBED_MODEL_ID:-intfloat/multilingual-e5-base}
     container_name: regdemo-embed-svc
-    ports: ["8100:8000"]
+    ports: ["${EMBED_PORT:-8100}:8000"]
     environment:
       EMBED_DIM: "768"
       EMBED_DEVICE: cpu
@@ -839,7 +839,7 @@ services:
     container_name: regdemo-erp
     # 55432, not 5434 — NeorunBase's coordinator serves the PostgreSQL wire
     # protocol on 5434 and would win the bind race silently.
-    ports: ["55432:5432"]
+    ports: ["${ERP_PG_PORT:-55432}:5432"]
     environment:
       POSTGRES_DB: erp
       POSTGRES_USER: erp
@@ -871,7 +871,7 @@ services:
   mysql-groupware:
     image: mysql:8.0
     container_name: regdemo-groupware
-    ports: ["33306:3306"]
+    ports: ["${GROUPWARE_MYSQL_PORT:-33306}:3306"]
     # Row-image binlog for CDC. The buffer pool is cut well below the default
     # because this database holds 122 approval rows, not a workload; the memory
     # is worth more to the JVMs sharing this machine.
@@ -900,7 +900,7 @@ services:
   mock-saas:
     build: ./infra/mock-saas
     container_name: regdemo-lms
-    ports: ["8200:8000"]
+    ports: ["${LMS_PORT:-8200}:8000"]
     volumes: ["./out/lms.json:/app/lms.json:ro"]
     networks: [neorun-iceberg-network]
     deploy:
@@ -1191,6 +1191,93 @@ def outstanding(course_id: str) -> dict:
 
 ## 4. Bring it up
 
+Every port, version, name and initial credential the stack uses is in one
+documented file. Nothing below reads a port from anywhere else, so changing a
+value here changes it everywhere — including the compose port bindings, which
+take their host side from these names.
+
+**`demo/demo.properties`**
+
+```properties
+#
+# Regulation demo — every setting the stack reads, in one place.
+#
+# Sourced by infra/up.sh before anything starts, and every value here is
+# exported, so the pipeline jobs, the Flow scripts, the agent and the test
+# suite all see the same numbers. Each line stays overridable from the
+# environment (VAR="${VAR:-value}"), so a one-off run can override a single
+# port without editing this file:
+#
+#     ONTUL_PORT=9080 bash infra/up.sh
+#
+# Ports are host-side. Inside the compose network the components reach each
+# other by service name on their internal ports, which are not configurable
+# here because the release tarballs fix them.
+#
+
+# ── Component release ────────────────────────────────────────────────────────
+# The version of the four cloudcheflabs tarballs infra/dist/fetch.sh downloads
+# and infra/dist/Dockerfile* build into images. No official Docker images are
+# published, so this is the only install path. Changing it means re-running
+# fetch.sh — up.sh refuses to start if the matching tarballs are absent.
+COMPONENT_VERSION="${COMPONENT_VERSION:-1.0.0}"
+
+# Apache Polaris, pinned to the release chango ships and operates rather than
+# :latest. A demo that runs on a different Polaris than the product does is
+# testing a different product.
+POLARIS_IMAGE="${POLARIS_IMAGE:-apache/polaris:1.4.1}"
+
+# ── Docker topology ──────────────────────────────────────────────────────────
+# The network belongs to ShannonStore's compose project; everything else joins
+# it as external. That is why up.sh must start ShannonStore first.
+NETWORK="${NETWORK:-neorun-iceberg-network}"
+SETUP_CONTAINER="${SETUP_CONTAINER:-nrn-iceberg-setup}"
+POLARIS_NAME="${POLARIS_NAME:-regdemo-polaris}"
+
+# ── Iceberg catalog ──────────────────────────────────────────────────────────
+# Polaris holds the catalog; the warehouse path resolves inside ShannonStore's
+# S3. S3_INTERNAL is the in-network address — the host-side equivalent is
+# S3_ENDPOINT_HOST below, and the two are not interchangeable.
+CATALOG="${CATALOG:-regdemo_catalog}"
+WAREHOUSE="${WAREHOUSE:-s3://iceberg-warehouse/}"
+S3_INTERNAL="${S3_INTERNAL:-http://api-server-1:8080}"
+
+# ── Host ports ───────────────────────────────────────────────────────────────
+ONTUL_PORT="${ONTUL_PORT:-8080}"          # Ontul admin API and admin UI
+POLARIS_PORT="${POLARIS_PORT:-28181}"     # Polaris Iceberg REST catalog
+S3_PORT="${S3_PORT:-28000}"               # ShannonStore S3 API
+NB_PG_PORT="${NB_PG_PORT:-5434}"          # NeorunBase, PostgreSQL wire protocol
+NB_ADMIN_PORT="${NB_ADMIN_PORT:-8084}"    # NeorunBase admin API
+KIOK_PORT="${KIOK_PORT:-18081}"           # kiok scheduler UI and REST API
+EMBED_PORT="${EMBED_PORT:-8100}"          # embedding service (in-network, offline)
+LMS_PORT="${LMS_PORT:-8200}"              # mock training SaaS (REST source)
+ERP_PG_PORT="${ERP_PG_PORT:-55432}"       # ERP PostgreSQL, the CDC source
+GROUPWARE_MYSQL_PORT="${GROUPWARE_MYSQL_PORT:-33306}"  # approval system MySQL
+AGENT_WEB_PORT="${AGENT_WEB_PORT:-8900}"  # the agent chat window
+
+# ── Credentials ──────────────────────────────────────────────────────────────
+# The initial admin password every component boots with. up.sh rotates each one
+# immediately and writes the rotated values to out/stack.env, which is
+# gitignored — nothing in this file is a live secret.
+ADMIN_USER="${ADMIN_USER:-admin}"
+ADMIN_PW_INITIAL="${ADMIN_PW_INITIAL:-admin}"
+
+# The Anthropic API key the agent uses. Deliberately not defaulted and never
+# written to a file: export it in the shell that runs the agent.
+#   export ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-opus-5}"
+
+# NeorunBase's compose file names its host ports after the coordinator it binds,
+# so the values above are re-exported under the names that file expects rather
+# than being written twice.
+COORD1_PG_HOST_PORT="$NB_PG_PORT"
+COORD1_ADMIN_HOST_PORT="$NB_ADMIN_PORT"
+```
+
+
+ sources it, exports it, and starts the components in the only
+order that works.
+
 **`demo/infra/up.sh`**
 
 ```bash
@@ -1217,21 +1304,16 @@ set -euo pipefail
 DEMO="$(cd "$(dirname "$0")/.." && pwd)"
 OVR="$DEMO/infra/compose"
 DIST="$DEMO/infra/dist"
-COMPONENT_VERSION="${COMPONENT_VERSION:-1.0.0}"
-export COMPONENT_VERSION
+# Every port, name, version and credential the stack uses lives in one
+# documented file. Sourced rather than parsed so a value can still be
+# overridden from the environment for a single run.
+# shellcheck source=../demo.properties
+. "$DEMO/demo.properties"
+export COMPONENT_VERSION POLARIS_IMAGE CATALOG WAREHOUSE
+export ONTUL_PORT POLARIS_PORT S3_PORT NB_PG_PORT NB_ADMIN_PORT KIOK_PORT
+export EMBED_PORT LMS_PORT ERP_PG_PORT GROUPWARE_MYSQL_PORT AGENT_WEB_PORT
+export COORD1_PG_HOST_PORT COORD1_ADMIN_HOST_PORT ADMIN_USER ADMIN_PW_INITIAL ANTHROPIC_MODEL
 
-NETWORK=neorun-iceberg-network
-SETUP_CONTAINER=nrn-iceberg-setup
-POLARIS_NAME=regdemo-polaris
-# Pinned to what chango ships and operates, not :latest. A demo that runs on a
-# different Polaris than the product does is testing a different product.
-POLARIS_IMAGE="${POLARIS_IMAGE:-apache/polaris:1.4.1}"
-POLARIS_PORT=28181
-CATALOG="${CATALOG:-regdemo_catalog}"
-WAREHOUSE=s3://iceberg-warehouse/
-S3_INTERNAL=http://api-server-1:8080
-NB_PG_PORT=5434
-NB_ADMIN_PORT=8084
 STACK_ENV="$DEMO/out/stack.env"
 
 log()  { printf '\n\033[1m=== %s ===\033[0m\n' "$*"; }
@@ -1420,11 +1502,11 @@ S3_ACCESS_KEY="$ACCESS_KEY" S3_SECRET_KEY="$SECRET_KEY" \
   docker compose -p regdemo --project-directory "$DEMO" -f "$DEMO/docker-compose.yml" up -d --build \
   > /tmp/regdemo-src.log 2>&1 || { tail -30 /tmp/regdemo-src.log; fail "sources up (see /tmp/regdemo-src.log)"; }
 for i in $(seq 1 120); do
-  curl -sf http://localhost:8100/health 2>/dev/null | grep -q '"ready": *true' && break
+  curl -sf http://localhost:$EMBED_PORT/health 2>/dev/null | grep -q '"ready": *true' && break
   [ "$i" = 120 ] && { docker logs --tail 30 regdemo-embed-svc 2>&1; fail "embed-svc never became ready"; }
   sleep 2
 done
-FP=$(curl -sf http://localhost:8100/fingerprint | python3 -c "import sys,json;print(json.load(sys.stdin)['fingerprint'])")
+FP=$(curl -sf http://localhost:$EMBED_PORT/fingerprint | python3 -c "import sys,json;print(json.load(sys.stdin)['fingerprint'])")
 step "embedding model: $FP"
 
 # ── 6. Ontul. Last, because it reads the catalog and the sources at boot.
@@ -1432,7 +1514,7 @@ log "6/7  Ontul (master 1 + worker 1)"
 docker compose -p regdemo-ontul --project-directory "$OVR" -f "$OVR/ontul.yml" up -d --build \
   > /tmp/regdemo-ontul.log 2>&1 || { tail -30 /tmp/regdemo-ontul.log; fail "ontul up (see /tmp/regdemo-ontul.log)"; }
 for i in $(seq 1 90); do
-  curl -sf http://localhost:8080/admin/ready >/dev/null 2>&1 && break
+  curl -sf http://localhost:$ONTUL_PORT/admin/ready >/dev/null 2>&1 && break
   [ "$i" = 90 ] && { docker logs --tail 40 regdemo-ontul-master-1 2>&1 | tail -40; fail "ontul master never became ready"; }
   sleep 2
 done
@@ -1455,18 +1537,18 @@ step "ZooKeeper chroot /kiok ready"
 docker compose -p regdemo-kiok --project-directory "$OVR" -f "$OVR/kiok.yml" up -d --build \
   > /tmp/regdemo-kiok.log 2>&1 || { tail -30 /tmp/regdemo-kiok.log; fail "kiok up (see /tmp/regdemo-kiok.log)"; }
 for i in $(seq 1 90); do
-  curl -sf http://localhost:18081/healthz >/dev/null 2>&1 && break
+  curl -sf http://localhost:$KIOK_PORT/healthz >/dev/null 2>&1 && break
   [ "$i" = 90 ] && { docker logs --tail 40 regdemo-kiok-master 2>&1 | tail -40; fail "kiok master never became ready"; }
   sleep 2
 done
-step "kiok ready on :18081"
+step "kiok ready on :$KIOK_PORT"
 
 # ── Hand the resolved stack to everything downstream, so no script re-derives it.
 mkdir -p "$(dirname "$STACK_ENV")"
 cat > "$STACK_ENV" <<ENVEOF
 # Written by infra/up.sh. Credentials are minted per bring-up — do not commit.
 export S3_ENDPOINT_INTERNAL=$S3_INTERNAL
-export S3_ENDPOINT_HOST=http://localhost:28000
+export S3_ENDPOINT_HOST=http://localhost:$S3_PORT
 export S3_ACCESS_KEY=$ACCESS_KEY
 export S3_SECRET_KEY=$SECRET_KEY
 export S3_REGION=us-east-1
@@ -1484,9 +1566,9 @@ export NEORUNBASE_PG=postgresql://admin@localhost:${NB_PG_PORT}/neorunbase
 export NEORUNBASE_ADMIN=http://localhost:${NB_ADMIN_PORT}
 export NEORUNBASE_PASSWORD=$NB_PASSWORD
 export NEORUNBASE_INTERNAL_HOST=neorun-coordinator-1
-export ONTUL_URL=http://localhost:8080
+export ONTUL_URL=http://localhost:$ONTUL_PORT
 export EMBED_URL_INTERNAL=http://embed-svc:8000
-export EMBED_URL_HOST=http://localhost:8100
+export EMBED_URL_HOST=http://localhost:$EMBED_PORT
 export EMBED_FINGERPRINT=$FP
 # Split out so a job can record the generation's identity field by field. The
 # fingerprint is the authority; these are its parts, taken from the same string
@@ -1499,21 +1581,21 @@ export EMBED_DIM=$(printf '%s' "$FP" | cut -d: -f2)
 # compose defaults. They are the compose defaults unless overridden there.
 export ERP_PASSWORD=${ERP_PASSWORD:-regdemo}
 export GW_PASSWORD=${GW_PASSWORD:-regdemo}
-export ERP_PG=postgresql://erp@localhost:55432/erp
-export GROUPWARE_MYSQL=mysql://gw@localhost:33306/groupware
-export LMS_URL=http://localhost:8200
+export ERP_PG=postgresql://erp@localhost:$ERP_PG_PORT/erp
+export GROUPWARE_MYSQL=mysql://gw@localhost:$GROUPWARE_MYSQL_PORT/groupware
+export LMS_URL=http://localhost:$LMS_PORT
 ENVEOF
 
 log "Stack up"
 cat <<SUMEOF
-  Ontul Admin UI    http://localhost:8080
+  Ontul Admin UI    http://localhost:$ONTUL_PORT
   Polaris           http://localhost:${POLARIS_PORT}
-  ShannonStore S3   http://localhost:28000
+  ShannonStore S3   http://localhost:$S3_PORT
   NeorunBase        psql -h localhost -p ${NB_PG_PORT} -U admin -d neorunbase
-  Embedding         http://localhost:8100   $FP
-  ERP / approvals   :55432 / :33306
-  LMS               http://localhost:8200
-  kiok (scheduler)  http://localhost:18081
+  Embedding         http://localhost:$EMBED_PORT   $FP
+  ERP / approvals   :$ERP_PG_PORT / :$GROUPWARE_MYSQL_PORT
+  LMS               http://localhost:$LMS_PORT
+  kiok (scheduler)  http://localhost:$KIOK_PORT
 
   Resolved endpoints written to out/stack.env
   Next:  bash infra/register.sh   (catalogs, connections, schema, IAM)

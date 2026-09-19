@@ -65,6 +65,7 @@ nav:
       - "Geospatial Support": features/geospatial.md
       - "High Availability": features/high-availability.md
       - "Backup & Restore": features/backup-restore.md
+      - "Cluster Maintenance Mode": features/cluster-maintenance.md
       - "NIC Silent-Fail Safety": features/nic-fail-safety.md
   - "Iceberg Integration":
       - "Overview": iceberg/integration.md

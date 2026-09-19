@@ -7,7 +7,7 @@ Ontul provides fault tolerance and high availability through multi-Master leader
 Multiple Masters can run simultaneously in a leader/follower configuration:
 
 - **Leader Election**: Apache ZooKeeper (via Curator) elects a primary Master using a leader latch. The leader owns all write operations to the state store (RocksDB).
-- **State Replication**: The leader Master replicates catalog metadata, IAM policies, KMS keys, sessions, and connection credentials to follower Masters via the internal NIO protocol.
+- **State Replication**: The leader Master replicates catalog metadata, IAM policies, KMS keys, sessions, connection credentials, and cluster settings to follower Masters via the internal NIO protocol.
 - **Automatic Failover**: If the leader Master fails, ZooKeeper elects a new leader, which reloads persisted state from RocksDB and resumes operations.
 
 Any Master accepts both reads and writes — clients never need to know which Master is the leader:
@@ -35,6 +35,18 @@ purely in memory (the health time series and the maintenance before/after log) r
 leader; anything persisted — maintenance schedules, job history retention, KMS material — is
 unaffected, since it lives in the replicated state store.
 
+
+### Cluster settings replicate the same way
+
+Anything stored as a config key in the metadata store rides the snapshot with the catalogs — including
+[maintenance mode](cluster-maintenance.md), which is why a window opened on the leader is enforced by
+every follower within a snapshot push, and why a Master restarted mid-window comes back still refusing
+writes rather than accepting them because it happened to boot.
+
+This is the general rule for the product, and the reason to reach for the metadata store rather than
+ZooKeeper when adding a setting: **ZooKeeper holds node state** — membership, leadership, readiness —
+and **settings live in RocksDB**. A setting in ZooKeeper would not survive the ensemble being rebuilt
+and would not travel with a backup.
 
 ## Load balancing (nginx)
 
