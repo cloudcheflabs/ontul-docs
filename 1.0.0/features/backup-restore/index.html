@@ -14,7 +14,7 @@
         <link rel="prev" href="../high-availability/">
       
       
-        <link rel="next" href="../nic-fail-safety/">
+        <link rel="next" href="../cluster-maintenance/">
       
       
         
@@ -1568,6 +1568,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../cluster-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cluster Maintenance Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../nic-fail-safety/" class="md-nav__link">
         
   
@@ -2716,6 +2744,20 @@
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;backupId&quot;: &quot;20260529-120000&quot;}&#39;</span>
 </code></pre></div>
 <p>The Admin UI exposes this as a <em>Restore</em> button on each entry in the <em>Available Backups</em> list, behind an explicit confirmation modal that names every store about to be overwritten.</p>
+<div class="admonition note">
+<p class="admonition-title">Restore blocks requests on its own — maintenance mode is for the work around it</p>
+<p>Phase 1 already marks the cluster not-ready for the duration, so you do <strong>not</strong> need to open a
+<a href="../cluster-maintenance/">maintenance window</a> just to run a restore.</p>
+<p>Where a window earns its keep is the time on either side: deciding <em>which</em> backup to restore,
+checking what the current state looks like, and confirming the result afterwards. Those are the
+minutes when a job or a client can still commit a write that the restore is about to discard —
+or, worse, one that lands after it. Maintenance mode closes the write path across that whole
+span while leaving reads and settings available, so you can keep inspecting.</p>
+<p>The restore itself will overwrite <code>cluster.maintenance.mode</code> along with every other config key,
+so the window ends up however the backup had it. Each Master re-reads the value after importing
+the snapshot, so they agree on whatever that turns out to be — check the banner afterwards
+rather than assuming the window you opened is still open.</p>
+</div>
 <h2 id="endpoint-reference">Endpoint reference</h2>
 <table>
 <thead>

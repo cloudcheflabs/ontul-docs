@@ -1461,6 +1461,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/cluster-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cluster Maintenance Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/nic-fail-safety/" class="md-nav__link">
         
   
@@ -2054,6 +2082,17 @@
     <span class="md-ellipsis">
       
         Iceberg Catalog (REST)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cluster-maintenance-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cluster Maintenance Mode
       
     </span>
   </a>
@@ -3421,6 +3460,25 @@
 <td><code>ontul.iceberg.default.format.version</code></td>
 <td><code>2</code></td>
 <td>Default Iceberg table format version for newly created tables. <code>2</code> = position-delete files; <code>3</code> = deletion vectors (Puffin), row lineage, variant. Opt-in: existing tables keep their own version and the library reads/writes all versions. On <code>3</code>, <code>DELETE</code>/<code>UPDATE</code>/<code>MERGE</code> write deletion vectors instead of position-delete files. See <a href="../../iceberg/integration/#format-version-3-deletion-vectors">Iceberg Integration</a>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="cluster-maintenance-mode">Cluster Maintenance Mode</h2>
+<p>Unrelated to Iceberg Maintenance below, which is table compaction and keeps running during a window.
+See <a href="../../features/cluster-maintenance/">Cluster Maintenance Mode</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.cluster.maintenance.retry.after.seconds</code></td>
+<td><code>30</code></td>
+<td>How long a client is told to wait (<code>Retry-After</code>, seconds) before retrying a write that a maintenance window refused. Set it to roughly how long a window usually lasts: too low and clients hammer a cluster that is deliberately closed, too high and they stay away well after it reopens. The window itself is a runtime switch stored in the replicated metadata store, not a property &mdash; toggle it from <strong>Cluster Topology</strong> in the Admin UI or <code>POST /admin/cluster/maintenance</code>.</td>
 </tr>
 </tbody>
 </table>

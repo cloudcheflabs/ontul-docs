@@ -1455,6 +1455,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../cluster-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cluster Maintenance Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../nic-fail-safety/" class="md-nav__link">
         
   
@@ -2502,13 +2530,14 @@
 <p>Ontul includes a built-in web-based Admin UI for monitoring, managing, and operating the cluster.</p>
 <h2 id="pages">Pages</h2>
 <h3 id="dashboard">Dashboard</h3>
-<p>Cluster overview with real-time metrics: query throughput, latency, active queries, worker status, and JVM heap usage.</p>
+<p>Cluster overview with real-time metrics: query throughput, latency, active queries, worker status, and JVM heap usage. <strong>All / Masters / Workers</strong> tabs break the same metrics down per node, which is where per-worker heap and active-task figures live.</p>
 <h3 id="topology">Topology</h3>
 <p>Visual overview of the cluster — active Masters and Workers with node status and health information.</p>
+<p>Also home to the <strong>Enter / Exit Maintenance</strong> switch. Turning it on refuses writes across every
+Master while leaving reads, settings and job control available; a banner stays on screen for as long
+as the window is open. See <a href="../cluster-maintenance/">Cluster Maintenance Mode</a>.</p>
 <h3 id="sql-query">SQL Query</h3>
 <p>Built-in SQL editor with syntax highlighting, <code>Ctrl+Enter</code> execution, result table, and query history.</p>
-<h3 id="catalog-browser">Catalog Browser</h3>
-<p>Explore registered catalogs, schemas, tables, and columns. Preview table data directly from the UI.</p>
 <h3 id="catalogs">Catalogs</h3>
 <p>Register, unregister, and manage data source catalogs. View connector type, connection ID, table count, and configuration for each catalog.</p>
 <h3 id="connections">Connections</h3>
@@ -2575,10 +2604,16 @@ worker, so a new driver does not require rebuilding an image.</p>
 <p>Manage users, groups, and policies. Includes a visual policy editor for creating structured IAM policies with column-level and row-level security rules.</p>
 <h3 id="kms">KMS</h3>
 <p>Key management interface for viewing and managing encryption keys.</p>
+<h3 id="iceberg-health">Iceberg Health</h3>
+<p>Continuous table-health collection for every registered Iceberg table: small-file counts, snapshot
+and manifest growth, delete-file accumulation, and the findings derived from them (<code>NO_MAINTENANCE</code>,
+<code>STALE_MAINTENANCE</code>, <code>MAINTENANCE_ERRORS</code> and friends). Includes a time series per table so you can
+see whether a problem is growing, and an effects view that shows what the last maintenance run
+actually changed. Collection runs on the leader only — see
+<a href="../high-availability/#leader-only-background-services">High Availability</a> for why, and how to
+aggregate the matching Prometheus gauges without double-counting across a failover.</p>
 <h3 id="maintenance">Maintenance</h3>
 <p>Configure and monitor Iceberg table maintenance — snapshot expiration, data compaction, manifest rewrite, orphan-file cleanup, and position-delete consolidation. Per-table configuration covers per-operation toggles plus Spark-aligned parameters (target file size, compaction <code>window_hours</code> and <code>min_input_files</code>, snapshot retention and <code>retain_last</code>, orphan safety window) and a <strong>schedule</strong> that is either a fixed interval or a 5-field UNIX <strong>cron</strong> (e.g. <code>0 */2 * * *</code>) which overrides the interval. A <strong>Manual Trigger</strong> runs any single operation (or all) on demand against a wildcard table pattern, with full job history.</p>
-<h3 id="worker-dashboard">Worker Dashboard</h3>
-<p>Per-worker metrics with auto-refresh: heap usage, active tasks, and performance indicators.</p>
 <h3 id="backup-restore">Backup &amp; Restore</h3>
 <p>Backup the cluster's KMS / IAM / metadata stores to S3 and restore from any prior backup. The page exposes manual <em>Backup Now</em>, a fixed-interval schedule, and a 5-field UNIX <strong>cron schedule</strong> (e.g. <code>0 2 * * *</code>); the next-fire timestamp is shown next to an active cron so you can see at a glance when the next run will land. See <a href="../backup-restore/">Backup &amp; Restore</a> for the full flow.</p>
 <h2 id="rest-api">REST API</h2>

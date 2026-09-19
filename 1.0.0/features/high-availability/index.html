@@ -1492,6 +1492,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#cluster-settings-replicate-the-same-way" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cluster settings replicate the same way
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1615,6 +1626,34 @@
     
   
     Backup & Restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cluster-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cluster Maintenance Mode
   
 
     
@@ -2684,7 +2723,7 @@
 <p>Multiple Masters can run simultaneously in a leader/follower configuration:</p>
 <ul>
 <li><strong>Leader Election</strong>: Apache ZooKeeper (via Curator) elects a primary Master using a leader latch. The leader owns all write operations to the state store (RocksDB).</li>
-<li><strong>State Replication</strong>: The leader Master replicates catalog metadata, IAM policies, KMS keys, sessions, and connection credentials to follower Masters via the internal NIO protocol.</li>
+<li><strong>State Replication</strong>: The leader Master replicates catalog metadata, IAM policies, KMS keys, sessions, connection credentials, and cluster settings to follower Masters via the internal NIO protocol.</li>
 <li><strong>Automatic Failover</strong>: If the leader Master fails, ZooKeeper elects a new leader, which reloads persisted state from RocksDB and resumes operations.</li>
 </ul>
 <p>Any Master accepts both reads and writes — clients never need to know which Master is the leader:</p>
@@ -2728,6 +2767,15 @@ with <code>max by (table) (…)</code> so a failover does not double-count. Seco
 purely in memory (the health time series and the maintenance before/after log) restarts with the new
 leader; anything persisted — maintenance schedules, job history retention, KMS material — is
 unaffected, since it lives in the replicated state store.</p>
+<h3 id="cluster-settings-replicate-the-same-way">Cluster settings replicate the same way</h3>
+<p>Anything stored as a config key in the metadata store rides the snapshot with the catalogs — including
+<a href="../cluster-maintenance/">maintenance mode</a>, which is why a window opened on the leader is enforced by
+every follower within a snapshot push, and why a Master restarted mid-window comes back still refusing
+writes rather than accepting them because it happened to boot.</p>
+<p>This is the general rule for the product, and the reason to reach for the metadata store rather than
+ZooKeeper when adding a setting: <strong>ZooKeeper holds node state</strong> — membership, leadership, readiness —
+and <strong>settings live in RocksDB</strong>. A setting in ZooKeeper would not survive the ensemble being rebuilt
+and would not travel with a backup.</p>
 <h2 id="load-balancing-nginx">Load balancing (nginx)</h2>
 <p>A stock nginx in front of the Masters is all the HA "router" Ontul needs — there is no bespoke query gateway, no cluster-health routing logic, no per-query queue management, and no leader awareness in the proxy. The single rule: <strong>the Flight SQL upstream must be sticky.</strong></p>
 <h3 id="why-flight-sql-needs-session-affinity">Why Flight SQL needs session affinity</h3>
