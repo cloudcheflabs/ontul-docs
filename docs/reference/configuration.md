@@ -159,6 +159,15 @@ Server-wide defaults for Iceberg REST catalogs. Every value is a **default**: a 
 | `ontul.iceberg.rest.credential.vending.bypass` | `true` | Suppress catalog-vended S3 credentials (Polaris STS-subscoped tokens / Glue Lake Formation) so Ontul reads and writes S3 directly with the configured static keys, keeping Ontul IAM the authoritative access boundary. Leave `true` (the only tested path; S3-compatible servers reject the STS temp keys Polaris would otherwise vend). |
 | `ontul.iceberg.default.format.version` | `2` | Default Iceberg table format version for newly created tables. `2` = position-delete files; `3` = deletion vectors (Puffin), row lineage, variant. Opt-in: existing tables keep their own version and the library reads/writes all versions. On `3`, `DELETE`/`UPDATE`/`MERGE` write deletion vectors instead of position-delete files. See [Iceberg Integration](../iceberg/integration.md#format-version-3-deletion-vectors). |
 
+## Cluster Maintenance Mode
+
+Unrelated to Iceberg Maintenance below, which is table compaction and keeps running during a window.
+See [Cluster Maintenance Mode](../features/cluster-maintenance.md).
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.cluster.maintenance.retry.after.seconds` | `30` | How long a client is told to wait (`Retry-After`, seconds) before retrying a write that a maintenance window refused. Set it to roughly how long a window usually lasts: too low and clients hammer a cluster that is deliberately closed, too high and they stay away well after it reopens. The window itself is a runtime switch stored in the replicated metadata store, not a property &mdash; toggle it from **Cluster Topology** in the Admin UI or `POST /admin/cluster/maintenance`. |
+
 ## Iceberg Maintenance
 
 | Property | Default | Description |

@@ -6,19 +6,19 @@ Ontul includes a built-in web-based Admin UI for monitoring, managing, and opera
 
 ### Dashboard
 
-Cluster overview with real-time metrics: query throughput, latency, active queries, worker status, and JVM heap usage.
+Cluster overview with real-time metrics: query throughput, latency, active queries, worker status, and JVM heap usage. **All / Masters / Workers** tabs break the same metrics down per node, which is where per-worker heap and active-task figures live.
 
 ### Topology
 
 Visual overview of the cluster — active Masters and Workers with node status and health information.
 
+Also home to the **Enter / Exit Maintenance** switch. Turning it on refuses writes across every
+Master while leaving reads, settings and job control available; a banner stays on screen for as long
+as the window is open. See [Cluster Maintenance Mode](cluster-maintenance.md).
+
 ### SQL Query
 
 Built-in SQL editor with syntax highlighting, `Ctrl+Enter` execution, result table, and query history.
-
-### Catalog Browser
-
-Explore registered catalogs, schemas, tables, and columns. Preview table data directly from the UI.
 
 ### Catalogs
 
@@ -122,13 +122,19 @@ Manage users, groups, and policies. Includes a visual policy editor for creating
 
 Key management interface for viewing and managing encryption keys.
 
+### Iceberg Health
+
+Continuous table-health collection for every registered Iceberg table: small-file counts, snapshot
+and manifest growth, delete-file accumulation, and the findings derived from them (`NO_MAINTENANCE`,
+`STALE_MAINTENANCE`, `MAINTENANCE_ERRORS` and friends). Includes a time series per table so you can
+see whether a problem is growing, and an effects view that shows what the last maintenance run
+actually changed. Collection runs on the leader only — see
+[High Availability](high-availability.md#leader-only-background-services) for why, and how to
+aggregate the matching Prometheus gauges without double-counting across a failover.
+
 ### Maintenance
 
 Configure and monitor Iceberg table maintenance — snapshot expiration, data compaction, manifest rewrite, orphan-file cleanup, and position-delete consolidation. Per-table configuration covers per-operation toggles plus Spark-aligned parameters (target file size, compaction `window_hours` and `min_input_files`, snapshot retention and `retain_last`, orphan safety window) and a **schedule** that is either a fixed interval or a 5-field UNIX **cron** (e.g. `0 */2 * * *`) which overrides the interval. A **Manual Trigger** runs any single operation (or all) on demand against a wildcard table pattern, with full job history.
-
-### Worker Dashboard
-
-Per-worker metrics with auto-refresh: heap usage, active tasks, and performance indicators.
 
 ### Backup & Restore
 

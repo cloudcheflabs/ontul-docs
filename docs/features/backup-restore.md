@@ -115,6 +115,21 @@ curl -X POST http://localhost:8080/admin/backup/restore \
 
 The Admin UI exposes this as a *Restore* button on each entry in the *Available Backups* list, behind an explicit confirmation modal that names every store about to be overwritten.
 
+!!! note "Restore blocks requests on its own — maintenance mode is for the work around it"
+    Phase 1 already marks the cluster not-ready for the duration, so you do **not** need to open a
+    [maintenance window](cluster-maintenance.md) just to run a restore.
+
+    Where a window earns its keep is the time on either side: deciding *which* backup to restore,
+    checking what the current state looks like, and confirming the result afterwards. Those are the
+    minutes when a job or a client can still commit a write that the restore is about to discard —
+    or, worse, one that lands after it. Maintenance mode closes the write path across that whole
+    span while leaving reads and settings available, so you can keep inspecting.
+
+    The restore itself will overwrite `cluster.maintenance.mode` along with every other config key,
+    so the window ends up however the backup had it. Each Master re-reads the value after importing
+    the snapshot, so they agree on whatever that turns out to be — check the banner afterwards
+    rather than assuming the window you opened is still open.
+
 ## Endpoint reference
 
 | Method | Path | Body | Purpose |
