@@ -1259,6 +1259,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../sso/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Sign-On (OIDC/SAML/LDAP)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../admin-password-recovery/" class="md-nav__link">
         
   
@@ -2611,6 +2639,18 @@ worker, so a new driver does not require rebuilding an image.</p>
 <p>Monitor active and completed jobs. Submit new batch or streaming jobs, view real-time logs, and kill running jobs.</p>
 <h3 id="iam">IAM</h3>
 <p>Manage users, groups, and policies. Includes a visual policy editor for creating structured IAM policies with column-level and row-level security rules.</p>
+<h3 id="single-sign-on">Single Sign-On</h3>
+<p>Configure OIDC, SAML 2.0 and LDAP / Active Directory, on tabs of their own. Every value is a named
+field — nothing here asks for JSON. Secrets (OIDC client secret, LDAP bind password, SAML SP private
+key) are never read back; each shows only whether it is set, and typing replaces it.</p>
+<p>The SAML tab is an exchange of documents rather than a form: download this cluster's SP metadata for
+the provider to import, paste the provider's metadata to have the entity ID, sign-on URL and signing
+certificate read out of it, and generate an SP keypair when the provider needs encrypted assertions
+or signed requests. Each provider has a <strong>test</strong> button, so a mistake surfaces before anyone tries to
+log in with it.</p>
+<p>Settings are stored in the replicated metadata store and applied on every master with no restart.
+Changing them needs <code>AdministratorAccess</code>; everyone else sees the page read-only. See
+<a href="../sso/">Single Sign-On</a>.</p>
 <h3 id="kms">KMS</h3>
 <p>Key management interface for viewing and managing encryption keys.</p>
 <h3 id="iceberg-health">Iceberg Health</h3>

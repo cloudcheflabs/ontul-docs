@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/jdbc-drivers/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/sso/">
       
       
-        <link rel="prev" href="../connection-id/">
+        <link rel="prev" href="../iam-policy-templates/">
       
       
-        <link rel="next" href="../federation/">
+        <link rel="next" href="../admin-password-recovery/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>JDBC Drivers - Ontul</title>
+        <title>Single Sign-On (OIDC/SAML/LDAP) - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#jdbc-drivers" class="md-skip">
+        <a href="#single-sign-on-oidc-saml-ldap" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              JDBC Drivers
+              Single Sign-On (OIDC/SAML/LDAP)
             
           </span>
         </div>
@@ -903,37 +903,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    JDBC Drivers
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../jdbc-drivers/" class="md-nav__link">
         
   
   
@@ -949,70 +922,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#one-jar-per-driver-class-versions-do-not-coexist" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        One JAR per driver class — versions do not coexist
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#streamed-to-every-worker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Streamed to every worker
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#admin-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Admin API
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1358,10 +1267,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../sso/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Sign-On (OIDC/SAML/LDAP)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1377,6 +1313,159 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sso-means-two-different-things-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSO means two different things here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-decides-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What decides permissions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What decides permissions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#group-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring it
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring it">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openid-connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenID Connect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#saml-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SAML 2.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ldap-active-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LDAP / Active Directory
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#behind-a-load-balancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behind a load balancer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#revocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revocation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#password-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Password storage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2656,71 +2745,226 @@
 
 
 
-<h1 id="jdbc-drivers">JDBC Drivers</h1>
-<p>A <strong>JDBC catalog</strong> or job needs a database's JDBC driver on the classpath. Rather
-than baking every driver into the distribution, Ontul lets you <strong>upload driver
-JARs at runtime</strong> from the admin UI (<strong>Drivers</strong> page) or the admin API; each is
-loaded dynamically on the master <strong>and every worker</strong> with no restart, then made
-available on the job classpath.</p>
-<h2 id="one-jar-per-driver-class-versions-do-not-coexist">One JAR per driver class — versions do not coexist</h2>
-<p>The store is keyed by the <strong>driver class</strong> a JAR provides (discovered from the
-JAR's own <code>java.sql.Driver</code> service), not by file name. The rule is deliberate:</p>
-<ul>
-<li><strong>A given driver class exists exactly once.</strong> Two JARs cannot both provide, say,
-  <code>org.postgresql.Driver</code> — that would make the active version ambiguous on the
-  classpath the workers load.</li>
-<li><strong>Uploading a newer version replaces the old one.</strong> Upload <code>postgresql-42.7.4.jar</code>
-  when <code>postgresql-42.6.0.jar</code> is already installed (same <code>org.postgresql.Driver</code>,
-  different file name) and the older JAR is <strong>superseded</strong> — deleted and replaced —
-  so there is always a single, unambiguous driver per class. No manual cleanup, and
-  no version coexistence to reason about.</li>
-</ul>
-<p>Only classes the JAR provides through its <strong>own</strong> classloader are counted, so a
-driver already bundled on the system classpath is never mis-attributed to an
-uploaded JAR.</p>
-<h2 id="streamed-to-every-worker">Streamed to every worker</h2>
-<p>On upload the master validates and loads the JAR, then <strong>streams it to each
-worker in bounded chunks</strong> over the internal NIO channel (rather than encoding a
-large JAR into a single message). Big drivers are fine — some vendor JDBC drivers
-(Snowflake, BigQuery, Databricks) bundle dependencies and reach tens of megabytes.
-The admin HTTP body limit and the chunk size are configurable:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># ontul.properties</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="na">ontul.admin.http.max.content.size.bytes</span><span class="o">=</span><span class="s">134217728   # 128 MiB — accepts large driver JARs</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="na">ontul.driver.sync.chunk.size.bytes</span><span class="o">=</span><span class="s">4194304           # 4 MiB per master→worker chunk</span>
+<h1 id="single-sign-on-oidc-saml-ldap">Single Sign-On (OIDC, SAML, LDAP)</h1>
+<p>Ontul can hand authentication to an external identity provider, so the cluster
+stops being another place that holds passwords and becomes another thing your
+directory governs. Three providers are supported — OpenID Connect, SAML 2.0, and
+LDAP / Active Directory — and all three work on both surfaces.</p>
+<h2 id="sso-means-two-different-things-here">SSO means two different things here</h2>
+<p>This is the part most integrations get wrong, so it is worth being precise before
+any configuration.</p>
+<p><strong>The admin console is a browser.</strong> It can be redirected, so it uses the flows
+built for that: OIDC Authorization Code with PKCE, or SAML 2.0 Web Browser SSO.</p>
+<p><strong>The REST surface is not a browser and cannot redirect anywhere.</strong> An SDK, a
+script or a scheduler has nowhere to display a login page. So it posts the
+credential it already holds and receives an ordinary Ontul bearer token:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># an OIDC ID token the application already obtained</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://ontul:8080/v1/api/auth/sso<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;alice&quot;,&quot;idToken&quot;:&quot;eyJhbGciOi...&quot;}&#39;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># or a base64 SAML assertion</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://ontul:8080/v1/api/auth/sso<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;alice&quot;,&quot;samlResponse&quot;:&quot;PHNhbWxwOl...&quot;}&#39;</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># or directory credentials, which is the simplest case of all</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://ontul:8080/v1/api/auth/sso<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;alice&quot;,&quot;password&quot;:&quot;&lt;directory password&gt;&quot;}&#39;</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># → {&quot;accessToken&quot;:&quot;...&quot;,&quot;username&quot;:&quot;alice&quot;,&quot;federated&quot;:true,&quot;idp&quot;:&quot;OIDC&quot;,&quot;groups&quot;:[&quot;analysts&quot;]}</span>
 </code></pre></div>
-<p>The PostgreSQL driver ships with the distribution; upload others (MySQL, Oracle,
-SQL Server, ClickHouse, …) as needed. A JDBC catalog then names the driver class
-in its <code>driver</code> field, or references it through a registered
-<a href="../connection-id/">Connection ID</a>.</p>
-<h2 id="admin-api">Admin API</h2>
+<p>That is the same token <code>POST /v1/api/auth/accesskey</code> returns, so <strong>nothing
+downstream changes</strong> — the SDK, the JDBC driver over Arrow Flight SQL, the MCP
+server and every <code>/v1/api/*</code> endpoint accept it as they always did.</p>
+<p>Directory credentials also work on the ordinary console login form. An operator
+whose account lives in LDAP or Active Directory types their normal password into
+the normal form, which is the point of supporting that provider: there is nothing
+extra to learn.</p>
+<h2 id="what-decides-permissions">What decides permissions</h2>
+<p>Nothing about the provider does. A federated identity arrives carrying group
+names; those are mapped to groups <strong>on this cluster</strong>, and the policies attached
+to those groups authorize every request.</p>
+<p>This matters more in Ontul than in a product with one plane, because of
+<code>/v1/api/authz/check</code> — the call the Trino, Spark and Flink plugins make before
+every statement. It resolves a caller <strong>by name</strong>, and it never sees a token. So a
+federated login records a short-lived session that carries its mapped groups, and
+policy resolution reads it. The consequence worth knowing:</p>
+<ul>
+<li>Every authorization path honours SSO, including column masking, column deny and
+  row filters, with no engine-side configuration.</li>
+<li><strong>No local user account is created.</strong> A federated caller has no password and
+  nothing to persist; your directory is the record. Creating an account for each
+  person who ever signed in would put them all in the IAM list and in the
+  replicated snapshot, and removing them from the directory would leave the copy
+  behind still authorizing them.</li>
+<li>A session lasts <code>ontul.sso.federated.session.seconds</code> (default 3600). After
+  that the identity resolves to nothing until they sign in again.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">A local account of the same name wins</p>
+<p>If a stored user and a federated identity share a name, the stored account's
+policies apply. Creating a local user is a deliberate act by an administrator,
+so it is the more specific statement of intent — and resolving the other way
+round would let whoever controls the directory decide what a local account
+can do.</p>
+</div>
+<h3 id="group-mapping">Group mapping</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="na">ontul.sso.group.mappings</span><span class="o">=</span><span class="s">db-admins:ontul-admins,analysts:ontul-readers</span>
+</code></pre></div>
+<p>Left empty, provider group names are used as they are — the common case where the
+directory already uses this product's group names. <strong>Once set, the mapping is
+exhaustive:</strong> a group not named in it is dropped, so creating a group at the
+provider cannot grant access here by itself.</p>
+<p>An identity whose groups all map to nothing is refused, not admitted with no
+groups. Such a session has no policies and is denied every action, so letting it
+in produces someone who is signed in and can do nothing, left to work out why
+from permission errors. Set <code>ontul.sso.allow.unmapped.groups=true</code> if you would
+rather allow it.</p>
+<p>The directory login endpoint reports that case as <strong>403</strong>, separately from a wrong
+password's 401 — otherwise an operator goes and resets a password that was right.</p>
+<h2 id="configuring-it">Configuring it</h2>
+<p>Everything below can be set in the <strong>admin console under Single Sign-On</strong>, which
+stores it in the replicated metadata store and applies it to every master — no
+file edits, no restart. The properties file is still read for anything left unset,
+so a cluster configured by file keeps working untouched.</p>
+<p>Local passwords keep working while SSO is on. Enabling it cannot lock you out.</p>
+<h3 id="openid-connect">OpenID Connect</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="na">ontul.sso.oidc.enabled</span><span class="o">=</span><span class="s">true</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="na">ontul.sso.oidc.issuer</span><span class="o">=</span><span class="s">https://keycloak.example.com/realms/company</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="na">ontul.sso.oidc.client.id</span><span class="o">=</span><span class="s">ontul-console</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="na">ontul.sso.oidc.client.secret</span><span class="o">=</span><span class="s">…</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="na">ontul.sso.oidc.redirect.uri</span><span class="o">=</span><span class="s">https://ontul.example.com/admin/auth/sso/oidc/callback</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="na">ontul.sso.oidc.groups.claim</span><span class="o">=</span><span class="s">groups</span>
+</code></pre></div>
+<p>Endpoints are read from the issuer's discovery document, so they are not
+configured individually. The ID token's signature is verified against the
+provider's published key set, and its issuer, audience and expiry are all checked
+— a token issued for a different application is refused even though it is genuine
+and correctly signed.</p>
+<div class="admonition note">
+<p class="admonition-title">The <code>groups</code> scope</p>
+<p><code>ontul.sso.oidc.scopes</code> deliberately does <strong>not</strong> include <code>groups</code>. It is not a
+standard scope, and a provider that does not define it rejects the whole
+authorization request with <code>invalid_scope</code> — so asking for it by default logs
+nobody in. Group membership comes from a claim the provider is configured to
+include. Add a scope here only if your provider documents one.</p>
+</div>
+<h3 id="saml-20">SAML 2.0</h3>
+<p>A SAML integration is an exchange of metadata, not a form-filling exercise.</p>
+<ol>
+<li><strong>Download this cluster's metadata</strong> from the console (or
+   <code>GET /admin/sso/saml/metadata</code>) and give it to whoever administers your
+   identity provider. It carries the entity ID, the assertion consumer URL and,
+   if a keypair has been generated, the certificate.</li>
+<li><strong>Paste your provider's metadata</strong> into the console. The entity ID, sign-on URL
+   and signing certificate are read from it — which beats transcribing three
+   fields by hand, where the typos are.</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="na">ontul.sso.saml.enabled</span><span class="o">=</span><span class="s">true</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="na">ontul.sso.saml.idp.entity.id</span><span class="o">=</span><span class="s">https://idp.example.com/realms/company</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="na">ontul.sso.saml.idp.sso.url</span><span class="o">=</span><span class="s">https://idp.example.com/protocol/saml</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="na">ontul.sso.saml.idp.certificate</span><span class="o">=</span><span class="s">MIIC…</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="na">ontul.sso.saml.sp.entity.id</span><span class="o">=</span><span class="s">ontul</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="na">ontul.sso.saml.sp.acs.url</span><span class="o">=</span><span class="s">https://ontul.example.com/admin/auth/sso/saml/acs</span>
+</code></pre></div>
+<p>Every assertion is checked four ways, and each one is a real attack if skipped:</p>
 <table>
 <thead>
 <tr>
-<th>Method + path</th>
-<th>Purpose</th>
+<th>Check</th>
+<th>What it prevents</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>GET /admin/drivers</code></td>
-<td>List installed JARs with the driver classes each provides.</td>
+<td>Signature, against the provider's certificate</td>
+<td>An assertion the caller wrote</td>
 </tr>
 <tr>
-<td><code>POST /admin/drivers</code></td>
-<td>Upload a JAR (<code>X-File-Name</code> header, raw body). Returns the detected classes and any replaced JAR.</td>
+<td>Audience</td>
+<td>A genuine assertion for another service logging in here</td>
 </tr>
 <tr>
-<td><code>DELETE /admin/drivers/{file}</code></td>
-<td>Remove a JAR from the master and all workers.</td>
+<td>Validity window</td>
+<td>A captured assertion replayed forever</td>
+</tr>
+<tr>
+<td>Issuer</td>
+<td>Any provider the caller can reach being trusted</td>
 </tr>
 </tbody>
 </table>
-<h2 id="related">Related</h2>
+<p>On top of those, an assertion already used is refused. That record is kept <strong>in
+ZooKeeper, not in one master's memory</strong>: an assertion is a bearer document, and a
+replay arrives at whichever master the load balancer picks — usually not the one
+that saw the original.</p>
+<p><strong>Encrypted assertions and signed requests.</strong> Several providers encrypt assertions
+or require the authentication request to be signed. Both need a service-provider
+keypair — generate one from the console, then re-import the SP metadata at your
+provider so it picks up the new certificate. An encrypted assertion must carry its
+own signature: encryption proves who the assertion was <em>for</em>, never who wrote it.</p>
+<p><strong>NameID format</strong> is left empty by default, which omits the request entirely and
+lets the provider issue whatever it is configured for. Naming one breaks more
+integrations than it fixes — several providers refuse a request asking for a
+format they do not issue.</p>
+<h3 id="ldap-active-directory">LDAP / Active Directory</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="na">ontul.sso.ldap.enabled</span><span class="o">=</span><span class="s">true</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="na">ontul.sso.ldap.url</span><span class="o">=</span><span class="s">ldaps://ad.example.com:636</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="na">ontul.sso.ldap.bind.dn</span><span class="o">=</span><span class="s">cn=svc-ontul,ou=service,dc=example,dc=com</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="na">ontul.sso.ldap.bind.password</span><span class="o">=</span><span class="s">…</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="na">ontul.sso.ldap.user.base.dn</span><span class="o">=</span><span class="s">ou=people,dc=example,dc=com</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="na">ontul.sso.ldap.user.filter</span><span class="o">=</span><span class="s">(sAMAccountName={0})</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="na">ontul.sso.ldap.group.base.dn</span><span class="o">=</span><span class="s">ou=groups,dc=example,dc=com</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="na">ontul.sso.ldap.group.filter</span><span class="o">=</span><span class="s">(member={0})</span>
+</code></pre></div>
+<p>Authentication is <strong>search then bind</strong>. A service account finds the user's entry —
+their DN is something the product cannot construct, since Active Directory puts
+people under <code>CN=John Doe,OU=Staff,…</code> where neither component is the login name —
+and the password is then checked by binding as that DN.</p>
+<p>That second bind <em>is</em> the authentication. Reading a password attribute and
+comparing it would be wrong even where the directory allows it: only the server
+knows how its own hashes are salted, and account lockout, expiry and disabled
+flags are enforced on bind and nowhere else.</p>
+<p>Group membership is read <strong>both ways</strong>: from the user's <code>memberOf</code> and from a
+search of the group tree. Directories disagree about which side records it —
+OpenLDAP usually keeps it on the group, Active Directory mirrors it onto the user
+— and reading only one way silently returns no groups against half the servers in
+the field.</p>
+<div class="admonition warning">
+<p class="admonition-title">Use TLS</p>
+<p>Without <code>ldaps://</code> or <code>ontul.sso.ldap.starttls=true</code>, the bind password crosses
+the network in the clear.</p>
+</div>
+<h2 id="behind-a-load-balancer">Behind a load balancer</h2>
+<p>Both browser flows work on any master, regardless of which one started them. The
+login state — including the PKCE verifier — is sealed with a key every master
+derives from <code>ONTUL_MASTER_KEY</code> and carried in the <code>state</code> parameter itself rather
+than held in memory on one master. Unsealing it is also what proves this cluster
+issued it, which is the login-CSRF check.</p>
+<p>Federated sessions replicate with the IAM snapshot, so a token minted on one
+master is honoured on all of them.</p>
+<p>Neither is a detail: without them SSO works on a single master and fails on
+roughly half of all attempts in a cluster — and it fails looking like a problem at
+the identity provider.</p>
+<h2 id="revocation">Revocation</h2>
+<p>Disabling someone at the provider stops new logins immediately. Sessions already
+issued keep working until they expire — this cluster is not told about the change.
+<code>ontul.sso.federated.session.seconds</code> bounds how long that gap lasts; shorter is
+safer.</p>
+<p>A federated session gets no refresh token for the same reason: renewing would keep
+someone signed in after the directory disabled them.</p>
+<h2 id="password-storage">Password storage</h2>
+<p>Independent of SSO, local passwords are stored as PBKDF2-HMAC-SHA256 hashes.
+Values written under the previous unsalted SHA-256 still verify and are rewritten
+on the owner's next successful login, which is the only moment the plaintext is
+available to hash — nobody is locked out by the change. The iteration count travels
+with each stored hash, so raising
+<code>ontul.auth.password.hash.iterations</code> (default 600000) does not invalidate
+existing passwords.</p>
+<h2 id="see-also">See also</h2>
 <ul>
-<li><a href="../connection-id/">Connection ID (Source/Sink by Reference)</a> — register JDBC
-  credentials once and reference them from catalogs and jobs.</li>
-<li><a href="../connector-architecture/">Connector Architecture</a> — how catalogs and
-  connectors are registered.</li>
+<li><a href="../iam/">Identity and Access Management</a> — the groups and policies a federated identity maps onto.</li>
+<li><a href="../iam-policy-templates/">IAM Policy Templates</a> — what to attach to a mapped group.</li>
 </ul>
 
 

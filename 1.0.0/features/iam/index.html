@@ -1600,6 +1600,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../sso/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Sign-On (OIDC/SAML/LDAP)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../admin-password-recovery/" class="md-nav__link">
         
   
@@ -2870,7 +2898,7 @@
 <h1 id="identity-and-access-management">Identity and Access Management</h1>
 <p>Ontul includes a built-in IAM system that provides authentication, authorization, and fine-grained access control down to the column and row level. Column masking, row-level filters, and metric-level RBAC (when the semantic layer is in use) all read from the same policy store, so a single statement governs what a user sees regardless of whether the query arrives over Arrow Flight SQL, REST, or the MCP server.</p>
 <h2 id="authentication">Authentication</h2>
-<p>Ontul supports four authentication methods that can co-exist on the same cluster:</p>
+<p>Ontul supports five authentication methods that can co-exist on the same cluster:</p>
 <table>
 <thead>
 <tr>
@@ -2899,6 +2927,11 @@
 <td><strong>STS Temporary Credentials</strong> (<code>ASIA…</code>)</td>
 <td>Short-lived AKIA-style credentials with configurable expiry — used by transient workloads (CI runners, ETL jobs).</td>
 <td>Same as Access Keys, prefix differs.</td>
+</tr>
+<tr>
+<td><strong>Federated identity</strong> (SSO)</td>
+<td>An account that lives in your identity provider rather than here — OIDC, SAML 2.0, or LDAP / Active Directory. Exchanged for a bearer token at <code>POST /v1/api/auth/sso</code>, or obtained through a browser redirect in the console.</td>
+<td>Same as JWT Bearer Token. See <a href="../sso/">Single Sign-On</a>.</td>
 </tr>
 </tbody>
 </table>
