@@ -4,7 +4,7 @@ Ontul includes a built-in IAM system that provides authentication, authorization
 
 ## Authentication
 
-Ontul supports four authentication methods that can co-exist on the same cluster:
+Ontul supports five authentication methods that can co-exist on the same cluster:
 
 | Method | When to use | Header / field |
 | --- | --- | --- |
@@ -12,6 +12,7 @@ Ontul supports four authentication methods that can co-exist on the same cluster
 | **JWT Bearer Token** | Short-lived sessions (default 15 min). Issued by `POST /admin/auth/login`. Used by the Admin UI and Java SDK. | `authorization: Bearer <jwt>` |
 | **Access Keys** (`AKIA…`) | Long-lived service-account credentials with separate `accessKeyId` + `secretAccessKey`. Issued via `POST /admin/iam/keys`. | `authorization: AccessKey AKIA…:<secret>` |
 | **STS Temporary Credentials** (`ASIA…`) | Short-lived AKIA-style credentials with configurable expiry — used by transient workloads (CI runners, ETL jobs). | Same as Access Keys, prefix differs. |
+| **Federated identity** (SSO) | An account that lives in your identity provider rather than here — OIDC, SAML 2.0, or LDAP / Active Directory. Exchanged for a bearer token at `POST /v1/api/auth/sso`, or obtained through a browser redirect in the console. | Same as JWT Bearer Token. See [Single Sign-On](sso.md). |
 
 The MCP server and the SDK accept whichever credential is supplied via `ONTUL_USER_TOKEN`. Whatever IAM policies attach to that credential apply automatically — there is no separate authorization layer to configure on the client.
 
