@@ -345,6 +345,72 @@ metadata store as `storage.jobLogs.*` / `storage.exchange.*` referencing an S3 c
 | `ontul.admin.token.refresh.expiry.ms` | `86400000` | Lifetime (ms) of JWT refresh tokens, which let a client mint new access tokens without re-authenticating (default 24 hours). Effectively the maximum idle session length. |
 | `ontul.admin.http.max.content.size.bytes` | `10485760` | Maximum accepted Admin HTTP request body size (bytes); larger requests are rejected (default 10 MiB). Raise if uploading large dependency JARs/drivers via the Admin API. |
 
+## Authentication — Password Storage
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.auth.password.hash.iterations` | `600000` | PBKDF2-HMAC-SHA256 iterations used when a local password is written. The count travels with each stored hash, so raising this does **not** invalidate existing passwords — they are rewritten at the new cost on their owner's next successful login. Values written under the previous unsalted SHA-256 verify the same way and are upgraded identically, so nobody is locked out. |
+
+## Single Sign-On (OIDC / SAML / LDAP)
+
+Every setting below can also be managed from the **admin console under Single Sign-On**, which stores
+it in the replicated metadata store and applies it on every master with no restart. **Stored settings
+win over this file**: the file brings a cluster up, and the console is how it is changed afterwards —
+if the file won, a console change would be reverted by the next restart, silently. See
+[Single Sign-On](../features/sso.md) for how the console and the REST surface differ.
+
+### Identity mapping (all three providers)
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.sso.group.mappings` | (empty) | `idpGroup:ontulGroup` pairs, comma-separated. Empty means provider group names are used as they are. **Once set the mapping is exhaustive** — a group not named here is dropped, so creating a group at the provider cannot grant access on this cluster by itself. |
+| `ontul.sso.allow.unmapped.groups` | `false` | Whether an identity whose groups all map to nothing may still sign in. Off deliberately: such a session has no policies and is denied every action, so admitting it produces a caller who is signed in and can do nothing. The directory login endpoint reports that case as `403`, separately from a wrong password's `401`. |
+| `ontul.sso.federated.session.seconds` | `3600` | Lifetime of a federated session — the record that lets `/v1/api/authz/check` resolve a federated caller's groups. It bounds how long access outlives a revocation at the provider, which this cluster is not told about. No refresh token is issued for a federated session for the same reason. |
+
+### OpenID Connect
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.sso.oidc.enabled` | `false` | Enable the OIDC provider. |
+| `ontul.sso.oidc.issuer` | (empty) | Issuer URL. Endpoints and the signing key set are read from its discovery document, so they are not configured individually. |
+| `ontul.sso.oidc.client.id` | (empty) | Client id registered at the provider. |
+| `ontul.sso.oidc.client.secret` | (empty) | Client secret. Credential — never read back by the console. |
+| `ontul.sso.oidc.redirect.uri` | `http://localhost:8090/admin/auth/sso/oidc/callback` | Must match the redirect URI registered at the provider exactly, and must be the address browsers reach — the load balancer's, not one master's. |
+| `ontul.sso.oidc.scopes` | `openid profile email` | Scopes requested. Deliberately excludes `groups`: it is not a standard scope, and a provider that does not define it rejects the whole authorization request with `invalid_scope`. |
+| `ontul.sso.oidc.username.claim` | `preferred_username` | Claim holding the login name. |
+| `ontul.sso.oidc.groups.claim` | `groups` | Claim holding group membership. The provider must be configured to include it. |
+| `ontul.sso.oidc.audience` | (empty) | Expected audience. Empty falls back to the client id. A token issued for another application is refused even though it is genuine and correctly signed. |
+
+### SAML 2.0
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.sso.saml.enabled` | `false` | Enable the SAML provider. |
+| `ontul.sso.saml.idp.entity.id` | (empty) | Identity provider entity ID. Read automatically when the provider's metadata is imported from the console. |
+| `ontul.sso.saml.idp.sso.url` | (empty) | IdP single sign-on URL. |
+| `ontul.sso.saml.idp.certificate` | (empty) | Base64 IdP signing certificate. Every assertion's signature is verified against it. |
+| `ontul.sso.saml.sp.entity.id` | `ontul` | This cluster's entity ID, as it appears in the SP metadata the provider imports. |
+| `ontul.sso.saml.sp.acs.url` | `http://localhost:8090/admin/auth/sso/saml/acs` | Assertion consumer URL. As with the OIDC redirect, this must be the address browsers reach. |
+| `ontul.sso.saml.nameid.format` | (empty) | Requested NameID format. Empty omits the request entirely and lets the provider issue what it is configured for — naming one breaks more integrations than it fixes. |
+| `ontul.sso.saml.sign.requests` | `false` | Sign authentication requests. Needs an SP keypair, generated from the console; re-import the SP metadata at the provider afterwards so it picks up the certificate. |
+| `ontul.sso.saml.username.attribute` | `uid` | Assertion attribute holding the login name. |
+| `ontul.sso.saml.groups.attribute` | `groups` | Assertion attribute holding group membership. |
+
+### LDAP / Active Directory
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.sso.ldap.enabled` | `false` | Enable the directory provider. With it on, a directory password also works on the ordinary console login form. |
+| `ontul.sso.ldap.url` | `ldap://ldap.example.com:389` | Directory URL. Use `ldaps://` or enable StartTLS — otherwise the bind password crosses the network in the clear. |
+| `ontul.sso.ldap.bind.dn` | (empty) | Service account that searches for user entries. Authentication is search then bind: the user's DN cannot be constructed, since Active Directory puts people under `CN=John Doe,OU=Staff,…` where neither component is the login name. |
+| `ontul.sso.ldap.bind.password` | (empty) | Service account password. Credential. |
+| `ontul.sso.ldap.user.base.dn` | (empty) | Subtree searched for user entries. |
+| `ontul.sso.ldap.user.filter` | `(uid={0})` | Filter locating the user; `{0}` is the login name, escaped per RFC 4515 before substitution. Active Directory usually wants `(sAMAccountName={0})`. |
+| `ontul.sso.ldap.group.base.dn` | (empty) | Subtree searched for groups. |
+| `ontul.sso.ldap.group.filter` | `(member={0})` | Filter locating groups containing the user; `{0}` is the user's DN. Membership is read both from this search **and** from the user's `memberOf`, because directories disagree about which side records it. |
+| `ontul.sso.ldap.group.name.attribute` | `cn` | Attribute holding the group name. |
+| `ontul.sso.ldap.starttls` | `false` | Upgrade a plain `ldap://` connection with StartTLS. |
+
 ## Python
 
 | Property | Default | Description |

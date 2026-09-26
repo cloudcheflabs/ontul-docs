@@ -130,6 +130,22 @@ Monitor active and completed jobs. Submit new batch or streaming jobs, view real
 
 Manage users, groups, and policies. Includes a visual policy editor for creating structured IAM policies with column-level and row-level security rules.
 
+### Single Sign-On
+
+Configure OIDC, SAML 2.0 and LDAP / Active Directory, on tabs of their own. Every value is a named
+field — nothing here asks for JSON. Secrets (OIDC client secret, LDAP bind password, SAML SP private
+key) are never read back; each shows only whether it is set, and typing replaces it.
+
+The SAML tab is an exchange of documents rather than a form: download this cluster's SP metadata for
+the provider to import, paste the provider's metadata to have the entity ID, sign-on URL and signing
+certificate read out of it, and generate an SP keypair when the provider needs encrypted assertions
+or signed requests. Each provider has a **test** button, so a mistake surfaces before anyone tries to
+log in with it.
+
+Settings are stored in the replicated metadata store and applied on every master with no restart.
+Changing them needs `AdministratorAccess`; everyone else sees the page read-only. See
+[Single Sign-On](sso.md).
+
 ### KMS
 
 Key management interface for viewing and managing encryption keys.
