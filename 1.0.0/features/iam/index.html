@@ -3424,6 +3424,9 @@ allow list for who may bill the expensive model, and a deny that expresses
 grant. As everywhere else here, no matching statement is a denial — the check
 runs on the master, before any plan reaches a worker, and the error names both
 the action and the endpoint it refused.</p>
+<p>The Admin UI ships both shapes as policy templates — <strong>Decision Endpoint
+(ai_verdict)</strong> and <strong>Decision Endpoint (Allow One, Deny Another)</strong> — see
+<a href="../iam-policy-templates/#decision-endpoints-ai_verdict">IAM Policy Templates</a>.</p>
 <p>A <code>DECIDE</code> connection marked <code>external=true</code> additionally requires each call to
 pass <code>acknowledgeEgress</code>. That is not an IAM check and cannot be granted away:
 the state is an arbitrary SQL expression with no link to an object type's <code>pii</code>

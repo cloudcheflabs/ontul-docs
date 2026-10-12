@@ -3249,6 +3249,11 @@ list for who may bill the expensive model, and a per-endpoint deny for "nobody
 sends data to this vendor from SQL" — without touching table grants. No
 matching policy is a denial, as everywhere else in <a href="../iam/">IAM</a>. The check runs
 on the master, before any plan reaches a worker.</p>
+<p>The Admin UI policy editor ships both shapes — <strong>Decision Endpoint
+(ai_verdict)</strong> and <strong>Decision Endpoint (Allow One, Deny Another)</strong>. See
+<a href="../iam-policy-templates/#decision-endpoints-ai_verdict">IAM Policy Templates</a>.</p>
+<p>Note what the grant does <em>not</em> cover: it authorizes the endpoint, not the data.
+An identity still needs <code>data:Select</code> on every table the query scans.</p>
 <p><strong>Egress acknowledgement.</strong> When a connection is marked <code>external=true</code>, every
 call must say so:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">ai_verdict_one</span><span class="p">(</span><span class="n">body</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;{...}&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;{&quot;connection&quot;:&quot;jev&quot;,&quot;acknowledgeEgress&quot;:true}&#39;</span><span class="p">)</span>
