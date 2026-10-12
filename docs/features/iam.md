@@ -324,6 +324,44 @@ UDF resources are addressed as `udf:<name>`, so policies can target an exact fun
 
 The Admin UI policy editor ships with templates *UDF Execute Any*, *UDF Author*, *UDF Sandbox*, *UDF Deny Sensitive*, *UDF Global Admin*, and *UDF Global Read-Only*. See the [UDF feature page](udf.md) and the [UDF tutorial](../use-cases/udf-tutorial.md) for the full lifecycle.
 
+## Decision Endpoint Permissions
+
+[`ai_verdict()` / `ai_verdict_one()`](ai-verdict.md) call an external decision
+endpoint once per distinct state in every batch. That makes them the one SQL
+functions that spend money per row and send column text to a third party, so
+reading the table is not sufficient authorization — the endpoint is a resource
+of its own.
+
+| Action | Resource | Required for |
+| --- | --- | --- |
+| `AI:DECIDE` | `connection:<id>` | Evaluating `ai_verdict()` or `ai_verdict_one()` against that `DECIDE` connection |
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    { "Sid": "CheapModelOnly", "Effect": "Allow",
+      "Action": "AI:DECIDE", "Resource": "connection:jev-small" },
+    { "Sid": "NoVendorX", "Effect": "Deny",
+      "Action": "AI:DECIDE", "Resource": "connection:vendor-x" }
+  ]
+}
+```
+
+Two controls follow from granting per endpoint rather than per function: an
+allow list for who may bill the expensive model, and a deny that expresses
+"nobody sends data to this vendor from SQL" without touching a single table
+grant. As everywhere else here, no matching statement is a denial — the check
+runs on the master, before any plan reaches a worker, and the error names both
+the action and the endpoint it refused.
+
+A `DECIDE` connection marked `external=true` additionally requires each call to
+pass `acknowledgeEgress`. That is not an IAM check and cannot be granted away:
+the state is an arbitrary SQL expression with no link to an object type's `pii`
+flags, so there is nothing for the engine to infer, and the acknowledgement
+records a human decision instead of pretending to a check. See
+[`ai_verdict`](ai-verdict.md#governance).
+
 ## Semantic Layer & Retriever RBAC
 
 The [semantic layer](semantic-layer.md) and [retrievers](retrievers.md) gate access through the same IAM system, on two axes:

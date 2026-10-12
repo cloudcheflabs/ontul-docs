@@ -69,13 +69,45 @@ Two consequences worth knowing:
 | Aggregates other than `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` (e.g. `STDDEV_POP`) | A [UDF](udf.md) |
 | `SUM`/`AVG` over a non-numeric column | `CAST` first |
 | `OFFSET` | `LIMIT` only; page with a `WHERE` range over a sorted key |
-| Scalar functions with no implementation — `TRIM`, `EXTRACT`, `POWER`, `SQRT`, `CHAR_LENGTH`, `POSITION`, `CURRENT_DATE`, … | A [UDF](udf.md) |
+| Scalar functions the gate does not admit — `EXTRACT`, `POWER`, `SQRT`, `CHAR_LENGTH`, `POSITION`, `CURRENT_DATE`, `TRIM`, … | A [UDF](udf.md), or a built-in extension (see [below](#functions-the-gate-admits)) |
 | Unary minus (`-x`) | `(0 - x)` |
 | `IN (...)` / `BETWEEN` in the **SELECT list** (they survive as `SEARCH(Sarg[…])`) | Explicit `OR` / `AND` comparisons. Both are fine in `WHERE` |
 | Comparing a column against a `DATE` / `TIME` / `TIMESTAMP` / `INTERVAL` literal | Compare on the epoch value — these types travel through the engine as epoch numbers. A datetime literal as **data** (`INSERT … VALUES (DATE '2026-01-01')`) is fine |
 | String literal containing `'` | — |
 | `LIKE … ESCAPE` | Plain `LIKE`; `%` and `_` are the only wildcards, everything else is literal |
 | Dynamic parameters (`?`) | Inline the value — the plan is shipped as text |
+
+## Functions the gate admits
+
+The allow list is the planner's, not the worker's, and the two are not the same
+list. A function is admitted when it is either in the planner's scalar set or
+recognised as an extension:
+
+| Family | Admitted because |
+|--------|------------------|
+| Comparison, logic, arithmetic, `CAST`, `CASE`, `ITEM`, `ARRAY` | in the planner's scalar set |
+| `UPPER`, `LOWER`, `SUBSTRING`, `REPLACE`, `CONCAT` / `\|\|` | in the planner's scalar set |
+| `ABS`, `CEIL`, `CEILING`, `FLOOR`, `ROUND` | in the planner's scalar set |
+| `ST_*` | matched by prefix — see [Geospatial](geospatial.md) |
+| `embed_passage()`, `embed_query()` | named extensions, evaluated per Arrow batch |
+| `ai_verdict()`, `ai_verdict_one()` | named extensions, evaluated per Arrow batch — see [`ai_verdict`](ai-verdict.md) |
+| Any registered [UDF](udf.md) | the session's own function set |
+
+The last three rows are why the allow list exists as a separate thing at all:
+those functions have no row-wise implementation to find. They are intercepted at
+the projection operator and evaluated a whole batch at a time, so the planner
+has to be told they are real even though the row-wise evaluator would not
+recognise them. Without an entry the query fails with *"not supported by the
+Ontul execution engine"* one step **after** the planner has already accepted the
+signature — which reads as if the function did not exist.
+
+!!! note "Admitted and implemented are different questions"
+    A few functions are implemented in the worker's expression evaluator but not
+    in the planner's allow list — `TRIM` is the clearest case. The outcome is a
+    clean refusal rather than a wrong answer, which is the gate doing its job,
+    but the cause is an omission from the list rather than a missing
+    implementation. If you need one of these, that is a one-line change to the
+    allow list, not a new operator.
 
 ## What is *not* gated
 
