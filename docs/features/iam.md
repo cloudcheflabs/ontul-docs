@@ -373,6 +373,10 @@ grant. As everywhere else here, no matching statement is a denial — the check
 runs on the master, before any plan reaches a worker, and the error names both
 the action and the endpoint it refused.
 
+The Admin UI ships both shapes as policy templates — **Decision Endpoint
+(ai_verdict)** and **Decision Endpoint (Allow One, Deny Another)** — see
+[IAM Policy Templates](iam-policy-templates.md#decision-endpoints-ai_verdict).
+
 A `DECIDE` connection marked `external=true` additionally requires each call to
 pass `acknowledgeEgress`. That is not an IAM check and cannot be granted away:
 the state is an arbitrary SQL expression with no link to an object type's `pii`

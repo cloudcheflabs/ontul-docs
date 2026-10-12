@@ -2,8 +2,6 @@
 
 Ontul's Admin UI policy editor ships with a set of ready-to-use **policy templates**. Each is a complete policy document you can attach to a user or group as-is, or use as a starting point. This page documents every one of them, explains when to use it, and documents the action/resource namespaces the policies are written against.
 
-Two common shapes have no entry in the dropdown and are written by hand instead — they are collected under [Policies you write yourself](#policies-you-write-yourself) so it is clear which is which.
-
 For the underlying concepts (users, groups, attachment, column masking, row filters, evaluation order), see [Identity and Access Management](iam.md).
 
 ## Policy document shape
@@ -39,6 +37,7 @@ Every policy is a JSON document with a `Version` and a list of `Statement`s. Eac
 | `UDF:CREATE_GLOBAL` / `UDF:DROP_GLOBAL` | Global (cluster-wide) UDF authoring |
 | `ontology:Certify` | Bless an ontology subtree as CERTIFIED — an ownership decision, deliberately separate from the admin rights needed to *edit* the ontology. See [Ontology](ontology.md#who-may-certify) |
 | `ontology:InvokeAction` / `ontology:InvokeOperation` / `ontology:InvokeWorkflow` | Run a governed write-back: a single action, its external operation, or a saga workflow |
+| `data:Write` | **Audit-log label only, never authorized.** The audit trail records a non-read statement under this name, but authorization emits `data:Select` / `Insert` / `Update` / `Delete` — so a `Deny` on `data:Write` can never fire. Deny the three DML verbs instead |
 | `AI:DECIDE` | Evaluate [`ai_verdict()` / `ai_verdict_one()`](ai-verdict.md) against one `DECIDE` connection. Granted per *endpoint*, because these are the only SQL functions that spend money per row and send column text off-site |
 | `*` | Everything (administrator) |
 
@@ -502,7 +501,7 @@ so this holds even when the identity also belongs to a group that grants writes.
     {
       "Sid": "NoWritesAnywhere",
       "Effect": "Deny",
-      "Action": ["data:Insert", "data:Update", "data:Delete", "data:Write"],
+      "Action": ["data:Insert", "data:Update", "data:Delete"],
       "Resource": "*"
     }
   ]
@@ -558,6 +557,39 @@ Read everything, and write/create tables in Iceberg — the grant a batch/stream
   ]
 }
 ```
+
+### Streaming Flow (Ontul Flow)
+
+Starting an [Ontul Flow](../streaming/flow.md) enforces the same table-level RBAC as SQL DML: the
+identity needs `data:Select` on any Ontul-catalog **source** table and write access on the Ontul-catalog
+**sink** table — `data:Insert` for an append flow, plus `data:Update` / `data:Delete` for a CDC / upsert
+write mode. External systems (Kafka, CDC databases, JDBC, Elasticsearch, webhooks, NeorunBase) are
+reached through their registered connection credentials, not IAM. This template grants a Flow that reads
+any table and maintains an Iceberg CDC replica.
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "FlowReadSources",
+      "Effect": "Allow",
+      "Action": "data:Select",
+      "Resource": "data:table:*.*.*"
+    },
+    {
+      "Sid": "FlowWriteIcebergSink",
+      "Effect": "Allow",
+      "Action": ["data:Insert", "data:Update", "data:Delete"],
+      "Resource": "data:table:ice.*.*"
+    }
+  ]
+}
+```
+
+For an **append-only** flow (no CDC / upsert), the sink statement needs only `data:Insert`. Scope the
+`Resource` segments down (`ice.sales.*`, a single table) to confine which sinks a Flow identity may
+write.
 
 ### Job Manager
 
@@ -701,45 +733,7 @@ Execute-only — for consumers who use global UDFs but cannot author them.
 
 ---
 
-## Policies you write yourself
-
-These two are not in the policy-editor dropdown. They are the shapes most often
-needed next, written out here so there is something to paste rather than derive.
-
-### Streaming Flow (Ontul Flow)
-
-Starting an [Ontul Flow](../streaming/flow.md) enforces the same table-level RBAC as SQL DML: the
-identity needs `data:Select` on any Ontul-catalog **source** table and write access on the Ontul-catalog
-**sink** table — `data:Insert` for an append flow, plus `data:Update` / `data:Delete` for a CDC / upsert
-write mode. External systems (Kafka, CDC databases, JDBC, Elasticsearch, webhooks, NeorunBase) are
-reached through their registered connection credentials, not IAM. This template grants a Flow that reads
-any table and maintains an Iceberg CDC replica.
-
-```json
-{
-  "Version": "2024-01-01",
-  "Statement": [
-    {
-      "Sid": "FlowReadSources",
-      "Effect": "Allow",
-      "Action": "data:Select",
-      "Resource": "data:table:*.*.*"
-    },
-    {
-      "Sid": "FlowWriteIcebergSink",
-      "Effect": "Allow",
-      "Action": ["data:Insert", "data:Update", "data:Delete"],
-      "Resource": "data:table:ice.*.*"
-    }
-  ]
-}
-```
-
-For an **append-only** flow (no CDC / upsert), the sink statement needs only `data:Insert`. Scope the
-`Resource` segments down (`ice.sales.*`, a single table) to confine which sinks a Flow identity may
-write.
-
-### Decision endpoint (`ai_verdict`)
+## Decision endpoints (`ai_verdict`)
 
 [`ai_verdict()` / `ai_verdict_one()`](ai-verdict.md) call an external decision
 model once per distinct state in every batch, so the endpoint is granted
@@ -775,6 +769,51 @@ statement grants the endpoint, not the data. And a `DECIDE` connection marked
 IAM check and cannot be granted away: it records a human decision that text may
 leave the cluster.
 
+### Decision Endpoint (ai_verdict)
+
+The minimal grant — one endpoint, one identity.
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "AllowJevEndpoint",
+      "Effect": "Allow",
+      "Action": "AI:DECIDE",
+      "Resource": "connection:jev"
+    }
+  ]
+}
+```
+
+### Decision Endpoint (Allow One, Deny Another)
+
+The shape to reach for once more than one endpoint is registered: allow the
+cheap model, deny the vendor nobody may send data to. `Deny` beats `Allow`, so
+the second statement holds even for an identity that also belongs to a group
+granting `*`.
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "AllowCheapDecisionModel",
+      "Effect": "Allow",
+      "Action": "AI:DECIDE",
+      "Resource": "connection:jev-small"
+    },
+    {
+      "Sid": "DenyVendorX",
+      "Effect": "Deny",
+      "Action": "AI:DECIDE",
+      "Resource": "connection:vendor-x"
+    }
+  ]
+}
+```
+
 ## Applying a template
 
-Templates are starting points — attach one directly, or edit it in the Admin UI policy editor and save under a new `name`. The two hand-written shapes above are created the same way, by pasting the document into a new policy. Policies attach to a user or a group (a group policy applies to all members). See [Creating and updating policies](iam.md#policy-based-access-control) for the REST/CLI flow.
+Templates are starting points — attach one directly, or edit it in the Admin UI policy editor and save under a new `name`. Policies attach to a user or a group (a group policy applies to all members). See [Creating and updating policies](iam.md#policy-based-access-control) for the REST/CLI flow.
