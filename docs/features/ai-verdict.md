@@ -271,8 +271,17 @@ that spends money per row and sends text to a third party, so reading the table
 is not enough. The endpoint is a resource of its own:
 
 ```json
-{"Version":"2024-01-01","Statement":[
-  {"Sid":"d","Effect":"Allow","Action":"AI:DECIDE","Resource":"connection:jev"}]}
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "AllowJevEndpoint",
+      "Effect": "Allow",
+      "Action": "AI:DECIDE",
+      "Resource": "connection:jev"
+    }
+  ]
+}
 ```
 
 That gives the two controls the feature actually needs — a per-endpoint allow

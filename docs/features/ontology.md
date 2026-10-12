@@ -573,9 +573,21 @@ Certification is an ownership decision, not an editing one, so it has its own IA
 lets a domain owner bless their own subtree without being made an admin:
 
 ```json
-{ "Sid": "CertifySalesOntology", "Effect": "Allow",
-  "Action": "ontology:Certify", "Resource": "ontology.sales.*" }
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    {
+      "Sid": "CertifySalesOntology",
+      "Effect": "Allow",
+      "Action": "ontology:Certify",
+      "Resource": "ontology.sales.*"
+    }
+  ]
+}
 ```
+
+Shipped in the Admin UI's policy editor as **Ontology Certifier (Domain Owner)** —
+see [IAM Policy Templates](iam-policy-templates.md#ontology-certifier-domain-owner).
 
 Administrators may always certify. Every certify / decertify is written to the
 [Audit Log](audit-log.md) as `ontology:certify` / `ontology:decertify`, and a refusal as
