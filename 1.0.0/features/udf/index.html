@@ -1102,6 +1102,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../ai-verdict/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Typed Decisions in SQL (ai_verdict)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ontology/" class="md-nav__link">
         
   
@@ -2773,7 +2801,7 @@
 <li><strong>Static state</strong> — the worker deps classloader is cached and fingerprinted, so static caches inside UDF classes (e.g. a loaded ML model) survive across queries.</li>
 </ul>
 <h2 id="python-udf-features">Python UDF features</h2>
-<p>Python UDFs are executed in a long-lived Python subprocess per worker, with batch-level Arrow IPC between the JVM worker and the subprocess (no per-row JSON, no per-call process spawn):</p>
+<p>Python UDFs are executed in a long-lived Python subprocess per worker, with batch-level Arrow IPC between the JVM worker and the subprocess (no per-row JSON, no per-call process spawn). Note that this batches the <em>transport</em>, not the call: the subprocess applies your function to one row at a time — see <a href="#architecture-notes">Architecture notes</a> for what that means for IO-bound work.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ontul.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">OntulSession</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">session</span> <span class="o">=</span> <span class="n">OntulSession</span><span class="p">()</span>
@@ -2848,10 +2876,13 @@
 <ul>
 <li><strong>Calcite integration</strong> — UDFs are installed onto a per-query <code>SchemaPlus</code> clone wrapped in a chained operator table (<code>SqlStdOperatorTable</code> + the per-session UDF schema reader). Per-query isolation means concurrent queries with different UDF names never collide.</li>
 <li><strong>Plan attachment</strong> — the planner attaches the resolved <code>Map&lt;String, UdfDescriptor&gt;</code> directly onto <code>PhysicalPlan.udfs</code>. The distributed planner copies the map onto every worker plan, so workers receive only the UDFs the query actually uses, with no out-of-band registration step.</li>
-<li><strong>Row-wise vs batch evaluation</strong> — Java method-ref UDFs are wrapped in a per-row <code>EvalExpr</code>. Python UDFs short-circuit through <code>PyUdfBatchExpr</code>, which packs all argument rows into Arrow IPC and ships a single batch to the Python subprocess, so the per-call cost amortises across thousands of rows.</li>
-<li><strong>Auto-upload + cached child-first classloader</strong> — <code>WorkerServer.buildDepsClassLoader()</code> builds a child-first <code>ChildFirstClassLoader</code> over <code>data/deps/</code>, caches it, and invalidates on directory change (file size + mtime fingerprint). Child-first delegation lets uploaded dependency JARs override the runtime's copies of common libraries (except the shared/boundary packages that must stay runtime-loaded); a plain parent-first classloader would let the runtime's versions win instead. UDFs that hold static models (caches, embeddings, ML weights) are loaded once per worker and reused across queries.</li>
-<li><strong>Persistence</strong> — USER and GLOBAL descriptors are JSON-serialised into the cluster <code>RocksDbMetadataStore</code> under <code>udf.&lt;userId&gt;.&lt;name&gt;</code> and <code>udf._global.&lt;name&gt;</code> respectively. The store is the same KMS-encrypted, leader-replicated metadata store used for catalogs and connections, so UDFs participate in HA and survive master restarts. JARs are persisted independently in <code>data/deps/</code> by the auto-upload path.</li>
-<li><strong>Strict Arrow data plane</strong> — control messages (descriptor metadata, registration acks) travel as JSON over Flight Actions. All data flowing in or out of a UDF travels as Arrow IPC. There is never a JSON or base64 hop on the data path, even for <code>byte[]</code>, list, or struct return types.</li>
+<li>
+<p><strong>Row-wise vs batch evaluation</strong> — Java method-ref UDFs are wrapped in a per-row <code>EvalExpr</code>. Python UDFs short-circuit through <code>PyUdfBatchExpr</code>, which packs all argument rows into Arrow IPC and ships a single batch to the Python subprocess, so the <em>transport</em> cost amortises across thousands of rows. <strong>The function itself is still applied one row at a time</strong>: the executor loops (<code>results = [fn(*row) for row in rows]</code>), and there is no hook that hands a Python UDF the whole batch. What is batched is the round trip, not the work.</p>
+<p>That distinction decides whether a UDF is the right tool. CPU-bound work amortises well — one process spawn, one IPC hop, thousands of rows. Work that <em>waits</em> does not: a UDF making an HTTP call per row blocks on each one in turn, so a 200 ms endpoint is ~200 s per thousand rows and no amount of <code>asyncio</code> inside the function changes it, because the function is only ever given one row. For per-row calls to an external service, use a built-in that batches the calls themselves — <a href="../ai-verdict/"><code>ai_verdict</code></a> for a decision endpoint, <code>embed_passage()</code> / <code>embed_query()</code> for an embedding one — or do the work outside the engine and join the result back in.
+- <strong>Auto-upload + cached child-first classloader</strong> — <code>WorkerServer.buildDepsClassLoader()</code> builds a child-first <code>ChildFirstClassLoader</code> over <code>data/deps/</code>, caches it, and invalidates on directory change (file size + mtime fingerprint). Child-first delegation lets uploaded dependency JARs override the runtime's copies of common libraries (except the shared/boundary packages that must stay runtime-loaded); a plain parent-first classloader would let the runtime's versions win instead. UDFs that hold static models (caches, embeddings, ML weights) are loaded once per worker and reused across queries.
+- <strong>Persistence</strong> — USER and GLOBAL descriptors are JSON-serialised into the cluster <code>RocksDbMetadataStore</code> under <code>udf.&lt;userId&gt;.&lt;name&gt;</code> and <code>udf._global.&lt;name&gt;</code> respectively. The store is the same KMS-encrypted, leader-replicated metadata store used for catalogs and connections, so UDFs participate in HA and survive master restarts. JARs are persisted independently in <code>data/deps/</code> by the auto-upload path.
+- <strong>Strict Arrow data plane</strong> — control messages (descriptor metadata, registration acks) travel as JSON over Flight Actions. All data flowing in or out of a UDF travels as Arrow IPC. There is never a JSON or base64 hop on the data path, even for <code>byte[]</code>, list, or struct return types.</p>
+</li>
 </ul>
 
 

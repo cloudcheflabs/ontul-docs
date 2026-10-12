@@ -1326,6 +1326,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../ai-verdict/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Typed Decisions in SQL (ai_verdict)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ontology/" class="md-nav__link">
         
   
@@ -2916,6 +2944,21 @@
 <td><code>elasticsearch</code></td>
 <td><code>endpoint</code> (+ optional auth)</td>
 <td>Elasticsearch sink</td>
+</tr>
+<tr>
+<td><code>EMBEDDING</code></td>
+<td><code>endpoint</code>, <code>model</code>, <code>dim</code> (+ <code>dialect</code>, <code>asymmetry</code>, auth)</td>
+<td><code>embed_passage()</code> / <code>embed_query()</code>, retriever vector search</td>
+</tr>
+<tr>
+<td><code>RERANK</code></td>
+<td><code>baseUrl</code> (+ <code>path</code>, <code>model</code>, auth, <code>external</code>)</td>
+<td>A retriever's <a href="../retrievers/"><code>rerank</code> block</a></td>
+</tr>
+<tr>
+<td><code>DECIDE</code></td>
+<td><code>baseUrl</code> (+ <code>path</code>, <code>model</code>, auth, <code>external</code>, <code>default</code>, <code>timeoutMs</code>, <code>maxConcurrency</code>, <code>retries</code>, <code>cacheSize</code>, <code>maxStateChars</code>, <code>onFailure</code>, <code>enabled</code>)</td>
+<td><a href="../ai-verdict/"><code>ai_verdict()</code> / <code>ai_verdict_one()</code></a></td>
 </tr>
 </tbody>
 </table>

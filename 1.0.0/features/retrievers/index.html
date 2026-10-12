@@ -14,7 +14,7 @@
         <link rel="prev" href="../semantic-layer/">
       
       
-        <link rel="next" href="../ontology/">
+        <link rel="next" href="../ai-verdict/">
       
       
         
@@ -1469,6 +1469,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai-verdict/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Typed Decisions in SQL (ai_verdict)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -3232,6 +3260,7 @@
 <div class="admonition note">
 <p class="admonition-title">Dedicated re-rankers only — not generative LLMs</p>
 <p>Anything that speaks this contract fits: a self-hosted Qwen3-Reranker, Cohere Rerank, Voyage. Generative LLMs do not. They answer in prose (needs parsing, and the parse can fail), take seconds rather than hundreds of milliseconds, and therefore need retries — a loop. A retriever invocation is a single synchronous call, so LLM-based ranking belongs in the agent loop above it. <code>ontul.rerank.max.timeout.ms</code> (default 5000) is the mechanical expression of that boundary: a call that needs longer cannot be configured here.</p>
+<p>A <strong>decision</strong> model is a different case and does fit: it returns a typed decision rather than prose, in 70–500 ms, with nothing to parse. That is a separate step from ranking, so it is a separate function — <a href="../ai-verdict/"><code>ai_verdict</code></a>, evaluated in a projection. The natural pairing is a <code>noul</code> question over the rows a retriever already returned and already filtered by IAM: <em>can this question be answered from these documents at all</em>, asked before anything is generated.</p>
 </div>
 <h3 id="fields">Fields</h3>
 <table>
