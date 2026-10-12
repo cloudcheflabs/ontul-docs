@@ -247,12 +247,22 @@ When multiple Mask statements target the same column (e.g. two groups both attac
 Mask expressions are parse-checked at policy-attach time. `POST /admin/iam/policies` with a syntactically broken expression returns `400 Bad Request` with the parser's message:
 
 ```bash
-$ curl -X POST $ADMIN_URL/admin/iam/policies -d '{"name":"Bad","document":{
-    "Version":"2024-01-01","Statement":[{
-      "Sid":"BadMask","Effect":"Mask","Action":"data:Select",
-      "Resource":"data:table:x",
-      "MaskedColumns":{"c":"SUBSTR("}
-    }]}}'
+$ curl -X POST $ADMIN_URL/admin/iam/policies -d \
+'{
+  "name": "Bad",
+  "document": {
+    "Version": "2024-01-01",
+    "Statement": [
+      {
+        "Sid": "BadMask",
+        "Effect": "Mask",
+        "Action": "data:Select",
+        "Resource": "data:table:x",
+        "MaskedColumns": { "c": "SUBSTR(" }
+      }
+    ]
+  }
+}'
 {"error":"Mask expression for column 'c' fails to parse: SUBSTR("}
 ```
 
@@ -340,10 +350,18 @@ of its own.
 {
   "Version": "2024-01-01",
   "Statement": [
-    { "Sid": "CheapModelOnly", "Effect": "Allow",
-      "Action": "AI:DECIDE", "Resource": "connection:jev-small" },
-    { "Sid": "NoVendorX", "Effect": "Deny",
-      "Action": "AI:DECIDE", "Resource": "connection:vendor-x" }
+    {
+      "Sid": "CheapModelOnly",
+      "Effect": "Allow",
+      "Action": "AI:DECIDE",
+      "Resource": "connection:jev-small"
+    },
+    {
+      "Sid": "NoVendorX",
+      "Effect": "Deny",
+      "Action": "AI:DECIDE",
+      "Resource": "connection:vendor-x"
+    }
   ]
 }
 ```

@@ -271,9 +271,20 @@ Or layer an explicit deny on top of a broad allow:
 
 ```json
 {
+  "Version": "2024-01-01",
   "Statement": [
-    { "Sid": "AllowAll",     "Effect": "Allow", "Action": "UDF:EXECUTE", "Resource": "udf:*" },
-    { "Sid": "DenyInternal", "Effect": "Deny",  "Action": "UDF:EXECUTE", "Resource": ["udf:internal_*", "udf:*_admin"] }
+    {
+      "Sid": "AllowAll",
+      "Effect": "Allow",
+      "Action": "UDF:EXECUTE",
+      "Resource": "udf:*"
+    },
+    {
+      "Sid": "DenyInternal",
+      "Effect": "Deny",
+      "Action": "UDF:EXECUTE",
+      "Resource": ["udf:internal_*", "udf:*_admin"]
+    }
   ]
 }
 ```
