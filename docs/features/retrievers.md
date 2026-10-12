@@ -233,6 +233,8 @@ Response parsing is forgiving on purpose — `relevance_score` or `score`, wrapp
 !!! note "Dedicated re-rankers only — not generative LLMs"
     Anything that speaks this contract fits: a self-hosted Qwen3-Reranker, Cohere Rerank, Voyage. Generative LLMs do not. They answer in prose (needs parsing, and the parse can fail), take seconds rather than hundreds of milliseconds, and therefore need retries — a loop. A retriever invocation is a single synchronous call, so LLM-based ranking belongs in the agent loop above it. `ontul.rerank.max.timeout.ms` (default 5000) is the mechanical expression of that boundary: a call that needs longer cannot be configured here.
 
+    A **decision** model is a different case and does fit: it returns a typed decision rather than prose, in 70–500 ms, with nothing to parse. That is a separate step from ranking, so it is a separate function — [`ai_verdict`](ai-verdict.md), evaluated in a projection. The natural pairing is a `noul` question over the rows a retriever already returned and already filtered by IAM: *can this question be answered from these documents at all*, asked before anything is generated.
+
 ### Fields
 
 | Field | Default | Purpose |

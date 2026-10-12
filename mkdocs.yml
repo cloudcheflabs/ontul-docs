@@ -52,6 +52,7 @@ nav:
       - "Lance Integration (Vector / Multimodal)": features/lance-integration.md
       - "Semantic Layer": features/semantic-layer.md
       - "Retrievers (Multi-Modal Retrieval)": features/retrievers.md
+      - "Typed Decisions in SQL (ai_verdict)": features/ai-verdict.md
       - "Ontology (Objects, Links & Actions)": features/ontology.md
       - "BI Integration": features/bi-integration.md
       - "Remote Mode": features/remote-mode.md

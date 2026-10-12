@@ -91,6 +91,9 @@ curl -X POST http://localhost:8080/admin/connections \
 | `rest` | `baseUrl`, `profile`, `authType` (+ auth props) | Ontology `OPERATION` action write-back (`rest-operation` catalog) |
 | `http` | `url` (+ optional `headers`) | HTTP / Webhook sink |
 | `elasticsearch` | `endpoint` (+ optional auth) | Elasticsearch sink |
+| `EMBEDDING` | `endpoint`, `model`, `dim` (+ `dialect`, `asymmetry`, auth) | `embed_passage()` / `embed_query()`, retriever vector search |
+| `RERANK` | `baseUrl` (+ `path`, `model`, auth, `external`) | A retriever's [`rerank` block](retrievers.md) |
+| `DECIDE` | `baseUrl` (+ `path`, `model`, auth, `external`, `default`, `timeoutMs`, `maxConcurrency`, `retries`, `cacheSize`, `maxStateChars`, `onFailure`, `enabled`) | [`ai_verdict()` / `ai_verdict_one()`](ai-verdict.md) |
 
 ## Using Connection IDs in Sources and Sinks
 
