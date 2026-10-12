@@ -290,6 +290,13 @@ sends data to this vendor from SQL" — without touching table grants. No
 matching policy is a denial, as everywhere else in [IAM](iam.md). The check runs
 on the master, before any plan reaches a worker.
 
+The Admin UI policy editor ships both shapes — **Decision Endpoint
+(ai_verdict)** and **Decision Endpoint (Allow One, Deny Another)**. See
+[IAM Policy Templates](iam-policy-templates.md#decision-endpoints-ai_verdict).
+
+Note what the grant does *not* cover: it authorizes the endpoint, not the data.
+An identity still needs `data:Select` on every table the query scans.
+
 **Egress acknowledgement.** When a connection is marked `external=true`, every
 call must say so:
 
