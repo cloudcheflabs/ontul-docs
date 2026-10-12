@@ -33,8 +33,6 @@ For the details of these upper layers see the [Semantic Layer](../features/seman
 
 ## Ontul Architecture
 
-<img width="1200" src="../../images/architecture/ontul-architecture.png" align="center"/>
-
 Ontul consists of two main deployable components: **Master** and **Worker**.
 
 ### Master
