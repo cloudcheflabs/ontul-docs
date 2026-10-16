@@ -114,4 +114,4 @@ Set `ontul.lineage.openlineage.url` to an HTTP endpoint; each CTAS/INSERT/MERGE/
 
 ## Storage
 
-Lineage is persisted in the leader's metadata store and replicated to followers — the same mechanism used for catalogs and IAM — so it survives restarts and leadership changes.
+Lineage is persisted in the leader's metadata store and replicated to followers — the same mechanism used for catalogs and IAM — so it survives restarts and leadership changes. An edge recorded on a follower master (the statement or Flow start was routed there) is forwarded to the leader and replicated back, the same way as [audit records](audit-log.md#storage-and-failover).

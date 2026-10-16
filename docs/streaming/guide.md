@@ -359,6 +359,9 @@ drift.
 
 `GET /v1/api/job/{jobId}/log?from=0` streams the job log: every checkpoint, restore, window
 emission batch, rejected record (first N), and a progress line every `ontul.streaming.log.interval.ms`.
+After the job ends — or when the request reaches a master other than the job's owner — the log is
+read back from the job's S3 log segments, when job logs are on S3
+([Job Logs](../features/batch-streaming.md#get-job-logs)).
 
 ---
 

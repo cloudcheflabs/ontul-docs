@@ -95,6 +95,8 @@ Many path properties default to a subdirectory of `${ontul.base.data.dir}` (for 
 | --- | --- | --- |
 | `ontul.metadata.rocksdb.path` | `${ontul.base.data.dir}/metadata` | Filesystem path to the embedded RocksDB store holding cluster metadata: catalog definitions, connections, table maintenance config, storage settings, etc. Must persist across restarts. |
 | `ontul.metadata.kms.key.id` | `metadata-encryption` | KMS key id used to envelope-encrypt metadata at rest in the RocksDB store. Requires KMS to be enabled. |
+| `ontul.metadata.forward.queue.capacity` | `10000` | Metadata replicates leader → followers only, so a write made on a **follower** (audit record, lineage edge, Flow status, …) is also forwarded to the leader, asynchronously and in order. This is the most writes that may wait to be forwarded; beyond it, a write stays on that follower only and a warning is logged. |
+| `ontul.metadata.forward.max.attempts` | `5` | Attempts to forward one follower write while the leader is unreachable or an election is in progress (pause 1 s, 2 s, … between attempts) before giving up on it. |
 
 ## RPC Timeouts
 
@@ -269,13 +271,15 @@ Streaming checkpoints are stored per job under `checkpoints/{stateId}/` (one par
 
 ## Streaming
 
-Server-wide defaults for streaming jobs ([Streaming Guide](../streaming/guide.md)). Every one of them can be overridden per job in the `SUBMIT STREAMING` config.
+Server-wide defaults for streaming jobs ([Streaming Guide](../streaming/guide.md)). Where a row names a "job override", that key in the `SUBMIT STREAMING` config wins for that job; the other rows are cluster-wide only.
 
 | Property | Default | Description |
 | --- | --- | --- |
 | `ontul.streaming.checkpoint.interval.ms` | `10000` | Interval (ms) between checkpoints — the commit point of exactly-once sinks and the restore point after a failure. Job override: `checkpointIntervalMs` (an older job that sets only `commitIntervalMs` uses that). |
 | `ontul.streaming.checkpoint.timeout.ms` | `30000` | A checkpoint not acknowledged by every worker within this time is **aborted**: it is never a restore point, and Iceberg files that did arrive are committed with the next checkpoint. Job override: `checkpointTimeoutMs`. |
 | `ontul.streaming.checkpoint.send.timeout.ms` | `5000` | Timeout (ms) for delivering a checkpoint barrier to one worker. |
+| `ontul.streaming.checkpoint.tolerable.failures` | `3` | Consecutive failed commits of a checkpoint to the Iceberg sink (by the master's single committer) tolerated before the job fails and restarts from the last completed checkpoint. A transient catalog or S3 error is retried with the next checkpoint; a persistent one fails the job instead of stalling it. |
+| `ontul.streaming.checkpoint.max.empty.commits` | `10` | On an idle stream the coordinator still stamps an empty Iceberg commit (checkpoint id + source offsets, no data files) after this many consecutive empty checkpoints, so the restore point recorded in the table keeps up. `1` stamps every checkpoint. |
 | `ontul.streaming.max.retries` | `3` | Automatic restarts before the job is marked `FAILED`. Job override: `maxRetries`. |
 | `ontul.streaming.retry.reset.checkpoints` | `5` | A restarted job that completes this many checkpoints gets its retry budget back, so failures weeks apart do not add up. |
 | `ontul.streaming.source.poll.timeout.ms` | `100` | Source poll timeout (ms). The executor polls continuously — there is no micro-batch trigger. |

@@ -397,6 +397,17 @@ Response:
 }
 ```
 
+Where the lines come from:
+
+- **Running job** — the master's dispatch lines plus the worker's live in-memory log.
+- **Finished job** — the master's dispatch lines plus the worker's log read back from the durable
+  S3 segments (`<prefix>jobLogs/<jobId>/`), written when job logs are on S3 (the default when the
+  exchange is on S3, or set under *Storage settings*). The worker's memory is gone by then.
+- **Job owned by another master** — a job belongs to the master that accepted its submit, and with
+  several masters behind a load balancer the request may reach a different one. That master serves
+  the S3 segments, with `"status": "UNKNOWN"`; use `/v1/api/job/status/{jobId}` against the owning
+  master for the status. Without S3 job logs it answers `404 Job not found`.
+
 ### Kill a Running Job
 
 ```bash
