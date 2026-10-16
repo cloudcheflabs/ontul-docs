@@ -2587,11 +2587,11 @@
 <h2 id="streaming-source">Streaming Source</h2>
 <p>Ontul consumes messages from Kafka topics with support for multiple formats:</p>
 <ul>
-<li><strong>JSON</strong>: Parse JSON messages with automatic schema inference from the first message</li>
+<li><strong>JSON</strong>: Parse JSON messages; the schema is inferred as the union of the fields seen (or declared with <code>schema</code>), and a value that does not fit its column is rejected, not coerced</li>
 <li><strong>Avro</strong>: Deserialize Avro messages using Schema Registry integration</li>
 <li><strong>Raw</strong>: Access raw key, value, topic, partition, offset, and timestamp fields</li>
 </ul>
-<p>Multi-worker consumption: Workers share a consumer group and partitions are automatically distributed across Workers.</p>
+<p>Multi-worker consumption: worker <code>i</code> of <code>n</code> reads partitions <code>p % n == i</code> (a fixed assignment, no group rebalancing); new partitions are discovered while the job runs.</p>
 <h2 id="operations-pipeline">Operations Pipeline</h2>
 <p>Streaming jobs support a configurable operations pipeline:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
@@ -2615,63 +2615,41 @@
 <thead>
 <tr>
 <th>Sink</th>
-<th>Mode</th>
-<th style="text-align: center;">Exactly-Once</th>
+<th>Without a window</th>
+<th>With a window</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Iceberg</td>
-<td>Parquet → AppendFiles commit</td>
-<td style="text-align: center;">O</td>
-</tr>
-<tr>
-<td>NeorunBase</td>
-<td>REST bulk-insert (high throughput)</td>
-<td style="text-align: center;">at-least-once</td>
-</tr>
-<tr>
-<td>NeorunBase</td>
-<td>JDBC batch insert</td>
-<td style="text-align: center;">O</td>
-</tr>
-<tr>
-<td>Kafka</td>
-<td>Producer (transactional mode available)</td>
-<td style="text-align: center;">O (with tx)</td>
+<td>Iceberg <code>table</code> (default)</td>
+<td>exactly-once</td>
+<td>exactly-once</td>
 </tr>
 <tr>
 <td>JDBC</td>
-<td>Batch insert</td>
-<td style="text-align: center;">O</td>
+<td>exactly-once (offsets in the same transaction)</td>
+<td>at-least-once (use <code>mode: upsert</code> + keys)</td>
 </tr>
 <tr>
-<td>Elasticsearch</td>
-<td>Bulk API</td>
-<td style="text-align: center;">at-least-once</td>
+<td>Kafka <code>transactional: true</code></td>
+<td>exactly-once with a Kafka source</td>
+<td>at-least-once</td>
 </tr>
 <tr>
-<td>HTTP</td>
-<td>JSON POST</td>
-<td style="text-align: center;">at-least-once</td>
-</tr>
-<tr>
-<td>Console</td>
-<td>Job log output (debugging)</td>
-<td style="text-align: center;">—</td>
+<td>Kafka (non-tx), NeorunBase, Elasticsearch, HTTP, Lance</td>
+<td>at-least-once</td>
+<td>at-least-once</td>
 </tr>
 </tbody>
 </table>
+<p>See <a href="../../streaming/guide/#delivery-guarantees">Delivery guarantees</a> for the conditions.</p>
 <h2 id="barrier-checkpoint">Barrier Checkpoint</h2>
-<p>Ontul uses Master-coordinated barrier checkpoint for distributed streaming:</p>
-<ol>
-<li>Master triggers <code>CHECKPOINT_TRIGGER</code> to all Workers (periodic, configurable interval)</li>
-<li>Each Worker: flush sink → commit transaction → snapshot state to Exchange Manager</li>
-<li>Commit Kafka consumer offsets (AFTER sink commit)</li>
-<li>Report <code>CHECKPOINT_COMPLETE</code> back to Master</li>
-<li>Master: all Workers acked → checkpoint globally complete</li>
-</ol>
-<p>This ensures exactly-once for transactional sinks — if a Worker crashes, it restores from the last checkpoint and replays from committed Kafka offsets.</p>
+<p>The master triggers a checkpoint barrier on every worker on a fixed interval. Each worker captures
+its source offsets, aligns the barrier across its keyBy inputs, pre-commits or commits its sink and
+writes offsets + watermarks + window state to the Exchange Manager, then acknowledges. A checkpoint
+is a restore point only when every worker has acknowledged it; offsets are committed to the source
+only then — never on a timer, and never when a job fails. Details:
+<a href="../../streaming/guide/#checkpointing">Checkpointing</a>.</p>
 <h2 id="use-cases">Use Cases</h2>
 <h3 id="real-time-ingestion-with-transform">Real-Time Ingestion with Transform</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Kafka → FILTER + WINDOW + AGG → Iceberg Table

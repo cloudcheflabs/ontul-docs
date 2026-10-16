@@ -2917,9 +2917,10 @@
 <li><strong>Writes bypass IAM.</strong> The internal component is the sole writer; no IAM principal has write access, so audit records cannot be forged or suppressed through the normal authorization surface.</li>
 <li><strong>Reads enforce IAM.</strong> Audit contains sensitive query text and column names, so listing/searching the log is an authorized admin action.</li>
 </ul>
-<p>All audit and lineage writes are forwarded to the <strong>leader</strong> and replicated to standby masters (below).</p>
+<p>All audit and lineage writes are forwarded to the <strong>leader</strong> and replicated to standby masters (below). This includes events recorded on a <strong>follower</strong> — a query or <code>SUBMIT STREAMING</code> that a load balancer sent to a standby master: the follower keeps the record and forwards it to the leader, which stores it and replicates it back to every master, so the audit viewer (served by the leader) shows it.</p>
 <h2 id="storage-and-failover">Storage and Failover</h2>
 <p>Audit records live in the <strong>replicated metadata store</strong> (the same mechanism as catalogs, IAM, and lineage): the leader owns the store and broadcasts to standbys, so the audit log <strong>survives restarts and leader failover</strong> — a newly elected leader serves the same history.</p>
+<p>Forwarding from a follower is asynchronous (it never adds a network hop to the query) and ordered. While the leader is unreachable or an election is in progress, a record is retried <code>ontul.metadata.forward.max.attempts</code> times (default 5, with a growing pause); if that fails, or more than <code>ontul.metadata.forward.queue.capacity</code> (default 10000) records are waiting, the record stays on that follower only and a warning is logged.</p>
 <p>Local collection is independent of any tiering/emit path: if S3 tiering is enabled but temporarily failing, records keep accumulating locally and are tiered later (see below) rather than being lost.</p>
 <h2 id="s3-tiering-iceberg-parquet">S3 Tiering (Iceberg / Parquet)</h2>
 <p>By default audit stays local only. When you need durable, long-term, queryable history, enable tiering from the Admin UI (or <code>ontul.audit.tier.*</code>). An asynchronous, best-effort sweep offloads older records to S3:</p>

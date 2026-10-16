@@ -2988,6 +2988,9 @@ and Db2 — with their JDBC drivers. Credentials resolve from the registered
 </tr>
 </tbody>
 </table>
+<p>Iceberg, JDBC (without a window) and transactional Kafka (from a Kafka source) are <strong>exactly-once</strong>
+across failures and Stop/Start; the others are at-least-once and never drop a record — see
+<a href="../guide/#delivery-guarantees">Delivery guarantees</a>.</p>
 <h3 id="cdc-apply-iceberg-jdbc">CDC apply — Iceberg &amp; JDBC</h3>
 <p>When the source carries change events (a CDC source, or an Iceberg <code>changelog</code> source), the sink can
 <strong>materialize a replica</strong> instead of appending every event. Rows carry an operation column (<code>__op</code>:
@@ -3157,8 +3160,11 @@ database owns — add the column there.</p>
 </ul>
 <p>Both are surfaced in the Flow list and Metrics tab (<code>1,204 rec · 2.3s</code>), in the periodic progress line
 in the flow's log, and on the job status API as <code>sourceLag</code> / <code>sourceLagMs</code>. A flow's worker count is
-fixed for a run: to scale one out, <strong>Stop → change <code>numWorkers</code> → Start</strong> — the run resumes from its
-last committed checkpoint, so no data is reprocessed or lost.</p>
+fixed for a run: to scale one out, <strong>Stop → change <code>numWorkers</code> → Start</strong>. A flow keeps its checkpoints
+under <code>flow-&lt;name&gt;</code>, so the new run resumes from the last completed checkpoint — offsets and window
+state, redistributed by key over the new worker count. Nothing is lost; an exactly-once sink also
+reprocesses nothing, an at-least-once sink may receive the records read after that checkpoint again.
+Set <code>"startFrom": "fresh"</code> in the flow config to start over instead.</p>
 <h2 id="keeping-the-sink-table-fast">Keeping the sink table fast</h2>
 <p>A streaming flow commits on an interval, so it naturally produces many small files. Ontul compacts
 them <strong>in the background, concurrently with the flow</strong> — no need to stop ingestion:</p>
@@ -3197,8 +3203,8 @@ expire snapshots, remove orphan files, rewrite position deletes) and their tunin
 </ul>
 <p>Both are best-effort and never block or fail the flow submission.</p>
 <h2 id="storage-failover">Storage &amp; failover</h2>
-<p>A flow is a distributed streaming job; if a worker dies, another resumes the job from its last
-checkpoint via the <strong>exchange manager</strong>. For real deployments run the exchange (and job logs) on <strong>S3</strong>
+<p>A flow is a distributed streaming job; if a worker dies, the job restarts on the live workers from its
+last completed checkpoint via the <strong>exchange manager</strong> (see <a href="../guide/#checkpointing">Checkpointing</a>). For real deployments run the exchange (and job logs) on <strong>S3</strong>
 so state is not tied to a single worker's disk — configurable at runtime from <strong>Storage</strong> in the Admin
 UI, applied cluster-wide without a restart. See <a href="../../reference/configuration/">Configuration</a> for the
 <code>ontul.exchange.*</code>, <code>ontul.job.logs.*</code> and <code>ontul.flow.*</code> properties.</p>

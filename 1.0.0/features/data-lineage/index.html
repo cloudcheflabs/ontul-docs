@@ -2876,7 +2876,7 @@ edge lines up with SQL-DML lineage), while external systems are recorded as sche
 <p>Ontul can emit <a href="https://openlineage.io">OpenLineage</a>-spec events so external catalogs (Marquez, DataHub, Atlan, …) ingest Ontul lineage through the industry-standard wire format.</p>
 <p>Set <code>ontul.lineage.openlineage.url</code> to an HTTP endpoint; each CTAS/INSERT/MERGE/VIEW — and each streaming <a href="../../streaming/flow/">Ontul Flow</a> start — then emits a <code>COMPLETE</code> RunEvent with <code>inputs</code>, <code>outputs</code>, and a standard <code>columnLineage</code> facet. When unset, emission is disabled.</p>
 <h2 id="storage">Storage</h2>
-<p>Lineage is persisted in the leader's metadata store and replicated to followers — the same mechanism used for catalogs and IAM — so it survives restarts and leadership changes.</p>
+<p>Lineage is persisted in the leader's metadata store and replicated to followers — the same mechanism used for catalogs and IAM — so it survives restarts and leadership changes. An edge recorded on a follower master (the statement or Flow start was routed there) is forwarded to the leader and replicated back, the same way as <a href="../audit-log/#storage-and-failover">audit records</a>.</p>
 
 
 

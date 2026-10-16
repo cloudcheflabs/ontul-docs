@@ -2782,7 +2782,7 @@
 <a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>  │       │       ▼
 <a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>  │       │   Worker(s) (StreamingJobExecutor, dedicated thread per job)
 <a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>  │       │       │
-<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>  │       │       ├── KafkaStreamSource (consumer group, multi-worker partition distribution)
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>  │       │       ├── KafkaStreamSource (fixed partition assignment p % n, partition discovery)
 <a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>  │       │       │       ├── JSON auto-schema inference
 <a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>  │       │       │       └── Continuous poll (100ms) — Flink-style, NOT micro-batch
 <a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>  │       │       │
@@ -2816,9 +2816,9 @@
 <p><strong>Key design decisions:</strong></p>
 <ul>
 <li><strong>Flink-style continuous processing</strong>: Events are processed as soon as they arrive from Kafka (100ms poll), NOT Spark-style micro-batch</li>
-<li><strong>Barrier checkpoint</strong>: Master-coordinated distributed checkpoint — sink commit → offset commit → state snapshot (exactly-once for transactional sinks)</li>
+<li><strong>Barrier checkpoint</strong>: Master-coordinated aligned checkpoint — offsets, watermarks and window state are snapshotted together; exactly-once for Iceberg, JDBC (non-windowed) and transactional Kafka (see the <a href="../../streaming/guide/#delivery-guarantees">Streaming Guide</a>)</li>
 <li><strong>auto.commit = false</strong>: Kafka offsets are committed only after sink transaction is safely committed</li>
-<li><strong>JSON schema inference</strong>: The first message's structure determines the Arrow schema</li>
+<li><strong>JSON schema inference</strong>: The union of the fields seen so far (or a declared <code>schema</code>); mismatched values are rejected</li>
 <li><strong>Multi-worker shuffle</strong>: Windowed aggregation with GROUP BY distributes records by hash key across Workers</li>
 <li><strong>Exchange Manager</strong>: All checkpoint state is KMS envelope-encrypted</li>
 </ul>
