@@ -93,6 +93,10 @@ and Db2 — with their JDBC drivers. Credentials resolve from the registered
 | **NeorunBase** | Write to NeorunBase (Lakebase OLTP) | rest/jdbc |
 | **Console** | Print rows to the worker log | debug |
 
+Iceberg, JDBC (without a window) and transactional Kafka (from a Kafka source) are **exactly-once**
+across failures and Stop/Start; the others are at-least-once and never drop a record — see
+[Delivery guarantees](guide.md#delivery-guarantees).
+
 ### CDC apply — Iceberg & JDBC
 
 When the source carries change events (a CDC source, or an Iceberg `changelog` source), the sink can
@@ -236,8 +240,11 @@ database owns — add the column there.
 
 Both are surfaced in the Flow list and Metrics tab (`1,204 rec · 2.3s`), in the periodic progress line
 in the flow's log, and on the job status API as `sourceLag` / `sourceLagMs`. A flow's worker count is
-fixed for a run: to scale one out, **Stop → change `numWorkers` → Start** — the run resumes from its
-last committed checkpoint, so no data is reprocessed or lost.
+fixed for a run: to scale one out, **Stop → change `numWorkers` → Start**. A flow keeps its checkpoints
+under `flow-<name>`, so the new run resumes from the last completed checkpoint — offsets and window
+state, redistributed by key over the new worker count. Nothing is lost; an exactly-once sink also
+reprocesses nothing, an at-least-once sink may receive the records read after that checkpoint again.
+Set `"startFrom": "fresh"` in the flow config to start over instead.
 
 ## Keeping the sink table fast
 
@@ -283,8 +290,8 @@ Both are best-effort and never block or fail the flow submission.
 
 ## Storage & failover
 
-A flow is a distributed streaming job; if a worker dies, another resumes the job from its last
-checkpoint via the **exchange manager**. For real deployments run the exchange (and job logs) on **S3**
+A flow is a distributed streaming job; if a worker dies, the job restarts on the live workers from its
+last completed checkpoint via the **exchange manager** (see [Checkpointing](guide.md#checkpointing)). For real deployments run the exchange (and job logs) on **S3**
 so state is not tied to a single worker's disk — configurable at runtime from **Storage** in the Admin
 UI, applied cluster-wide without a restart. See [Configuration](../reference/configuration.md) for the
 `ontul.exchange.*`, `ontul.job.logs.*` and `ontul.flow.*` properties.

@@ -437,7 +437,7 @@ Ontul streaming uses Flink-style continuous processing, NOT Spark-style micro-ba
 
 Streaming jobs distribute across Workers based on Kafka partition assignment:
 
-- Each Worker receives a subset of Kafka partitions via the consumer group
+- Worker `i` of `n` reads Kafka partitions `p % n == i` (fixed assignment, no group rebalancing)
 - `workers(n)` in the SDK controls how many Workers are used (default: all)
 - Partition count should be >= Worker count for optimal distribution
 
@@ -451,30 +451,20 @@ session.streamSource(Source.kafka("inline", "events")
     .start();
 ```
 
-### Exactly-Once Semantics
+### Delivery Guarantees
 
-For transactional sinks, Ontul guarantees exactly-once delivery through barrier checkpoint:
+A checkpoint barrier flows through every worker; a checkpoint becomes the restore point only when
+all workers have acknowledged it, and an exactly-once sink commits exactly what that checkpoint
+covers. After a failure the job restarts from the last completed checkpoint.
 
-```
-1. Master triggers CHECKPOINT_TRIGGER → all Workers
-2. Each Worker: flush sink → commit sink transaction
-3. Snapshot state (Kafka offsets + window state) to Exchange Manager
-4. Commit Kafka consumer offsets (AFTER sink commit — ordering matters)
-5. Report CHECKPOINT_COMPLETE → Master
-6. Master: all Workers acked → checkpoint globally complete
-```
+| Sink | Without a window | With a window |
+|------|------------------|---------------|
+| Iceberg `table` (default) | exactly-once | exactly-once |
+| JDBC | exactly-once (offsets in the same transaction) | at-least-once (use `mode: upsert` + keys) |
+| Kafka `transactional: true` | exactly-once with a Kafka source | at-least-once |
+| Kafka (non-tx), NeorunBase, Elasticsearch, HTTP, Lance | at-least-once | at-least-once |
 
-If a Worker fails and restarts, it resumes from the last committed checkpoint — no duplicates, no data loss.
-
-| Sink | Transactional | Exactly-Once |
-|------|:---:|:---:|
-| Iceberg | O | O |
-| JDBC | O | O |
-| NeorunBase (JDBC) | O | O |
-| Kafka (transactional=true) | O | O |
-| NeorunBase (REST) | X | at-least-once |
-| Kafka (non-tx) | X | at-least-once |
-| Console | X | at-least-once |
+See [Delivery guarantees](../streaming/guide.md#delivery-guarantees) for the conditions.
 
 ### Streaming Operations
 

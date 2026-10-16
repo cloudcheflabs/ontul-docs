@@ -244,7 +244,9 @@ See [Audit Log](../features/audit-log.md) for the full feature description.
 The Exchange Manager handles spill of intermediate shuffle/exchange data and execution-state checkpoints (streaming snapshots). It has two storage modes, selected by `ontul.exchange.s3.enabled`, and all payloads are KMS envelope-encrypted at rest in both modes.
 
 - **Local-disk mode (default).** Data is written to — and read from — a worker-local directory. This is fast, but the data is tied to that worker's disk: a stage that is retried on a **different** worker cannot see it.
-- **S3-primary mode (`ontul.exchange.s3.enabled=true`).** Data is read and written **directly to S3** (the object store is the primary exchange storage, not a background copy). Because the spill/snapshot objects live in S3, a task that is reassigned to a different worker reads the same data from S3 — this is what enables worker-independent, fault-tolerant recovery. Object keys are worker-independent (`{prefix}spill/{stageId}/…`, `{prefix}snapshot/{checkpointId}/…`), so any worker configured with the same bucket and prefix resolves them.
+- **S3-primary mode (`ontul.exchange.s3.enabled=true`).** Data is read and written **directly to S3** (the object store is the primary exchange storage, not a background copy). Because the spill/snapshot objects live in S3, a task that is reassigned to a different worker reads the same data from S3 — this is what enables worker-independent, fault-tolerant recovery. Object keys are worker-independent (`{prefix}spill/{stageId}/…`, `{prefix}checkpoints/{stateId}/chk-{id}/w{worker}`), so any worker configured with the same bucket and prefix resolves them.
+
+Streaming checkpoints are stored per job under `checkpoints/{stateId}/` (one part per worker plus a `_latest` pointer to the last globally completed checkpoint) and pruned per job; the startup orphan sweep never touches them. Every stored object carries a format marker (`OXE1` envelope-encrypted, `OXP1` plaintext when KMS was not yet available on that worker), so a reader never has to guess. **A streaming job keeps its window state and offsets across a worker failure only in S3-primary mode** — in local-disk mode a checkpoint lives on the disk of the worker that wrote it.
 
 !!! note
     S3-primary mode is analogous to a filesystem/object-store-backed exchange manager (`exchange.base-directories=s3://…`) in engines that support fault-tolerant execution: the object store **replaces** local disk for exchange data — it is not merely a backup of it.
@@ -267,16 +269,20 @@ The Exchange Manager handles spill of intermediate shuffle/exchange data and exe
 
 ## Streaming
 
+Server-wide defaults for streaming jobs ([Streaming Guide](../streaming/guide.md)). Every one of them can be overridden per job in the `SUBMIT STREAMING` config.
+
 | Property | Default | Description |
 | --- | --- | --- |
-| `ontul.streaming.checkpoint.interval.ms` | `10000` | Default interval (ms) between checkpoint barriers for streaming jobs (how often a fault-tolerant snapshot of stream state is taken). A job may override via `checkpointIntervalMs`. Lower means more frequent checkpoints. |
-| `ontul.streaming.max.retries` | `3` | Maximum number of automatic restart attempts for a streaming job that fails before it is marked permanently failed. |
-| `ontul.streaming.source.poll.timeout.ms` | `100` | Source poll timeout (ms), e.g. Kafka consumer poll. Lower reduces end-to-end latency but increases CPU/poll churn; a job may override it. |
-| `ontul.streaming.commit.interval.ms` | `10000` | Time-based sink commit interval (ms) for non-transactional sinks: the current micro-batch is flushed/committed at least this often. Default when the job does not specify `commitIntervalMs`. |
-| `ontul.streaming.commit.row.threshold` | `10000` | Row-count sink commit threshold: the current micro-batch is flushed as soon as this many rows accumulate, even before the commit interval elapses (whichever comes first). |
-| `ontul.streaming.log.interval.ms` | `30000` | Interval (ms) between streaming progress log lines (throughput/offset logging). Default when the job does not override it. |
-| `ontul.streaming.checkpoint.send.timeout.ms` | `5000` | Timeout (ms) for the checkpoint coordinator to send a checkpoint barrier message to a worker. |
-| `ontul.streaming.checkpoint.timeout.ms` | `30000` | Timeout (ms) for a checkpoint round overall — how long the coordinator waits for all workers to acknowledge the barrier before the checkpoint is considered failed. |
+| `ontul.streaming.checkpoint.interval.ms` | `10000` | Interval (ms) between checkpoints — the commit point of exactly-once sinks and the restore point after a failure. Job override: `checkpointIntervalMs` (an older job that sets only `commitIntervalMs` uses that). |
+| `ontul.streaming.checkpoint.timeout.ms` | `30000` | A checkpoint not acknowledged by every worker within this time is **aborted**: it is never a restore point, and Iceberg files that did arrive are committed with the next checkpoint. Job override: `checkpointTimeoutMs`. |
+| `ontul.streaming.checkpoint.send.timeout.ms` | `5000` | Timeout (ms) for delivering a checkpoint barrier to one worker. |
+| `ontul.streaming.max.retries` | `3` | Automatic restarts before the job is marked `FAILED`. Job override: `maxRetries`. |
+| `ontul.streaming.retry.reset.checkpoints` | `5` | A restarted job that completes this many checkpoints gets its retry budget back, so failures weeks apart do not add up. |
+| `ontul.streaming.source.poll.timeout.ms` | `100` | Source poll timeout (ms). The executor polls continuously — there is no micro-batch trigger. |
+| `ontul.streaming.commit.interval.ms` | `10000` | Flush interval (ms) for **non-transactional** sinks (Elasticsearch, HTTP, non-transactional Kafka) and for an Iceberg sink with `ontul.streaming.exactly.once=false`. Source offsets are never committed on this timer — only at a checkpoint. Job override: `commitIntervalMs`. |
+| `ontul.streaming.commit.row.threshold` | `10000` | Row-count flush threshold for the same sinks (whichever of interval/rows comes first). Job override: `commitRowThreshold`. |
+| `ontul.streaming.log.interval.ms` | `30000` | Interval (ms) between streaming progress log lines. |
+| `ontul.streaming.exactly.once` *(JVM system property)* | `true` | Exactly-once Iceberg sink: the master commits every worker's files of a checkpoint in one Iceberg commit stamped with the checkpoint id and offsets. `false` restores per-worker commits (at-least-once). Job override: `ontul.streaming.exactly.once` in the job config. |
 
 ## Ontul Flow
 
