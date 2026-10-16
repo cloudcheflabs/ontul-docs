@@ -267,7 +267,7 @@ Client (SDK)
   │       │       ▼
   │       │   Worker(s) (StreamingJobExecutor, dedicated thread per job)
   │       │       │
-  │       │       ├── KafkaStreamSource (consumer group, multi-worker partition distribution)
+  │       │       ├── KafkaStreamSource (fixed partition assignment p % n, partition discovery)
   │       │       │       ├── JSON auto-schema inference
   │       │       │       └── Continuous poll (100ms) — Flink-style, NOT micro-batch
   │       │       │
@@ -302,9 +302,9 @@ Client (SDK)
 **Key design decisions:**
 
 - **Flink-style continuous processing**: Events are processed as soon as they arrive from Kafka (100ms poll), NOT Spark-style micro-batch
-- **Barrier checkpoint**: Master-coordinated distributed checkpoint — sink commit → offset commit → state snapshot (exactly-once for transactional sinks)
+- **Barrier checkpoint**: Master-coordinated aligned checkpoint — offsets, watermarks and window state are snapshotted together; exactly-once for Iceberg, JDBC (non-windowed) and transactional Kafka (see the [Streaming Guide](../streaming/guide.md#delivery-guarantees))
 - **auto.commit = false**: Kafka offsets are committed only after sink transaction is safely committed
-- **JSON schema inference**: The first message's structure determines the Arrow schema
+- **JSON schema inference**: The union of the fields seen so far (or a declared `schema`); mismatched values are rejected
 - **Multi-worker shuffle**: Windowed aggregation with GROUP BY distributes records by hash key across Workers
 - **Exchange Manager**: All checkpoint state is KMS envelope-encrypted
 

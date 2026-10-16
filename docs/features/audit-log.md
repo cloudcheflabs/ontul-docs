@@ -104,11 +104,13 @@ The audit log deliberately splits its read and write paths:
 - **Writes bypass IAM.** The internal component is the sole writer; no IAM principal has write access, so audit records cannot be forged or suppressed through the normal authorization surface.
 - **Reads enforce IAM.** Audit contains sensitive query text and column names, so listing/searching the log is an authorized admin action.
 
-All audit and lineage writes are forwarded to the **leader** and replicated to standby masters (below).
+All audit and lineage writes are forwarded to the **leader** and replicated to standby masters (below). This includes events recorded on a **follower** — a query or `SUBMIT STREAMING` that a load balancer sent to a standby master: the follower keeps the record and forwards it to the leader, which stores it and replicates it back to every master, so the audit viewer (served by the leader) shows it.
 
 ## Storage and Failover
 
 Audit records live in the **replicated metadata store** (the same mechanism as catalogs, IAM, and lineage): the leader owns the store and broadcasts to standbys, so the audit log **survives restarts and leader failover** — a newly elected leader serves the same history.
+
+Forwarding from a follower is asynchronous (it never adds a network hop to the query) and ordered. While the leader is unreachable or an election is in progress, a record is retried `ontul.metadata.forward.max.attempts` times (default 5, with a growing pause); if that fails, or more than `ontul.metadata.forward.queue.capacity` (default 10000) records are waiting, the record stays on that follower only and a warning is logged.
 
 Local collection is independent of any tiering/emit path: if S3 tiering is enabled but temporarily failing, records keep accumulating locally and are tiered later (see below) rather than being lost.
 

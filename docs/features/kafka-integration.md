@@ -6,11 +6,11 @@ Ontul supports Kafka (including ItdaStream) as a streaming source, enabling real
 
 Ontul consumes messages from Kafka topics with support for multiple formats:
 
-- **JSON**: Parse JSON messages with automatic schema inference from the first message
+- **JSON**: Parse JSON messages; the schema is inferred as the union of the fields seen (or declared with `schema`), and a value that does not fit its column is rejected, not coerced
 - **Avro**: Deserialize Avro messages using Schema Registry integration
 - **Raw**: Access raw key, value, topic, partition, offset, and timestamp fields
 
-Multi-worker consumption: Workers share a consumer group and partitions are automatically distributed across Workers.
+Multi-worker consumption: worker `i` of `n` reads partitions `p % n == i` (a fixed assignment, no group rebalancing); new partitions are discovered while the job runs.
 
 ## Operations Pipeline
 
@@ -36,28 +36,23 @@ Streaming jobs support a configurable operations pipeline:
 
 Processed data can be written to multiple sink types:
 
-| Sink | Mode | Exactly-Once |
-|------|------|:---:|
-| Iceberg | Parquet → AppendFiles commit | O |
-| NeorunBase | REST bulk-insert (high throughput) | at-least-once |
-| NeorunBase | JDBC batch insert | O |
-| Kafka | Producer (transactional mode available) | O (with tx) |
-| JDBC | Batch insert | O |
-| Elasticsearch | Bulk API | at-least-once |
-| HTTP | JSON POST | at-least-once |
-| Console | Job log output (debugging) | — |
+| Sink | Without a window | With a window |
+|------|------------------|---------------|
+| Iceberg `table` (default) | exactly-once | exactly-once |
+| JDBC | exactly-once (offsets in the same transaction) | at-least-once (use `mode: upsert` + keys) |
+| Kafka `transactional: true` | exactly-once with a Kafka source | at-least-once |
+| Kafka (non-tx), NeorunBase, Elasticsearch, HTTP, Lance | at-least-once | at-least-once |
+
+See [Delivery guarantees](../streaming/guide.md#delivery-guarantees) for the conditions.
 
 ## Barrier Checkpoint
 
-Ontul uses Master-coordinated barrier checkpoint for distributed streaming:
-
-1. Master triggers `CHECKPOINT_TRIGGER` to all Workers (periodic, configurable interval)
-2. Each Worker: flush sink → commit transaction → snapshot state to Exchange Manager
-3. Commit Kafka consumer offsets (AFTER sink commit)
-4. Report `CHECKPOINT_COMPLETE` back to Master
-5. Master: all Workers acked → checkpoint globally complete
-
-This ensures exactly-once for transactional sinks — if a Worker crashes, it restores from the last checkpoint and replays from committed Kafka offsets.
+The master triggers a checkpoint barrier on every worker on a fixed interval. Each worker captures
+its source offsets, aligns the barrier across its keyBy inputs, pre-commits or commits its sink and
+writes offsets + watermarks + window state to the Exchange Manager, then acknowledges. A checkpoint
+is a restore point only when every worker has acknowledged it; offsets are committed to the source
+only then — never on a timer, and never when a job fails. Details:
+[Checkpointing](../streaming/guide.md#checkpointing).
 
 ## Use Cases
 
