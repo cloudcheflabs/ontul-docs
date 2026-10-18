@@ -145,6 +145,12 @@ The Master continuously monitors Worker health:
 
 Masters and Workers register as ephemeral nodes in ZooKeeper. When a node joins or leaves the cluster, all other nodes are notified automatically. No manual configuration of cluster membership is required.
 
+The ensemble itself is visible on the Admin UI's **Cluster Topology** page: every server in
+`ontul.zk.serverList` with its role (leader / follower), status, version, connections, latency and zxid,
+plus the answering master's own ZooKeeper session state. A ZooKeeper server that went down — which
+leaves the cluster running but one failure away from losing quorum — shows up there as Offline before it
+becomes an outage. See [Admin UI → Topology](admin-ui.md#topology).
+
 ## State Store
 
 All cluster state is stored in embedded RocksDB — no external database is needed:

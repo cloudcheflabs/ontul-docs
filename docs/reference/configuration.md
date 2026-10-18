@@ -41,6 +41,8 @@ Many path properties default to a subdirectory of `${ontul.base.data.dir}` (for 
 | `ontul.zk.rootPath` | `/ontul` | Base znode namespace under which Ontul creates all its coordination nodes. Change this to run multiple independent clusters on one ZK ensemble. |
 | `ontul.zk.sessionTimeoutMs` | `30000` | ZooKeeper session timeout (ms). If a node cannot heartbeat within this window the session expires, the leader loses leadership, and workers are deregistered. Larger values tolerate GC/network blips but slow failover. |
 | `ontul.zk.connectionTimeoutMs` | `10000` | Maximum time (ms) to wait for the initial TCP connection to ZooKeeper before giving up on a connect attempt. Affects startup and reconnect latency. |
+| `ontul.zk.admin.probeTimeoutMs` | `2000` | Admin UI topology: socket timeout (ms) for asking each ZooKeeper server its status with the `srvr` command. A server that does not answer in time is shown Offline. |
+| `ontul.zk.admin.probeCacheTtlMs` | `5000` | How long (ms) one probe of the ensemble is reused for topology requests, so open admin pages do not add load to ZooKeeper. `0` probes on every request. |
 
 ## Master
 
