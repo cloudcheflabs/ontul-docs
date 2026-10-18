@@ -11,6 +11,10 @@
         <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/admin-ui/">
       
       
+        <link rel="prev" href="../udf/">
+      
+      
+        <link rel="next" href="../iam/">
       
       
         
@@ -269,10 +273,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../unified-engine/" class="md-tabs__link">
           
   
@@ -672,26 +678,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -709,7 +720,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1275,6 +1286,456 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin UI
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#opening-pages-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opening pages directly
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#who-can-change-what" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who can change what
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Who can change what">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#secrets-are-never-sent-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secrets are never sent back
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#access-keys-and-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access keys and tokens
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Topology
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sql-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQL Query
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#catalog-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catalog Browser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#catalogs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catalogs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#semantic-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Semantic Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrievers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrievers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#link-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Link Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action Workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ontology-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ontology Graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Lineage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Audit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lance-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lance Maintenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#drivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drivers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jobs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IAM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#single-sign-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single Sign-On
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KMS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iceberg-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Iceberg Health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Maintenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backup-restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backup &amp; Restore
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rest-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REST API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prometheus-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus Metrics
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2647,6 +3108,66 @@ paths — <code>GET /admin/audit</code> is both the Audit page and the audit-lis
 the kind of request: a browser opening the page gets the UI, while API calls (from the UI itself, the
 CLI or scripts) get JSON as before. Paths under <code>/admin/auth/</code> (login and SSO redirects) are always
 handled by the server.</p>
+<h2 id="who-can-change-what">Who can change what</h2>
+<p>Every admin API call is checked on the server, whatever the console shows. Hiding a button is a
+convenience; the check is what keeps a non-administrator out.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Read</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KMS, Backup &amp; Restore, STS</td>
+<td>administrators only</td>
+<td>administrators only</td>
+</tr>
+<tr>
+<td>IAM (users, groups, policies, keys), SSO, connections, catalogs, drivers, storage and other <code>/admin/config/*</code> settings, Iceberg maintenance, health scan, audit settings, cluster maintenance mode</td>
+<td>any signed-in user (secrets masked)</td>
+<td>administrators only</td>
+</tr>
+<tr>
+<td>SQL query history, jobs</td>
+<td>your own entries; administrators see everyone's</td>
+<td>your own queries and jobs; administrators any</td>
+</tr>
+<tr>
+<td>Your own access key download</td>
+<td>the key's owner or an administrator</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>"Administrator" means a user whose policies grant <code>AdministratorAccess</code>. A non-administrator who calls
+an administrator-only route gets <code>403 Forbidden</code>. The check runs after a follower master forwards the
+request to the leader, so it gives the same answer on every master. When no leader is known — during
+an election — a follower answers <code>503 Service Unavailable</code> rather than guessing a master.</p>
+<h3 id="secrets-are-never-sent-back">Secrets are never sent back</h3>
+<p>Connection properties, catalog properties, job configurations, query history and SSO settings are
+masked before they leave the server. Any key whose name contains <code>secret</code>, <code>password</code>, <code>passwd</code>,
+<code>token</code>, <code>credential</code>, <code>apikey</code> / <code>api_key</code>, <code>accesskey</code> / <code>access_key</code>, <code>private</code>, <code>jaas</code> or
+<code>authheadervalue</code> (case-insensitive) is shown as <code>***</code>. The same masking is applied inside SQL text, so
+<code>CREATE USER ... PASSWORD '...'</code> or a <code>key=value</code> string inside a job argument appears as
+<code>PASSWORD '***'</code> in history.</p>
+<p>Editing a masked value works in both forms:</p>
+<ul>
+<li><strong>Leave <code>***</code> in place</strong> — the stored secret is kept. You can rename a catalog's description or
+  change an endpoint without re-typing its secret key.</li>
+<li><strong>Type a new value</strong> — it replaces the stored one.</li>
+<li><strong>Clear the field</strong> (connections) — the key is removed from the connection.</li>
+</ul>
+<p>KMS key status lists each key's versions with their creation time and state only. No key material is
+returned by any endpoint.</p>
+<h3 id="access-keys-and-tokens">Access keys and tokens</h3>
+<p>Deleting an access key, or a user, revokes the key's token immediately: a request presenting it is
+refused from the next call on, not when a cache expires. A token is accepted only while its key exists,
+is <strong>Active</strong> and is not past its expiry date. An expiry date picked in the UI means <em>to the end of that
+day</em>. The download icon for a key is shown only to an administrator and to the key's owner, and the
+server enforces the same rule.</p>
 <h2 id="pages">Pages</h2>
 <h3 id="dashboard">Dashboard</h3>
 <p>Cluster overview with real-time metrics: query throughput, latency, active queries, worker status, and JVM heap usage. <strong>All / Masters / Workers</strong> tabs break the same metrics down per node, which is where per-worker heap and active-task figures live.</p>
@@ -2656,56 +3177,28 @@ handled by the server.</p>
 <li><strong>Masters</strong> — node ID, host, admin and internal ports, role (<strong>Leader</strong> / Follower) and status, with a
   <strong>Logs</strong> button that tails the node's log.</li>
 <li><strong>Workers</strong> — node ID, host, internal and Flight ports, status and <strong>Logs</strong>.</li>
-<li>
-<p><strong>ZooKeeper</strong> — every server of the ensemble in <code>ontul.zk.serverList</code>, whether or not Ontul is
-  currently connected to it. Each row shows:</p>
-<table>
-<thead>
-<tr>
-<th>Column</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Server</td>
-<td><code>host:port</code> from the connect string</td>
-</tr>
-<tr>
-<td>Role</td>
-<td><code>leader</code>, <code>follower</code>, <code>observer</code> or <code>standalone</code>, as the server reports it; <code>unknown</code> when it answers but does not serve (no quorum) or has the <code>srvr</code> command disabled</td>
-</tr>
-<tr>
-<td>Status</td>
-<td><strong>Online</strong> when the server answered, <strong>Offline</strong> when it could not be reached within <code>ontul.zk.admin.probeTimeoutMs</code> — the probe error is shown under the badge</td>
-</tr>
-<tr>
-<td>Version</td>
-<td>ZooKeeper version</td>
-</tr>
-<tr>
-<td>Connections</td>
-<td>client connections on that server</td>
-</tr>
-<tr>
-<td>Latency min/avg/max</td>
-<td>request latency the server measured, in ms</td>
-</tr>
-<tr>
-<td>Znodes</td>
-<td>number of znodes</td>
-</tr>
-<tr>
-<td>Zxid</td>
-<td>the last transaction id the server has seen; a follower far behind the leader is lagging</td>
-</tr>
-</tbody>
-</table>
-<p>The header shows the connect string, how many servers are up (<code>2/3 UP</code>), and the <strong>ZooKeeper
-session</strong> of the master that answered — <code>CONNECTED</code>, <code>RECONNECTED</code>, <code>SUSPENDED</code> (connection lost,
-session may still be alive) or <code>LOST</code> (session expired) — with its session ID.</p>
-</li>
 </ul>
+<p><strong>Logs</strong> shows that node's own log, whichever master served the page: a follower's log is fetched from
+the follower itself, and a worker is matched by host <em>and</em> port, so two workers on one host do not show
+each other's log. The viewer reads complete lines only, follows the file as it grows, and starts again
+from the end if the file is truncated or rotated. ZooKeeper servers have no log viewer.
+- <strong>ZooKeeper</strong> — every server of the ensemble in <code>ontul.zk.serverList</code>, whether or not Ontul is
+  currently connected to it. Each row shows:</p>
+<div class="highlight"><pre><span></span><code>| Column | Meaning |
+|---|---|
+| Server | `host:port` from the connect string |
+| Role | `leader`, `follower`, `observer` or `standalone`, as the server reports it; `unknown` when it answers but does not serve (no quorum) or has the `srvr` command disabled |
+| Status | **Online** when the server answered, **Offline** when it could not be reached within `ontul.zk.admin.probeTimeoutMs` — the probe error is shown under the badge |
+| Version | ZooKeeper version |
+| Connections | client connections on that server |
+| Latency min/avg/max | request latency the server measured, in ms |
+| Znodes | number of znodes |
+| Zxid | the last transaction id the server has seen; a follower far behind the leader is lagging |
+
+The header shows the connect string, how many servers are up (`2/3 UP`), and the **ZooKeeper
+session** of the master that answered — `CONNECTED`, `RECONNECTED`, `SUSPENDED` (connection lost,
+session may still be alive) or `LOST` (session expired) — with its session ID.
+</code></pre></div>
 <p>The ZooKeeper rows come from ZooKeeper's own <code>srvr</code> four-letter command, sent by the master to each
 server over a plain socket — the same answer <code>echo srvr | nc host 2181</code> gives. Nothing is written to
 ZooKeeper. <code>srvr</code> is in ZooKeeper's default <code>4lw.commands.whitelist</code> since 3.5; an ensemble that removed
@@ -2734,6 +3227,18 @@ Master while leaving reads, settings and job control available; a banner stays o
 as the window is open. See <a href="../cluster-maintenance/">Cluster Maintenance Mode</a>.</p>
 <h3 id="sql-query">SQL Query</h3>
 <p>Built-in SQL editor with syntax highlighting, <code>Ctrl+Enter</code> execution, result table, and query history.</p>
+<ul>
+<li><strong>Cancel</strong> stops the running query on the cluster, not only in the browser. The page chooses the
+  query's ID before sending it, so it can cancel a query whose first result has not arrived yet.</li>
+<li>Statements that return no rows — <code>INSERT</code>, <code>CREATE</code>, <code>DROP</code>, <code>CALL</code> and so on — show a banner with
+  the command tag and row count instead of an empty table.</li>
+<li>A failed statement shows the error and how long it ran.</li>
+<li>Integers beyond JavaScript's exact range (±2<sup>53</sup>−1, for example a large <code>BIGINT</code> ID or an
+  exact <code>SUM</code>) are sent as strings, so the page shows the digits the engine computed rather than a
+  rounded number.</li>
+<li>History lists your own queries (administrators see all), with their command tag. Secrets in the SQL
+  text are masked. <strong>Clear view</strong> empties the result pane without touching history.</li>
+</ul>
 <h3 id="catalog-browser">Catalog Browser</h3>
 <p>Point-and-click walk through a catalog: <strong>Catalogs → Schemas → Tables</strong>, then the selected table's
 column list and a sample of up to 100 rows. It is the counterpart to typing <code>SHOW SCHEMAS</code>,
@@ -2745,8 +3250,33 @@ statement that failed rather than leaving an empty pane. A table that describes 
 permissions, a broken storage path — keeps its column list and reports only the preview as failed.</p>
 <h3 id="catalogs">Catalogs</h3>
 <p>Register, unregister, and manage data source catalogs. View connector type, connection ID, table count, and configuration for each catalog.</p>
+<ul>
+<li><strong>Register first, persist after.</strong> A new or edited catalog is only saved once its connector has
+  started. A catalog whose endpoint or credentials are wrong is rejected with the connector's error,
+  and editing an existing catalog with bad settings leaves the previous, working catalog in place.</li>
+<li><strong>Iceberg</strong> catalogs take a REST (e.g. Polaris), Glue, JDBC or Hadoop catalog. Storage settings come
+  either from a <a href="../connection-id/">connection</a> or inline: S3 endpoint (optional for AWS), region,
+  access/secret key and path-style access, which is on by default for S3-compatible stores. When a
+  connection is chosen the inline keys are not sent, so the connection stays the only source of
+  credentials. The REST form sends <code>catalog.type=rest</code>; a catalog that has <code>catalog.rest.uri</code> but no
+  type is also treated as REST.</li>
+<li><strong>Lance</strong> with Polaris takes the Polaris server root as its URI plus the warehouse name.</li>
+<li>A connector type the form does not know is edited as raw JSON properties, so nothing is lost by
+  opening it in the UI.</li>
+<li>Masked secrets are restored from the stored catalog when you save without retyping them.</li>
+</ul>
 <h3 id="connections">Connections</h3>
 <p>Manage physical connections (S3, JDBC, Kafka) — create, update, delete, and list. Credentials are encrypted at rest via KMS.</p>
+<ul>
+<li>Connection IDs may contain letters, digits, <code>_</code>, <code>.</code> and <code>-</code>.</li>
+<li>Secret fields are always shown as password fields and come back as <code>***</code>; see
+  <a href="#secrets-are-never-sent-back">Secrets are never sent back</a> for how edits treat them.</li>
+<li><strong>Test</strong> really connects. For S3 it checks the configured bucket exists and can be listed
+  (<code>HeadBucket</code>, then <code>ListObjectsV2</code>), or lists buckets when no bucket is set, using the same endpoint,
+  region and path-style settings jobs use. DECIDE connections have their own check; other types answer
+  <code>ok: false</code> with "Testing is supported for S3 and DECIDE connections" instead of claiming success.</li>
+<li>A connection type the form does not know keeps all of its properties when edited.</li>
+</ul>
 <h3 id="semantic-layer">Semantic Layer</h3>
 <p>Register and govern <a href="../semantic-layer/">semantic views</a> — curated metrics and dimensions over a
 base SQL view. Each entry shows its trust badge, its metrics (a shield icon marks role-gated
@@ -2787,6 +3317,10 @@ sync). The list view shows every registered flow with its status, <strong>Record
 source or sink node), Metrics (live throughput sparkline, rejected count, source lag), Logs
 (auto-scrolling tail) and History (past runs with duration and rejected counts). A running flow is
 read-only — stop it to edit.</p>
+<p>The Iceberg sink's write mode (<code>append</code>, <code>upsert</code>, …) is saved in the spec as <code>sink.write</code>, together with
+<code>transactional</code> and <code>batchSize</code>, so it survives a save and reopen. An Iceberg source starts from
+<strong>latest</strong> (only new snapshots) or <strong>all</strong> (<code>earliest</code> is accepted as a synonym). Saving a new flow
+under a name that is already taken answers <code>409</code> instead of replacing the other flow.</p>
 <h3 id="data-lineage">Data Lineage</h3>
 <p>Table-level lineage graph built from executed DML, views, started flows and edges pushed by other
 engines: which sources feed which targets, each edge labelled with the operation that introduced it
@@ -2813,10 +3347,33 @@ no restart</strong> — the change is persisted to the replicated metadata store
 <h3 id="drivers">Drivers</h3>
 <p>Upload JDBC driver JARs for federated catalogs. Drivers are stored durably and synced to every
 worker, so a new driver does not require rebuilding an image.</p>
+<ul>
+<li><strong>An uploaded driver wins over a bundled one.</strong> Ontul ships some JDBC drivers (PostgreSQL among them).
+  Each uploaded JAR is loaded child-first, and a driver class found in an uploaded JAR is used before
+  the bundled copy, so uploading <code>postgresql-42.7.4.jar</code> really switches the version. Driver classes are
+  read from the JAR's <code>META-INF/services/java.sql.Driver</code>.</li>
+<li>Uploading a newer JAR for the same driver class under a different file name <strong>supersedes</strong> the old
+  JAR: it is removed on the master and on every worker.</li>
+<li><strong>Delete</strong> removes the JAR from the master and from every worker, and answers <code>404</code> for a name that
+  does not exist.</li>
+<li>File names must end in <code>.jar</code> and may not contain path separators or <code>..</code>.</li>
+</ul>
 <h3 id="jobs">Jobs</h3>
-<p>Monitor active and completed jobs. Submit new batch or streaming jobs, view real-time logs, and kill running jobs.</p>
+<p>Monitor active and completed jobs, view real-time logs, and kill running jobs. Jobs are submitted with
+the SDK or <code>bin/submit.sh</code>; the page is for watching and stopping them. Non-administrators see their own
+jobs, and secrets in job configuration are masked. <strong>Kill</strong> stops the job on every worker running it and
+reports a failure instead of silently doing nothing.</p>
 <h3 id="iam">IAM</h3>
 <p>Manage users, groups, and policies. Includes a visual policy editor for creating structured IAM policies with column-level and row-level security rules.</p>
+<ul>
+<li>The policy editor covers <code>Allow</code>, <code>Deny</code> and <code>Mask</code> statements. <code>Mask</code> takes the columns to mask
+  (<code>MaskedColumns</code>). Actions are picked from the known action list or typed by hand.</li>
+<li>Opening a policy and saving it keeps every field, including ones the editor has no control for, so
+  editing a policy written by the API or the CLI does not drop conditions.</li>
+<li><strong>New Policy</strong> refuses a name that already exists (<code>409</code>) instead of overwriting it.</li>
+<li>The editor stays open with the server's error when a save fails.</li>
+<li>Groups list their members.</li>
+</ul>
 <h3 id="single-sign-on">Single Sign-On</h3>
 <p>Configure OIDC, SAML 2.0 and LDAP / Active Directory, on tabs of their own. Every value is a named
 field — nothing here asks for JSON. Secrets (OIDC client secret, LDAP bind password, SAML SP private
@@ -2830,7 +3387,9 @@ log in with it.</p>
 Changing them needs <code>AdministratorAccess</code>; everyone else sees the page read-only. See
 <a href="../sso/">Single Sign-On</a>.</p>
 <h3 id="kms">KMS</h3>
-<p>Key management interface for viewing and managing encryption keys.</p>
+<p>Key management interface for viewing and managing encryption keys: create keys, rotate them and see
+each key's versions. Administrators only. Key IDs are trimmed and checked for duplicates before
+creation. No key material is ever shown.</p>
 <h3 id="iceberg-health">Iceberg Health</h3>
 <p>Continuous table-health collection for every registered Iceberg table: small-file counts, snapshot
 and manifest growth, delete-file accumulation, and the findings derived from them (<code>NO_MAINTENANCE</code>,
@@ -2841,8 +3400,16 @@ actually changed. Collection runs on the leader only — see
 aggregate the matching Prometheus gauges without double-counting across a failover.</p>
 <h3 id="maintenance">Maintenance</h3>
 <p>Configure and monitor Iceberg table maintenance — snapshot expiration, data compaction, manifest rewrite, orphan-file cleanup, and position-delete consolidation. Per-table configuration covers per-operation toggles plus Spark-aligned parameters (target file size, compaction <code>window_hours</code> and <code>min_input_files</code>, snapshot retention and <code>retain_last</code>, orphan safety window) and a <strong>schedule</strong> that is either a fixed interval or a 5-field UNIX <strong>cron</strong> (e.g. <code>0 */2 * * *</code>) which overrides the interval. A <strong>Manual Trigger</strong> runs any single operation (or all) on demand against a wildcard table pattern, with full job history.</p>
+<p>Settings are validated on save, and an invalid value is reported rather than stored: snapshot retention
+and <code>retain_last</code> at least 1, the orphan-file safety window at least 24 hours (shorter windows can delete
+files a running write has not committed yet), and a valid 5-field cron expression. The table field
+accepts any table name and suggests tables seen in health data and maintenance history. After <strong>Run
+Now</strong>, the history refreshes until the run finishes.</p>
 <h3 id="backup-restore">Backup &amp; Restore</h3>
 <p>Backup the cluster's KMS / IAM / metadata stores to S3 and restore from any prior backup. The page exposes manual <em>Backup Now</em>, a fixed-interval schedule, and a 5-field UNIX <strong>cron schedule</strong> (e.g. <code>0 2 * * *</code>); the next-fire timestamp is shown next to an active cron so you can see at a glance when the next run will land. See <a href="../backup-restore/">Backup &amp; Restore</a> for the full flow.</p>
+<p><em>Backup Now</em> needs a saved backup configuration. The backup list reports the storage error — a missing
+bucket, wrong credentials — instead of showing an empty list. Scheduled and cron backups run on the
+leader only, so a multi-master cluster takes one backup per run.</p>
 <h2 id="rest-api">REST API</h2>
 <p>All operations available in the Admin UI are also accessible via the REST API, enabling automation and integration with external tools. The full API is documented in OpenAPI 3.0 format.</p>
 <h2 id="prometheus-metrics">Prometheus Metrics</h2>

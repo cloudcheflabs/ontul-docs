@@ -1293,6 +1293,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../features/admin-ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../features/iam/" class="md-nav__link">
         
   
@@ -2980,7 +3008,7 @@ Start/Stop/Delete actions. <strong>New flow</strong> opens the editor; clicking 
 <tr>
 <td><strong>Iceberg</strong></td>
 <td>Incremental read of an Iceberg table</td>
-<td>table (<code>catalog.schema.table</code>), mode (<code>append</code> or <code>changelog</code> — the latter emits I/U/D with a <code>__op</code> column), start (<code>latest</code>/<code>earliest</code>)</td>
+<td>table (<code>catalog.schema.table</code>), mode (<code>append</code> or <code>changelog</code> — the latter emits I/U/D with a <code>__op</code> column), start (<code>latest</code> — only snapshots committed after the flow starts, or <code>all</code> — the whole table first; <code>earliest</code> is accepted as a synonym for <code>all</code>)</td>
 </tr>
 <tr>
 <td><strong>File / object</strong></td>
@@ -3010,7 +3038,7 @@ and Db2 — with their JDBC drivers. Credentials resolve from the registered
 <tr>
 <td><strong>Iceberg</strong></td>
 <td>Write to an Iceberg v2 table</td>
-<td>append · upsert · <strong>CDC apply</strong> (SCD Type 1/2, hard/soft/ignore delete)</td>
+<td>append · upsert · <strong>CDC apply</strong> (latest row per key, hard/soft/ignore delete)</td>
 </tr>
 <tr>
 <td><strong>JDBC</strong></td>
@@ -3083,13 +3111,12 @@ Iceberg CDC apply).</p>
 <a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="nt">&quot;delete&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;soft&quot;</span><span class="p">,</span>
 <a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="nt">&quot;opColumn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;__op&quot;</span><span class="p">,</span>
 <a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">    </span><span class="nt">&quot;deletedFlag&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;is_deleted&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">    </span><span class="nt">&quot;deletedAt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deleted_at&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">    </span><span class="nt">&quot;scd&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;validFrom&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;valid_from&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;validTo&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;valid_to&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;current&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;is_current&quot;</span><span class="w"> </span><span class="p">}</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">  </span><span class="p">},</span>
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">  </span><span class="nt">&quot;commitIntervalMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">  </span><span class="nt">&quot;numWorkers&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">  </span><span class="nt">&quot;durationMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9999999999</span>
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="p">}</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">    </span><span class="nt">&quot;deletedAt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deleted_at&quot;</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">  </span><span class="nt">&quot;commitIntervalMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">  </span><span class="nt">&quot;numWorkers&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">  </span><span class="nt">&quot;durationMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9999999999</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="p">}</span>
 </code></pre></div>
 <p>A Kafka → JDBC append flow is simpler:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
@@ -3105,6 +3132,10 @@ Iceberg CDC apply).</p>
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">&quot;commitIntervalMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;numWorkers&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
 <a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">}</span>
 </code></pre></div>
+<p>The <code>write</code> block may sit at the top level, as above, or inside the sink node as <code>sink.write</code>; the
+Admin UI's Flow builder saves it as <code>sink.write</code>, and a block inside the sink wins when both exist.
+History-keeping SCD Type 2 (valid-from / valid-to rows) is not implemented; CDC apply keeps the latest
+row per key.</p>
 <p>For a JDBC <strong>CDC-apply</strong> sink, put <code>mode</code>/<code>opColumn</code>/<code>keys</code> on the sink node itself (JDBC does not use
 a separate <code>write</code> block).</p>
 <h2 id="data-quality-rejected-records">Data quality — rejected records</h2>

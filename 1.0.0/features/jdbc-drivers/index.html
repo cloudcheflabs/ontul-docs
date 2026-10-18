@@ -1033,6 +1033,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#an-uploaded-driver-wins-over-a-bundled-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An uploaded driver wins over a bundled one
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deleting-a-driver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting a driver
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#streamed-to-every-worker" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1369,6 +1391,34 @@
     
   
     User-Defined Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admin-ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin UI
   
 
     
@@ -2759,9 +2809,22 @@ JAR's own <code>java.sql.Driver</code> service), not by file name. The rule is d
   so there is always a single, unambiguous driver per class. No manual cleanup, and
   no version coexistence to reason about.</li>
 </ul>
-<p>Only classes the JAR provides through its <strong>own</strong> classloader are counted, so a
-driver already bundled on the system classpath is never mis-attributed to an
-uploaded JAR.</p>
+<p>Driver classes are read from the JAR's own <code>META-INF/services/java.sql.Driver</code>
+file, so a driver already bundled on the system classpath is never mis-attributed
+to an uploaded JAR.</p>
+<h2 id="an-uploaded-driver-wins-over-a-bundled-one">An uploaded driver wins over a bundled one</h2>
+<p>Each uploaded JAR is loaded <strong>child-first</strong>: its own classes are used before the
+classes Ontul ships with (only <code>java.*</code>, <code>javax.*</code>, <code>jdk.*</code>, <code>sun.*</code> and
+<code>org.slf4j.*</code> always come from the platform). When a catalog or job asks for a
+driver class, uploaded JARs are searched before the bundled classpath. So
+uploading <code>postgresql-42.7.4.jar</code> really makes PostgreSQL connections use 42.7.4,
+even though a PostgreSQL driver ships with the distribution. Delete the uploaded
+JAR to go back to the bundled version.</p>
+<h2 id="deleting-a-driver">Deleting a driver</h2>
+<p><code>DELETE /admin/drivers/{file}</code> removes the JAR on the master and tells every worker
+to remove its copy. A name that does not exist answers <code>404</code>. Upload and delete
+need administrator access, and a file name must end in <code>.jar</code> and may not contain
+<code>/</code>, <code>\</code> or <code>..</code>.</p>
 <h2 id="streamed-to-every-worker">Streamed to every worker</h2>
 <p>On upload the master validates and loads the JAR, then <strong>streams it to each
 worker in bounded chunks</strong> over the internal NIO channel (rather than encoding a

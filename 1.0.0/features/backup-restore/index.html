@@ -1298,6 +1298,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../admin-ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../iam/" class="md-nav__link">
         
   
@@ -2843,6 +2871,8 @@
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  └── metadata.json      # catalog metadata snapshot
 </code></pre></div>
 <p>The history is exposed at <code>GET /admin/backup/history</code> (last 100 entries) and the available backup ids at <code>GET /admin/backup/list</code> (newest first).</p>
+<p><code>/admin/backup/list</code> checks that the bucket exists before listing it and pages through every backup under the prefix. When the target cannot be read — a missing bucket, wrong credentials, a deleted connection — it answers <code>502</code> with the storage error, and the Admin UI shows that error instead of "No backups found". With no backup configured it answers <code>[]</code>. <em>Backup Now</em> in the UI is enabled only once a configuration has been saved. Saving a configuration always re-arms the interval schedule (an interval of <code>0</code> turns it off).</p>
+<p>Scheduled and cron backups run on the <strong>leader only</strong>: every master keeps the schedule, but a follower's tick does nothing, so a three-master cluster takes one backup per run rather than three. All backup endpoints, including the reads, need administrator access.</p>
 <h2 id="restore">Restore</h2>
 <p>Restore is destructive — it overwrites the current stores. Ontul runs it in three phases on the leader:</p>
 <ol>
