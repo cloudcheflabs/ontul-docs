@@ -52,6 +52,16 @@ a follower's request to the leader.
 Per-table maintenance configuration lives in the metadata store, which the leader replicates to
 followers, so a schedule survives a leader handoff and a restart.
 
+### Storage access
+
+Every maintenance operation — scheduled or manual — reads and writes table files through the S3
+settings of the **Ontul catalog** (`s3.endpoint`, `s3.accessKey` / `s3.secretKey`, `s3.pathStyle`),
+not through whatever endpoint or credentials the REST catalog advertises with the table. A catalog
+such as Polaris may advertise the endpoint as clients *outside* the cluster reach it (for example
+`http://localhost:8000` next to an internal `http://nginx:80`); writing a rewritten manifest or
+deleting expired files through that address fails from inside the cluster. Using the catalog's own
+S3 settings keeps maintenance on the same storage path as Ontul's queries and writes.
+
 ## Did it actually help?
 
 Maintenance that runs is not the same as maintenance that helped. Every run is bracketed with a

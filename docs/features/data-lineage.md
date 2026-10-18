@@ -20,6 +20,45 @@ edge lines up with SQL-DML lineage), while external systems are recorded as sche
 `kafka://<topic>`, `cdc://<connector>/<table>`, `jdbc://<table>`, `es://<index>`, `http://<endpoint>`,
 `neorunbase://<table>`, or the S3 path for a file source.
 
+## How Repeated Writes Accumulate
+
+A table is often fed by more than one statement — a CTAS from one engine, then `INSERT`s from
+another. Table-level lineage keeps **one entry per target table**, and each new edge is combined with
+what is already there according to what the statement means for the target:
+
+| Operation (as recorded) | Produced by | Effect on the target's sources |
+|---|---|---|
+| `CTAS` | `CREATE TABLE … AS SELECT` (Ontul or an engine plugin) | **Replaces** them — the table is defined afresh |
+| `VIEW` | `CREATE [OR REPLACE] VIEW` | **Replaces** them — a redefined view drops its old sources |
+| `semantic-view` | Semantic-layer view registration | **Replaces** them |
+| `INSERT_INTO`, `INSERT` | `INSERT INTO … SELECT` (Ontul / engine plugin) | **Adds** the new sources |
+| `MERGE_INTO` | `MERGE INTO` | **Adds** the new sources |
+| `STREAMING` | `SUBMIT STREAMING` (Ontul Flow start) | **Adds** the flow's sources |
+| `ACTION` | Ontology action invocation | **Adds** |
+| `EXTERNAL` (default) or any other value sent | `POST /v1/api/lineage` | **Adds** — only `CTAS`, `VIEW` and `semantic-view` replace |
+
+Two further rules keep the graph honest:
+
+- **A table reading itself is not an edge.** `INSERT INTO t SELECT … FROM t` (de-duplication, backfill
+  from its own history) does not record `t ← t`.
+- **The label belongs to the statement that introduced the source.** The stored operation labels the
+  edges in the graph. A statement that adds no new source — such as the self-`INSERT` above — leaves
+  the existing label (for example `CTAS`) in place instead of relabelling every edge as `INSERT_INTO`.
+
+For example:
+
+```sql
+-- Trino (via the chango plugin):  CREATE TABLE ice.s.orders AS SELECT … FROM tpch.tiny.orders
+-- Ontul:                          INSERT INTO ice.s.orders SELECT … FROM pg.public.orders_backfill
+-- Ontul:                          INSERT INTO ice.s.orders SELECT … FROM ice.s.orders WHERE …
+SHOW LINEAGE ice.s.orders;
+-- tpch.tiny.orders
+-- pg.public.orders_backfill
+```
+
+Column-level lineage is stored per target and reflects the most recent statement that wrote the
+table.
+
 ## Table-Level Lineage
 
 Table-level lineage records the set of source tables a table was built from — every table scanned by the defining query, across joins and unions.
@@ -74,9 +113,11 @@ Read-only lineage endpoints (any authenticated user):
 
 Ontul is not only the source of lineage — it is also a **collection point** for other engines. Trino, Spark, and Flink authorization plugins (as deployed by [Chango](https://www.cloudchef-labs.com)) already route their access-control decisions through Ontul IAM; the same plugins push the **lineage edges** they observe into Ontul over a REST endpoint, so lineage from every engine lands in one replicated store.
 
+The endpoint lives at the server root, **not** under `/admin`:
+
 ```
-POST /admin/v1/api/lineage
-Authorization: Bearer <token>
+POST /v1/api/lineage
+Authorization: Token <ontul-token>        # or: Bearer <jwt> / AccessKey
 Content-Type: application/json
 
 {
@@ -86,11 +127,19 @@ Content-Type: application/json
 }
 ```
 
+Response: `{"status":"ok"}`; `target` is required (400 otherwise). `operation` defaults to
+`EXTERNAL`. The plugins send `CTAS` for `CREATE TABLE … AS` and `INSERT` for inserts, so the
+[accumulation rules](#how-repeated-writes-accumulate) apply to their edges exactly as to Ontul's.
+
 The ingested edge is stored and queried exactly like a natively-captured one — it appears in `SHOW LINEAGE`, the graph/impact/PII-flow endpoints, and the Admin UI graph, regardless of which engine produced it. This is the lineage half of Ontul's cross-engine [Audit Log](audit-log.md); the audit half records **who / which engine / which query** for the same operation.
 
 ## Admin UI
 
 The **Data Lineage** page renders an interactive graph (sources on the left, derived tables on the right). Enter a table, choose direction and depth, and trace its lineage. Click any node to open a side panel showing its column-level lineage — with the `derived` flag — and its downstream impact.
+
+Each edge is labelled with the operation that introduced it (`CTAS`, `INSERT_INTO`, `MERGE_INTO`, `VIEW`, …). The page can be opened directly by URL (`/admin/lineage`) or reloaded.
+
+The **Audit → Overview & Graph** page shows a different, complementary graph — `user → engine → table` built from audit events — see [Audit Log](audit-log.md#admin-ui).
 
 ## PII Flow Detection
 
