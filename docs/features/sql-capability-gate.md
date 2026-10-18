@@ -17,9 +17,10 @@ Ontul's master plans a query with Apache Calcite and ships the resulting express
 **Calcite `RexNode` text**. Each worker re-parses that text into its own expression tree.
 
 That design is what makes the plan small and language-neutral, but it has a sharp edge: a construct
-the worker's parser does not recognise does not raise — it degrades. An unknown function evaluates to
-`NULL`; an unrecognised literal becomes a string. Without a gate, an unsupported feature surfaces as a
-**silently wrong answer**:
+the worker's parser does not recognise could degrade instead of raising. An unknown function used to
+evaluate to `NULL`, and an unrecognised literal became a string. The worker now fails on an unknown
+function, but a construct it parses and evaluates by the wrong rules still returns rows. Without a
+gate, an unsupported feature surfaces as a **silently wrong answer**:
 
 | Without the gate | What the user saw |
 |------------------|-------------------|
@@ -69,10 +70,9 @@ Two consequences worth knowing:
 | Aggregates other than `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` (e.g. `STDDEV_POP`) | A [UDF](udf.md) |
 | `SUM`/`AVG` over a non-numeric column | `CAST` first |
 | `OFFSET` | `LIMIT` only; page with a `WHERE` range over a sorted key |
-| Scalar functions the gate does not admit — `EXTRACT`, `POWER`, `SQRT`, `CHAR_LENGTH`, `POSITION`, `CURRENT_DATE`, `TRIM`, … | A [UDF](udf.md), or a built-in extension (see [below](#functions-the-gate-admits)) |
+| Scalar functions the gate does not admit — `POWER`, `SQRT`, `CHAR_LENGTH`, `POSITION`, `TRIM`, … | A [UDF](udf.md), or a built-in extension (see [below](#functions-the-gate-admits)) |
 | Unary minus (`-x`) | `(0 - x)` |
 | `IN (...)` / `BETWEEN` in the **SELECT list** (they survive as `SEARCH(Sarg[…])`) | Explicit `OR` / `AND` comparisons. Both are fine in `WHERE` |
-| Comparing a column against a `DATE` / `TIME` / `TIMESTAMP` / `INTERVAL` literal | Compare on the epoch value — these types travel through the engine as epoch numbers. A datetime literal as **data** (`INSERT … VALUES (DATE '2026-01-01')`) is fine |
 | String literal containing `'` | — |
 | `LIKE … ESCAPE` | Plain `LIKE`; `%` and `_` are the only wildcards, everything else is literal |
 | Dynamic parameters (`?`) | Inline the value — the plan is shipped as text |
@@ -88,6 +88,7 @@ recognised as an extension:
 | Comparison, logic, arithmetic, `CAST`, `CASE`, `ITEM`, `ARRAY` | in the planner's scalar set |
 | `UPPER`, `LOWER`, `SUBSTRING`, `REPLACE`, `CONCAT` / `\|\|` | in the planner's scalar set |
 | `ABS`, `CEIL`, `CEILING`, `FLOOR`, `ROUND` | in the planner's scalar set |
+| `EXTRACT` (and `YEAR()`, `MONTH()`, … which Calcite turns into it), `FLOOR`/`CEIL(x TO unit)`, `CURRENT_DATE`, `CURRENT_TIMESTAMP`, `LOCALTIMESTAMP`, `CURRENT_TIME`, and the `Reinterpret` / `/INT` that `TIMESTAMPDIFF` expands into | in the planner's scalar set — see [Data Types](data-types.md#date-and-time-functions) |
 | `ST_*` | matched by prefix — see [Geospatial](geospatial.md) |
 | `embed_passage()`, `embed_query()` | named extensions, evaluated per Arrow batch |
 | `ai_verdict()`, `ai_verdict_one()` | named extensions, evaluated per Arrow batch — see [`ai_verdict`](ai-verdict.md) |
@@ -144,8 +145,7 @@ validation while it is off.
 The message always names the construct, and adds the rewrite when there is a mechanical one:
 
 ```
-Comparing against a DATE / TIME / TIMESTAMP / INTERVAL literal is not supported by the Ontul
-execution engine: the engine stores these as epoch numbers; compare on the epoch value instead
+OFFSET is not supported by the Ontul execution engine: only LIMIT (without OFFSET) is executable
 ```
 
 If a query you expect to work is rejected, that is a bug in the gate — the rule list is meant to be
@@ -154,6 +154,8 @@ exactly the set of constructs the engine mis-evaluates, no wider. Report the SQL
 ## Roadmap
 
 The gate is deliberately a **capability contract, not a permanent limitation**. Each rule is removed
-in the same change that adds real support — outer joins, non-numeric `MIN`/`MAX`, n-ary `AND`/`OR`
-and regex-unsafe `LIKE` patterns were all gated at one point and are now executed. The next
+in the same change that adds real support — outer joins, non-numeric `MIN`/`MAX`, n-ary `AND`/`OR`,
+regex-unsafe `LIKE` patterns, and comparisons against `DATE` / `TIMESTAMP` literals with `EXTRACT`
+and the other date functions (when [DATE and TIMESTAMP became real types](data-types.md)) were all gated
+at one point and are now executed. The next
 candidates are `OFFSET`, `COUNT(DISTINCT)`, set operations and window functions.

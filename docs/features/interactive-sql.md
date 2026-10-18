@@ -17,7 +17,9 @@ Ontul uses Apache Calcite for SQL parsing and query planning, supporting:
 - **DML**: `SELECT`, `INSERT INTO`, `UPDATE`, `DELETE`, `MERGE INTO`, `CREATE TABLE AS SELECT`
 - **DDL**: `CREATE TABLE`, `DROP TABLE`, `ALTER TABLE`, `CREATE VIEW`, `DROP VIEW`, `CREATE SCHEMA`, `DROP SCHEMA`
 - **Queries**: `JOIN` (INNER, LEFT, RIGHT, FULL — one equality in `ON`), `GROUP BY`, `ORDER BY`, `LIMIT`, `HAVING`, `SELECT DISTINCT`, CTEs (`WITH`) and derived tables, `CASE WHEN`, `COALESCE`, `NULLIF`, `CAST`, `LIKE`, `IN`, `BETWEEN`, `IS NULL`
-- **Aggregations**: `COUNT(*)`, `COUNT(col)`, `SUM`, `AVG`, `MIN`, `MAX` (MIN/MAX also over text and dates)
+- **Aggregations**: `COUNT(*)`, `COUNT(col)`, `SUM`, `AVG`, `MIN`, `MAX` (MIN/MAX also over text and dates; `SUM`/`AVG` over `DECIMAL` are exact)
+- **Types**: `BOOLEAN`, integers, `REAL`/`DOUBLE`, `DECIMAL(p, s)`, `VARCHAR`, `VARBINARY`, `DATE`, `TIME`, `TIMESTAMP`, `TIMESTAMP WITH LOCAL TIME ZONE`, `ROW`/`ARRAY`/`MAP` — real types end to end, with datetime literals, comparisons, `CAST` and exact decimal arithmetic. See [Data Types](data-types.md)
+- **Date / time functions**: `EXTRACT` (and `YEAR()`, `MONTH()`, …), `FLOOR`/`CEIL(x TO unit)`, `x ± INTERVAL`, `TIMESTAMPADD`, `TIMESTAMPDIFF`, `CURRENT_DATE`, `CURRENT_TIMESTAMP`
 - **Not executable**: window functions (`OVER`), subqueries in `SELECT`/`WHERE`, `INTERSECT` / `EXCEPT` / de-duplicating `UNION`, `COUNT(DISTINCT)`, `OFFSET`, composite/non-equi join conditions. These are rejected at plan time with an explicit error rather than returning a wrong answer — see [SQL Capability Gate](sql-capability-gate.md) for the full list and the rewrite for each.
 - **Metadata**: `SHOW CATALOGS`, `SHOW SCHEMAS`, `SHOW TABLES`, `DESCRIBE`, `EXPLAIN`
 - **Transactions**: `BEGIN`, `COMMIT`, `ROLLBACK`

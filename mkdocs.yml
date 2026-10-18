@@ -43,6 +43,7 @@ nav:
       - "Arrow-Native Execution": features/arrow-native-execution.md
       - "Query Performance": features/query-performance.md
       - "SQL Capability Gate": features/sql-capability-gate.md
+      - "Data Types": features/data-types.md
       - "Connector Architecture": features/connector-architecture.md
       - "Connection ID (Source/Sink by Reference)": features/connection-id.md
       - "JDBC Drivers": features/jdbc-drivers.md
