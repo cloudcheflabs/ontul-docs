@@ -2651,7 +2651,84 @@ handled by the server.</p>
 <h3 id="dashboard">Dashboard</h3>
 <p>Cluster overview with real-time metrics: query throughput, latency, active queries, worker status, and JVM heap usage. <strong>All / Masters / Workers</strong> tabs break the same metrics down per node, which is where per-worker heap and active-task figures live.</p>
 <h3 id="topology">Topology</h3>
-<p>Visual overview of the cluster — active Masters and Workers with node status and health information.</p>
+<p>The <strong>Cluster Topology</strong> page lists every node the cluster depends on, refreshed every 10 seconds:</p>
+<ul>
+<li><strong>Masters</strong> — node ID, host, admin and internal ports, role (<strong>Leader</strong> / Follower) and status, with a
+  <strong>Logs</strong> button that tails the node's log.</li>
+<li><strong>Workers</strong> — node ID, host, internal and Flight ports, status and <strong>Logs</strong>.</li>
+<li>
+<p><strong>ZooKeeper</strong> — every server of the ensemble in <code>ontul.zk.serverList</code>, whether or not Ontul is
+  currently connected to it. Each row shows:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Server</td>
+<td><code>host:port</code> from the connect string</td>
+</tr>
+<tr>
+<td>Role</td>
+<td><code>leader</code>, <code>follower</code>, <code>observer</code> or <code>standalone</code>, as the server reports it; <code>unknown</code> when it answers but does not serve (no quorum) or has the <code>srvr</code> command disabled</td>
+</tr>
+<tr>
+<td>Status</td>
+<td><strong>Online</strong> when the server answered, <strong>Offline</strong> when it could not be reached within <code>ontul.zk.admin.probeTimeoutMs</code> — the probe error is shown under the badge</td>
+</tr>
+<tr>
+<td>Version</td>
+<td>ZooKeeper version</td>
+</tr>
+<tr>
+<td>Connections</td>
+<td>client connections on that server</td>
+</tr>
+<tr>
+<td>Latency min/avg/max</td>
+<td>request latency the server measured, in ms</td>
+</tr>
+<tr>
+<td>Znodes</td>
+<td>number of znodes</td>
+</tr>
+<tr>
+<td>Zxid</td>
+<td>the last transaction id the server has seen; a follower far behind the leader is lagging</td>
+</tr>
+</tbody>
+</table>
+<p>The header shows the connect string, how many servers are up (<code>2/3 UP</code>), and the <strong>ZooKeeper
+session</strong> of the master that answered — <code>CONNECTED</code>, <code>RECONNECTED</code>, <code>SUSPENDED</code> (connection lost,
+session may still be alive) or <code>LOST</code> (session expired) — with its session ID.</p>
+</li>
+</ul>
+<p>The ZooKeeper rows come from ZooKeeper's own <code>srvr</code> four-letter command, sent by the master to each
+server over a plain socket — the same answer <code>echo srvr | nc host 2181</code> gives. Nothing is written to
+ZooKeeper. <code>srvr</code> is in ZooKeeper's default <code>4lw.commands.whitelist</code> since 3.5; an ensemble that removed
+it still shows its servers as Online, with the role <code>unknown</code> and the server's refusal as the note.
+A probe is reused for <code>ontul.zk.admin.probeCacheTtlMs</code> (5 s by default), so many open admin pages do not
+add load to the ensemble. Any master answers on its own: unlike other admin requests, this one is not
+forwarded to the leader, because finding the leader needs ZooKeeper. So the ZooKeeper section keeps
+updating for an open page even when the ensemble has lost quorum and the Masters and Workers lists stall —
+the case it exists for. (Logging in needs the leader, so open the page before you need it, or use the API
+with a token you already hold.) The same data is available as JSON from <code>GET /admin/nodes/zookeeper</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;connectString&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;zk1:2181,zk2:2181,zk3:2181&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;servers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;zk1&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2181</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UP&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;leader&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;3.9.1&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">     </span><span class="nt">&quot;zxid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0x100000045&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connections&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;outstanding&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">     </span><span class="nt">&quot;latencyMinMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;latencyAvgMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.42</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;latencyMaxMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;nodeCount&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">137</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">     </span><span class="nt">&quot;probeRttMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">},</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;zk3&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2181</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DOWN&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ConnectException: Connection refused&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;...&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">}</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="nt">&quot;session&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CONNECTED&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;connected&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;since&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1760774400000</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;sessionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0x1000a3b2c0001&quot;</span><span class="p">},</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="nt">&quot;reportedBy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontul-master-1:8080&quot;</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">}</span>
+</code></pre></div>
 <p>Also home to the <strong>Enter / Exit Maintenance</strong> switch. Turning it on refuses writes across every
 Master while leaving reads, settings and job control available; a banner stays on screen for as long
 as the window is open. See <a href="../cluster-maintenance/">Cluster Maintenance Mode</a>.</p>

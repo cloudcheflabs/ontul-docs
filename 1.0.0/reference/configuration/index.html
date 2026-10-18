@@ -3212,6 +3212,16 @@
 <td><code>10000</code></td>
 <td>Maximum time (ms) to wait for the initial TCP connection to ZooKeeper before giving up on a connect attempt. Affects startup and reconnect latency.</td>
 </tr>
+<tr>
+<td><code>ontul.zk.admin.probeTimeoutMs</code></td>
+<td><code>2000</code></td>
+<td>Admin UI topology: socket timeout (ms) for asking each ZooKeeper server its status with the <code>srvr</code> command. A server that does not answer in time is shown Offline.</td>
+</tr>
+<tr>
+<td><code>ontul.zk.admin.probeCacheTtlMs</code></td>
+<td><code>5000</code></td>
+<td>How long (ms) one probe of the ensemble is reused for topology requests, so open admin pages do not add load to ZooKeeper. <code>0</code> probes on every request.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="master">Master</h2>
