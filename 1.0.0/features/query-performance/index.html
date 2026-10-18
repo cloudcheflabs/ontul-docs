@@ -1002,6 +1002,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../data-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../connector-architecture/" class="md-nav__link">
         
   
@@ -2763,8 +2791,12 @@ prunes 24 of 25 files and yields a <strong>5–13× speedup</strong> over a full
 <h3 id="row-group-skipping-parquet-statistics">Row-group skipping (Parquet statistics)</h3>
 <p>Within a file, Ontul reads each Parquet row group's footer statistics (min/max per column) and skips an
 entire row group when its statistics prove no row can match the pushed-down predicate — no column data is
-decoded for skipped groups. This is correctness-safe: the <code>FILTER</code> operator re-applies the exact predicate,
-so a missed skip only costs I/O, never a wrong answer. Disabled automatically when delete files are present.</p>
+decoded for skipped groups. The <code>FILTER</code> operator re-applies the exact predicate afterwards, so a group that
+could have been skipped and was not only costs I/O. A wrong skip would lose rows, so statistics are read at
+the column's meaning: a <code>DECIMAL</code>'s min/max are stored <strong>unscaled</strong> (Trino stores <code>DECIMAL(12,2)</code> 1371.37 as
+the integer 137137) and are scaled before the comparison, and <code>DATE</code> / <code>TIME</code> / <code>TIMESTAMP</code> statistics are
+never compared with a numeric literal. When a statistic cannot be read that way, the group is read.
+Disabled automatically when delete files are present.</p>
 <p>Toggles: <code>-Dontul.scan.pushdown.enabled</code> (file/predicate pushdown), <code>-Dontul.scan.rowgroup.skip.enabled</code>
 (both default on).</p>
 <h3 id="random-range-reads">Random / range reads</h3>
@@ -2779,8 +2811,8 @@ via Parquet's low-level <code>ColumnReader</code> API — no intermediate per-ro
 boxing. Type dispatch is hoisted out of the per-value loop so each column is decoded by a tight, JIT-friendly
 typed loop.</p>
 <p>The columnar decode path is used for the common analytical case — no delete files and a flat, all-primitive
-projection (integers, floating point, boolean, string/binary — a <code>DECIMAL</code> counts, decoded into <code>DOUBLE</code> at
-its scale from any physical encoding). Tables with nested types or attached delete files fall back to the
+projection (integers, floating point, boolean, string/binary, dates, times, timestamps — including legacy
+<code>INT96</code> — and decimals in any physical encoding). Tables with nested types or attached delete files fall back to the
 proven row-at-a-time reader, so results are always correct. It is
 Arrow-version-independent (built on <code>parquet-column</code>).</p>
 <p>Toggle: <code>-Dontul.scan.columnar.enabled</code>.</p>

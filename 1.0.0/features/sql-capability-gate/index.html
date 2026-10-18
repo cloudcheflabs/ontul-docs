@@ -14,7 +14,7 @@
         <link rel="prev" href="../query-performance/">
       
       
-        <link rel="next" href="../connector-architecture/">
+        <link rel="next" href="../data-types/">
       
       
         
@@ -973,6 +973,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2741,9 +2769,10 @@ answer or fails loudly — it never quietly returns wrong rows.</p>
 <p>Ontul's master plans a query with Apache Calcite and ships the resulting expressions to workers as
 <strong>Calcite <code>RexNode</code> text</strong>. Each worker re-parses that text into its own expression tree.</p>
 <p>That design is what makes the plan small and language-neutral, but it has a sharp edge: a construct
-the worker's parser does not recognise does not raise — it degrades. An unknown function evaluates to
-<code>NULL</code>; an unrecognised literal becomes a string. Without a gate, an unsupported feature surfaces as a
-<strong>silently wrong answer</strong>:</p>
+the worker's parser does not recognise could degrade instead of raising. An unknown function used to
+evaluate to <code>NULL</code>, and an unrecognised literal became a string. The worker now fails on an unknown
+function, but a construct it parses and evaluates by the wrong rules still returns rows. Without a
+gate, an unsupported feature surfaces as a <strong>silently wrong answer</strong>:</p>
 <table>
 <thead>
 <tr>
@@ -2857,7 +2886,7 @@ aggregate flags rather than re-parsed strings.</p>
 <td><code>LIMIT</code> only; page with a <code>WHERE</code> range over a sorted key</td>
 </tr>
 <tr>
-<td>Scalar functions the gate does not admit — <code>EXTRACT</code>, <code>POWER</code>, <code>SQRT</code>, <code>CHAR_LENGTH</code>, <code>POSITION</code>, <code>CURRENT_DATE</code>, <code>TRIM</code>, …</td>
+<td>Scalar functions the gate does not admit — <code>POWER</code>, <code>SQRT</code>, <code>CHAR_LENGTH</code>, <code>POSITION</code>, <code>TRIM</code>, …</td>
 <td>A <a href="../udf/">UDF</a>, or a built-in extension (see <a href="#functions-the-gate-admits">below</a>)</td>
 </tr>
 <tr>
@@ -2867,10 +2896,6 @@ aggregate flags rather than re-parsed strings.</p>
 <tr>
 <td><code>IN (...)</code> / <code>BETWEEN</code> in the <strong>SELECT list</strong> (they survive as <code>SEARCH(Sarg[…])</code>)</td>
 <td>Explicit <code>OR</code> / <code>AND</code> comparisons. Both are fine in <code>WHERE</code></td>
-</tr>
-<tr>
-<td>Comparing a column against a <code>DATE</code> / <code>TIME</code> / <code>TIMESTAMP</code> / <code>INTERVAL</code> literal</td>
-<td>Compare on the epoch value — these types travel through the engine as epoch numbers. A datetime literal as <strong>data</strong> (<code>INSERT … VALUES (DATE '2026-01-01')</code>) is fine</td>
 </tr>
 <tr>
 <td>String literal containing <code>'</code></td>
@@ -2909,6 +2934,10 @@ recognised as an extension:</p>
 <tr>
 <td><code>ABS</code>, <code>CEIL</code>, <code>CEILING</code>, <code>FLOOR</code>, <code>ROUND</code></td>
 <td>in the planner's scalar set</td>
+</tr>
+<tr>
+<td><code>EXTRACT</code> (and <code>YEAR()</code>, <code>MONTH()</code>, … which Calcite turns into it), <code>FLOOR</code>/<code>CEIL(x TO unit)</code>, <code>CURRENT_DATE</code>, <code>CURRENT_TIMESTAMP</code>, <code>LOCALTIMESTAMP</code>, <code>CURRENT_TIME</code>, and the <code>Reinterpret</code> / <code>/INT</code> that <code>TIMESTAMPDIFF</code> expands into</td>
+<td>in the planner's scalar set — see <a href="../data-types/#date-and-time-functions">Data Types</a></td>
 </tr>
 <tr>
 <td><code>ST_*</code></td>
@@ -2971,15 +3000,16 @@ rather than by something else), never for production use. The master logs a warn
 validation while it is off.</p>
 <h2 id="reading-an-error">Reading an error</h2>
 <p>The message always names the construct, and adds the rewrite when there is a mechanical one:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Comparing against a DATE / TIME / TIMESTAMP / INTERVAL literal is not supported by the Ontul
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>execution engine: the engine stores these as epoch numbers; compare on the epoch value instead
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>OFFSET is not supported by the Ontul execution engine: only LIMIT (without OFFSET) is executable
 </code></pre></div>
 <p>If a query you expect to work is rejected, that is a bug in the gate — the rule list is meant to be
 exactly the set of constructs the engine mis-evaluates, no wider. Report the SQL and the message.</p>
 <h2 id="roadmap">Roadmap</h2>
 <p>The gate is deliberately a <strong>capability contract, not a permanent limitation</strong>. Each rule is removed
-in the same change that adds real support — outer joins, non-numeric <code>MIN</code>/<code>MAX</code>, n-ary <code>AND</code>/<code>OR</code>
-and regex-unsafe <code>LIKE</code> patterns were all gated at one point and are now executed. The next
+in the same change that adds real support — outer joins, non-numeric <code>MIN</code>/<code>MAX</code>, n-ary <code>AND</code>/<code>OR</code>,
+regex-unsafe <code>LIKE</code> patterns, and comparisons against <code>DATE</code> / <code>TIMESTAMP</code> literals with <code>EXTRACT</code>
+and the other date functions (when <a href="../data-types/">DATE and TIMESTAMP became real types</a>) were all gated
+at one point and are now executed. The next
 candidates are <code>OFFSET</code>, <code>COUNT(DISTINCT)</code>, set operations and window functions.</p>
 
 
