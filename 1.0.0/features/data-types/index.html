@@ -14,7 +14,7 @@
         <link rel="prev" href="../sql-capability-gate/">
       
       
-        <link rel="next" href="../connector-architecture/">
+        <link rel="next" href="../window-functions/">
       
       
         
@@ -1012,6 +1012,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2883,8 +2911,8 @@ values. Ontul's end-to-end suite checks exactly that against Trino 479 on a shar
 </table>
 <p>Notes:</p>
 <ul>
-<li><strong>Precision.</strong> Timestamps and times carry microseconds, which is Iceberg's precision. A literal
-  written with more digits is truncated to the planner's precision.</li>
+<li><strong>Precision.</strong> Timestamps and times carry microseconds, which is Iceberg's precision — in columns,
+  in literals (<code>TIMESTAMP '2024-01-01 10:00:00.123456'</code>) and in <code>CAST(x AS TIMESTAMP)</code>.</li>
 <li><strong>Time zone.</strong> The engine's session time zone is UTC. <code>TIMESTAMP</code> has no zone: it is the wall-clock
   value stored in the table. A <code>timestamptz</code> column is an instant, read and shown in UTC.</li>
 <li><strong>DECIMAL precision</strong> is at most 38 digits. A <code>DECIMAL</code> declared without precision or scale is
@@ -3012,8 +3040,11 @@ result type the planner derives:</p>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">quantity</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">...;</span><span class="w">    </span><span class="c1">-- DECIMAL(p1+p2, s1+s2)</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">...;</span><span class="w">           </span><span class="c1">-- DECIMAL with scale 6, e.g. 4.100000</span>
 </code></pre></div>
+<p><code>SUM</code> over an integer column is an exact <code>BIGINT</code>, as in Trino: it never passes through floating point,
+so values past 2^53 keep every digit, and a sum that overflows <code>BIGINT</code> fails the query. <code>AVG</code> over an
+integer column is a <code>DOUBLE</code> (<code>AVG</code> of 1 and 2 is 1.5, not 1).</p>
 <p><code>SUM</code> and <code>AVG</code> over a <code>DECIMAL</code> column accumulate exactly as well, on each worker and in the
-coordinator's final combine. <code>SUM</code> keeps the column's scale, and <code>AVG</code> rounds half-up to it. <code>MIN</code> and
+coordinator's final combine. <code>SUM</code> of a <code>DECIMAL(p, s)</code> is a <code>DECIMAL(38, s)</code> and keeps the column's scale, and <code>AVG</code> rounds half-up to it. <code>MIN</code> and
 <code>MAX</code> return the column's own type.</p>
 <p>Arithmetic that mixes a <code>DECIMAL</code> with a <code>DOUBLE</code> is floating point, as SQL defines it.</p>
 <h2 id="writing-the-types">Writing the types</h2>

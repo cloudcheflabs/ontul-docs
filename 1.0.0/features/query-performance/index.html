@@ -1030,6 +1030,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../connector-architecture/" class="md-nav__link">
         
   
@@ -2897,11 +2925,15 @@ split:</p>
 <td>Spread; the coordinator applies it <strong>after</strong> the final combine</td>
 </tr>
 <tr>
-<td><code>ORDER BY</code> / <code>LIMIT</code> at the top of the query</td>
-<td>Spread; the coordinator merges, re-sorts and re-applies the limit, keeping every column's type (<code>DATE</code>, <code>TIMESTAMP</code>, <code>DECIMAL</code>, …)</td>
+<td><code>ORDER BY</code> / <code>LIMIT</code> / <code>OFFSET</code> at the top of the query</td>
+<td>Spread; each worker keeps its first <code>OFFSET + LIMIT</code> rows, and the coordinator merges, re-sorts, skips <code>OFFSET</code> and re-applies the limit, keeping every column's type (<code>DATE</code>, <code>TIMESTAMP</code>, <code>DECIMAL</code>, …) and the <code>NULLS FIRST</code> / <code>LAST</code> order</td>
 </tr>
 <tr>
 <td>Joins</td>
+<td>All files on one worker</td>
+</tr>
+<tr>
+<td>Window functions (<code>OVER</code>) — a partition's rows must be in one place</td>
 <td>All files on one worker</td>
 </tr>
 <tr>

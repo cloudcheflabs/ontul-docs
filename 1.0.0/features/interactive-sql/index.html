@@ -867,6 +867,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../connector-architecture/" class="md-nav__link">
         
   
@@ -2624,11 +2652,12 @@
 <ul>
 <li><strong>DML</strong>: <code>SELECT</code>, <code>INSERT INTO</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE INTO</code>, <code>CREATE TABLE AS SELECT</code></li>
 <li><strong>DDL</strong>: <code>CREATE TABLE</code>, <code>DROP TABLE</code>, <code>ALTER TABLE</code>, <code>CREATE VIEW</code>, <code>DROP VIEW</code>, <code>CREATE SCHEMA</code>, <code>DROP SCHEMA</code></li>
-<li><strong>Queries</strong>: <code>JOIN</code> (INNER, LEFT, RIGHT, FULL — one equality in <code>ON</code>), <code>GROUP BY</code>, <code>ORDER BY</code>, <code>LIMIT</code>, <code>HAVING</code>, <code>SELECT DISTINCT</code>, CTEs (<code>WITH</code>) and derived tables, <code>CASE WHEN</code>, <code>COALESCE</code>, <code>NULLIF</code>, <code>CAST</code>, <code>LIKE</code>, <code>IN</code>, <code>BETWEEN</code>, <code>IS NULL</code></li>
-<li><strong>Aggregations</strong>: <code>COUNT(*)</code>, <code>COUNT(col)</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> (MIN/MAX also over text and dates; <code>SUM</code>/<code>AVG</code> over <code>DECIMAL</code> are exact)</li>
+<li><strong>Queries</strong>: <code>JOIN</code> (INNER, LEFT, RIGHT, FULL — one equality in <code>ON</code>), <code>GROUP BY</code>, <code>ORDER BY</code> (with <code>NULLS FIRST</code> / <code>NULLS LAST</code>; NULLs sort last by default in both directions, as in Trino), <code>LIMIT</code>, <code>OFFSET</code> / <code>FETCH</code>, <code>HAVING</code>, <code>SELECT DISTINCT</code>, CTEs (<code>WITH</code>) and derived tables, <code>CASE WHEN</code>, <code>COALESCE</code>, <code>NULLIF</code>, <code>CAST</code>, <code>LIKE</code>, <code>IN</code>, <code>BETWEEN</code>, <code>IS NULL</code></li>
+<li><strong>Aggregations</strong>: <code>COUNT(*)</code>, <code>COUNT(col)</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> (MIN/MAX also over text and dates; <code>SUM</code> over integers is an exact <code>BIGINT</code>, <code>SUM</code>/<code>AVG</code> over <code>DECIMAL</code> are exact)</li>
+<li><strong>Window functions</strong>: <code>ROW_NUMBER</code>, <code>RANK</code>, <code>DENSE_RANK</code>, <code>PERCENT_RANK</code>, <code>CUME_DIST</code>, <code>NTILE</code>, <code>LAG</code>, <code>LEAD</code>, <code>FIRST_VALUE</code>, <code>LAST_VALUE</code>, <code>NTH_VALUE</code> and the aggregates <code>OVER (PARTITION BY … ORDER BY … ROWS | RANGE …)</code>. See <a href="../window-functions/">Window Functions</a></li>
 <li><strong>Types</strong>: <code>BOOLEAN</code>, integers, <code>REAL</code>/<code>DOUBLE</code>, <code>DECIMAL(p, s)</code>, <code>VARCHAR</code>, <code>VARBINARY</code>, <code>DATE</code>, <code>TIME</code>, <code>TIMESTAMP</code>, <code>TIMESTAMP WITH LOCAL TIME ZONE</code>, <code>ROW</code>/<code>ARRAY</code>/<code>MAP</code> — real types end to end, with datetime literals, comparisons, <code>CAST</code> and exact decimal arithmetic. See <a href="../data-types/">Data Types</a></li>
 <li><strong>Date / time functions</strong>: <code>EXTRACT</code> (and <code>YEAR()</code>, <code>MONTH()</code>, …), <code>FLOOR</code>/<code>CEIL(x TO unit)</code>, <code>x ± INTERVAL</code>, <code>TIMESTAMPADD</code>, <code>TIMESTAMPDIFF</code>, <code>CURRENT_DATE</code>, <code>CURRENT_TIMESTAMP</code></li>
-<li><strong>Not executable</strong>: window functions (<code>OVER</code>), subqueries in <code>SELECT</code>/<code>WHERE</code>, <code>INTERSECT</code> / <code>EXCEPT</code> / de-duplicating <code>UNION</code>, <code>COUNT(DISTINCT)</code>, <code>OFFSET</code>, composite/non-equi join conditions. These are rejected at plan time with an explicit error rather than returning a wrong answer — see <a href="../sql-capability-gate/">SQL Capability Gate</a> for the full list and the rewrite for each.</li>
+<li><strong>Not executable</strong>: subqueries in <code>SELECT</code>/<code>WHERE</code>, <code>INTERSECT</code> / <code>EXCEPT</code> / de-duplicating <code>UNION</code>, <code>COUNT(DISTINCT)</code>, composite/non-equi join conditions. These are rejected at plan time with an explicit error rather than returning a wrong answer — see <a href="../sql-capability-gate/">SQL Capability Gate</a> for the full list and the rewrite for each.</li>
 <li><strong>Metadata</strong>: <code>SHOW CATALOGS</code>, <code>SHOW SCHEMAS</code>, <code>SHOW TABLES</code>, <code>DESCRIBE</code>, <code>EXPLAIN</code></li>
 <li><strong>Transactions</strong>: <code>BEGIN</code>, <code>COMMIT</code>, <code>ROLLBACK</code></li>
 <li><strong>Session</strong>: <code>SET</code> session variables</li>

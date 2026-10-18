@@ -1013,6 +1013,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../connector-architecture/" class="md-nav__link">
         
   
@@ -2760,10 +2788,11 @@
 <p>Ontul validates every planned query against what the execution engine can actually evaluate, and
 <strong>rejects the rest with an explicit error</strong> instead of running it. A query either produces a correct
 answer or fails loudly — it never quietly returns wrong rows.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>ERROR: Window functions (OVER) is not supported by the Ontul execution engine
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>ERROR: INTERSECT is not supported by the Ontul execution engine: rewrite as an inner join on the shared columns
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>ERROR: This JOIN condition is not supported by the Ontul execution engine: only a single equality is
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>       executable; this join has 2 conjuncts
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>ERROR: Subqueries (SCALAR_QUERY) is not supported by the Ontul execution engine: rewrite as a join,
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>       or materialise the inner query first
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>ERROR: INTERSECT is not supported by the Ontul execution engine: rewrite as an inner join on the shared columns
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>ERROR: This JOIN condition is not supported by the Ontul execution engine: only a single equality is
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>       executable; this join has 2 conjuncts
 </code></pre></div>
 <h2 id="why-a-gate-exists">Why a gate exists</h2>
 <p>Ontul's master plans a query with Apache Calcite and ships the resulting expressions to workers as
@@ -2782,7 +2811,7 @@ gate, an unsupported feature surfaces as a <strong>silently wrong answer</strong
 </thead>
 <tbody>
 <tr>
-<td><code>SUM(x) OVER (PARTITION BY k)</code></td>
+<td><code>SUM(x) OVER (PARTITION BY k)</code> (before window functions were executed)</td>
 <td>a column of <code>NULL</code></td>
 </tr>
 <tr>
@@ -2838,8 +2867,8 @@ aggregate flags rather than re-parsed strings.</p>
 </thead>
 <tbody>
 <tr>
-<td>Window functions (<code>OVER</code>)</td>
-<td>Pre-aggregate, or rank client-side</td>
+<td><code>DISTINCT</code> inside a window function, aggregates other than <code>COUNT</code>/<code>SUM</code>/<code>AVG</code>/<code>MIN</code>/<code>MAX</code> over a window, <code>RANGE</code> offsets over a non-numeric key — see <a href="../window-functions/#not-supported">Window Functions</a></td>
+<td><code>GROUP BY</code> first, or <code>ROWS</code></td>
 </tr>
 <tr>
 <td>Scalar subquery, <code>IN (SELECT …)</code>, <code>EXISTS</code>, correlated subqueries</td>
@@ -2882,8 +2911,8 @@ aggregate flags rather than re-parsed strings.</p>
 <td><code>CAST</code> first</td>
 </tr>
 <tr>
-<td><code>OFFSET</code></td>
-<td><code>LIMIT</code> only; page with a <code>WHERE</code> range over a sorted key</td>
+<td>A <code>LIMIT</code> / <code>OFFSET</code> that is not a number (a parameter)</td>
+<td>Inline the number</td>
 </tr>
 <tr>
 <td>Scalar functions the gate does not admit — <code>POWER</code>, <code>SQRT</code>, <code>CHAR_LENGTH</code>, <code>POSITION</code>, <code>TRIM</code>, …</td>
@@ -3000,7 +3029,7 @@ rather than by something else), never for production use. The master logs a warn
 validation while it is off.</p>
 <h2 id="reading-an-error">Reading an error</h2>
 <p>The message always names the construct, and adds the rewrite when there is a mechanical one:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>OFFSET is not supported by the Ontul execution engine: only LIMIT (without OFFSET) is executable
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>INTERSECT is not supported by the Ontul execution engine: rewrite as an inner join on the shared columns
 </code></pre></div>
 <p>If a query you expect to work is rejected, that is a bug in the gate — the rule list is meant to be
 exactly the set of constructs the engine mis-evaluates, no wider. Report the SQL and the message.</p>
@@ -3008,9 +3037,9 @@ exactly the set of constructs the engine mis-evaluates, no wider. Report the SQL
 <p>The gate is deliberately a <strong>capability contract, not a permanent limitation</strong>. Each rule is removed
 in the same change that adds real support — outer joins, non-numeric <code>MIN</code>/<code>MAX</code>, n-ary <code>AND</code>/<code>OR</code>,
 regex-unsafe <code>LIKE</code> patterns, and comparisons against <code>DATE</code> / <code>TIMESTAMP</code> literals with <code>EXTRACT</code>
-and the other date functions (when <a href="../data-types/">DATE and TIMESTAMP became real types</a>) were all gated
-at one point and are now executed. The next
-candidates are <code>OFFSET</code>, <code>COUNT(DISTINCT)</code>, set operations and window functions.</p>
+and the other date functions (when <a href="../data-types/">DATE and TIMESTAMP became real types</a>),
+<a href="../window-functions/">window functions</a> and <code>OFFSET</code> were all gated at one point and are now executed.
+The next candidates are <code>COUNT(DISTINCT)</code>, set operations and subqueries.</p>
 
 
 
