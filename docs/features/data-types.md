@@ -30,8 +30,8 @@ values. Ontul's end-to-end suite checks exactly that against Trino 479 on a shar
 
 Notes:
 
-- **Precision.** Timestamps and times carry microseconds, which is Iceberg's precision. A literal
-  written with more digits is truncated to the planner's precision.
+- **Precision.** Timestamps and times carry microseconds, which is Iceberg's precision — in columns,
+  in literals (`TIMESTAMP '2024-01-01 10:00:00.123456'`) and in `CAST(x AS TIMESTAMP)`.
 - **Time zone.** The engine's session time zone is UTC. `TIMESTAMP` has no zone: it is the wall-clock
   value stored in the table. A `timestamptz` column is an instant, read and shown in UTC.
 - **DECIMAL precision** is at most 38 digits. A `DECIMAL` declared without precision or scale is
@@ -121,8 +121,12 @@ SELECT price * quantity FROM ...;    -- DECIMAL(p1+p2, s1+s2)
 SELECT price / 3 FROM ...;           -- DECIMAL with scale 6, e.g. 4.100000
 ```
 
+`SUM` over an integer column is an exact `BIGINT`, as in Trino: it never passes through floating point,
+so values past 2^53 keep every digit, and a sum that overflows `BIGINT` fails the query. `AVG` over an
+integer column is a `DOUBLE` (`AVG` of 1 and 2 is 1.5, not 1).
+
 `SUM` and `AVG` over a `DECIMAL` column accumulate exactly as well, on each worker and in the
-coordinator's final combine. `SUM` keeps the column's scale, and `AVG` rounds half-up to it. `MIN` and
+coordinator's final combine. `SUM` of a `DECIMAL(p, s)` is a `DECIMAL(38, s)` and keeps the column's scale, and `AVG` rounds half-up to it. `MIN` and
 `MAX` return the column's own type.
 
 Arithmetic that mixes a `DECIMAL` with a `DOUBLE` is floating point, as SQL defines it.

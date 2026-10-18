@@ -129,8 +129,9 @@ split:
 | Scan, `WHERE`, projections, `UNION ALL` | Spread across workers; the results are concatenated |
 | `GROUP BY` / aggregates, optionally with arithmetic over them | Spread; each worker emits **partial** aggregates (`AVG` as sum + count) and the coordinator re-groups and finalizes |
 | `HAVING` that compares aggregates or keys (`=`, `<>`, `<`, `>`, `<=`, `>=`, `AND`, `OR`, `NOT`, `IS [NOT] NULL`, arithmetic) | Spread; the coordinator applies it **after** the final combine |
-| `ORDER BY` / `LIMIT` at the top of the query | Spread; the coordinator merges, re-sorts and re-applies the limit, keeping every column's type (`DATE`, `TIMESTAMP`, `DECIMAL`, …) |
+| `ORDER BY` / `LIMIT` / `OFFSET` at the top of the query | Spread; each worker keeps its first `OFFSET + LIMIT` rows, and the coordinator merges, re-sorts, skips `OFFSET` and re-applies the limit, keeping every column's type (`DATE`, `TIMESTAMP`, `DECIMAL`, …) and the `NULLS FIRST` / `LAST` order |
 | Joins | All files on one worker |
+| Window functions (`OVER`) — a partition's rows must be in one place | All files on one worker |
 | Anything else the coordinator cannot combine — a `HAVING` using other functions (e.g. `LIKE`), an `ORDER BY`/`LIMIT` inside a subquery, an aggregate over an aggregate | All files on one worker |
 
 The last row trades parallelism for correctness. Evaluating such a plan per worker and concatenating the

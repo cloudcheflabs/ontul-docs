@@ -5,7 +5,8 @@ Ontul validates every planned query against what the execution engine can actual
 answer or fails loudly — it never quietly returns wrong rows.
 
 ```
-ERROR: Window functions (OVER) is not supported by the Ontul execution engine
+ERROR: Subqueries (SCALAR_QUERY) is not supported by the Ontul execution engine: rewrite as a join,
+       or materialise the inner query first
 ERROR: INTERSECT is not supported by the Ontul execution engine: rewrite as an inner join on the shared columns
 ERROR: This JOIN condition is not supported by the Ontul execution engine: only a single equality is
        executable; this join has 2 conjuncts
@@ -24,7 +25,7 @@ gate, an unsupported feature surfaces as a **silently wrong answer**:
 
 | Without the gate | What the user saw |
 |------------------|-------------------|
-| `SUM(x) OVER (PARTITION BY k)` | a column of `NULL` |
+| `SUM(x) OVER (PARTITION BY k)` (before window functions were executed) | a column of `NULL` |
 | `WHERE id = (SELECT MAX(id) FROM t)` | zero rows |
 | `a EXCEPT b` | all of `a` |
 | `a UNION b` | duplicates (behaved as `UNION ALL`) |
@@ -58,7 +59,7 @@ Two consequences worth knowing:
 
 | Construct | Rewrite |
 |-----------|---------|
-| Window functions (`OVER`) | Pre-aggregate, or rank client-side |
+| `DISTINCT` inside a window function, aggregates other than `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` over a window, `RANGE` offsets over a non-numeric key — see [Window Functions](window-functions.md#not-supported) | `GROUP BY` first, or `ROWS` |
 | Scalar subquery, `IN (SELECT …)`, `EXISTS`, correlated subqueries | A join, or materialise the inner query into a table first |
 | `INTERSECT` | Inner join on the shared columns |
 | `EXCEPT` / `MINUS` | Anti-join |
@@ -69,7 +70,7 @@ Two consequences worth knowing:
 | `FILTER (WHERE …)`, `WITHIN GROUP`, `GROUPING SETS` / `CUBE` / `ROLLUP` | Separate queries, or `CASE WHEN` inside the aggregate's input |
 | Aggregates other than `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` (e.g. `STDDEV_POP`) | A [UDF](udf.md) |
 | `SUM`/`AVG` over a non-numeric column | `CAST` first |
-| `OFFSET` | `LIMIT` only; page with a `WHERE` range over a sorted key |
+| A `LIMIT` / `OFFSET` that is not a number (a parameter) | Inline the number |
 | Scalar functions the gate does not admit — `POWER`, `SQRT`, `CHAR_LENGTH`, `POSITION`, `TRIM`, … | A [UDF](udf.md), or a built-in extension (see [below](#functions-the-gate-admits)) |
 | Unary minus (`-x`) | `(0 - x)` |
 | `IN (...)` / `BETWEEN` in the **SELECT list** (they survive as `SEARCH(Sarg[…])`) | Explicit `OR` / `AND` comparisons. Both are fine in `WHERE` |
@@ -145,7 +146,7 @@ validation while it is off.
 The message always names the construct, and adds the rewrite when there is a mechanical one:
 
 ```
-OFFSET is not supported by the Ontul execution engine: only LIMIT (without OFFSET) is executable
+INTERSECT is not supported by the Ontul execution engine: rewrite as an inner join on the shared columns
 ```
 
 If a query you expect to work is rejected, that is a bug in the gate — the rule list is meant to be
@@ -156,6 +157,6 @@ exactly the set of constructs the engine mis-evaluates, no wider. Report the SQL
 The gate is deliberately a **capability contract, not a permanent limitation**. Each rule is removed
 in the same change that adds real support — outer joins, non-numeric `MIN`/`MAX`, n-ary `AND`/`OR`,
 regex-unsafe `LIKE` patterns, and comparisons against `DATE` / `TIMESTAMP` literals with `EXTRACT`
-and the other date functions (when [DATE and TIMESTAMP became real types](data-types.md)) were all gated
-at one point and are now executed. The next
-candidates are `OFFSET`, `COUNT(DISTINCT)`, set operations and window functions.
+and the other date functions (when [DATE and TIMESTAMP became real types](data-types.md)),
+[window functions](window-functions.md) and `OFFSET` were all gated at one point and are now executed.
+The next candidates are `COUNT(DISTINCT)`, set operations and subqueries.
