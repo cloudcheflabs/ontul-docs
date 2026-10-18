@@ -184,7 +184,8 @@ TBLPROPERTIES ('format-version'='2', 'write.format.default'='orc');
 - Snapshot isolation — every query reads a single Iceberg snapshot.
 - Position-delete files and equality-delete files are applied at read time. The fast-path `SELECT count(*)` shortcut is automatically suppressed when a snapshot has any deletes; the count goes through a real scan so the answer is correct.
 - **Field-ID-based parquet reads.** Columns are resolved by Iceberg field id, not name, so files written before an `ALTER TABLE RENAME COLUMN` or `SET DATA TYPE` continue to read correctly. Type-widening (`INT32 → INT64`, `FLOAT → DOUBLE`) is performed on the fly when an older file's primitive is narrower than the current schema's column type.
-- Distributed scan: each worker reads its assigned splits; the master combines per-worker partial aggregates for `COUNT/SUM/MIN/MAX` so scalar aggregates are correct across multiple files.
+- **`DECIMAL` in any physical encoding.** Parquet stores a decimal as `INT32`, `INT64` or unscaled bytes (`fixed_len_byte_array` / `binary`) depending on the writer — Trino writes every decimal as bytes. Ontul reads all three at the column's scale; the engine computes decimals as `DOUBLE`, so values beyond about 15 significant digits are rounded.
+- Distributed scan: each worker reads its assigned splits; the master combines per-worker partial aggregates (`COUNT/SUM/MIN/MAX/AVG`, grouped or not, with `HAVING`) — see [Splitting a Query Across Workers](../features/query-performance.md#splitting-a-query-across-workers).
 
 ### Time travel
 
