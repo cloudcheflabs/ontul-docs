@@ -46,8 +46,9 @@ boxing. Type dispatch is hoisted out of the per-value loop so each column is dec
 typed loop.
 
 The columnar decode path is used for the common analytical case — no delete files and a flat, all-primitive
-projection (integers, floating point, boolean, string/binary). Tables with nested types, decimals/temporals,
-or attached delete files fall back to the proven row-at-a-time reader, so results are always correct. It is
+projection (integers, floating point, boolean, string/binary — a `DECIMAL` counts, decoded into `DOUBLE` at
+its scale from any physical encoding). Tables with nested types or attached delete files fall back to the
+proven row-at-a-time reader, so results are always correct. It is
 Arrow-version-independent (built on `parquet-column`).
 
 Toggle: `-Dontul.scan.columnar.enabled`.
@@ -102,7 +103,8 @@ workloads:
 - **Persistent worker connections** — the coordinator keeps warm, multiplexed connections to workers instead
   of opening a fresh socket per query, removing handshake and thread-spawn churn under high QPS.
 - **Distributed aggregate combine** — single-row and grouped aggregates run a partial pass on each worker and
-  a final combine on the coordinator (correct `GROUP BY`, `AVG`, and `ORDER BY`/`LIMIT` across workers).
+  a final combine on the coordinator (correct `GROUP BY`, `AVG`, `HAVING` and `ORDER BY`/`LIMIT` across
+  workers). See [Splitting a Query Across Workers](#splitting-a-query-across-workers).
 
 A trivial cached query (e.g. `COUNT(*)` served from metadata) completes in single-digit milliseconds, giving
 Ontul a much lower latency floor than batch-oriented analytical engines.
@@ -110,6 +112,26 @@ Ontul a much lower latency floor than batch-oriented analytical engines.
 For agentic workloads, the **MCP server** also accepts a JSON-RPC 2.0 **batch** (an array of tool calls in one
 message) and services them concurrently, so an agent that issues several tool calls per step pays one
 round-trip instead of many.
+
+## Splitting a Query Across Workers
+
+A query reads its table's files in parallel: the coordinator assigns the files (splits) to workers, each
+worker runs the plan over its own files, and the coordinator gathers the results. Gathering is only correct
+when the coordinator can turn the per-worker results into the answer, so the plan decides how a query is
+split:
+
+| Plan shape | How it runs |
+|---|---|
+| Scan, `WHERE`, projections, `UNION ALL` | Spread across workers; the results are concatenated |
+| `GROUP BY` / aggregates, optionally with arithmetic over them | Spread; each worker emits **partial** aggregates (`AVG` as sum + count) and the coordinator re-groups and finalizes |
+| `HAVING` that compares aggregates or keys (`=`, `<>`, `<`, `>`, `<=`, `>=`, `AND`, `OR`, `NOT`, `IS [NOT] NULL`, arithmetic) | Spread; the coordinator applies it **after** the final combine |
+| `ORDER BY` / `LIMIT` at the top of the query | Spread; the coordinator merges, re-sorts and re-applies the limit, keeping every column's type (`DATE`, `TIMESTAMP`, `DECIMAL`, …) |
+| Joins | All files on one worker |
+| Anything else the coordinator cannot combine — a `HAVING` using other functions (e.g. `LIKE`), an `ORDER BY`/`LIMIT` inside a subquery, an aggregate over an aggregate | All files on one worker |
+
+The last row trades parallelism for correctness. Evaluating such a plan per worker and concatenating the
+results would return wrong rows without any error: a `HAVING count(*) = 4` sees each worker's partial
+count, not the total. Running it on one worker is slower on a large table, but the answer is right.
 
 ## Tuning Reference
 
