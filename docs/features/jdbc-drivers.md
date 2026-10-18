@@ -20,9 +20,26 @@ JAR's own `java.sql.Driver` service), not by file name. The rule is deliberate:
   so there is always a single, unambiguous driver per class. No manual cleanup, and
   no version coexistence to reason about.
 
-Only classes the JAR provides through its **own** classloader are counted, so a
-driver already bundled on the system classpath is never mis-attributed to an
-uploaded JAR.
+Driver classes are read from the JAR's own `META-INF/services/java.sql.Driver`
+file, so a driver already bundled on the system classpath is never mis-attributed
+to an uploaded JAR.
+
+## An uploaded driver wins over a bundled one
+
+Each uploaded JAR is loaded **child-first**: its own classes are used before the
+classes Ontul ships with (only `java.*`, `javax.*`, `jdk.*`, `sun.*` and
+`org.slf4j.*` always come from the platform). When a catalog or job asks for a
+driver class, uploaded JARs are searched before the bundled classpath. So
+uploading `postgresql-42.7.4.jar` really makes PostgreSQL connections use 42.7.4,
+even though a PostgreSQL driver ships with the distribution. Delete the uploaded
+JAR to go back to the bundled version.
+
+## Deleting a driver
+
+`DELETE /admin/drivers/{file}` removes the JAR on the master and tells every worker
+to remove its copy. A name that does not exist answers `404`. Upload and delete
+need administrator access, and a file name must end in `.jar` and may not contain
+`/`, `\` or `..`.
 
 ## Streamed to every worker
 

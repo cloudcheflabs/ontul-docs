@@ -59,6 +59,7 @@ nav:
       - "BI Integration": features/bi-integration.md
       - "Remote Mode": features/remote-mode.md
       - "User-Defined Functions": features/udf.md
+      - "Admin UI": features/admin-ui.md
       - "IAM": features/iam.md
       - "IAM Policy Templates": features/iam-policy-templates.md
       - "Single Sign-On (OIDC/SAML/LDAP)": features/sso.md

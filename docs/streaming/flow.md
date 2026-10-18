@@ -73,7 +73,7 @@ Every connector shown is backed by a real engine `StreamSource` / `StreamSink`.
 |---|---|---|
 | **Kafka** | Consume a topic | connection (KAFKA), topic, format (`json`/`avro`), consumer group |
 | **Database CDC** | Debezium change-data-capture | database (`postgres`/`mysql`/`sqlserver`/`oracle`/`db2`), connection, tables, snapshot (`initial`/`never`) |
-| **Iceberg** | Incremental read of an Iceberg table | table (`catalog.schema.table`), mode (`append` or `changelog` — the latter emits I/U/D with a `__op` column), start (`latest`/`earliest`) |
+| **Iceberg** | Incremental read of an Iceberg table | table (`catalog.schema.table`), mode (`append` or `changelog` — the latter emits I/U/D with a `__op` column), start (`latest` — only snapshots committed after the flow starts, or `all` — the whole table first; `earliest` is accepted as a synonym for `all`) |
 | **File / object** | Poll an S3 prefix for new newline-delimited objects | connection (S3), path (`s3://bucket/prefix/`), format |
 | **NeorunBase** | Poll a NeorunBase (Lakebase OLTP) table | mode (`rest`/`jdbc`), endpoint/JDBC URL, poll query, cursor column |
 
@@ -85,7 +85,7 @@ and Db2 — with their JDBC drivers. Credentials resolve from the registered
 
 | Sink | Description | Write modes |
 |---|---|---|
-| **Iceberg** | Write to an Iceberg v2 table | append · upsert · **CDC apply** (SCD Type 1/2, hard/soft/ignore delete) |
+| **Iceberg** | Write to an Iceberg v2 table | append · upsert · **CDC apply** (latest row per key, hard/soft/ignore delete) |
 | **JDBC** | Write to a relational table (Postgres/MySQL/…) | append · **CDC apply** (upsert on c/u/r, delete on d, by key) |
 | **Kafka** | Fan out to a topic | at-least-once or transactional |
 | **REST / webhook** | HTTP POST batches of rows as JSON | at-least-once |
@@ -137,8 +137,7 @@ Iceberg CDC apply).
     "delete": "soft",
     "opColumn": "__op",
     "deletedFlag": "is_deleted",
-    "deletedAt": "deleted_at",
-    "scd": { "type": 2, "validFrom": "valid_from", "validTo": "valid_to", "current": "is_current" }
+    "deletedAt": "deleted_at"
   },
   "commitIntervalMs": 1000,
   "numWorkers": 2,
@@ -162,6 +161,11 @@ A Kafka → JDBC append flow is simpler:
   "commitIntervalMs": 1000, "numWorkers": 1
 }
 ```
+
+The `write` block may sit at the top level, as above, or inside the sink node as `sink.write`; the
+Admin UI's Flow builder saves it as `sink.write`, and a block inside the sink wins when both exist.
+History-keeping SCD Type 2 (valid-from / valid-to rows) is not implemented; CDC apply keeps the latest
+row per key.
 
 For a JDBC **CDC-apply** sink, put `mode`/`opColumn`/`keys` on the sink node itself (JDBC does not use
 a separate `write` block).
