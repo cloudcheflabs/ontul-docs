@@ -937,6 +937,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#splitting-a-query-across-workers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Splitting a Query Across Workers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tuning-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2768,8 +2779,9 @@ via Parquet's low-level <code>ColumnReader</code> API — no intermediate per-ro
 boxing. Type dispatch is hoisted out of the per-value loop so each column is decoded by a tight, JIT-friendly
 typed loop.</p>
 <p>The columnar decode path is used for the common analytical case — no delete files and a flat, all-primitive
-projection (integers, floating point, boolean, string/binary). Tables with nested types, decimals/temporals,
-or attached delete files fall back to the proven row-at-a-time reader, so results are always correct. It is
+projection (integers, floating point, boolean, string/binary — a <code>DECIMAL</code> counts, decoded into <code>DOUBLE</code> at
+its scale from any physical encoding). Tables with nested types or attached delete files fall back to the
+proven row-at-a-time reader, so results are always correct. It is
 Arrow-version-independent (built on <code>parquet-column</code>).</p>
 <p>Toggle: <code>-Dontul.scan.columnar.enabled</code>.</p>
 <h2 id="columnar-aggregation-bounded-top-n">Columnar Aggregation &amp; Bounded Top-N</h2>
@@ -2819,13 +2831,56 @@ workloads:</p>
 <li><strong>Persistent worker connections</strong> — the coordinator keeps warm, multiplexed connections to workers instead
   of opening a fresh socket per query, removing handshake and thread-spawn churn under high QPS.</li>
 <li><strong>Distributed aggregate combine</strong> — single-row and grouped aggregates run a partial pass on each worker and
-  a final combine on the coordinator (correct <code>GROUP BY</code>, <code>AVG</code>, and <code>ORDER BY</code>/<code>LIMIT</code> across workers).</li>
+  a final combine on the coordinator (correct <code>GROUP BY</code>, <code>AVG</code>, <code>HAVING</code> and <code>ORDER BY</code>/<code>LIMIT</code> across
+  workers). See <a href="#splitting-a-query-across-workers">Splitting a Query Across Workers</a>.</li>
 </ul>
 <p>A trivial cached query (e.g. <code>COUNT(*)</code> served from metadata) completes in single-digit milliseconds, giving
 Ontul a much lower latency floor than batch-oriented analytical engines.</p>
 <p>For agentic workloads, the <strong>MCP server</strong> also accepts a JSON-RPC 2.0 <strong>batch</strong> (an array of tool calls in one
 message) and services them concurrently, so an agent that issues several tool calls per step pays one
 round-trip instead of many.</p>
+<h2 id="splitting-a-query-across-workers">Splitting a Query Across Workers</h2>
+<p>A query reads its table's files in parallel: the coordinator assigns the files (splits) to workers, each
+worker runs the plan over its own files, and the coordinator gathers the results. Gathering is only correct
+when the coordinator can turn the per-worker results into the answer, so the plan decides how a query is
+split:</p>
+<table>
+<thead>
+<tr>
+<th>Plan shape</th>
+<th>How it runs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scan, <code>WHERE</code>, projections, <code>UNION ALL</code></td>
+<td>Spread across workers; the results are concatenated</td>
+</tr>
+<tr>
+<td><code>GROUP BY</code> / aggregates, optionally with arithmetic over them</td>
+<td>Spread; each worker emits <strong>partial</strong> aggregates (<code>AVG</code> as sum + count) and the coordinator re-groups and finalizes</td>
+</tr>
+<tr>
+<td><code>HAVING</code> that compares aggregates or keys (<code>=</code>, <code>&lt;&gt;</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>AND</code>, <code>OR</code>, <code>NOT</code>, <code>IS [NOT] NULL</code>, arithmetic)</td>
+<td>Spread; the coordinator applies it <strong>after</strong> the final combine</td>
+</tr>
+<tr>
+<td><code>ORDER BY</code> / <code>LIMIT</code> at the top of the query</td>
+<td>Spread; the coordinator merges, re-sorts and re-applies the limit, keeping every column's type (<code>DATE</code>, <code>TIMESTAMP</code>, <code>DECIMAL</code>, …)</td>
+</tr>
+<tr>
+<td>Joins</td>
+<td>All files on one worker</td>
+</tr>
+<tr>
+<td>Anything else the coordinator cannot combine — a <code>HAVING</code> using other functions (e.g. <code>LIKE</code>), an <code>ORDER BY</code>/<code>LIMIT</code> inside a subquery, an aggregate over an aggregate</td>
+<td>All files on one worker</td>
+</tr>
+</tbody>
+</table>
+<p>The last row trades parallelism for correctness. Evaluating such a plan per worker and concatenating the
+results would return wrong rows without any error: a <code>HAVING count(*) = 4</code> sees each worker's partial
+count, not the total. Running it on one worker is slower on a large table, but the answer is right.</p>
 <h2 id="tuning-reference">Tuning Reference</h2>
 <table>
 <thead>
