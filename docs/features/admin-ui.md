@@ -19,7 +19,54 @@ Cluster overview with real-time metrics: query throughput, latency, active queri
 
 ### Topology
 
-Visual overview of the cluster — active Masters and Workers with node status and health information.
+The **Cluster Topology** page lists every node the cluster depends on, refreshed every 10 seconds:
+
+- **Masters** — node ID, host, admin and internal ports, role (**Leader** / Follower) and status, with a
+  **Logs** button that tails the node's log.
+- **Workers** — node ID, host, internal and Flight ports, status and **Logs**.
+- **ZooKeeper** — every server of the ensemble in `ontul.zk.serverList`, whether or not Ontul is
+  currently connected to it. Each row shows:
+
+    | Column | Meaning |
+    |---|---|
+    | Server | `host:port` from the connect string |
+    | Role | `leader`, `follower`, `observer` or `standalone`, as the server reports it; `unknown` when it answers but does not serve (no quorum) or has the `srvr` command disabled |
+    | Status | **Online** when the server answered, **Offline** when it could not be reached within `ontul.zk.admin.probeTimeoutMs` — the probe error is shown under the badge |
+    | Version | ZooKeeper version |
+    | Connections | client connections on that server |
+    | Latency min/avg/max | request latency the server measured, in ms |
+    | Znodes | number of znodes |
+    | Zxid | the last transaction id the server has seen; a follower far behind the leader is lagging |
+
+    The header shows the connect string, how many servers are up (`2/3 UP`), and the **ZooKeeper
+    session** of the master that answered — `CONNECTED`, `RECONNECTED`, `SUSPENDED` (connection lost,
+    session may still be alive) or `LOST` (session expired) — with its session ID.
+
+The ZooKeeper rows come from ZooKeeper's own `srvr` four-letter command, sent by the master to each
+server over a plain socket — the same answer `echo srvr | nc host 2181` gives. Nothing is written to
+ZooKeeper. `srvr` is in ZooKeeper's default `4lw.commands.whitelist` since 3.5; an ensemble that removed
+it still shows its servers as Online, with the role `unknown` and the server's refusal as the note.
+A probe is reused for `ontul.zk.admin.probeCacheTtlMs` (5 s by default), so many open admin pages do not
+add load to the ensemble. Any master answers on its own: unlike other admin requests, this one is not
+forwarded to the leader, because finding the leader needs ZooKeeper. So the ZooKeeper section keeps
+updating for an open page even when the ensemble has lost quorum and the Masters and Workers lists stall —
+the case it exists for. (Logging in needs the leader, so open the page before you need it, or use the API
+with a token you already hold.) The same data is available as JSON from `GET /admin/nodes/zookeeper`:
+
+```json
+{
+  "connectString": "zk1:2181,zk2:2181,zk3:2181",
+  "servers": [
+    {"host": "zk1", "port": 2181, "status": "UP", "mode": "leader", "version": "3.9.1",
+     "zxid": "0x100000045", "connections": 5, "outstanding": 0,
+     "latencyMinMs": 0, "latencyAvgMs": 0.42, "latencyMaxMs": 7, "nodeCount": 137,
+     "probeRttMs": 3, "error": null},
+    {"host": "zk3", "port": 2181, "status": "DOWN", "mode": null, "error": "ConnectException: Connection refused", "...": "..."}
+  ],
+  "session": {"state": "CONNECTED", "connected": true, "since": 1760774400000, "sessionId": "0x1000a3b2c0001"},
+  "reportedBy": "ontul-master-1:8080"
+}
+```
 
 Also home to the **Enter / Exit Maintenance** switch. Turning it on refuses writes across every
 Master while leaving reads, settings and job control available; a banner stays on screen for as long
