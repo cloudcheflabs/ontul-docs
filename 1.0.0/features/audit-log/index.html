@@ -1548,6 +1548,94 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#what-tiering-creates-for-you" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What tiering creates for you
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#settings-are-validated-when-saved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings are validated when saved
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sweep-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sweep health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#only-the-leader-tiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Only the leader tiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-tiering-picks-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How tiering picks events
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-copy-after-tiering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local copy after tiering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changing-or-disabling-tiering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changing or disabling tiering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-tiered-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The tiered table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#automatic-table-maintenance-itm" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1560,6 +1648,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-the-full-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the Full History
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1579,6 +1678,28 @@
     <span class="md-ellipsis">
       
         Admin UI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#settings-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
       
     </span>
   </a>
@@ -2796,7 +2917,7 @@
 
 
 <h1 id="audit-log">Audit Log</h1>
-<p>Ontul keeps a <strong>replicated audit log</strong> of query and access activity that answers, for every recorded operation: <strong>who</strong> (user), <strong>which engine</strong> (source), <strong>which tables</strong>, <strong>what query</strong>, and the operation <strong>details</strong>. Audit records are collected independently of the query hot-path, survive leader failover, and can optionally be tiered to durable, queryable S3 storage.</p>
+<p>Ontul keeps a <strong>replicated audit log</strong> of query and access activity that answers, for every recorded operation: <strong>who</strong> (user), <strong>which engine</strong> (source), <strong>which tables</strong>, <strong>what query</strong>, the <strong>authorization outcome</strong>, and the operation <strong>details</strong>. Audit records are collected independently of the query hot-path, survive leader failover, and can be tiered to durable, queryable S3 storage — while the Admin UI keeps showing the full history, local and tiered, as one log.</p>
 <p>The audit log is the access/activity half of Ontul governance; its table list on each record is the same edge captured by <a href="../data-lineage/">Data Lineage</a>, so the two views line up — lineage answers <em>"what was this table built from"</em>, audit answers <em>"who and which engine touched it, with what query"</em>.</p>
 <h2 id="what-is-recorded">What Is Recorded</h2>
 <p>Each audit event carries:</p>
@@ -2809,16 +2930,20 @@
 </thead>
 <tbody>
 <tr>
+<td><code>eventId</code></td>
+<td>Unique id of the event (used to de-duplicate local and tiered copies)</td>
+</tr>
+<tr>
 <td><code>userId</code></td>
 <td>The principal who ran the operation</td>
 </tr>
 <tr>
 <td><code>source</code></td>
-<td>Originating engine — <code>ontul</code> today; <code>trino</code> / <code>spark</code> / <code>flink</code> when pushed by external authz plugins</td>
+<td>Originating engine — <code>ontul</code> for statements Ontul executes; <code>trino</code> / <code>spark</code> / <code>flink</code> for events pushed by the external-engine authorization plugins</td>
 </tr>
 <tr>
 <td><code>action</code></td>
-<td>Operation kind, e.g. <code>data:Select</code>, <code>data:Insert</code>, DDL, IAM change</td>
+<td>Operation kind, e.g. <code>data:Select</code>, <code>data:Insert</code>, <code>data:CreateTable</code>, <code>data:Write</code>, DDL, IAM change</td>
 </tr>
 <tr>
 <td><code>resource</code></td>
@@ -2842,7 +2967,11 @@
 </tr>
 <tr>
 <td><code>timestamp</code></td>
-<td>Event time (epoch millis)</td>
+<td>Event time (epoch millis) — when the access happened, as reported by the engine</td>
+</tr>
+<tr>
+<td><code>ingestTs</code></td>
+<td>When the event reached Ontul (server clock). Used to order tiering — see <a href="#how-tiering-picks-events">How tiering picks events</a></td>
 </tr>
 </tbody>
 </table>
@@ -2863,6 +2992,7 @@
 <li><strong>Reads (SELECT) are audited by sampling</strong> — see below. The engine is recorded as <code>ontul</code>, and touched tables are extracted from the statement.</li>
 </ul>
 <p>Capture is best-effort and never blocks or fails a query.</p>
+<p>Ontul's <strong>own internal reads</strong> are not audited: when the Admin UI reads tiered history from the audit table (see <a href="#reading-the-full-history">Reading the Full History</a>), that query is not itself recorded, so refreshing the viewer does not grow the log.</p>
 <h3 id="read-auditing-and-sampling">Read Auditing and Sampling</h3>
 <p>Knowing <em>who ran which query</em> requires auditing reads, but read traffic is high-volume and would grow the store quickly. Two knobs bound this:</p>
 <ul>
@@ -2873,6 +3003,7 @@
 <h3 id="retention">Retention</h3>
 <ul>
 <li><code>ontul.audit.log.retention.days</code> (default <code>90</code>) — the <strong>absolute local cap</strong>: records older than this are pruned from the local store whether or not tiering is on. This is the primary knob to bound a read-heavy audit store — lower it (e.g. to <code>1</code>) when local growth matters. It is editable at runtime from the Admin UI.</li>
+<li>With tiering on, <code>ontul.audit.tier.retain.local.days</code> additionally decides how long <strong>already-tiered</strong> records also stay local — see <a href="#s3-tiering-iceberg-parquet">S3 Tiering</a>.</li>
 </ul>
 <h2 id="authorization-outcome-allowed-and-denied-access">Authorization Outcome — Allowed and Denied Access</h2>
 <p>A security audit must answer <em>"who tried to do what and was </em><em>refused</em><em>"</em>, not only <em>"what succeeded"</em>. Every access event therefore carries a <code>decision</code>:</p>
@@ -2882,10 +3013,20 @@
 </ul>
 <p>A denied Ontul query is recorded with <code>decision=DENY</code> before the refusal is raised — it does <strong>not</strong> vanish as a generic error. The external engine plugins do the same: a refused Trino/Spark/Flink access is reported as a <code>DENY</code> audit event (no lineage is emitted, since nothing was written). Denials are always recorded — they are never subject to the read sampling that bounds high-volume allowed <code>SELECT</code>s.</p>
 <p>The <strong>Decision</strong> column in the Admin UI makes refused attempts stand out at a glance (a red <code>DENY</code> badge), and free-text search matches the refusal reason in <code>details</code> — the primary signal for probing, misconfiguration, or a revoked grant still being exercised.</p>
+<div class="admonition warning">
+<p class="admonition-title">Tiered copies do not carry <code>decision</code> yet</p>
+<p>The Iceberg / Parquet copy written by <a href="#s3-tiering-iceberg-parquet">S3 tiering</a> does not include
+the <code>decision</code> column. While an event is still in the local store its decision is shown; once it
+exists <strong>only</strong> in S3 (after local pruning), the Admin UI shows it without a decision badge, and
+SQL over the tiered table cannot filter on it. Keep <code>ontul.audit.tier.retain.local.days</code> long
+enough to cover the window in which you review denials, or keep <code>DENY</code> review on the local
+window. Adding the column to the tiered schema is planned.</p>
+</div>
 <h2 id="external-engine-ingestion-rest">External-Engine Ingestion (REST)</h2>
 <p>External engines push audit events into the same Ontul store over a REST endpoint. Trino, Spark, and Flink authorization plugins (as deployed by <a href="https://www.cloudchef-labs.com">Chango</a>) already enforce Ontul IAM; the same plugins report the accesses they authorized — <strong>and the ones they refused</strong> — here, so audit from every engine is collected centrally.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>POST /admin/v1/api/audit
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Authorization: Bearer &lt;token&gt;
+<p>The endpoint lives at the server root, <strong>not</strong> under <code>/admin</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>POST /v1/api/audit
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Authorization: Token &lt;ontul-token&gt;        # or: Bearer &lt;jwt&gt; / AccessKey
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Content-Type: application/json
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>[
@@ -2897,50 +3038,203 @@
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    &quot;query&quot;:   &quot;SELECT id,total FROM hive.sales.orders WHERE region=&#39;EU&#39;&quot;,
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    &quot;tables&quot;:  [&quot;hive.sales.orders&quot;],
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    &quot;decision&quot;:&quot;ALLOW&quot;,
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    &quot;details&quot;: &quot;trino authz plugin&quot;
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>  },
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>  {
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    &quot;source&quot;:  &quot;trino&quot;,
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    &quot;userId&quot;:  &quot;bob&quot;,
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    &quot;action&quot;:  &quot;data:CreateTable&quot;,
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    &quot;resource&quot;:&quot;hive.sales.secret&quot;,
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    &quot;tables&quot;:  [&quot;hive.sales.secret&quot;],
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    &quot;decision&quot;:&quot;DENY&quot;,
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    &quot;details&quot;: &quot;trino authz plugin (ontul: ABSTAIN)&quot;
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>  }
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>]
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    &quot;details&quot;: &quot;trino authz plugin&quot;,
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    &quot;ts&quot;:      1792288263000
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>  },
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  {
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    &quot;source&quot;:  &quot;trino&quot;,
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    &quot;userId&quot;:  &quot;bob&quot;,
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    &quot;action&quot;:  &quot;data:CreateTable&quot;,
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    &quot;resource&quot;:&quot;hive.sales.secret&quot;,
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    &quot;tables&quot;:  [&quot;hive.sales.secret&quot;],
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    &quot;decision&quot;:&quot;DENY&quot;,
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    &quot;details&quot;: &quot;trino authz plugin (ontul: ABSTAIN)&quot;
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>  }
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>]
 </code></pre></div>
-<p>The body may be a single event or an array. The <code>decision</code> field is optional (older plugins omit it); when present it is stored and searchable. Ingested events are indistinguishable from native ones in search, filters, and the Admin UI, other than their <code>source</code>.</p>
+<p>Response: <code>{"status":"ok","ingested":2}</code>.</p>
+<ul>
+<li>The body may be a single event or an array.</li>
+<li><code>ts</code> (epoch millis) is the time the access happened. It is optional — when omitted, the server time is used. A plugin that reports asynchronously should send the access time; the event is still tiered correctly even if it arrives after newer events have been tiered (see <a href="#how-tiering-picks-events">How tiering picks events</a>).</li>
+<li><code>decision</code> is optional (older plugins omit it); when present it is stored and searchable.</li>
+<li>Ingested events are indistinguishable from native ones in search, filters, and the Admin UI, other than their <code>source</code>.</li>
+</ul>
+<p>The companion lineage endpoint is <code>POST /v1/api/lineage</code> — see <a href="../data-lineage/#external-engine-lineage-ingestion">Data Lineage</a>.</p>
 <h2 id="access-model">Access Model</h2>
 <p>The audit log deliberately splits its read and write paths:</p>
 <ul>
-<li><strong>Writes bypass IAM.</strong> The internal component is the sole writer; no IAM principal has write access, so audit records cannot be forged or suppressed through the normal authorization surface.</li>
-<li><strong>Reads enforce IAM.</strong> Audit contains sensitive query text and column names, so listing/searching the log is an authorized admin action.</li>
+<li><strong>Writes bypass IAM.</strong> The internal component is the sole writer; no IAM principal has write access, so audit records cannot be forged or suppressed through the normal authorization surface. This includes the tiered S3 table: it is written in-process by Ontul's Iceberg handler, not through SQL.</li>
+<li><strong>Reads enforce IAM.</strong> Audit contains sensitive query text and column names, so listing/searching the log is an authorized admin action. SQL over the tiered table goes through normal IAM like any other table.</li>
 </ul>
 <p>All audit and lineage writes are forwarded to the <strong>leader</strong> and replicated to standby masters (below). This includes events recorded on a <strong>follower</strong> — a query or <code>SUBMIT STREAMING</code> that a load balancer sent to a standby master: the follower keeps the record and forwards it to the leader, which stores it and replicates it back to every master, so the audit viewer (served by the leader) shows it.</p>
 <h2 id="storage-and-failover">Storage and Failover</h2>
 <p>Audit records live in the <strong>replicated metadata store</strong> (the same mechanism as catalogs, IAM, and lineage): the leader owns the store and broadcasts to standbys, so the audit log <strong>survives restarts and leader failover</strong> — a newly elected leader serves the same history.</p>
 <p>Forwarding from a follower is asynchronous (it never adds a network hop to the query) and ordered. While the leader is unreachable or an election is in progress, a record is retried <code>ontul.metadata.forward.max.attempts</code> times (default 5, with a growing pause); if that fails, or more than <code>ontul.metadata.forward.queue.capacity</code> (default 10000) records are waiting, the record stays on that follower only and a warning is logged.</p>
-<p>Local collection is independent of any tiering/emit path: if S3 tiering is enabled but temporarily failing, records keep accumulating locally and are tiered later (see below) rather than being lost.</p>
+<p>Local collection is independent of any tiering path: if S3 tiering is enabled but temporarily failing, records keep accumulating locally and are tiered later (see below) rather than being lost.</p>
 <h2 id="s3-tiering-iceberg-parquet">S3 Tiering (Iceberg / Parquet)</h2>
-<p>By default audit stays local only. When you need durable, long-term, queryable history, enable tiering from the Admin UI (or <code>ontul.audit.tier.*</code>). An asynchronous, best-effort sweep offloads older records to S3:</p>
+<p>By default audit stays local only. When you need durable, long-term, queryable history, enable tiering from the Admin UI (<strong>Audit → Overview &amp; Graph → Storage &amp; Retention</strong>) or with <code>ontul.audit.tier.*</code>. An asynchronous, best-effort sweep offloads records to S3:</p>
 <ul>
 <li><strong><code>iceberg</code> (recommended).</strong> Records are bulk-written to an Iceberg <strong>v2</strong> table (default <code>ice.ops.audit_events</code>) partitioned by <code>day(event_time)</code>, using Ontul's own in-process Iceberg writer (the <code>IcebergConnectorSink</code> handler) — not the SQL engine and not the raw Iceberg Java API — which avoids any circular dependency on the query path or IAM.</li>
-<li><strong><code>parquet</code> (fallback).</strong> Records are written as day-partitioned Parquet under an <code>s3://</code> prefix when no Iceberg catalog is available.</li>
+<li><strong><code>parquet</code> (fallback).</strong> Records are written as day-partitioned Parquet under an <code>s3://</code> prefix when no Iceberg catalog is available, using the S3 connection named by <code>audit.tier.connectionId</code>.</li>
 </ul>
-<p>A <strong>watermark</strong> marks the resume point; the sweep advances it after each successful commit and retries with exponential backoff on failure. <code>ontul.audit.tier.retain.local.days</code> (default <code>7</code>) controls how long tiered records are also kept locally as a hot copy — durable history lives in S3, recent data stays local for fast queries. (Only records already tiered <em>and</em> older than this window are pruned, so no un-tiered record is ever dropped.)</p>
-<p>Once tiered to Iceberg, the audit table is queryable like any other Ontul table:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">source</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">ops</span><span class="p">.</span><span class="n">audit_events</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">source</span><span class="p">;</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">ops</span><span class="p">.</span><span class="ss">&quot;audit_events$snapshots&quot;</span><span class="p">;</span><span class="w">   </span><span class="c1">-- commit history</span>
-</code></pre></div>
-<h3 id="automatic-table-maintenance-itm">Automatic Table Maintenance (ITM)</h3>
-<p>The audit table receives one commit per tiering sweep, so it accrues many small data files and snapshots. When tiering to Iceberg is enabled, Ontul <strong>auto-registers the audit table for periodic <a href="../../iceberg/maintenance/">Iceberg Table Maintenance</a></strong> — by default an <strong>hourly</strong> job that runs compaction, snapshot expiry (retaining the last 24 commits), and orphan-file cleanup. The registration is refreshed on every settings save (so renaming the target table re-registers the new name) and the entry is visible and editable on the Admin UI <strong>Maintenance</strong> page. See <code>ontul.audit.tier.maintenance.*</code> in the configuration table.</p>
-<h2 id="search-and-filters">Search and Filters</h2>
-<p>The audit log supports rich search over the collected events:</p>
+<h3 id="what-tiering-creates-for-you">What tiering creates for you</h3>
+<p>For <code>iceberg</code> mode the target is <code>catalog.schema.table</code>, where <code>catalog</code> is an Iceberg catalog registered in Ontul. The sweep creates what is missing:</p>
+<ul>
+<li>the <strong>namespace</strong> (<code>schema</code>) if it does not exist, and</li>
+<li>the <strong>table</strong> (Iceberg v2, partitioned by <code>day(event_time)</code>) if it does not exist.</li>
+</ul>
+<p>No manual <code>CREATE SCHEMA</code> is needed.</p>
+<h3 id="settings-are-validated-when-saved">Settings are validated when saved</h3>
+<p>Saving an <code>iceberg</code> target from the Admin UI or <code>POST /admin/audit/settings</code> checks it immediately instead of accepting it and failing in the background. The save is rejected with <strong>HTTP 400</strong> — and nothing is persisted — when:</p>
 <table>
 <thead>
 <tr>
-<th>Filter</th>
+<th>Problem</th>
+<th>Example message</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unknown mode</td>
+<td><code>audit.tier.mode must be one of none, iceberg, parquet: icebreg</code></td>
+</tr>
+<tr>
+<td>Iceberg mode without a table</td>
+<td><code>audit.tier.iceberg.table is required when audit.tier.mode=iceberg</code></td>
+</tr>
+<tr>
+<td>Malformed target</td>
+<td><code>audit tier target ice.audit_events is not usable: audit tier iceberg table must be catalog.schema.table: ice.audit_events</code></td>
+</tr>
+<tr>
+<td>Catalog not registered</td>
+<td><code>audit tier target nosuchcat.x.audit_events is not usable: No catalog config for audit tier catalog 'nosuchcat'</code></td>
+</tr>
+<tr>
+<td>Catalog unreachable</td>
+<td><code>audit tier target … is not usable: &lt;catalog error&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>A valid target is accepted, and its namespace is created as part of the check. The settings request may change only some keys (for example only the table); validation merges the request over what is already stored.</p>
+<h3 id="sweep-health">Sweep health</h3>
+<p><code>GET /admin/audit/settings</code> returns the stored settings plus the leader's sweep status:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;audit.tier.mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;iceberg&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;audit.tier.iceberg.table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice.ops.audit_events&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;audit.tier.retain.local.days&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;7&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;tierStatus&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;iceberg&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">&quot;lastSuccessMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1792287336163</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">&quot;lastFailureMs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="nt">&quot;lastError&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">&quot;retainLocalDays&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>lastError</code> is <code>null</code> while the sweep is healthy. When a sweep fails, the error is kept here (as well as in the master log, as <code>Audit tiering sweep failed (retry in Ns); RocksDB keeps collecting: …</code>) and the sweep retries with exponential backoff (30 s doubling up to 10 min). Records keep accumulating locally in the meantime — nothing is pruned until it has been tiered.</p>
+<h3 id="only-the-leader-tiers">Only the leader tiers</h3>
+<p>Audit records are replicated to every master, so every master sees the same backlog. The sweep runs on the <strong>leader only</strong>; after a failover the new leader continues from the replicated watermark. Each event is therefore written to S3 once.</p>
+<h3 id="how-tiering-picks-events">How tiering picks events</h3>
+<p>A <strong>watermark</strong> marks the resume point. It is kept over <strong>ingest time</strong> — when an event reached Ontul — not over the event's own <code>timestamp</code>:</p>
+<ul>
+<li>Engine plugins report asynchronously with the time the access happened. An event can therefore arrive with a timestamp <em>older</em> than events that were already tiered. Ordering by ingest time still picks it up on the next sweep; ordering by event time would skip it forever.</li>
+<li>Events ingested in the last <code>ontul.audit.tier.ingest.settle.ms</code> (default 2000 ms) wait for the next sweep, so an event stored in the same millisecond as a sweep is never stranded behind the new watermark.</li>
+<li>One sweep tiers at most <code>ontul.audit.tier.batch.size</code> events (default 5000); a batch never splits events that share the same ingest millisecond.</li>
+</ul>
+<h3 id="local-copy-after-tiering">Local copy after tiering</h3>
+<p><code>audit.tier.retain.local.days</code> (default <code>7</code>) controls how long <strong>already-tiered</strong> records also stay in the local store as a hot copy. Local cleanup deletes a record only when it has been tiered <strong>and</strong> is older than this window — a record that has not reached S3 is never deleted by tiering, whatever its timestamp.</p>
+<p>Setting it to <code>0</code> keeps only untiered records locally; everything else lives in S3. The Admin UI still shows the full history (next section).</p>
+<h3 id="changing-or-disabling-tiering">Changing or disabling tiering</h3>
+<p>Ontul remembers <strong>every Iceberg table that has received tiered events</strong>. Switching tiering back to <code>none</code>, or pointing it at a different table, does not hide history that already left the local store — the viewer keeps reading all of those tables. A table that can no longer be read (for example, dropped) is skipped and reported in the viewer response (<code>tierNote</code>).</p>
+<h3 id="the-tiered-table">The tiered table</h3>
+<p>Once tiered to Iceberg, the audit table is queryable like any other table — from Ontul, and from any engine attached to the same catalog (e.g. Trino):</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>event_id</code></td>
+<td>string</td>
+<td>Same id as the local record</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>string</td>
+<td>Engine</td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>string</td>
+<td></td>
+</tr>
+<tr>
+<td><code>action</code></td>
+<td>string</td>
+<td></td>
+</tr>
+<tr>
+<td><code>resource</code></td>
+<td>string</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tables</code></td>
+<td>string</td>
+<td>Comma-separated table list</td>
+</tr>
+<tr>
+<td><code>query</code></td>
+<td>string</td>
+<td></td>
+</tr>
+<tr>
+<td><code>details</code></td>
+<td>string</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ts</code></td>
+<td>bigint</td>
+<td>Event time, epoch millis</td>
+</tr>
+<tr>
+<td><code>event_time</code></td>
+<td>timestamp (UTC)</td>
+<td>Event time; partition source (<code>day(event_time)</code>)</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">source</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">ops</span><span class="p">.</span><span class="n">audit_events</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">source</span><span class="p">;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">ops</span><span class="p">.</span><span class="n">audit_events</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">event_time</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="s1">&#39;2026-10-01 00:00:00&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">tables</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;%sales.orders%&#39;</span><span class="p">;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">ops</span><span class="p">.</span><span class="ss">&quot;audit_events$snapshots&quot;</span><span class="p">;</span><span class="w">   </span><span class="c1">-- commit history</span>
+</code></pre></div>
+<h3 id="automatic-table-maintenance-itm">Automatic Table Maintenance (ITM)</h3>
+<p>The audit table receives one commit per tiering sweep, so it accrues many small data files and snapshots. When tiering to Iceberg is enabled, Ontul <strong>auto-registers the audit table for periodic <a href="../../iceberg/maintenance/">Iceberg Table Maintenance</a></strong> — by default an <strong>hourly</strong> job that runs compaction, snapshot expiry (retaining the last 24 commits), and orphan-file cleanup. The registration is refreshed on every settings save (so renaming the target table re-registers the new name) and the entry is visible and editable on the Admin UI <strong>Maintenance</strong> page. See <code>ontul.audit.tier.maintenance.*</code> in the configuration table.</p>
+<h2 id="reading-the-full-history">Reading the Full History</h2>
+<p><code>GET /admin/audit</code> (and both Admin UI pages built on it) returns <strong>one merged log</strong>:</p>
+<ol>
+<li>Matching events are read from the local store.</li>
+<li>Matching events are read from every Iceberg table that has received tiered events, with the same filters pushed down as SQL predicates.</li>
+<li>The two are merged, <strong>de-duplicated by <code>eventId</code></strong> (an event inside the local-retention window exists in both), sorted newest first, and cut to <code>limit</code>.</li>
+</ol>
+<p>Step 2 is skipped only when it cannot change the answer: when the local store alone fills the page with events newer than the local-retention cutoff — everything that recent is still local, so no tiered-only event can rank above them.</p>
+<p>Only <strong>Iceberg</strong> tiers are read back. History tiered in <code>parquet</code> mode is durable in S3 but is not shown by the viewer once it has been pruned locally — query the Parquet files directly (for example with <code>read_s3()</code>), or keep <code>audit.tier.retain.local.days</code> long enough to cover the period you review in the UI.</p>
+<p>If a tiered table cannot be read, the local and readable results are still returned, with a <code>tierNote</code> explaining what was skipped:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;events&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="err">…</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tierNote&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tiered audit partly unavailable: ice.old.audit_events: …&quot;</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h2 id="search-and-filters">Search and Filters</h2>
+<p>The audit log supports rich search over the collected events — the filters apply to the local store and to the tiered tables alike:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
 <th>Meaning</th>
 </tr>
 </thead>
@@ -2951,7 +3245,7 @@
 </tr>
 <tr>
 <td><code>engine</code></td>
-<td>Exact engine (<code>ontul</code> / <code>trino</code> / <code>spark</code> / <code>flink</code>)</td>
+<td>Engine (<code>ontul</code> / <code>trino</code> / <code>spark</code> / <code>flink</code>), case-insensitive</td>
 </tr>
 <tr>
 <td><code>table</code></td>
@@ -2959,27 +3253,111 @@
 </tr>
 <tr>
 <td><code>action</code></td>
-<td><code>read</code> (SELECT) / <code>write</code> (everything else) / <code>all</code></td>
+<td><code>read</code> (<code>data:Select</code>) / <code>write</code> (everything else) / <code>all</code></td>
 </tr>
 <tr>
 <td><code>q</code></td>
-<td>Free-text over query, details, resource, user, and tables</td>
+<td>Free-text substring over query, details, resource, user, action, and tables (case-insensitive)</td>
 </tr>
 <tr>
 <td><code>from</code> / <code>to</code></td>
-<td>Time range (epoch millis)</td>
+<td>Time range on the event time, epoch millis, both inclusive</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>Max events returned, newest first. Default <code>200</code>, capped at <code>ontul.audit.viewer.max.page</code> (default <code>5000</code>)</td>
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>GET /admin/audit?engine=trino&amp;action=read&amp;q=orders&amp;limit=200
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>GET /admin/audit?engine=trino&amp;action=read&amp;q=orders&amp;limit=200
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>GET /admin/audit?from=1792281600000&amp;to=1792368000000&amp;table=sales.orders
 </code></pre></div>
+<p>The cap exists because one request merges the local store with a scan of the tiered tables; narrow with <code>from</code> / <code>to</code> and filters to reach further back rather than raising <code>limit</code>.</p>
 <h2 id="admin-ui">Admin UI</h2>
 <p>The <strong>Audit</strong> section has two pages:</p>
 <ul>
-<li><strong>Overview &amp; Graph</strong> — summary counters (events, users, engines, tables, reads, writes), the storage &amp; retention settings (retention days, read enable + sample rate, tiering mode with Iceberg/Parquet targets, retain-local days), and an interactive <strong>relationship graph</strong> of <code>user → engine → table</code>. Clicking a user, engine, or table node <strong>drills down</strong> to that entity's related read/write audit logs — with expandable query text and details — right below the graph. Engine badges are color-coded (ontul / trino / spark / flink).</li>
-<li><strong>Search</strong> — a dedicated page with a free-text search bar plus user / engine / table / type (read·write) / time-range filters over the full log.</li>
+<li><strong>Overview &amp; Graph</strong> — summary counters (events, users, engines, tables, reads, writes), the storage &amp; retention settings (retention days, read enable + sample rate, tiering mode with Iceberg/Parquet targets, retain-local days), and an interactive <strong>relationship graph</strong> of <code>user → engine → table</code>. Clicking a user, engine, or table node <strong>drills down</strong> to that entity's related read/write audit logs — with expandable query text and details — right below the graph. Engine badges are color-coded (ontul / trino / spark / flink).
+  The graph and counters summarize a window you choose in the toolbar: a <strong>time range</strong> and a <strong>Max</strong> number of events (100 / 400 / 1000 / 5000, default 400).</li>
+<li><strong>Search</strong> — a dedicated page with a free-text search bar plus user / engine / table / type (read·write) / <strong>time range</strong> / <strong>max results</strong> filters over the full log.</li>
 </ul>
+<p>On both pages the <strong>time range</strong> offers <em>Any time</em>, <em>Last hour</em>, <em>Last 24h</em>, <em>Last 7 days</em>, <em>Last 30 days</em>, and <strong>Custom range…</strong>, which shows <strong>From</strong> and <strong>To</strong> date-time pickers (browser local time, minute precision; the whole <em>To</em> minute is included). When a result reaches the chosen maximum, the page says so — <em>"Showing the newest N matching events — narrow the time range or filters to see older ones"</em> — so a truncated view is never mistaken for everything.</p>
 <p>Both pages render each event's authorization outcome as a <strong>Decision</strong> badge — a red <code>DENY</code> or green <code>ALLOW</code> — so refused attempts stand out at a glance next to the action and touched tables.</p>
+<p>Both pages show local and tiered events together (see <a href="#reading-the-full-history">Reading the Full History</a>); they can be opened directly by URL (<code>/admin/audit</code>, <code>/admin/audit/search</code>) or reloaded.</p>
+<h2 id="settings-api">Settings API</h2>
+<p>The runtime settings behind the Storage &amp; Retention panel:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>GET  /admin/audit/settings          # stored settings + tierStatus
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>POST /admin/audit/settings          # change any subset; validated, 400 on a bad target
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>audit.retention.days</code></td>
+<td>Absolute local cap (overrides <code>ontul.audit.log.retention.days</code>); applied immediately</td>
+</tr>
+<tr>
+<td><code>audit.read.enabled</code> / <code>audit.read.sample.rate</code></td>
+<td>Read auditing</td>
+</tr>
+<tr>
+<td><code>audit.tier.mode</code></td>
+<td><code>none</code> / <code>iceberg</code> / <code>parquet</code></td>
+</tr>
+<tr>
+<td><code>audit.tier.iceberg.table</code></td>
+<td><code>catalog.schema.table</code> for <code>iceberg</code></td>
+</tr>
+<tr>
+<td><code>audit.tier.parquet.path</code></td>
+<td><code>s3://</code> prefix for <code>parquet</code></td>
+</tr>
+<tr>
+<td><code>audit.tier.connectionId</code></td>
+<td>S3 connection for <code>parquet</code></td>
+</tr>
+<tr>
+<td><code>audit.tier.retain.local.days</code></td>
+<td>Local copy window for tiered records</td>
+</tr>
+</tbody>
+</table>
+<p>Settings are stored in the replicated metadata store and take effect on the next sweep — no restart.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Cause / action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Settings save returns 400</td>
+<td>The target is not usable — the message names the reason (see <a href="#settings-are-validated-when-saved">Settings are validated when saved</a>)</td>
+</tr>
+<tr>
+<td><code>tierStatus.lastError</code> is set</td>
+<td>The last sweep failed; the error says why. Records keep collecting locally and are retried with backoff</td>
+</tr>
+<tr>
+<td>Viewer response carries <code>tierNote</code></td>
+<td>A previously used tiered table could not be read; its events are missing from that response only</td>
+</tr>
+<tr>
+<td>Older events missing from the page</td>
+<td>The page is capped at <code>limit</code>; use a time range or filters</td>
+</tr>
+<tr>
+<td>A tiered event shows no Decision badge</td>
+<td>Tiered copies do not carry <code>decision</code> yet (see the warning above)</td>
+</tr>
+</tbody>
+</table>
 <h2 id="configuration">Configuration</h2>
 <p>All keys are settable in <code>ontul.properties</code>; the runtime-adjustable ones are also editable from the Admin UI.</p>
 <table>
@@ -3014,7 +3392,7 @@
 <tr>
 <td><code>ontul.audit.tier.iceberg.table</code></td>
 <td><code>ice.ops.audit_events</code></td>
-<td>Target table (catalog.schema.table) for <code>iceberg</code></td>
+<td>Target table (catalog.schema.table) for <code>iceberg</code>; namespace and table are created if missing</td>
 </tr>
 <tr>
 <td><code>ontul.audit.tier.parquet.path</code></td>
@@ -3024,12 +3402,12 @@
 <tr>
 <td><code>ontul.audit.tier.connectionId</code></td>
 <td>—</td>
-<td>S3 connection id for tiering</td>
+<td>S3 connection id used by the <code>parquet</code> fallback</td>
 </tr>
 <tr>
 <td><code>ontul.audit.tier.retain.local.days</code></td>
 <td><code>7</code></td>
-<td>Local hot-copy window after tiering (days)</td>
+<td>Local hot-copy window for already-tiered records (days); <code>0</code> = keep only untiered records locally</td>
 </tr>
 <tr>
 <td><code>ontul.audit.tier.interval.ms</code></td>
@@ -3040,6 +3418,16 @@
 <td><code>ontul.audit.tier.batch.size</code></td>
 <td><code>5000</code></td>
 <td>Max records tiered per sweep</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.ingest.settle.ms</code></td>
+<td><code>2000</code></td>
+<td>Events ingested this recently wait for the next sweep</td>
+</tr>
+<tr>
+<td><code>ontul.audit.viewer.max.page</code></td>
+<td><code>5000</code></td>
+<td>Max events one <code>GET /admin/audit</code> request may return</td>
 </tr>
 <tr>
 <td><code>ontul.audit.tier.maintenance.enabled</code></td>

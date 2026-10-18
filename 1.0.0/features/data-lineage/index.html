@@ -1425,6 +1425,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-repeated-writes-accumulate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How Repeated Writes Accumulate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#table-level-lineage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2778,26 +2789,99 @@
 edge lines up with SQL-DML lineage), while external systems are recorded as scheme-prefixed datasets —
 <code>kafka://&lt;topic&gt;</code>, <code>cdc://&lt;connector&gt;/&lt;table&gt;</code>, <code>jdbc://&lt;table&gt;</code>, <code>es://&lt;index&gt;</code>, <code>http://&lt;endpoint&gt;</code>,
 <code>neorunbase://&lt;table&gt;</code>, or the S3 path for a file source.</p>
+<h2 id="how-repeated-writes-accumulate">How Repeated Writes Accumulate</h2>
+<p>A table is often fed by more than one statement — a CTAS from one engine, then <code>INSERT</code>s from
+another. Table-level lineage keeps <strong>one entry per target table</strong>, and each new edge is combined with
+what is already there according to what the statement means for the target:</p>
+<table>
+<thead>
+<tr>
+<th>Operation (as recorded)</th>
+<th>Produced by</th>
+<th>Effect on the target's sources</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CTAS</code></td>
+<td><code>CREATE TABLE … AS SELECT</code> (Ontul or an engine plugin)</td>
+<td><strong>Replaces</strong> them — the table is defined afresh</td>
+</tr>
+<tr>
+<td><code>VIEW</code></td>
+<td><code>CREATE [OR REPLACE] VIEW</code></td>
+<td><strong>Replaces</strong> them — a redefined view drops its old sources</td>
+</tr>
+<tr>
+<td><code>semantic-view</code></td>
+<td>Semantic-layer view registration</td>
+<td><strong>Replaces</strong> them</td>
+</tr>
+<tr>
+<td><code>INSERT_INTO</code>, <code>INSERT</code></td>
+<td><code>INSERT INTO … SELECT</code> (Ontul / engine plugin)</td>
+<td><strong>Adds</strong> the new sources</td>
+</tr>
+<tr>
+<td><code>MERGE_INTO</code></td>
+<td><code>MERGE INTO</code></td>
+<td><strong>Adds</strong> the new sources</td>
+</tr>
+<tr>
+<td><code>STREAMING</code></td>
+<td><code>SUBMIT STREAMING</code> (Ontul Flow start)</td>
+<td><strong>Adds</strong> the flow's sources</td>
+</tr>
+<tr>
+<td><code>ACTION</code></td>
+<td>Ontology action invocation</td>
+<td><strong>Adds</strong></td>
+</tr>
+<tr>
+<td><code>EXTERNAL</code> (default) or any other value sent</td>
+<td><code>POST /v1/api/lineage</code></td>
+<td><strong>Adds</strong> — only <code>CTAS</code>, <code>VIEW</code> and <code>semantic-view</code> replace</td>
+</tr>
+</tbody>
+</table>
+<p>Two further rules keep the graph honest:</p>
+<ul>
+<li><strong>A table reading itself is not an edge.</strong> <code>INSERT INTO t SELECT … FROM t</code> (de-duplication, backfill
+  from its own history) does not record <code>t ← t</code>.</li>
+<li><strong>The label belongs to the statement that introduced the source.</strong> The stored operation labels the
+  edges in the graph. A statement that adds no new source — such as the self-<code>INSERT</code> above — leaves
+  the existing label (for example <code>CTAS</code>) in place instead of relabelling every edge as <code>INSERT_INTO</code>.</li>
+</ul>
+<p>For example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">-- Trino (via the chango plugin):  CREATE TABLE ice.s.orders AS SELECT … FROM tpch.tiny.orders</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1">-- Ontul:                          INSERT INTO ice.s.orders SELECT … FROM pg.public.orders_backfill</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1">-- Ontul:                          INSERT INTO ice.s.orders SELECT … FROM ice.s.orders WHERE …</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">LINEAGE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">s</span><span class="p">.</span><span class="n">orders</span><span class="p">;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1">-- tpch.tiny.orders</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1">-- pg.public.orders_backfill</span>
+</code></pre></div>
+<p>Column-level lineage is stored per target and reflects the most recent statement that wrote the
+table.</p>
 <h2 id="table-level-lineage">Table-Level Lineage</h2>
 <p>Table-level lineage records the set of source tables a table was built from — every table scanned by the defining query, across joins and unions.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">demo</span><span class="p">.</span><span class="n">cust_orders</span><span class="w"> </span><span class="k">AS</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">       </span><span class="k">count</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">o_orderkey</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">order_count</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">       </span><span class="k">sum</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">o_totalprice</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_spend</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="k">c</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_custkey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">o_custkey</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">demo</span><span class="p">.</span><span class="n">cust_orders</span><span class="w"> </span><span class="k">AS</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">       </span><span class="k">count</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">o_orderkey</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">order_count</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">       </span><span class="k">sum</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">o_totalprice</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_spend</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="k">c</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_custkey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">o_custkey</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">LINEAGE</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">demo</span><span class="p">.</span><span class="n">cust_orders</span><span class="p">;</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1">-- tpch.tiny.customer</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1">-- tpch.tiny.orders</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">LINEAGE</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">demo</span><span class="p">.</span><span class="n">cust_orders</span><span class="p">;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1">-- tpch.tiny.customer</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1">-- tpch.tiny.orders</span>
 </code></pre></div>
 <h2 id="column-level-lineage">Column-Level Lineage</h2>
 <p>For each output column, Ontul records the source <code>(table, column)</code> it derives from. A column that passed through an expression — <code>SUM(...)</code>, <code>CAST(...)</code>, an aggregate — is flagged <strong><code>derived</code></strong>; a straight projection of a base column is not. Column origins come from Calcite column-origin metadata, so they are tracked correctly through joins and <code>GROUP BY</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">LINEAGE</span><span class="w"> </span><span class="n">COLUMNS</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">demo</span><span class="p">.</span><span class="n">cust_orders</span><span class="p">;</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1">-- c_name       ←  tpch.tiny.customer.c_name</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1">-- order_count  ←  tpch.tiny.orders.o_orderkey      [derived]</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1">-- total_spend  ←  tpch.tiny.orders.o_totalprice    [derived]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">SHOW</span><span class="w"> </span><span class="n">LINEAGE</span><span class="w"> </span><span class="n">COLUMNS</span><span class="w"> </span><span class="n">iceberg_catalog</span><span class="p">.</span><span class="n">demo</span><span class="p">.</span><span class="n">cust_orders</span><span class="p">;</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1">-- c_name       ←  tpch.tiny.customer.c_name</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1">-- order_count  ←  tpch.tiny.orders.o_orderkey      [derived]</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1">-- total_spend  ←  tpch.tiny.orders.o_totalprice    [derived]</span>
 </code></pre></div>
 <h2 id="sql-commands">SQL Commands</h2>
 <table>
@@ -2852,22 +2936,28 @@ edge lines up with SQL-DML lineage), while external systems are recorded as sche
 </table>
 <h2 id="external-engine-lineage-ingestion">External-Engine Lineage Ingestion</h2>
 <p>Ontul is not only the source of lineage — it is also a <strong>collection point</strong> for other engines. Trino, Spark, and Flink authorization plugins (as deployed by <a href="https://www.cloudchef-labs.com">Chango</a>) already route their access-control decisions through Ontul IAM; the same plugins push the <strong>lineage edges</strong> they observe into Ontul over a REST endpoint, so lineage from every engine lands in one replicated store.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>POST /admin/v1/api/lineage
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Authorization: Bearer &lt;token&gt;
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Content-Type: application/json
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>{
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  &quot;target&quot;:    &quot;lake.curated.orders_daily&quot;,
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  &quot;sources&quot;:   [&quot;hive.sales.orders&quot;, &quot;hive.sales.customers&quot;],
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>  &quot;operation&quot;: &quot;INSERT&quot;
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>}
+<p>The endpoint lives at the server root, <strong>not</strong> under <code>/admin</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>POST /v1/api/lineage
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>Authorization: Token &lt;ontul-token&gt;        # or: Bearer &lt;jwt&gt; / AccessKey
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>Content-Type: application/json
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>{
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>  &quot;target&quot;:    &quot;lake.curated.orders_daily&quot;,
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  &quot;sources&quot;:   [&quot;hive.sales.orders&quot;, &quot;hive.sales.customers&quot;],
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>  &quot;operation&quot;: &quot;INSERT&quot;
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>}
 </code></pre></div>
+<p>Response: <code>{"status":"ok"}</code>; <code>target</code> is required (400 otherwise). <code>operation</code> defaults to
+<code>EXTERNAL</code>. The plugins send <code>CTAS</code> for <code>CREATE TABLE … AS</code> and <code>INSERT</code> for inserts, so the
+<a href="#how-repeated-writes-accumulate">accumulation rules</a> apply to their edges exactly as to Ontul's.</p>
 <p>The ingested edge is stored and queried exactly like a natively-captured one — it appears in <code>SHOW LINEAGE</code>, the graph/impact/PII-flow endpoints, and the Admin UI graph, regardless of which engine produced it. This is the lineage half of Ontul's cross-engine <a href="../audit-log/">Audit Log</a>; the audit half records <strong>who / which engine / which query</strong> for the same operation.</p>
 <h2 id="admin-ui">Admin UI</h2>
 <p>The <strong>Data Lineage</strong> page renders an interactive graph (sources on the left, derived tables on the right). Enter a table, choose direction and depth, and trace its lineage. Click any node to open a side panel showing its column-level lineage — with the <code>derived</code> flag — and its downstream impact.</p>
+<p>Each edge is labelled with the operation that introduced it (<code>CTAS</code>, <code>INSERT_INTO</code>, <code>MERGE_INTO</code>, <code>VIEW</code>, …). The page can be opened directly by URL (<code>/admin/lineage</code>) or reloaded.</p>
+<p>The <strong>Audit → Overview &amp; Graph</strong> page shows a different, complementary graph — <code>user → engine → table</code> built from audit events — see <a href="../audit-log/#admin-ui">Audit Log</a>.</p>
 <h2 id="pii-flow-detection">PII Flow Detection</h2>
 <p>Given a sensitive column, Ontul traces every downstream <code>(table, column)</code> it transitively flows into, via column-level lineage:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>GET /admin/lineage/pii-flow?table=pg.public.users&amp;column=ssn
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>GET /admin/lineage/pii-flow?table=pg.public.users&amp;column=ssn
 </code></pre></div>
 <p>This answers "where did this PII go?" — for example, finding that <code>users.ssn</code> was copied by an ETL job into a table that has no access policy. Ontul <strong>surfaces the flow for an operator to review</strong>; it does not automatically modify IAM policies, since lineage is not exhaustive (opaque UDFs, dynamic SQL) and silent policy changes would be surprising.</p>
 <h2 id="cross-catalog-lineage">Cross-Catalog Lineage</h2>

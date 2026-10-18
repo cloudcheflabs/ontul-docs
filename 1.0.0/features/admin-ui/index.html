@@ -2584,6 +2584,13 @@
 
 <h1 id="admin-ui">Admin UI</h1>
 <p>Ontul includes a built-in web-based Admin UI for monitoring, managing, and operating the cluster.</p>
+<h2 id="opening-pages-directly">Opening pages directly</h2>
+<p>Every page has its own URL under <code>/admin/</code> (for example <code>/admin/audit</code>, <code>/admin/lineage</code>,
+<code>/admin/maintenance</code>) and can be bookmarked, shared, or reloaded. Some page URLs are also REST API
+paths — <code>GET /admin/audit</code> is both the Audit page and the audit-list API — so the server answers by
+the kind of request: a browser opening the page gets the UI, while API calls (from the UI itself, the
+CLI or scripts) get JSON as before. Paths under <code>/admin/auth/</code> (login and SSO redirects) are always
+handled by the server.</p>
 <h2 id="pages">Pages</h2>
 <h3 id="dashboard">Dashboard</h3>
 <p>Cluster overview with real-time metrics: query throughput, latency, active queries, worker status, and JVM heap usage. <strong>All / Masters / Workers</strong> tabs break the same metrics down per node, which is where per-worker heap and active-task figures live.</p>
@@ -2648,12 +2655,22 @@ source or sink node), Metrics (live throughput sparkline, rejected count, source
 (auto-scrolling tail) and History (past runs with duration and rejected counts). A running flow is
 read-only — stop it to edit.</p>
 <h3 id="data-lineage">Data Lineage</h3>
-<p>Dataset-level lineage graph built from executed DML and started flows: which sources feed which
-targets, with the job or query that created each edge. See <a href="../data-lineage/">Data Lineage</a>.</p>
+<p>Table-level lineage graph built from executed DML, views, started flows and edges pushed by other
+engines: which sources feed which targets, each edge labelled with the operation that introduced it
+(<code>CTAS</code>, <code>INSERT_INTO</code>, <code>MERGE_INTO</code>, <code>VIEW</code>, …). Enter a table, pick direction and depth; click a node
+for its column-level lineage and downstream impact. See <a href="../data-lineage/">Data Lineage</a>.</p>
 <h3 id="audit">Audit</h3>
-<p>Search the <a href="../audit-log/">audit log</a> by user, engine, table, action kind, free text and time
-range. Denied attempts appear alongside allowed ones, so a refused certification or an IAM-blocked
-write is visible here.</p>
+<p>Two pages over the <a href="../audit-log/">audit log</a>:</p>
+<ul>
+<li><strong>Overview &amp; Graph</strong> — counters, the storage &amp; retention settings (including S3 tiering), and a
+  <code>user → engine → table</code> relationship graph with drill-down to the related events.</li>
+<li><strong>Search</strong> — free text plus user, engine, table, read/write, time range and max-results filters.</li>
+</ul>
+<p>Both pages take a <strong>time range</strong> (<em>Any time</em>, <em>Last hour</em>, <em>Last 24h</em>, <em>Last 7 days</em>, <em>Last 30 days</em>,
+or <strong>Custom range…</strong> with From / To pickers) and a maximum number of events, and say so when a result
+is cut at that maximum. They show local and S3-tiered events as one log, so turning tiering on — even
+with no local copy kept — does not empty the page. Denied attempts appear alongside allowed ones, so a
+refused certification or an IAM-blocked write is visible here.</p>
 <h3 id="lance-maintenance">Lance Maintenance</h3>
 <p>Compaction and cleanup for <a href="../lance-integration/">Lance</a> datasets, mirroring the Iceberg
 Maintenance page for the vector/AI format.</p>

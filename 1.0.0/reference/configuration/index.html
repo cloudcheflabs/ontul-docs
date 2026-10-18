@@ -3742,7 +3742,7 @@ property of the table rather than of the master that read it. See
 <tr>
 <td><code>ontul.audit.tier.iceberg.table</code></td>
 <td><code>ice.ops.audit_events</code></td>
-<td>Target Iceberg table (<code>catalog.schema.table</code>) for <code>tier.mode=iceberg</code>. Written as a format-v2 table partitioned by <code>day(event_time)</code> via Ontul's in-process Iceberg writer.</td>
+<td>Target Iceberg table (<code>catalog.schema.table</code>) for <code>tier.mode=iceberg</code>. Written as a format-v2 table partitioned by <code>day(event_time)</code> via Ontul's in-process Iceberg writer; the namespace and table are created if missing. A target set from the Admin UI is validated on save (HTTP 400 if unusable).</td>
 </tr>
 <tr>
 <td><code>ontul.audit.tier.parquet.path</code></td>
@@ -3752,12 +3752,12 @@ property of the table rather than of the master that read it. See
 <tr>
 <td><code>ontul.audit.tier.connectionId</code></td>
 <td><em>(empty)</em></td>
-<td>S3 connection id (from the Connection registry) used by tiering.</td>
+<td>S3 connection id (from the Connection registry) used by the <code>tier.mode=parquet</code> fallback.</td>
 </tr>
 <tr>
 <td><code>ontul.audit.tier.retain.local.days</code></td>
 <td><code>7</code></td>
-<td>Days a tiered record is also kept locally as a hot copy (durable history lives in S3). Only records already tiered <em>and</em> older than this are pruned.</td>
+<td>Days a tiered record is also kept locally as a hot copy (durable history lives in S3). Only records already tiered <em>and</em> older than this are pruned; <code>0</code> keeps only untiered records locally. The Admin UI still shows Iceberg-tiered history.</td>
 </tr>
 <tr>
 <td><code>ontul.audit.tier.interval.ms</code></td>
@@ -3767,7 +3767,17 @@ property of the table rather than of the master that read it. See
 <tr>
 <td><code>ontul.audit.tier.batch.size</code></td>
 <td><code>5000</code></td>
-<td>Max records tiered per sweep.</td>
+<td>Max records tiered per sweep. The sweep runs on the leader only and selects records by ingest time.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.tier.ingest.settle.ms</code></td>
+<td><code>2000</code></td>
+<td>Records ingested within this many ms of a sweep wait for the next one, so a record stored in the same millisecond as the scan is not stranded behind the watermark.</td>
+</tr>
+<tr>
+<td><code>ontul.audit.viewer.max.page</code></td>
+<td><code>5000</code></td>
+<td>Max events one <code>GET /admin/audit</code> request (Admin UI Audit pages) may return; each request merges the local store with a scan of the Iceberg-tiered tables.</td>
 </tr>
 <tr>
 <td><code>ontul.audit.tier.maintenance.enabled</code></td>

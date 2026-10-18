@@ -1744,6 +1744,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Where maintenance runs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#storage-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage access
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2826,6 +2843,14 @@ Manual triggers need no special handling: they arrive through the admin API, whi
 a follower's request to the leader.</p>
 <p>Per-table maintenance configuration lives in the metadata store, which the leader replicates to
 followers, so a schedule survives a leader handoff and a restart.</p>
+<h3 id="storage-access">Storage access</h3>
+<p>Every maintenance operation — scheduled or manual — reads and writes table files through the S3
+settings of the <strong>Ontul catalog</strong> (<code>s3.endpoint</code>, <code>s3.accessKey</code> / <code>s3.secretKey</code>, <code>s3.pathStyle</code>),
+not through whatever endpoint or credentials the REST catalog advertises with the table. A catalog
+such as Polaris may advertise the endpoint as clients <em>outside</em> the cluster reach it (for example
+<code>http://localhost:8000</code> next to an internal <code>http://nginx:80</code>); writing a rewritten manifest or
+deleting expired files through that address fails from inside the cluster. Using the catalog's own
+S3 settings keeps maintenance on the same storage path as Ontul's queries and writes.</p>
 <h2 id="did-it-actually-help">Did it actually help?</h2>
 <p>Maintenance that runs is not the same as maintenance that helped. Every run is bracketed with a
 health sample taken before it starts and again once it commits, so the Admin UI can show what the
