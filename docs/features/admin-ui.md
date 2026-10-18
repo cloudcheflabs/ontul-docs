@@ -11,6 +11,50 @@ the kind of request: a browser opening the page gets the UI, while API calls (fr
 CLI or scripts) get JSON as before. Paths under `/admin/auth/` (login and SSO redirects) are always
 handled by the server.
 
+## Who can change what
+
+Every admin API call is checked on the server, whatever the console shows. Hiding a button is a
+convenience; the check is what keeps a non-administrator out.
+
+| Area | Read | Change |
+|---|---|---|
+| KMS, Backup & Restore, STS | administrators only | administrators only |
+| IAM (users, groups, policies, keys), SSO, connections, catalogs, drivers, storage and other `/admin/config/*` settings, Iceberg maintenance, health scan, audit settings, cluster maintenance mode | any signed-in user (secrets masked) | administrators only |
+| SQL query history, jobs | your own entries; administrators see everyone's | your own queries and jobs; administrators any |
+| Your own access key download | the key's owner or an administrator | — |
+
+"Administrator" means a user whose policies grant `AdministratorAccess`. A non-administrator who calls
+an administrator-only route gets `403 Forbidden`. The check runs after a follower master forwards the
+request to the leader, so it gives the same answer on every master. When no leader is known — during
+an election — a follower answers `503 Service Unavailable` rather than guessing a master.
+
+### Secrets are never sent back
+
+Connection properties, catalog properties, job configurations, query history and SSO settings are
+masked before they leave the server. Any key whose name contains `secret`, `password`, `passwd`,
+`token`, `credential`, `apikey` / `api_key`, `accesskey` / `access_key`, `private`, `jaas` or
+`authheadervalue` (case-insensitive) is shown as `***`. The same masking is applied inside SQL text, so
+`CREATE USER ... PASSWORD '...'` or a `key=value` string inside a job argument appears as
+`PASSWORD '***'` in history.
+
+Editing a masked value works in both forms:
+
+- **Leave `***` in place** — the stored secret is kept. You can rename a catalog's description or
+  change an endpoint without re-typing its secret key.
+- **Type a new value** — it replaces the stored one.
+- **Clear the field** (connections) — the key is removed from the connection.
+
+KMS key status lists each key's versions with their creation time and state only. No key material is
+returned by any endpoint.
+
+### Access keys and tokens
+
+Deleting an access key, or a user, revokes the key's token immediately: a request presenting it is
+refused from the next call on, not when a cache expires. A token is accepted only while its key exists,
+is **Active** and is not past its expiry date. An expiry date picked in the UI means *to the end of that
+day*. The download icon for a key is shown only to an administrator and to the key's owner, and the
+server enforces the same rule.
+
 ## Pages
 
 ### Dashboard
@@ -24,6 +68,11 @@ The **Cluster Topology** page lists every node the cluster depends on, refreshed
 - **Masters** — node ID, host, admin and internal ports, role (**Leader** / Follower) and status, with a
   **Logs** button that tails the node's log.
 - **Workers** — node ID, host, internal and Flight ports, status and **Logs**.
+
+**Logs** shows that node's own log, whichever master served the page: a follower's log is fetched from
+the follower itself, and a worker is matched by host *and* port, so two workers on one host do not show
+each other's log. The viewer reads complete lines only, follows the file as it grows, and starts again
+from the end if the file is truncated or rotated. ZooKeeper servers have no log viewer.
 - **ZooKeeper** — every server of the ensemble in `ontul.zk.serverList`, whether or not Ontul is
   currently connected to it. Each row shows:
 
@@ -76,6 +125,17 @@ as the window is open. See [Cluster Maintenance Mode](cluster-maintenance.md).
 
 Built-in SQL editor with syntax highlighting, `Ctrl+Enter` execution, result table, and query history.
 
+- **Cancel** stops the running query on the cluster, not only in the browser. The page chooses the
+  query's ID before sending it, so it can cancel a query whose first result has not arrived yet.
+- Statements that return no rows — `INSERT`, `CREATE`, `DROP`, `CALL` and so on — show a banner with
+  the command tag and row count instead of an empty table.
+- A failed statement shows the error and how long it ran.
+- Integers beyond JavaScript's exact range (±2<sup>53</sup>−1, for example a large `BIGINT` ID or an
+  exact `SUM`) are sent as strings, so the page shows the digits the engine computed rather than a
+  rounded number.
+- History lists your own queries (administrators see all), with their command tag. Secrets in the SQL
+  text are masked. **Clear view** empties the result pane without touching history.
+
 ### Catalog Browser
 
 Point-and-click walk through a catalog: **Catalogs → Schemas → Tables**, then the selected table's
@@ -92,9 +152,32 @@ permissions, a broken storage path — keeps its column list and reports only th
 
 Register, unregister, and manage data source catalogs. View connector type, connection ID, table count, and configuration for each catalog.
 
+- **Register first, persist after.** A new or edited catalog is only saved once its connector has
+  started. A catalog whose endpoint or credentials are wrong is rejected with the connector's error,
+  and editing an existing catalog with bad settings leaves the previous, working catalog in place.
+- **Iceberg** catalogs take a REST (e.g. Polaris), Glue, JDBC or Hadoop catalog. Storage settings come
+  either from a [connection](connection-id.md) or inline: S3 endpoint (optional for AWS), region,
+  access/secret key and path-style access, which is on by default for S3-compatible stores. When a
+  connection is chosen the inline keys are not sent, so the connection stays the only source of
+  credentials. The REST form sends `catalog.type=rest`; a catalog that has `catalog.rest.uri` but no
+  type is also treated as REST.
+- **Lance** with Polaris takes the Polaris server root as its URI plus the warehouse name.
+- A connector type the form does not know is edited as raw JSON properties, so nothing is lost by
+  opening it in the UI.
+- Masked secrets are restored from the stored catalog when you save without retyping them.
+
 ### Connections
 
 Manage physical connections (S3, JDBC, Kafka) — create, update, delete, and list. Credentials are encrypted at rest via KMS.
+
+- Connection IDs may contain letters, digits, `_`, `.` and `-`.
+- Secret fields are always shown as password fields and come back as `***`; see
+  [Secrets are never sent back](#secrets-are-never-sent-back) for how edits treat them.
+- **Test** really connects. For S3 it checks the configured bucket exists and can be listed
+  (`HeadBucket`, then `ListObjectsV2`), or lists buckets when no bucket is set, using the same endpoint,
+  region and path-style settings jobs use. DECIDE connections have their own check; other types answer
+  `ok: false` with "Testing is supported for S3 and DECIDE connections" instead of claiming success.
+- A connection type the form does not know keeps all of its properties when edited.
 
 ### Semantic Layer
 
@@ -152,6 +235,11 @@ source or sink node), Metrics (live throughput sparkline, rejected count, source
 (auto-scrolling tail) and History (past runs with duration and rejected counts). A running flow is
 read-only — stop it to edit.
 
+The Iceberg sink's write mode (`append`, `upsert`, …) is saved in the spec as `sink.write`, together with
+`transactional` and `batchSize`, so it survives a save and reopen. An Iceberg source starts from
+**latest** (only new snapshots) or **all** (`earliest` is accepted as a synonym). Saving a new flow
+under a name that is already taken answers `409` instead of replacing the other flow.
+
 ### Data Lineage
 
 Table-level lineage graph built from executed DML, views, started flows and edges pushed by other
@@ -188,13 +276,34 @@ no restart** — the change is persisted to the replicated metadata store and pu
 Upload JDBC driver JARs for federated catalogs. Drivers are stored durably and synced to every
 worker, so a new driver does not require rebuilding an image.
 
+- **An uploaded driver wins over a bundled one.** Ontul ships some JDBC drivers (PostgreSQL among them).
+  Each uploaded JAR is loaded child-first, and a driver class found in an uploaded JAR is used before
+  the bundled copy, so uploading `postgresql-42.7.4.jar` really switches the version. Driver classes are
+  read from the JAR's `META-INF/services/java.sql.Driver`.
+- Uploading a newer JAR for the same driver class under a different file name **supersedes** the old
+  JAR: it is removed on the master and on every worker.
+- **Delete** removes the JAR from the master and from every worker, and answers `404` for a name that
+  does not exist.
+- File names must end in `.jar` and may not contain path separators or `..`.
+
 ### Jobs
 
-Monitor active and completed jobs. Submit new batch or streaming jobs, view real-time logs, and kill running jobs.
+Monitor active and completed jobs, view real-time logs, and kill running jobs. Jobs are submitted with
+the SDK or `bin/submit.sh`; the page is for watching and stopping them. Non-administrators see their own
+jobs, and secrets in job configuration are masked. **Kill** stops the job on every worker running it and
+reports a failure instead of silently doing nothing.
 
 ### IAM
 
 Manage users, groups, and policies. Includes a visual policy editor for creating structured IAM policies with column-level and row-level security rules.
+
+- The policy editor covers `Allow`, `Deny` and `Mask` statements. `Mask` takes the columns to mask
+  (`MaskedColumns`). Actions are picked from the known action list or typed by hand.
+- Opening a policy and saving it keeps every field, including ones the editor has no control for, so
+  editing a policy written by the API or the CLI does not drop conditions.
+- **New Policy** refuses a name that already exists (`409`) instead of overwriting it.
+- The editor stays open with the server's error when a save fails.
+- Groups list their members.
 
 ### Single Sign-On
 
@@ -214,7 +323,9 @@ Changing them needs `AdministratorAccess`; everyone else sees the page read-only
 
 ### KMS
 
-Key management interface for viewing and managing encryption keys.
+Key management interface for viewing and managing encryption keys: create keys, rotate them and see
+each key's versions. Administrators only. Key IDs are trimmed and checked for duplicates before
+creation. No key material is ever shown.
 
 ### Iceberg Health
 
@@ -230,9 +341,19 @@ aggregate the matching Prometheus gauges without double-counting across a failov
 
 Configure and monitor Iceberg table maintenance — snapshot expiration, data compaction, manifest rewrite, orphan-file cleanup, and position-delete consolidation. Per-table configuration covers per-operation toggles plus Spark-aligned parameters (target file size, compaction `window_hours` and `min_input_files`, snapshot retention and `retain_last`, orphan safety window) and a **schedule** that is either a fixed interval or a 5-field UNIX **cron** (e.g. `0 */2 * * *`) which overrides the interval. A **Manual Trigger** runs any single operation (or all) on demand against a wildcard table pattern, with full job history.
 
+Settings are validated on save, and an invalid value is reported rather than stored: snapshot retention
+and `retain_last` at least 1, the orphan-file safety window at least 24 hours (shorter windows can delete
+files a running write has not committed yet), and a valid 5-field cron expression. The table field
+accepts any table name and suggests tables seen in health data and maintenance history. After **Run
+Now**, the history refreshes until the run finishes.
+
 ### Backup & Restore
 
 Backup the cluster's KMS / IAM / metadata stores to S3 and restore from any prior backup. The page exposes manual *Backup Now*, a fixed-interval schedule, and a 5-field UNIX **cron schedule** (e.g. `0 2 * * *`); the next-fire timestamp is shown next to an active cron so you can see at a glance when the next run will land. See [Backup & Restore](backup-restore.md) for the full flow.
+
+*Backup Now* needs a saved backup configuration. The backup list reports the storage error — a missing
+bucket, wrong credentials — instead of showing an empty list. Scheduled and cron backups run on the
+leader only, so a multi-master cluster takes one backup per run.
 
 ## REST API
 
