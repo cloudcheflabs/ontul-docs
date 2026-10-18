@@ -206,12 +206,14 @@ property of the table rather than of the master that read it. See
 | `ontul.audit.read.enabled` | `true` | Whether `SELECT`/read queries are audited (who ran which query). Volume is bounded by the sample rate. |
 | `ontul.audit.read.sample.rate` | `1.0` | Fraction (0.0–1.0) of read queries recorded when read auditing is on. |
 | `ontul.audit.tier.mode` | `none` | Audit tiering target: `none` (local only), `iceberg` (recommended), or `parquet` (fallback). Older records are offloaded to durable, queryable S3. |
-| `ontul.audit.tier.iceberg.table` | `ice.ops.audit_events` | Target Iceberg table (`catalog.schema.table`) for `tier.mode=iceberg`. Written as a format-v2 table partitioned by `day(event_time)` via Ontul's in-process Iceberg writer. |
+| `ontul.audit.tier.iceberg.table` | `ice.ops.audit_events` | Target Iceberg table (`catalog.schema.table`) for `tier.mode=iceberg`. Written as a format-v2 table partitioned by `day(event_time)` via Ontul's in-process Iceberg writer; the namespace and table are created if missing. A target set from the Admin UI is validated on save (HTTP 400 if unusable). |
 | `ontul.audit.tier.parquet.path` | _(empty)_ | Target `s3://` prefix for the `tier.mode=parquet` fallback. |
-| `ontul.audit.tier.connectionId` | _(empty)_ | S3 connection id (from the Connection registry) used by tiering. |
-| `ontul.audit.tier.retain.local.days` | `7` | Days a tiered record is also kept locally as a hot copy (durable history lives in S3). Only records already tiered *and* older than this are pruned. |
+| `ontul.audit.tier.connectionId` | _(empty)_ | S3 connection id (from the Connection registry) used by the `tier.mode=parquet` fallback. |
+| `ontul.audit.tier.retain.local.days` | `7` | Days a tiered record is also kept locally as a hot copy (durable history lives in S3). Only records already tiered *and* older than this are pruned; `0` keeps only untiered records locally. The Admin UI still shows Iceberg-tiered history. |
 | `ontul.audit.tier.interval.ms` | `300000` | How often the tiering sweep runs (ms). |
-| `ontul.audit.tier.batch.size` | `5000` | Max records tiered per sweep. |
+| `ontul.audit.tier.batch.size` | `5000` | Max records tiered per sweep. The sweep runs on the leader only and selects records by ingest time. |
+| `ontul.audit.tier.ingest.settle.ms` | `2000` | Records ingested within this many ms of a sweep wait for the next one, so a record stored in the same millisecond as the scan is not stranded behind the watermark. |
+| `ontul.audit.viewer.max.page` | `5000` | Max events one `GET /admin/audit` request (Admin UI Audit pages) may return; each request merges the local store with a scan of the Iceberg-tiered tables. |
 | `ontul.audit.tier.maintenance.enabled` | `true` | When tiering→iceberg, auto-register the audit table for periodic Iceberg Table Maintenance (compaction + expire-snapshots + orphan cleanup). |
 | `ontul.audit.tier.maintenance.cron` | `0 * * * *` | 5-field UNIX cron for the audit table's maintenance (default hourly). |
 | `ontul.audit.tier.maintenance.snapshot.retain.last` | `24` | `expire_snapshots` retain-last for the audit table — always keep at least this many recent commits. |

@@ -2,6 +2,15 @@
 
 Ontul includes a built-in web-based Admin UI for monitoring, managing, and operating the cluster.
 
+## Opening pages directly
+
+Every page has its own URL under `/admin/` (for example `/admin/audit`, `/admin/lineage`,
+`/admin/maintenance`) and can be bookmarked, shared, or reloaded. Some page URLs are also REST API
+paths — `GET /admin/audit` is both the Audit page and the audit-list API — so the server answers by
+the kind of request: a browser opening the page gets the UI, while API calls (from the UI itself, the
+CLI or scripts) get JSON as before. Paths under `/admin/auth/` (login and SSO redirects) are always
+handled by the server.
+
 ## Pages
 
 ### Dashboard
@@ -98,14 +107,24 @@ read-only — stop it to edit.
 
 ### Data Lineage
 
-Dataset-level lineage graph built from executed DML and started flows: which sources feed which
-targets, with the job or query that created each edge. See [Data Lineage](data-lineage.md).
+Table-level lineage graph built from executed DML, views, started flows and edges pushed by other
+engines: which sources feed which targets, each edge labelled with the operation that introduced it
+(`CTAS`, `INSERT_INTO`, `MERGE_INTO`, `VIEW`, …). Enter a table, pick direction and depth; click a node
+for its column-level lineage and downstream impact. See [Data Lineage](data-lineage.md).
 
 ### Audit
 
-Search the [audit log](audit-log.md) by user, engine, table, action kind, free text and time
-range. Denied attempts appear alongside allowed ones, so a refused certification or an IAM-blocked
-write is visible here.
+Two pages over the [audit log](audit-log.md):
+
+- **Overview & Graph** — counters, the storage & retention settings (including S3 tiering), and a
+  `user → engine → table` relationship graph with drill-down to the related events.
+- **Search** — free text plus user, engine, table, read/write, time range and max-results filters.
+
+Both pages take a **time range** (*Any time*, *Last hour*, *Last 24h*, *Last 7 days*, *Last 30 days*,
+or **Custom range…** with From / To pickers) and a maximum number of events, and say so when a result
+is cut at that maximum. They show local and S3-tiered events as one log, so turning tiering on — even
+with no local copy kept — does not empty the page. Denied attempts appear alongside allowed ones, so a
+refused certification or an IAM-blocked write is visible here.
 
 ### Lance Maintenance
 
