@@ -290,23 +290,58 @@ print(df)
 
 ## Job Management
 
+### Credentials
+
+Every `/v1/api/job/*` call takes one of:
+
+| Header | Where it comes from |
+|---|---|
+| `Authorization: Token <token>` | the `token` (`OTOK…`) of an access key, from IAM |
+| `Authorization: Bearer <accessToken>` | `POST /admin/auth/login` |
+| `Authorization: AccessKey <accessKeyId>:<secretAccessKey>` | an access key pair |
+
+`Basic user:password` is not accepted; a `401` says so and lists the three forms.
+
+### Submit fields
+
+`name` (or `jobName`), `type` (or `jobType`: `BATCH`, `STREAMING`, `CLASS`, `PYTHON`; default `BATCH`), `sql`, `config`, `operations`, `className`, `scriptPath`, `deps`, `args`. Any other field is refused with `400` and the list of valid ones, so a typo is not silently ignored.
+
+### Behind a load balancer
+
+With several masters, every job call is handled by the **leader**: a follower forwards submit, status, list, history, log and kill to it. So a status or history call sees the job whichever master the balancer picks. (Before 1.0.0's fix, a call landing on another master answered `Job not found` or an empty list.) Job history is kept by the master that ran the job — `<base.data.dir>/job-history` by default. After a leader change, a status call for a job the previous leader ran is answered from that master while it is up; set `ontul.job.history.dir` to an S3 path to keep history readable from every master regardless.
+
+### Job lifecycle
+
+`SUBMITTED` → `PLANNING` → `RUNNING` → `COMPLETED` / `FAILED` / `KILLED`. A finished job leaves `GET /v1/api/job/list` (which shows **running** jobs only) and stays in `GET /v1/api/job/history` (the 100 most recent) and `GET /v1/api/job/status/{jobId}`. A job that fails — including on an internal error — ends `FAILED` with `errorMessage` set.
+
 ### Get Job Status
 
 ```bash
 curl http://localhost:8080/v1/api/job/status/{jobId} \
-  -H "Authorization: Bearer $TOKEN"
+  -H "Authorization: Token $TOKEN"
 ```
 
 ```json
 {
-  "jobId": "batch-1714300000000",
-  "name": "daily-etl",
+  "jobId": "0fffe94b-4444-484f-8e24-966b8030266d",
+  "jobName": "daily-etl",
   "type": "BATCH",
-  "status": "RUNNING",
-  "username": "admin",
-  "startTime": 1714300000000,
-  "assignedWorkerId": "worker-1"
+  "status": "COMPLETED",
+  "driverMode": "MASTER",
+  "sql": "SELECT 1",
+  "submitTime": 1714300000000,
+  "startTime": 1714300000010,
+  "endTime": 1714300000450,
+  "errorMessage": null,
+  "assignedWorkerId": null
 }
+```
+
+### Job History
+
+```bash
+curl http://localhost:8080/v1/api/job/history \
+  -H "Authorization: Token $TOKEN"
 ```
 
 ### Stream Job Logs
@@ -328,11 +363,11 @@ curl -X POST http://localhost:8080/v1/api/job/kill/{jobId} \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### List Jobs
+### List Running Jobs
 
 ```bash
-curl http://localhost:8080/admin/jobs \
-  -H "Authorization: Bearer $TOKEN"
+curl http://localhost:8080/v1/api/job/list \
+  -H "Authorization: Token $TOKEN"
 ```
 
 ---
