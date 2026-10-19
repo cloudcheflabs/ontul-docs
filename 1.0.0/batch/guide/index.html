@@ -2467,10 +2467,65 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#submit-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Submit fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behind-a-load-balancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behind a load balancer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#job-lifecycle_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Job lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#get-job-status" class="md-nav__link">
     <span class="md-ellipsis">
       
         Get Job Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#job-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Job History
       
     </span>
   </a>
@@ -2500,10 +2555,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#list-jobs" class="md-nav__link">
+  <a href="#list-running-jobs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        List Jobs
+        List Running Jobs
       
     </span>
   </a>
@@ -3461,54 +3516,93 @@
 </code></pre></div>
 <hr />
 <h2 id="job-management">Job Management</h2>
+<h3 id="credentials">Credentials</h3>
+<p>Every <code>/v1/api/job/*</code> call takes one of:</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Where it comes from</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Authorization: Token &lt;token&gt;</code></td>
+<td>the <code>token</code> (<code>OTOK…</code>) of an access key, from IAM</td>
+</tr>
+<tr>
+<td><code>Authorization: Bearer &lt;accessToken&gt;</code></td>
+<td><code>POST /admin/auth/login</code></td>
+</tr>
+<tr>
+<td><code>Authorization: AccessKey &lt;accessKeyId&gt;:&lt;secretAccessKey&gt;</code></td>
+<td>an access key pair</td>
+</tr>
+</tbody>
+</table>
+<p><code>Basic user:password</code> is not accepted; a <code>401</code> says so and lists the three forms.</p>
+<h3 id="submit-fields">Submit fields</h3>
+<p><code>name</code> (or <code>jobName</code>), <code>type</code> (or <code>jobType</code>: <code>BATCH</code>, <code>STREAMING</code>, <code>CLASS</code>, <code>PYTHON</code>; default <code>BATCH</code>), <code>sql</code>, <code>config</code>, <code>operations</code>, <code>className</code>, <code>scriptPath</code>, <code>deps</code>, <code>args</code>. Any other field is refused with <code>400</code> and the list of valid ones, so a typo is not silently ignored.</p>
+<h3 id="behind-a-load-balancer">Behind a load balancer</h3>
+<p>With several masters, every job call is handled by the <strong>leader</strong>: a follower forwards submit, status, list, history, log and kill to it. So a status or history call sees the job whichever master the balancer picks. (Before 1.0.0's fix, a call landing on another master answered <code>Job not found</code> or an empty list.) Job history is kept by the master that ran the job — <code>&lt;base.data.dir&gt;/job-history</code> by default. After a leader change, a status call for a job the previous leader ran is answered from that master while it is up; set <code>ontul.job.history.dir</code> to an S3 path to keep history readable from every master regardless.</p>
+<h3 id="job-lifecycle_1">Job lifecycle</h3>
+<p><code>SUBMITTED</code> → <code>PLANNING</code> → <code>RUNNING</code> → <code>COMPLETED</code> / <code>FAILED</code> / <code>KILLED</code>. A finished job leaves <code>GET /v1/api/job/list</code> (which shows <strong>running</strong> jobs only) and stays in <code>GET /v1/api/job/history</code> (the 100 most recent) and <code>GET /v1/api/job/status/{jobId}</code>. A job that fails — including on an internal error — ends <code>FAILED</code> with <code>errorMessage</code> set.</p>
 <h3 id="get-job-status">Get Job Status</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>curl<span class="w"> </span>http://localhost:8080/v1/api/job/status/<span class="o">{</span>jobId<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">{</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">&quot;jobId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;batch-1714300000000&quot;</span><span class="p">,</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;daily-etl&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">&quot;jobId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0fffe94b-4444-484f-8e24-966b8030266d&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">&quot;jobName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;daily-etl&quot;</span><span class="p">,</span>
 <a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BATCH&quot;</span><span class="p">,</span>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RUNNING&quot;</span><span class="p">,</span>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;admin&quot;</span><span class="p">,</span>
-<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">  </span><span class="nt">&quot;startTime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1714300000000</span><span class="p">,</span>
-<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span><span class="nt">&quot;assignedWorkerId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;worker-1&quot;</span>
-<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="p">}</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;COMPLETED&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span><span class="nt">&quot;driverMode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MASTER&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">  </span><span class="nt">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT 1&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span><span class="nt">&quot;submitTime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1714300000000</span><span class="p">,</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span><span class="nt">&quot;startTime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1714300000010</span><span class="p">,</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">  </span><span class="nt">&quot;endTime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1714300000450</span><span class="p">,</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">  </span><span class="nt">&quot;errorMessage&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">  </span><span class="nt">&quot;assignedWorkerId&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="job-history">Job History</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>curl<span class="w"> </span>http://localhost:8080/v1/api/job/history<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
 </code></pre></div>
 <h3 id="stream-job-logs">Stream Job Logs</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># All logs</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>curl<span class="w"> </span>http://localhost:8080/v1/api/job/<span class="o">{</span>jobId<span class="o">}</span>/log<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="c1"># Incremental polling (from offset)</span>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>curl<span class="w"> </span><span class="s2">&quot;http://localhost:8080/v1/api/job/{jobId}/log?from=100&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># All logs</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>curl<span class="w"> </span>http://localhost:8080/v1/api/job/<span class="o">{</span>jobId<span class="o">}</span>/log<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="c1"># Incremental polling (from offset)</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>curl<span class="w"> </span><span class="s2">&quot;http://localhost:8080/v1/api/job/{jobId}/log?from=100&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
 </code></pre></div>
 <h3 id="kill-a-running-job">Kill a Running Job</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/v1/api/job/kill/<span class="o">{</span>jobId<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
-</code></pre></div>
-<h3 id="list-jobs">List Jobs</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>curl<span class="w"> </span>http://localhost:8080/admin/jobs<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/v1/api/job/kill/<span class="o">{</span>jobId<span class="o">}</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+</code></pre></div>
+<h3 id="list-running-jobs">List Running Jobs</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>curl<span class="w"> </span>http://localhost:8080/v1/api/job/list<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
 </code></pre></div>
 <hr />
 <h2 id="sourcesink-by-connection-id">Source/Sink by Connection ID</h2>
 <p>Production batch jobs should reference a registered connection by ID instead of repeating endpoints and credentials in every call. Register once via <code>POST /admin/connections</code>, then use the ID anywhere a source or sink is built.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1">// S3 source/sink driven by a stored connection — no credentials in code</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">s3</span><span class="p">(</span><span class="s">&quot;s3://warehouse/raw/sales&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">        </span><span class="p">.</span><span class="na">connection</span><span class="p">(</span><span class="s">&quot;warehouse-s3&quot;</span><span class="p">))</span>
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;quantity &gt; 0&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">    </span><span class="p">.</span><span class="na">withColumn</span><span class="p">(</span><span class="s">&quot;total&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity * unit_price&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">s3</span><span class="p">(</span><span class="s">&quot;s3://warehouse/curated/sales&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">        </span><span class="p">.</span><span class="na">connection</span><span class="p">(</span><span class="s">&quot;warehouse-s3&quot;</span><span class="p">));</span>
-<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>
-<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="c1">// JDBC source / sink</span>
-<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">jdbc</span><span class="p">(</span><span class="s">&quot;analytics-pg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SELECT * FROM public.orders WHERE dt = CURRENT_DATE&quot;</span><span class="p">))</span>
-<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.staging.orders&quot;</span><span class="p">));</span>
-<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>
-<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM ice.warehouse.daily_summary&quot;</span><span class="p">))</span>
-<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">jdbc</span><span class="p">(</span><span class="s">&quot;analytics-pg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;public.daily_summary&quot;</span><span class="p">));</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1">// S3 source/sink driven by a stored connection — no credentials in code</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">s3</span><span class="p">(</span><span class="s">&quot;s3://warehouse/raw/sales&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">        </span><span class="p">.</span><span class="na">connection</span><span class="p">(</span><span class="s">&quot;warehouse-s3&quot;</span><span class="p">))</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;quantity &gt; 0&quot;</span><span class="p">)</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">    </span><span class="p">.</span><span class="na">withColumn</span><span class="p">(</span><span class="s">&quot;total&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity * unit_price&quot;</span><span class="p">)</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">s3</span><span class="p">(</span><span class="s">&quot;s3://warehouse/curated/sales&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">        </span><span class="p">.</span><span class="na">connection</span><span class="p">(</span><span class="s">&quot;warehouse-s3&quot;</span><span class="p">));</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="c1">// JDBC source / sink</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">jdbc</span><span class="p">(</span><span class="s">&quot;analytics-pg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;SELECT * FROM public.orders WHERE dt = CURRENT_DATE&quot;</span><span class="p">))</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.staging.orders&quot;</span><span class="p">));</span>
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM ice.warehouse.daily_summary&quot;</span><span class="p">))</span>
+<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">jdbc</span><span class="p">(</span><span class="s">&quot;analytics-pg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;public.daily_summary&quot;</span><span class="p">));</span>
 </code></pre></div>
 <p>Inline <code>.property(...)</code> values supplied alongside <code>.connection(id)</code> are merged on top of the stored connection — handy for per-job overrides (consumer group, query timeout, batch size) without forking the connection. See <a href="../../features/connection-id/">Connection ID</a> for the full reference.</p>
 <hr />
@@ -3546,28 +3640,28 @@
 </tbody>
 </table>
 <h3 id="transformations">Transformations</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">DataFrame</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM ice.raw.sales&quot;</span><span class="p">))</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;quantity &gt; 0&quot;</span><span class="p">)</span><span class="w">                          </span><span class="c1">// row filter</span>
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;unit_price &gt; 0&quot;</span><span class="p">)</span><span class="w">                        </span><span class="c1">// chain multiple filters</span>
-<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">    </span><span class="p">.</span><span class="na">select</span><span class="p">(</span><span class="s">&quot;sale_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;product_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity&quot;</span><span class="p">)</span><span class="w">     </span><span class="c1">// column projection</span>
-<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">    </span><span class="p">.</span><span class="na">withColumn</span><span class="p">(</span><span class="s">&quot;total&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity * unit_price&quot;</span><span class="p">)</span><span class="w">     </span><span class="c1">// computed column</span>
-<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">    </span><span class="p">.</span><span class="na">orderBy</span><span class="p">(</span><span class="s">&quot;total&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span><span class="w">                          </span><span class="c1">// sort (false = DESC)</span>
-<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">    </span><span class="p">.</span><span class="na">limit</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span><span class="w">                                      </span><span class="c1">// row limit</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">DataFrame</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM ice.raw.sales&quot;</span><span class="p">))</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;quantity &gt; 0&quot;</span><span class="p">)</span><span class="w">                          </span><span class="c1">// row filter</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;unit_price &gt; 0&quot;</span><span class="p">)</span><span class="w">                        </span><span class="c1">// chain multiple filters</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">    </span><span class="p">.</span><span class="na">select</span><span class="p">(</span><span class="s">&quot;sale_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;product_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity&quot;</span><span class="p">)</span><span class="w">     </span><span class="c1">// column projection</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">    </span><span class="p">.</span><span class="na">withColumn</span><span class="p">(</span><span class="s">&quot;total&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity * unit_price&quot;</span><span class="p">)</span><span class="w">     </span><span class="c1">// computed column</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">    </span><span class="p">.</span><span class="na">orderBy</span><span class="p">(</span><span class="s">&quot;total&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span><span class="w">                          </span><span class="c1">// sort (false = DESC)</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="w">    </span><span class="p">.</span><span class="na">limit</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span><span class="w">                                      </span><span class="c1">// row limit</span>
 </code></pre></div>
 <h3 id="join">JOIN</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="kd">var</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM ice.raw.sales&quot;</span><span class="p">));</span>
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="kd">var</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM ice.dim.products&quot;</span><span class="p">));</span>
-<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
-<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="kd">var</span><span class="w"> </span><span class="n">joined</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sales</span>
-<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">    </span><span class="p">.</span><span class="na">join</span><span class="p">(</span><span class="n">products</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;l.product_id = r.product_id&quot;</span><span class="p">)</span>
-<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">    </span><span class="p">.</span><span class="na">select</span><span class="p">(</span><span class="s">&quot;sale_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;product_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;category&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;total_amount&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kd">var</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM ice.raw.sales&quot;</span><span class="p">));</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="kd">var</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM ice.dim.products&quot;</span><span class="p">));</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="kd">var</span><span class="w"> </span><span class="n">joined</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sales</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">    </span><span class="p">.</span><span class="na">join</span><span class="p">(</span><span class="n">products</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;l.product_id = r.product_id&quot;</span><span class="p">)</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">    </span><span class="p">.</span><span class="na">select</span><span class="p">(</span><span class="s">&quot;sale_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;product_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;category&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;total_amount&quot;</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="groupby-agg">groupBy + agg</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kd">var</span><span class="w"> </span><span class="n">summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">joined</span>
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">    </span><span class="p">.</span><span class="na">groupBy</span><span class="p">(</span><span class="s">&quot;category&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;region&quot;</span><span class="p">)</span>
-<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">    </span><span class="p">.</span><span class="na">agg</span><span class="p">(</span><span class="s">&quot;SUM(total_amount) AS revenue, COUNT(*) AS order_count, &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">         </span><span class="s">&quot;CAST(AVG(total_amount) AS DECIMAL(10,2)) AS avg_order&quot;</span><span class="p">)</span>
-<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">    </span><span class="p">.</span><span class="na">orderBy</span><span class="p">(</span><span class="s">&quot;revenue&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="kd">var</span><span class="w"> </span><span class="n">summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">joined</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">    </span><span class="p">.</span><span class="na">groupBy</span><span class="p">(</span><span class="s">&quot;category&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;region&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">    </span><span class="p">.</span><span class="na">agg</span><span class="p">(</span><span class="s">&quot;SUM(total_amount) AS revenue, COUNT(*) AS order_count, &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">         </span><span class="s">&quot;CAST(AVG(total_amount) AS DECIMAL(10,2)) AS avg_order&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">    </span><span class="p">.</span><span class="na">orderBy</span><span class="p">(</span><span class="s">&quot;revenue&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="sink-types">Sink Types</h3>
 <table>
@@ -3599,101 +3693,101 @@
 <hr />
 <h2 id="complete-example-s3-transform-iceberg">Complete Example: S3 → Transform → Iceberg</h2>
 <h3 id="setup">Setup</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nb">cd</span><span class="w"> </span>ontul-1.0.0
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>examples/docker-compose-iceberg.yml<span class="w"> </span>up<span class="w"> </span>-d
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>examples/bin/setup-iceberg.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nb">cd</span><span class="w"> </span>ontul-1.0.0
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>examples/docker-compose-iceberg.yml<span class="w"> </span>up<span class="w"> </span>-d
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>examples/bin/setup-iceberg.sh
 </code></pre></div>
 <h3 id="run">Run</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>examples/bin/run-iceberg-batch.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>examples/bin/run-iceberg-batch.sh
 </code></pre></div>
 <h3 id="java-code">Java Code</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">OntulSession</span><span class="w"> </span><span class="n">session</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OntulSession</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="w">    </span><span class="p">.</span><span class="na">master</span><span class="p">(</span><span class="s">&quot;localhost&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">47470</span><span class="p">).</span><span class="na">build</span><span class="p">();</span>
-<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
-<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="c1">// 1. Write raw data to S3</span>
-<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">data</span><span class="p">(</span><span class="n">salesData</span><span class="p">))</span>
-<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">s3</span><span class="p">(</span><span class="s">&quot;s3://iceberg-warehouse/raw/sales&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="w">        </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;endpoint&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;http://localhost:9000&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="w">        </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;accessKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a><span class="w">        </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;secretKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="w">        </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;pathStyle&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">));</span>
-<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>
-<a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a><span class="c1">// 2. Read from S3</span>
-<a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a><span class="kd">var</span><span class="w"> </span><span class="n">raw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">s3</span><span class="p">(</span><span class="s">&quot;s3://iceberg-warehouse/raw/sales&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;endpoint&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;http://localhost:9000&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;accessKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;secretKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;pathStyle&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">));</span>
-<a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a>
-<a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a><span class="c1">// 3. Transform</span>
-<a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a><span class="kd">var</span><span class="w"> </span><span class="n">enriched</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">raw</span>
-<a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;quantity &gt; 0 AND unit_price &gt; 0&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a><span class="w">    </span><span class="p">.</span><span class="na">withColumn</span><span class="p">(</span><span class="s">&quot;total_amount&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity * unit_price&quot;</span><span class="p">);</span>
-<a id="__codelineno-25-23" name="__codelineno-25-23" href="#__codelineno-25-23"></a>
-<a id="__codelineno-25-24" name="__codelineno-25-24" href="#__codelineno-25-24"></a><span class="c1">// 4. Join with dimension</span>
-<a id="__codelineno-25-25" name="__codelineno-25-25" href="#__codelineno-25-25"></a><span class="kd">var</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">s3</span><span class="p">(</span><span class="s">&quot;s3://iceberg-warehouse/raw/products&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-26" name="__codelineno-25-26" href="#__codelineno-25-26"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;endpoint&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;http://localhost:9000&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-27" name="__codelineno-25-27" href="#__codelineno-25-27"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;accessKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-28" name="__codelineno-25-28" href="#__codelineno-25-28"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;secretKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-29" name="__codelineno-25-29" href="#__codelineno-25-29"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;pathStyle&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">));</span>
-<a id="__codelineno-25-30" name="__codelineno-25-30" href="#__codelineno-25-30"></a>
-<a id="__codelineno-25-31" name="__codelineno-25-31" href="#__codelineno-25-31"></a><span class="kd">var</span><span class="w"> </span><span class="n">joined</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enriched</span>
-<a id="__codelineno-25-32" name="__codelineno-25-32" href="#__codelineno-25-32"></a><span class="w">    </span><span class="p">.</span><span class="na">join</span><span class="p">(</span><span class="n">products</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;l.product_id = r.product_id&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-33" name="__codelineno-25-33" href="#__codelineno-25-33"></a><span class="w">    </span><span class="p">.</span><span class="na">select</span><span class="p">(</span><span class="s">&quot;sale_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;product_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;category&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity&quot;</span><span class="p">,</span>
-<a id="__codelineno-25-34" name="__codelineno-25-34" href="#__codelineno-25-34"></a><span class="w">            </span><span class="s">&quot;unit_price&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;total_amount&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;region&quot;</span><span class="p">);</span>
-<a id="__codelineno-25-35" name="__codelineno-25-35" href="#__codelineno-25-35"></a>
-<a id="__codelineno-25-36" name="__codelineno-25-36" href="#__codelineno-25-36"></a><span class="c1">// 5. Aggregate → Iceberg</span>
-<a id="__codelineno-25-37" name="__codelineno-25-37" href="#__codelineno-25-37"></a><span class="n">joined</span><span class="p">.</span><span class="na">groupBy</span><span class="p">(</span><span class="s">&quot;category&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;region&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-38" name="__codelineno-25-38" href="#__codelineno-25-38"></a><span class="w">    </span><span class="p">.</span><span class="na">agg</span><span class="p">(</span><span class="s">&quot;SUM(total_amount) AS revenue, COUNT(*) AS order_count&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-39" name="__codelineno-25-39" href="#__codelineno-25-39"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.examples.revenue_by_category_region&quot;</span><span class="p">));</span>
-<a id="__codelineno-25-40" name="__codelineno-25-40" href="#__codelineno-25-40"></a>
-<a id="__codelineno-25-41" name="__codelineno-25-41" href="#__codelineno-25-41"></a><span class="c1">// 6. CTAS from TPC-H</span>
-<a id="__codelineno-25-42" name="__codelineno-25-42" href="#__codelineno-25-42"></a><span class="n">session</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span><span class="s">&quot;CREATE TABLE ice.examples.nations AS SELECT * FROM tpch.tiny.nation&quot;</span><span class="p">);</span>
-<a id="__codelineno-25-43" name="__codelineno-25-43" href="#__codelineno-25-43"></a>
-<a id="__codelineno-25-44" name="__codelineno-25-44" href="#__codelineno-25-44"></a><span class="c1">// 7. Cross-catalog JOIN</span>
-<a id="__codelineno-25-45" name="__codelineno-25-45" href="#__codelineno-25-45"></a><span class="kd">var</span><span class="w"> </span><span class="n">federation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span>
-<a id="__codelineno-25-46" name="__codelineno-25-46" href="#__codelineno-25-46"></a><span class="w">    </span><span class="s">&quot;SELECT r.region, r.revenue, n.n_name AS nation &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-25-47" name="__codelineno-25-47" href="#__codelineno-25-47"></a><span class="w">    </span><span class="s">&quot;FROM ice.examples.revenue_by_category_region r &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-25-48" name="__codelineno-25-48" href="#__codelineno-25-48"></a><span class="w">    </span><span class="s">&quot;JOIN tpch.tiny.nation n ON r.region_key = n.n_regionkey&quot;</span><span class="p">))</span>
-<a id="__codelineno-25-49" name="__codelineno-25-49" href="#__codelineno-25-49"></a><span class="w">    </span><span class="p">.</span><span class="na">show</span><span class="p">();</span>
-<a id="__codelineno-25-50" name="__codelineno-25-50" href="#__codelineno-25-50"></a>
-<a id="__codelineno-25-51" name="__codelineno-25-51" href="#__codelineno-25-51"></a><span class="c1">// 8. INSERT INTO + MERGE INTO</span>
-<a id="__codelineno-25-52" name="__codelineno-25-52" href="#__codelineno-25-52"></a><span class="n">session</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span><span class="s">&quot;INSERT INTO ice.examples.orders &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-25-53" name="__codelineno-25-53" href="#__codelineno-25-53"></a><span class="w">    </span><span class="s">&quot;SELECT * FROM tpch.tiny.orders LIMIT 100&quot;</span><span class="p">);</span>
-<a id="__codelineno-25-54" name="__codelineno-25-54" href="#__codelineno-25-54"></a>
-<a id="__codelineno-25-55" name="__codelineno-25-55" href="#__codelineno-25-55"></a><span class="n">session</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span><span class="s">&quot;MERGE INTO ice.examples.nations AS t &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-25-56" name="__codelineno-25-56" href="#__codelineno-25-56"></a><span class="w">    </span><span class="s">&quot;USING tpch.tiny.nation AS s ON t.n_nationkey = s.n_nationkey &quot;</span><span class="w"> </span><span class="o">+</span>
-<a id="__codelineno-25-57" name="__codelineno-25-57" href="#__codelineno-25-57"></a><span class="w">    </span><span class="s">&quot;WHEN MATCHED THEN UPDATE SET n_comment = &#39;merged&#39;&quot;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">OntulSession</span><span class="w"> </span><span class="n">session</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OntulSession</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">    </span><span class="p">.</span><span class="na">master</span><span class="p">(</span><span class="s">&quot;localhost&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">47470</span><span class="p">).</span><span class="na">build</span><span class="p">();</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="c1">// 1. Write raw data to S3</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">data</span><span class="p">(</span><span class="n">salesData</span><span class="p">))</span>
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">s3</span><span class="p">(</span><span class="s">&quot;s3://iceberg-warehouse/raw/sales&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="w">        </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;endpoint&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;http://localhost:9000&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a><span class="w">        </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;accessKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a><span class="w">        </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;secretKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="w">        </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;pathStyle&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">));</span>
+<a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a>
+<a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a><span class="c1">// 2. Read from S3</span>
+<a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a><span class="kd">var</span><span class="w"> </span><span class="n">raw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">s3</span><span class="p">(</span><span class="s">&quot;s3://iceberg-warehouse/raw/sales&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;endpoint&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;http://localhost:9000&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;accessKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;secretKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;pathStyle&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">));</span>
+<a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a>
+<a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a><span class="c1">// 3. Transform</span>
+<a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a><span class="kd">var</span><span class="w"> </span><span class="n">enriched</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">raw</span>
+<a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a><span class="w">    </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="s">&quot;quantity &gt; 0 AND unit_price &gt; 0&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a><span class="w">    </span><span class="p">.</span><span class="na">withColumn</span><span class="p">(</span><span class="s">&quot;total_amount&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity * unit_price&quot;</span><span class="p">);</span>
+<a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a>
+<a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a><span class="c1">// 4. Join with dimension</span>
+<a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a><span class="kd">var</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">s3</span><span class="p">(</span><span class="s">&quot;s3://iceberg-warehouse/raw/products&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-26" name="__codelineno-26-26" href="#__codelineno-26-26"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;endpoint&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;http://localhost:9000&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-27" name="__codelineno-26-27" href="#__codelineno-26-27"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;accessKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-28" name="__codelineno-26-28" href="#__codelineno-26-28"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;secretKey&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;minioadmin&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-29" name="__codelineno-26-29" href="#__codelineno-26-29"></a><span class="w">    </span><span class="p">.</span><span class="na">property</span><span class="p">(</span><span class="s">&quot;pathStyle&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">));</span>
+<a id="__codelineno-26-30" name="__codelineno-26-30" href="#__codelineno-26-30"></a>
+<a id="__codelineno-26-31" name="__codelineno-26-31" href="#__codelineno-26-31"></a><span class="kd">var</span><span class="w"> </span><span class="n">joined</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enriched</span>
+<a id="__codelineno-26-32" name="__codelineno-26-32" href="#__codelineno-26-32"></a><span class="w">    </span><span class="p">.</span><span class="na">join</span><span class="p">(</span><span class="n">products</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;l.product_id = r.product_id&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-33" name="__codelineno-26-33" href="#__codelineno-26-33"></a><span class="w">    </span><span class="p">.</span><span class="na">select</span><span class="p">(</span><span class="s">&quot;sale_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;product_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;category&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;quantity&quot;</span><span class="p">,</span>
+<a id="__codelineno-26-34" name="__codelineno-26-34" href="#__codelineno-26-34"></a><span class="w">            </span><span class="s">&quot;unit_price&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;total_amount&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;region&quot;</span><span class="p">);</span>
+<a id="__codelineno-26-35" name="__codelineno-26-35" href="#__codelineno-26-35"></a>
+<a id="__codelineno-26-36" name="__codelineno-26-36" href="#__codelineno-26-36"></a><span class="c1">// 5. Aggregate → Iceberg</span>
+<a id="__codelineno-26-37" name="__codelineno-26-37" href="#__codelineno-26-37"></a><span class="n">joined</span><span class="p">.</span><span class="na">groupBy</span><span class="p">(</span><span class="s">&quot;category&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;region&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-38" name="__codelineno-26-38" href="#__codelineno-26-38"></a><span class="w">    </span><span class="p">.</span><span class="na">agg</span><span class="p">(</span><span class="s">&quot;SUM(total_amount) AS revenue, COUNT(*) AS order_count&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-39" name="__codelineno-26-39" href="#__codelineno-26-39"></a><span class="w">    </span><span class="p">.</span><span class="na">sink</span><span class="p">(</span><span class="n">Sink</span><span class="p">.</span><span class="na">table</span><span class="p">(</span><span class="s">&quot;ice.examples.revenue_by_category_region&quot;</span><span class="p">));</span>
+<a id="__codelineno-26-40" name="__codelineno-26-40" href="#__codelineno-26-40"></a>
+<a id="__codelineno-26-41" name="__codelineno-26-41" href="#__codelineno-26-41"></a><span class="c1">// 6. CTAS from TPC-H</span>
+<a id="__codelineno-26-42" name="__codelineno-26-42" href="#__codelineno-26-42"></a><span class="n">session</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span><span class="s">&quot;CREATE TABLE ice.examples.nations AS SELECT * FROM tpch.tiny.nation&quot;</span><span class="p">);</span>
+<a id="__codelineno-26-43" name="__codelineno-26-43" href="#__codelineno-26-43"></a>
+<a id="__codelineno-26-44" name="__codelineno-26-44" href="#__codelineno-26-44"></a><span class="c1">// 7. Cross-catalog JOIN</span>
+<a id="__codelineno-26-45" name="__codelineno-26-45" href="#__codelineno-26-45"></a><span class="kd">var</span><span class="w"> </span><span class="n">federation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">session</span><span class="p">.</span><span class="na">source</span><span class="p">(</span><span class="n">Source</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span>
+<a id="__codelineno-26-46" name="__codelineno-26-46" href="#__codelineno-26-46"></a><span class="w">    </span><span class="s">&quot;SELECT r.region, r.revenue, n.n_name AS nation &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-26-47" name="__codelineno-26-47" href="#__codelineno-26-47"></a><span class="w">    </span><span class="s">&quot;FROM ice.examples.revenue_by_category_region r &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-26-48" name="__codelineno-26-48" href="#__codelineno-26-48"></a><span class="w">    </span><span class="s">&quot;JOIN tpch.tiny.nation n ON r.region_key = n.n_regionkey&quot;</span><span class="p">))</span>
+<a id="__codelineno-26-49" name="__codelineno-26-49" href="#__codelineno-26-49"></a><span class="w">    </span><span class="p">.</span><span class="na">show</span><span class="p">();</span>
+<a id="__codelineno-26-50" name="__codelineno-26-50" href="#__codelineno-26-50"></a>
+<a id="__codelineno-26-51" name="__codelineno-26-51" href="#__codelineno-26-51"></a><span class="c1">// 8. INSERT INTO + MERGE INTO</span>
+<a id="__codelineno-26-52" name="__codelineno-26-52" href="#__codelineno-26-52"></a><span class="n">session</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span><span class="s">&quot;INSERT INTO ice.examples.orders &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-26-53" name="__codelineno-26-53" href="#__codelineno-26-53"></a><span class="w">    </span><span class="s">&quot;SELECT * FROM tpch.tiny.orders LIMIT 100&quot;</span><span class="p">);</span>
+<a id="__codelineno-26-54" name="__codelineno-26-54" href="#__codelineno-26-54"></a>
+<a id="__codelineno-26-55" name="__codelineno-26-55" href="#__codelineno-26-55"></a><span class="n">session</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span><span class="s">&quot;MERGE INTO ice.examples.nations AS t &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-26-56" name="__codelineno-26-56" href="#__codelineno-26-56"></a><span class="w">    </span><span class="s">&quot;USING tpch.tiny.nation AS s ON t.n_nationkey = s.n_nationkey &quot;</span><span class="w"> </span><span class="o">+</span>
+<a id="__codelineno-26-57" name="__codelineno-26-57" href="#__codelineno-26-57"></a><span class="w">    </span><span class="s">&quot;WHEN MATCHED THEN UPDATE SET n_comment = &#39;merged&#39;&quot;</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="python-code">Python Code</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ontul.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">OntulSession</span>
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="n">session</span> <span class="o">=</span> <span class="n">OntulSession</span><span class="p">()</span>
-<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="n">s3_config</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>    <span class="s1">&#39;endpoint&#39;</span><span class="p">:</span> <span class="s1">&#39;http://localhost:9000&#39;</span><span class="p">,</span>
-<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>    <span class="s1">&#39;accessKey&#39;</span><span class="p">:</span> <span class="s1">&#39;minioadmin&#39;</span><span class="p">,</span> <span class="s1">&#39;secretKey&#39;</span><span class="p">:</span> <span class="s1">&#39;minioadmin&#39;</span><span class="p">,</span>
-<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>    <span class="s1">&#39;pathStyle&#39;</span><span class="p">:</span> <span class="s1">&#39;true&#39;</span>
-<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a><span class="p">}</span>
-<a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>
-<a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="c1"># Write to S3</span>
-<a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a><span class="n">session</span><span class="o">.</span><span class="n">sink_s3</span><span class="p">(</span><span class="n">sales_data</span><span class="p">,</span> <span class="s2">&quot;s3://iceberg-warehouse/raw/sales_py&quot;</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">,</span> <span class="n">s3_config</span><span class="p">)</span>
-<a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>
-<a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a><span class="c1"># Read from S3 → Iceberg staging</span>
-<a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">source_s3</span><span class="p">(</span><span class="s2">&quot;s3://iceberg-warehouse/raw/sales_py&quot;</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">,</span> <span class="n">s3_config</span><span class="p">)</span>
-<a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a><span class="n">session</span><span class="o">.</span><span class="n">sink</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="s2">&quot;ice.examples.stg_sales_py&quot;</span><span class="p">)</span>
-<a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a>
-<a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a><span class="c1"># Transform + aggregate → Iceberg</span>
-<a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a><span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-<a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a>    <span class="s2">&quot;CREATE TABLE ice.examples.rev_py AS &quot;</span>
-<a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a>    <span class="s2">&quot;SELECT category, SUM(quantity * unit_price) AS revenue &quot;</span>
-<a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a>    <span class="s2">&quot;FROM ice.examples.stg_sales_py &quot;</span>
-<a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a>    <span class="s2">&quot;WHERE quantity &gt; 0 AND unit_price &gt; 0 &quot;</span>
-<a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a>    <span class="s2">&quot;GROUP BY category&quot;</span>
-<a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a><span class="p">)</span>
-<a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a>
-<a id="__codelineno-26-26" name="__codelineno-26-26" href="#__codelineno-26-26"></a><span class="c1"># Verify</span>
-<a id="__codelineno-26-27" name="__codelineno-26-27" href="#__codelineno-26-27"></a><span class="n">df</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">sql_pandas</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM ice.examples.rev_py ORDER BY revenue DESC&quot;</span><span class="p">)</span>
-<a id="__codelineno-26-28" name="__codelineno-26-28" href="#__codelineno-26-28"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ontul.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">OntulSession</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="n">session</span> <span class="o">=</span> <span class="n">OntulSession</span><span class="p">()</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="n">s3_config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>    <span class="s1">&#39;endpoint&#39;</span><span class="p">:</span> <span class="s1">&#39;http://localhost:9000&#39;</span><span class="p">,</span>
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>    <span class="s1">&#39;accessKey&#39;</span><span class="p">:</span> <span class="s1">&#39;minioadmin&#39;</span><span class="p">,</span> <span class="s1">&#39;secretKey&#39;</span><span class="p">:</span> <span class="s1">&#39;minioadmin&#39;</span><span class="p">,</span>
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>    <span class="s1">&#39;pathStyle&#39;</span><span class="p">:</span> <span class="s1">&#39;true&#39;</span>
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a><span class="p">}</span>
+<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>
+<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a><span class="c1"># Write to S3</span>
+<a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a><span class="n">session</span><span class="o">.</span><span class="n">sink_s3</span><span class="p">(</span><span class="n">sales_data</span><span class="p">,</span> <span class="s2">&quot;s3://iceberg-warehouse/raw/sales_py&quot;</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">,</span> <span class="n">s3_config</span><span class="p">)</span>
+<a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>
+<a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a><span class="c1"># Read from S3 → Iceberg staging</span>
+<a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">source_s3</span><span class="p">(</span><span class="s2">&quot;s3://iceberg-warehouse/raw/sales_py&quot;</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">,</span> <span class="n">s3_config</span><span class="p">)</span>
+<a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a><span class="n">session</span><span class="o">.</span><span class="n">sink</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="s2">&quot;ice.examples.stg_sales_py&quot;</span><span class="p">)</span>
+<a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a>
+<a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a><span class="c1"># Transform + aggregate → Iceberg</span>
+<a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a><span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+<a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a>    <span class="s2">&quot;CREATE TABLE ice.examples.rev_py AS &quot;</span>
+<a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a>    <span class="s2">&quot;SELECT category, SUM(quantity * unit_price) AS revenue &quot;</span>
+<a id="__codelineno-27-21" name="__codelineno-27-21" href="#__codelineno-27-21"></a>    <span class="s2">&quot;FROM ice.examples.stg_sales_py &quot;</span>
+<a id="__codelineno-27-22" name="__codelineno-27-22" href="#__codelineno-27-22"></a>    <span class="s2">&quot;WHERE quantity &gt; 0 AND unit_price &gt; 0 &quot;</span>
+<a id="__codelineno-27-23" name="__codelineno-27-23" href="#__codelineno-27-23"></a>    <span class="s2">&quot;GROUP BY category&quot;</span>
+<a id="__codelineno-27-24" name="__codelineno-27-24" href="#__codelineno-27-24"></a><span class="p">)</span>
+<a id="__codelineno-27-25" name="__codelineno-27-25" href="#__codelineno-27-25"></a>
+<a id="__codelineno-27-26" name="__codelineno-27-26" href="#__codelineno-27-26"></a><span class="c1"># Verify</span>
+<a id="__codelineno-27-27" name="__codelineno-27-27" href="#__codelineno-27-27"></a><span class="n">df</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">sql_pandas</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM ice.examples.rev_py ORDER BY revenue DESC&quot;</span><span class="p">)</span>
+<a id="__codelineno-27-28" name="__codelineno-27-28" href="#__codelineno-27-28"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="driver-delegation">Driver Delegation</h2>
@@ -3731,8 +3825,8 @@
 </table>
 <hr />
 <h2 id="cleanup">Cleanup</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>bin/stop-example-servers.sh
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>examples/docker-compose-iceberg.yml<span class="w"> </span>down<span class="w"> </span>-v
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>bin/stop-example-servers.sh
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>examples/docker-compose-iceberg.yml<span class="w"> </span>down<span class="w"> </span>-v
 </code></pre></div>
 
 
