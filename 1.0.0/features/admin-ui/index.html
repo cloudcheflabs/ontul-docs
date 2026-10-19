@@ -1552,6 +1552,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#certification-on-every-ontology-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certification on every ontology page
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ontology-graph" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3306,6 +3317,13 @@ drawer runs one with real arguments.</p>
 <p>Multi-step Sagas composed of action types, authored as JSON or kiok-style YAML (importable and
 exportable). On a step failure the completed steps are compensated in reverse order; the page
 shows the run ledger.</p>
+<h3 id="certification-on-every-ontology-page">Certification on every ontology page</h3>
+<p>Retrievers, Link Types, Action Types and Action Workflows show the same trust badge as Object Types
+and Semantic Views — <strong>DRAFT</strong>, <strong>CERTIFIED</strong> (with who signed it off), <strong>STALE</strong> (edited after
+sign-off; the reason is on hover) or <strong>DEPRECATED</strong> — and administrators get the same <strong>Certify</strong>
+button (<code>POST /api/v1/&lt;kind&gt;/{fqn}/certify</code>). On a STALE entry the button reads <em>Re-certify</em>. The
+badge is the server's <code>effectiveStatus</code>, so a link over a draft object type still shows DRAFT.
+Certifying needs administrator access or the <code>ontology:Certify</code> action.</p>
 <h3 id="ontology-graph">Ontology Graph</h3>
 <p>Visual type-graph of object types and the link types connecting them — the schema-level map an
 agent traverses, rendered for humans.</p>

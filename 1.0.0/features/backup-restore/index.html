@@ -2780,7 +2780,7 @@
 
 
 <h1 id="backup-restore">Backup &amp; Restore</h1>
-<p>Ontul exports the cluster's stateful stores — <strong>KMS keystore</strong>, <strong>IAM</strong> (users, policies, access keys), and the <strong>catalog metadata store</strong> — to an S3 bucket of your choosing, and restores them in a coordinated way that blocks requests, broadcasts the recovered state to followers, and only marks the cluster ready once every node has caught up.</p>
+<p>Ontul exports the cluster's stateful stores — <strong>KMS keystore</strong>, <strong>IAM</strong> (users, policies, access keys), the <strong>catalog metadata store</strong> and the <strong>Connection Store</strong> — to an S3 bucket of your choosing, and restores them in a coordinated way that blocks requests, broadcasts the recovered state to followers, and only marks the cluster ready once every node has caught up.</p>
 <p>Three trigger modes share the same backup/restore implementation:</p>
 <table>
 <thead>
@@ -2868,8 +2868,10 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>s3://my-ontul-backups/cluster/20260529-120000/
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  ├── kms.bin            # encrypted KMS keystore
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  ├── iam.json           # users, policies, access keys
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  └── metadata.json      # catalog metadata snapshot
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  ├── metadata.json      # catalog metadata snapshot
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  └── connections.bin    # every connection, sealed with the `connections` KMS key
 </code></pre></div>
+<p>Backup ids are unique per master: a second backup started in the same second as the previous one takes the next free second, so two backups never write the same files.</p>
 <p>The history is exposed at <code>GET /admin/backup/history</code> (last 100 entries) and the available backup ids at <code>GET /admin/backup/list</code> (newest first).</p>
 <p><code>/admin/backup/list</code> checks that the bucket exists before listing it and pages through every backup under the prefix. When the target cannot be read — a missing bucket, wrong credentials, a deleted connection — it answers <code>502</code> with the storage error, and the Admin UI shows that error instead of "No backups found". With no backup configured it answers <code>[]</code>. <em>Backup Now</em> in the UI is enabled only once a configuration has been saved. Saving a configuration always re-arms the interval schedule (an interval of <code>0</code> turns it off).</p>
 <p>Scheduled and cron backups run on the <strong>leader only</strong>: every master keeps the schedule, but a follower's tick does nothing, so a three-master cluster takes one backup per run rather than three. All backup endpoints, including the reads, need administrator access.</p>
@@ -2877,9 +2879,10 @@
 <p>Restore is destructive — it overwrites the current stores. Ontul runs it in three phases on the leader:</p>
 <ol>
 <li><strong>Block requests.</strong> Marks the leader not-ready (<code>/admin/ready</code> returns 503) so clients fail fast instead of querying half-restored state.</li>
-<li><strong>Download + import.</strong> Pulls each store from S3 and imports it into KMS / IAM / Metadata in-process.</li>
-<li><strong>Broadcast + wait.</strong> Pushes the recovered KMS keystore, IAM snapshot, and metadata to every follower over the internal NIO protocol, then waits for the cluster-ready signal before re-accepting traffic.</li>
+<li><strong>Download + import.</strong> Pulls each store from S3 and imports it into KMS / IAM / Metadata / Connections in-process. KMS comes first, because its key opens <code>connections.bin</code>. The restored connections replace the current set: one created after the backup is removed, one deleted after it comes back with its credentials. A backup taken before connections were included has no <code>connections.bin</code>; restoring it keeps the current connections.</li>
+<li><strong>Broadcast + wait.</strong> Pushes the recovered KMS keystore, IAM snapshot, metadata and connections to every follower over the internal NIO protocol, then waits for the cluster-ready signal before re-accepting traffic.</li>
 </ol>
+<p>If a step fails (the bucket cannot be read, a file times out), the restore answers with the error and the cluster is <strong>returned to service</strong> with the state the leader holds at that point — the stores imported before the failure plus the untouched rest, pushed to every node so they agree. It no longer stays "not ready" until a restart. Check the restore history entry and run the restore again once the storage problem is fixed.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/restore<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
