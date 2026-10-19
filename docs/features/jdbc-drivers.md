@@ -3,7 +3,7 @@
 A **JDBC catalog** or job needs a database's JDBC driver on the classpath. Rather
 than baking every driver into the distribution, Ontul lets you **upload driver
 JARs at runtime** from the admin UI (**Drivers** page) or the admin API; each is
-loaded dynamically on the master **and every worker** with no restart, then made
+loaded dynamically on **every master and every worker** with no restart, then made
 available on the job classpath.
 
 ## One JAR per driver class — versions do not coexist
@@ -36,15 +36,15 @@ JAR to go back to the bundled version.
 
 ## Deleting a driver
 
-`DELETE /admin/drivers/{file}` removes the JAR on the master and tells every worker
-to remove its copy. A name that does not exist answers `404`. Upload and delete
+`DELETE /admin/drivers/{file}` removes the JAR on the master that received it and tells
+every other master and worker to remove its copy. A name that does not exist answers `404`. Upload and delete
 need administrator access, and a file name must end in `.jar` and may not contain
 `/`, `\` or `..`.
 
-## Streamed to every worker
+## Streamed to every master and worker
 
 On upload the master validates and loads the JAR, then **streams it to each
-worker in bounded chunks** over the internal NIO channel (rather than encoding a
+worker and to the other masters in bounded chunks** over the internal NIO channel (rather than encoding a
 large JAR into a single message). Big drivers are fine — some vendor JDBC drivers
 (Snowflake, BigQuery, Databricks) bundle dependencies and reach tens of megabytes.
 The admin HTTP body limit and the chunk size are configurable:
@@ -52,8 +52,20 @@ The admin HTTP body limit and the chunk size are configurable:
 ```properties
 # ontul.properties
 ontul.admin.http.max.content.size.bytes=134217728   # 128 MiB — accepts large driver JARs
-ontul.driver.sync.chunk.size.bytes=4194304           # 4 MiB per master→worker chunk
+ontul.driver.sync.chunk.size.bytes=4194304           # 4 MiB per streamed chunk
 ```
+
+Every master needs the JAR, not only workers: a query on a JDBC catalog is planned on whichever
+master the client reached, so a driver held by one master alone failed with "No suitable driver"
+on the others and after a failover.
+
+### Nodes that were down catch up on start
+
+A master or worker that was down during an upload (or joined later) compares its drivers with the
+leader's when it starts — by file name and SHA-256 — and fetches every JAR that is missing or
+different. A follower master does the same whenever it re-reads the leader's state. JARs the leader
+does not have are left in place: a leader that lost its drivers directory must not remove the
+cluster's drivers, so delete a driver while its nodes are up or delete it again after they return.
 
 The PostgreSQL driver ships with the distribution; upload others (MySQL, Oracle,
 SQL Server, ClickHouse, …) as needed. A JDBC catalog then names the driver class
@@ -66,7 +78,7 @@ in its `driver` field, or references it through a registered
 | --- | --- |
 | `GET /admin/drivers` | List installed JARs with the driver classes each provides. |
 | `POST /admin/drivers` | Upload a JAR (`X-File-Name` header, raw body). Returns the detected classes and any replaced JAR. |
-| `DELETE /admin/drivers/{file}` | Remove a JAR from the master and all workers. |
+| `DELETE /admin/drivers/{file}` | Remove a JAR from every master and worker. |
 
 ## Related
 

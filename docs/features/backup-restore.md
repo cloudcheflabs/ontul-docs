@@ -1,6 +1,6 @@
 # Backup & Restore
 
-Ontul exports the cluster's stateful stores — **KMS keystore**, **IAM** (users, policies, access keys), and the **catalog metadata store** — to an S3 bucket of your choosing, and restores them in a coordinated way that blocks requests, broadcasts the recovered state to followers, and only marks the cluster ready once every node has caught up.
+Ontul exports the cluster's stateful stores — **KMS keystore**, **IAM** (users, policies, access keys), the **catalog metadata store** and the **Connection Store** — to an S3 bucket of your choosing, and restores them in a coordinated way that blocks requests, broadcasts the recovered state to followers, and only marks the cluster ready once every node has caught up.
 
 Three trigger modes share the same backup/restore implementation:
 
@@ -93,8 +93,11 @@ Each run writes to `<s3Prefix>/<timestamp>/`:
 s3://my-ontul-backups/cluster/20260529-120000/
   ├── kms.bin            # encrypted KMS keystore
   ├── iam.json           # users, policies, access keys
-  └── metadata.json      # catalog metadata snapshot
+  ├── metadata.json      # catalog metadata snapshot
+  └── connections.bin    # every connection, sealed with the `connections` KMS key
 ```
+
+Backup ids are unique per master: a second backup started in the same second as the previous one takes the next free second, so two backups never write the same files.
 
 The history is exposed at `GET /admin/backup/history` (last 100 entries) and the available backup ids at `GET /admin/backup/list` (newest first).
 
@@ -107,8 +110,10 @@ Scheduled and cron backups run on the **leader only**: every master keeps the sc
 Restore is destructive — it overwrites the current stores. Ontul runs it in three phases on the leader:
 
 1. **Block requests.** Marks the leader not-ready (`/admin/ready` returns 503) so clients fail fast instead of querying half-restored state.
-2. **Download + import.** Pulls each store from S3 and imports it into KMS / IAM / Metadata in-process.
-3. **Broadcast + wait.** Pushes the recovered KMS keystore, IAM snapshot, and metadata to every follower over the internal NIO protocol, then waits for the cluster-ready signal before re-accepting traffic.
+2. **Download + import.** Pulls each store from S3 and imports it into KMS / IAM / Metadata / Connections in-process. KMS comes first, because its key opens `connections.bin`. The restored connections replace the current set: one created after the backup is removed, one deleted after it comes back with its credentials. A backup taken before connections were included has no `connections.bin`; restoring it keeps the current connections.
+3. **Broadcast + wait.** Pushes the recovered KMS keystore, IAM snapshot, metadata and connections to every follower over the internal NIO protocol, then waits for the cluster-ready signal before re-accepting traffic.
+
+If a step fails (the bucket cannot be read, a file times out), the restore answers with the error and the cluster is **returned to service** with the state the leader holds at that point — the stores imported before the failure plus the untouched rest, pushed to every node so they agree. It no longer stays "not ready" until a restart. Check the restore history entry and run the restore again once the storage problem is fixed.
 
 ```bash
 curl -X POST http://localhost:8080/admin/backup/restore \

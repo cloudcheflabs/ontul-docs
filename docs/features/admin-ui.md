@@ -220,6 +220,15 @@ Multi-step Sagas composed of action types, authored as JSON or kiok-style YAML (
 exportable). On a step failure the completed steps are compensated in reverse order; the page
 shows the run ledger.
 
+### Certification on every ontology page
+
+Retrievers, Link Types, Action Types and Action Workflows show the same trust badge as Object Types
+and Semantic Views — **DRAFT**, **CERTIFIED** (with who signed it off), **STALE** (edited after
+sign-off; the reason is on hover) or **DEPRECATED** — and administrators get the same **Certify**
+button (`POST /api/v1/<kind>/{fqn}/certify`). On a STALE entry the button reads *Re-certify*. The
+badge is the server's `effectiveStatus`, so a link over a draft object type still shows DRAFT.
+Certifying needs administrator access or the `ontology:Certify` action.
+
 ### Ontology Graph
 
 Visual type-graph of object types and the link types connecting them — the schema-level map an
