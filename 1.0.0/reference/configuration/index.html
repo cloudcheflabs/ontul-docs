@@ -2196,6 +2196,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#catalogs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catalogs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#query" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3585,6 +3596,23 @@
 <td><code>ontul.worker.health.check.future.grace.ms</code></td>
 <td><code>2000</code></td>
 <td>Extra grace (ms) added on top of the per-check timeout when waiting for each <code>Future</code> result during a health-check round. Prevents premature <code>TimeoutException</code> for checks about to return.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="catalogs">Catalogs</h2>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ontul.catalog.reload.retry.seconds</code></td>
+<td><code>30</code></td>
+<td>A catalog that cannot be loaded (its REST catalog or that catalog's database is down when a master starts or becomes leader) is kept as unavailable: queries on it fail with <code>Catalog '&lt;name&gt;' is unavailable: &lt;reason&gt;</code> and <code>GET /admin/catalogs</code> shows <code>available: false</code>. Every master retries it at this interval until it loads. <code>POST /admin/catalogs/&lt;name&gt;/reload</code> retries at once. <code>0</code> turns the timer off. See <a href="../../iceberg/integration/#catalog-availability">Catalog availability</a>.</td>
 </tr>
 </tbody>
 </table>
