@@ -132,6 +132,12 @@ Many path properties default to a subdirectory of `${ontul.base.data.dir}` (for 
 | `ontul.worker.health.max.consecutive.failures` | `3` | Number of consecutive failed health checks before a worker is declared down and removed from the cluster (its in-flight work is rescheduled/failed). With the defaults a worker is evicted after ~3 missed 10s rounds. |
 | `ontul.worker.health.check.future.grace.ms` | `2000` | Extra grace (ms) added on top of the per-check timeout when waiting for each `Future` result during a health-check round. Prevents premature `TimeoutException` for checks about to return. |
 
+## Catalogs
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `ontul.catalog.reload.retry.seconds` | `30` | A catalog that cannot be loaded (its REST catalog or that catalog's database is down when a master starts or becomes leader) is kept as unavailable: queries on it fail with `Catalog '<name>' is unavailable: <reason>` and `GET /admin/catalogs` shows `available: false`. Every master retries it at this interval until it loads. `POST /admin/catalogs/<name>/reload` retries at once. `0` turns the timer off. See [Catalog availability](../iceberg/integration.md#catalog-availability). |
+
 ## Query
 
 | Property | Default | Description |
