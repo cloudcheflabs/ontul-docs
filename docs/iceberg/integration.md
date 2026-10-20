@@ -77,6 +77,35 @@ The S3 credential keys accept either the `s3.`-prefixed spelling (`s3.accessKey`
 
 A table created in a shared REST catalog by **another engine** (for example Trino) is picked up automatically: when a query references `catalog.ns.table` and the planner does not yet have it cached, Ontul refreshes that catalog and re-plans once before failing. No manual `POST /admin/catalogs/<name>/refresh` is needed for the new table to become queryable. (The refresh endpoint still exists for forcing a full re-list on demand.)
 
+### Catalog availability
+
+Each master builds its own connector for every catalog. If the REST catalog cannot be reached when a master starts or becomes leader (for example, Polaris is up but its database is not), that catalog is **unavailable** on that master:
+
+- A query that names it fails. It does not return an empty result:
+
+    ```json
+    {"status": "error",
+     "error": "Catalog 'iceberg' is unavailable: Unable to process (code: 500) ... Connection to db:5432 refused (since 2026-10-20T10:09:20Z, 3 attempt(s); retried every 30s, POST /admin/catalogs/iceberg/reload retries now)"}
+    ```
+
+- `GET /admin/catalogs` reports each catalog's state, as seen by every master. `available` is `true` only when every master that answered has the catalog loaded, so it can be used in a health check:
+
+    ```json
+    [{"name": "iceberg", "connectorType": "iceberg", "available": false,
+      "unavailableReason": "Unable to process (code: 500) ... Connection to db:5432 refused",
+      "unavailableSince": "2026-10-20T10:09:20Z",
+      "masters": [{"node": "master-1", "available": false, "reason": "...", "attempts": 3, "lastAttemptAt": "..."},
+                  {"node": "master-2", "available": false, "reason": "...", "attempts": 3, "lastAttemptAt": "..."}]}]
+    ```
+
+- Recovery does not need a restart:
+    - Every master retries the catalog every `ontul.catalog.reload.retry.seconds` (default 30).
+    - A query that names the catalog starts a retry in the background (at most once every 5 seconds). The query itself fails at once and does not wait for it.
+    - To retry at once on every master, call `POST /admin/catalogs/<name>/reload`, or `POST /admin/catalogs/reload` for every unavailable catalog. Either call needs an administrator. It answers `200` when the catalog is loaded on every master, `503` (with each master's reason) when it is not, and `404` for a catalog that is not registered.
+    - `POST /admin/catalogs/<name>/refresh` on an unavailable catalog does the same as `reload`.
+
+A reload of a catalog that is still serving keeps the current connector if the new one cannot be built.
+
 ### Polaris catalog: `stsUnavailable: true` is required
 
 When the Polaris catalog itself is created (a one-time admin step on the Polaris side), its `storageConfigInfo` **must** include `stsUnavailable: true`:
