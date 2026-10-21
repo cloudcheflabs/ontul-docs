@@ -4001,7 +4001,7 @@ property of the table rather than of the master that read it. See
 <li><strong>Local-disk mode (default).</strong> Data is written to — and read from — a worker-local directory. This is fast, but the data is tied to that worker's disk: a stage that is retried on a <strong>different</strong> worker cannot see it.</li>
 <li><strong>S3-primary mode (<code>ontul.exchange.s3.enabled=true</code>).</strong> Data is read and written <strong>directly to S3</strong> (the object store is the primary exchange storage, not a background copy). Because the spill/snapshot objects live in S3, a task that is reassigned to a different worker reads the same data from S3 — this is what enables worker-independent, fault-tolerant recovery. Object keys are worker-independent (<code>{prefix}spill/{stageId}/…</code>, <code>{prefix}checkpoints/{stateId}/chk-{id}/w{worker}</code>), so any worker configured with the same bucket and prefix resolves them.</li>
 </ul>
-<p>Streaming checkpoints are stored per job under <code>checkpoints/{stateId}/</code> (one part per worker plus a <code>_latest</code> pointer to the last globally completed checkpoint) and pruned per job; the startup orphan sweep never touches them. Every stored object carries a format marker (<code>OXE1</code> envelope-encrypted, <code>OXP1</code> plaintext when KMS was not yet available on that worker), so a reader never has to guess. <strong>A streaming job keeps its window state and offsets across a worker failure only in S3-primary mode</strong> — in local-disk mode a checkpoint lives on the disk of the worker that wrote it.</p>
+<p>Streaming checkpoints are stored per job under <code>checkpoints/{stateId}/</code> (one part per worker plus a <code>_latest</code> pointer to the last globally completed checkpoint) and pruned per job; the startup orphan sweep never touches them. Payloads are encrypted with the KMS key <code>exchange-spill</code>, which the leader master creates at startup and sends to the workers. A worker that does not have the key refuses to write exchange data (the query fails and says why) rather than writing plaintext, unless <code>ontul.exchange.encryption.enabled=false</code>. Every stored object carries a format marker (<code>OXE1</code> envelope-encrypted, <code>OXP1</code> plaintext, written only with encryption turned off), so a reader never has to guess. <strong>A streaming job keeps its window state and offsets across a worker failure only in S3-primary mode</strong> — in local-disk mode a checkpoint lives on the disk of the worker that wrote it.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>S3-primary mode is analogous to a filesystem/object-store-backed exchange manager (<code>exchange.base-directories=s3://…</code>) in engines that support fault-tolerant execution: the object store <strong>replaces</strong> local disk for exchange data — it is not merely a backup of it.</p>
@@ -4019,6 +4019,11 @@ property of the table rather than of the master that read it. See
 <td><code>ontul.exchange.base.dir</code></td>
 <td><code>${ontul.base.data.dir}/exchange</code></td>
 <td>Worker-local directory used in <strong>local-disk mode</strong> for spilling intermediate shuffle/exchange data and execution-state checkpoints. Scratch/spill space (safe to be node-local); KMS envelope-encrypted at rest. Ignored in S3-primary mode.</td>
+</tr>
+<tr>
+<td><code>ontul.exchange.encryption.enabled</code></td>
+<td><code>true</code></td>
+<td><code>true</code>: exchange data (both modes) is always KMS envelope-encrypted with the key <code>exchange-spill</code>; a worker without the key fails the write instead of storing plaintext. <code>false</code>: plaintext is written when the key is missing, with a WARN in the worker log.</td>
 </tr>
 <tr>
 <td><code>ontul.exchange.s3.enabled</code></td>

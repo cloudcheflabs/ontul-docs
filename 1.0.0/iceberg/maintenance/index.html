@@ -2954,8 +2954,9 @@ the same Polaris REST catalog + S3 to prove the resulting metadata is valid for 
 <hr />
 <h3 id="optimize-compact-small-files-rewrite_data_files"><code>optimize</code> — compact small files (<code>rewrite_data_files</code>)</h3>
 <p>Reads each data file together with its applicable position- and equality-delete files, writes the
-surviving rows into one compacted file, and drops the consumed delete files in a single atomic
-<code>RewriteFiles</code> commit. This is <strong>delete-aware</strong>: rows previously <code>DELETE</code>d/<code>UPDATE</code>d are not
+surviving rows into one compacted file <strong>per partition</strong> (each file keeps its partition value and is
+written under that partition's path; a partition with only one file and no deletes is left as it is),
+and drops the consumed delete files in a single atomic <code>RewriteFiles</code> commit. This is <strong>delete-aware</strong>: rows previously <code>DELETE</code>d/<code>UPDATE</code>d are not
 resurrected, and the table format (<code>write.format.default</code>) is preserved. Run it to fix the
 small-file problem caused by frequent commits (especially streaming).</p>
 <table>
@@ -3136,6 +3137,8 @@ metadata-only operation; useful after many small commits have fragmented the man
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">rewrite_manifests</span><span class="p">();</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">rewrite_manifests</span><span class="p">(</span><span class="n">spec_id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
 </code></pre></div>
+<p>A table with no snapshot yet (created, nothing written) has no manifests: the procedure returns
+<code>No manifests to rewrite</code> and the scheduler skips the table instead of recording an error.</p>
 <hr />
 <h3 id="rewrite_position_delete_files-consolidate-v2-delete-files"><code>rewrite_position_delete_files</code> — consolidate v2 delete files</h3>
 <p>For Iceberg v2 tables, consolidates multiple Parquet <strong>position-delete</strong> files that target the same
