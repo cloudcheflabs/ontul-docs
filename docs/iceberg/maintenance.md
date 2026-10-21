@@ -89,8 +89,9 @@ the same Polaris REST catalog + S3 to prove the resulting metadata is valid for 
 ### `optimize` — compact small files (`rewrite_data_files`)
 
 Reads each data file together with its applicable position- and equality-delete files, writes the
-surviving rows into one compacted file, and drops the consumed delete files in a single atomic
-`RewriteFiles` commit. This is **delete-aware**: rows previously `DELETE`d/`UPDATE`d are not
+surviving rows into one compacted file **per partition** (each file keeps its partition value and is
+written under that partition's path; a partition with only one file and no deletes is left as it is),
+and drops the consumed delete files in a single atomic `RewriteFiles` commit. This is **delete-aware**: rows previously `DELETE`d/`UPDATE`d are not
 resurrected, and the table format (`write.format.default`) is preserved. Run it to fix the
 small-file problem caused by frequent commits (especially streaming).
 
@@ -200,6 +201,9 @@ metadata-only operation; useful after many small commits have fragmented the man
 ALTER TABLE ice.sales.orders EXECUTE rewrite_manifests();
 ALTER TABLE ice.sales.orders EXECUTE rewrite_manifests(spec_id => 0);
 ```
+
+A table with no snapshot yet (created, nothing written) has no manifests: the procedure returns
+`No manifests to rewrite` and the scheduler skips the table instead of recording an error.
 
 ---
 
