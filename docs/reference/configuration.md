@@ -188,24 +188,6 @@ See [Cluster Maintenance Mode](../features/cluster-maintenance.md).
 | `ontul.maintenance.initial.delay.ms` | `60000` | Initial delay (ms) after Master startup before the first maintenance round runs, so the cluster can finish coming up first (default 60s). |
 | `ontul.maintenance.history.retention.days` | `30` | Retention (days) for the maintenance job history (records of past expire/compaction runs). Older entries are pruned. |
 
-## Iceberg Observability (Table Health)
-
-Continuous collection of Iceberg table health behind the Admin UI's **Iceberg Health** page, the
-`/admin/iceberg/health` REST surface, and the `ontul_iceberg_table_*` Prometheus gauges. Collection
-is a cluster singleton — only the Master leader walks the catalogs, because table health is a
-property of the table rather than of the master that read it. See
-[Iceberg Observability](../iceberg/observability.md).
-
-| Property | Default | Description |
-| --- | --- | --- |
-| `ontul.iceberg.observability.enabled` | `true` | Master collects Iceberg table health. Set `false` to disable the Iceberg Health page, the REST surface, and the per-table gauges. |
-| `ontul.iceberg.observability.fast.interval.seconds` | `60` | Fast-tier period. The fast tier reads only the already-loaded `metadata.json` — current snapshot summary, snapshot list, metadata log, manifest list — so it performs no manifest I/O and is safe to run often. |
-| `ontul.iceberg.observability.deep.interval.seconds` | `1800` | Deep-tier period, per table. The deep tier plans a file scan to build the per-file size distribution (small-file ratio, percentiles, histogram); it reads **every manifest**, so it runs rarely and its result is cached and carried forward. |
-| `ontul.iceberg.observability.deep.max.per.cycle` | `3` | Deep scans started per collection cycle. Bounds the manifest I/O a freshly elected leader performs when it holds no cached distribution for any table yet — remaining tables are picked up on later cycles. A scan requested from the UI bypasses this cap. |
-| `ontul.iceberg.observability.series.retention.seconds` | `86400` | How long the per-table time series is kept in memory (default 24h). It backs the trend chart only; it is not persisted and does not survive a leader failover. |
-| `ontul.iceberg.observability.small.file.divisor` | `4` | A data file smaller than `targetFileSizeMB / N` counts as "small". The divisor applies to each table's own maintenance target, so a table configured for 512 MB files is judged against 512 MB, not a global constant. |
-| `ontul.iceberg.observability.effects.max` | `500` | How many maintenance before/after records to keep in memory. Every maintenance run is bracketed with a health sample so the UI can show what the run actually changed. |
-
 ## Audit Log
 
 | Property | Default | Description |
@@ -362,6 +344,7 @@ metadata store as `storage.jobLogs.*` / `storage.exchange.*` referencing an S3 c
 
 | Property | Default | Description |
 | --- | --- | --- |
+| `ontul.admin.query.max.rows` | `1000` | Most rows the Admin UI's SQL Query page receives for one statement. Planned into the query as a `LIMIT` (added when missing, lowered when larger), so the scan stops early; the page then says the result was truncated. `/v1/api/sql`, Flight SQL / JDBC and jobs are not capped. `0` disables the cap. |
 | `ontul.admin.token.access.expiry.ms` | `900000` | Lifetime (ms) of short-lived JWT access tokens issued after login. After expiry the client must use its refresh token to obtain a new access token (default 15 minutes). |
 | `ontul.admin.token.refresh.expiry.ms` | `86400000` | Lifetime (ms) of JWT refresh tokens, which let a client mint new access tokens without re-authenticating (default 24 hours). Effectively the maximum idle session length. |
 | `ontul.connection.test.timeout.ms` | `5000` | How long a connection **Test** (`POST /admin/connections/test`) waits for a JDBC, NeorunBase, Kafka or HTTP endpoint before reporting it unreachable. |

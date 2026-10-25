@@ -149,7 +149,9 @@ Ontul sends `header.X-Iceberg-Access-Delegation: ""` on every catalog call so Po
 
 ### Hidden partitioning
 
-`PARTITIONED BY (...)` accepts the standard Iceberg transforms — `identity`, `year(col)`, `month(col)`, `day(col)`, `hour(col)`, `bucket(N, col)`, `truncate(L, col)`, `void`. The transforms and partition-path encoding are implemented in Ontul (Murmur3_32 for `bucket`, ISO date math for the temporal transforms), so writes do not need a Spark/Trino runtime and the same logic runs identically on master and worker.
+`PARTITIONED BY (...)` accepts the standard Iceberg transforms — `identity`, `year(col)`, `month(col)`, `day(col)`, `hour(col)`, `bucket(N, col)`, `truncate(L, col)`, `void`. The transforms and partition-path encoding are implemented in Ontul (Murmur3_32 for `bucket`, ISO date math for the temporal transforms), so writes do not need a Spark/Trino runtime and the same logic runs identically on master and worker. Partition sources of type `date` and `timestamp` (identity, or the temporal transforms) are written with Iceberg's own partition values — an `INSERT` into a table `PARTITIONED BY (dt)` on a `DATE` column lands one file per day under `dt=YYYY-MM-DD/`.
+
+Column types in `CREATE TABLE`: the primitive types, `DECIMAL(p, s)`, `TIMESTAMP [WITH TIME ZONE]` and `ARRAY<...>` are created as the matching Iceberg types; a CTAS of an `ARRAY[...]` expression creates an Iceberg `list` column. `MAP<...>`, `ROW(...)` and `STRUCT<...>` columns are refused with a message, because they cannot be written yet — they used to become a `VARCHAR` column without a word.
 
 ```sql
 CREATE TABLE ice.events.events (

@@ -282,6 +282,12 @@ GET /admin/audit?from=1792281600000&to=1792368000000&table=sales.orders
 
 The cap exists because one request merges the local store with a scan of the tiered tables; narrow with `from` / `to` and filters to reach further back rather than raising `limit`.
 
+In the Admin UI's Audit overview, **Fetch max** sets `limit` (how many events are fetched; the toolbar
+shows how many came back), while the **Rows** selector of the *Recent events* and drill-down tables
+(50 / 100 / 500, default 100) with **Prev** / **Next** and *Showing X–Y of N* decides how many of the
+fetched events are on screen at once. Nothing fetched is hidden: every event can be paged to, in the
+server's order.
+
 ## Admin UI
 
 The **Audit** section has two pages:

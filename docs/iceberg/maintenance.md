@@ -62,14 +62,6 @@ such as Polaris may advertise the endpoint as clients *outside* the cluster reac
 deleting expired files through that address fails from inside the cluster. Using the catalog's own
 S3 settings keeps maintenance on the same storage path as Ontul's queries and writes.
 
-## Did it actually help?
-
-Maintenance that runs is not the same as maintenance that helped. Every run is bracketed with a
-health sample taken before it starts and again once it commits, so the Admin UI can show what the
-run changed — `data files 9 → 1`, `deletes 3 → 0`, `score 65 → 100` — instead of only that it
-succeeded. That record, the health score behind it, and the findings that point at these procedures
-are described in [Iceberg Observability](observability.md).
-
 
 ## Procedure reference
 
