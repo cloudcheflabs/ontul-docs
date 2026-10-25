@@ -2245,34 +2245,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Observability (Table Health)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../metadata-tables/" class="md-nav__link">
         
   
@@ -3327,7 +3299,8 @@
 </tbody>
 </table>
 <h3 id="hidden-partitioning">Hidden partitioning</h3>
-<p><code>PARTITIONED BY (...)</code> accepts the standard Iceberg transforms — <code>identity</code>, <code>year(col)</code>, <code>month(col)</code>, <code>day(col)</code>, <code>hour(col)</code>, <code>bucket(N, col)</code>, <code>truncate(L, col)</code>, <code>void</code>. The transforms and partition-path encoding are implemented in Ontul (Murmur3_32 for <code>bucket</code>, ISO date math for the temporal transforms), so writes do not need a Spark/Trino runtime and the same logic runs identically on master and worker.</p>
+<p><code>PARTITIONED BY (...)</code> accepts the standard Iceberg transforms — <code>identity</code>, <code>year(col)</code>, <code>month(col)</code>, <code>day(col)</code>, <code>hour(col)</code>, <code>bucket(N, col)</code>, <code>truncate(L, col)</code>, <code>void</code>. The transforms and partition-path encoding are implemented in Ontul (Murmur3_32 for <code>bucket</code>, ISO date math for the temporal transforms), so writes do not need a Spark/Trino runtime and the same logic runs identically on master and worker. Partition sources of type <code>date</code> and <code>timestamp</code> (identity, or the temporal transforms) are written with Iceberg's own partition values — an <code>INSERT</code> into a table <code>PARTITIONED BY (dt)</code> on a <code>DATE</code> column lands one file per day under <code>dt=YYYY-MM-DD/</code>.</p>
+<p>Column types in <code>CREATE TABLE</code>: the primitive types, <code>DECIMAL(p, s)</code>, <code>TIMESTAMP [WITH TIME ZONE]</code> and <code>ARRAY&lt;...&gt;</code> are created as the matching Iceberg types; a CTAS of an <code>ARRAY[...]</code> expression creates an Iceberg <code>list</code> column. <code>MAP&lt;...&gt;</code>, <code>ROW(...)</code> and <code>STRUCT&lt;...&gt;</code> columns are refused with a message, because they cannot be written yet — they used to become a <code>VARCHAR</code> column without a word.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">events</span><span class="p">.</span><span class="n">events</span><span class="w"> </span><span class="p">(</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w"> </span><span class="n">ts</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="n">STRING</span><span class="p">,</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="nb">INTEGER</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="p">)</span>

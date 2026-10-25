@@ -2100,34 +2100,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../iceberg/observability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Observability (Table Health)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../iceberg/metadata-tables/" class="md-nav__link">
         
   
@@ -3362,6 +3334,11 @@ window. Adding the column to the tiered schema is planned.</p>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>GET /admin/audit?from=1792281600000&amp;to=1792368000000&amp;table=sales.orders
 </code></pre></div>
 <p>The cap exists because one request merges the local store with a scan of the tiered tables; narrow with <code>from</code> / <code>to</code> and filters to reach further back rather than raising <code>limit</code>.</p>
+<p>In the Admin UI's Audit overview, <strong>Fetch max</strong> sets <code>limit</code> (how many events are fetched; the toolbar
+shows how many came back), while the <strong>Rows</strong> selector of the <em>Recent events</em> and drill-down tables
+(50 / 100 / 500, default 100) with <strong>Prev</strong> / <strong>Next</strong> and <em>Showing X–Y of N</em> decides how many of the
+fetched events are on screen at once. Nothing fetched is hidden: every event can be paged to, in the
+server's order.</p>
 <h2 id="admin-ui">Admin UI</h2>
 <p>The <strong>Audit</strong> section has two pages:</p>
 <ul>

@@ -1695,28 +1695,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#iceberg-health-detail-drawer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Iceberg Health (detail drawer)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#iceberg-health" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Iceberg Health
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#maintenance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2212,34 +2190,6 @@
     
   
     Table Maintenance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../iceberg/observability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Observability (Table Health)
   
 
     
@@ -3144,8 +3094,12 @@
   <strong>Change password</strong> button (any user, not only administrators) and <strong>Sign out</strong>. Signing out revokes the
   session's refresh token on the server.</li>
 <li>An address the console has no page for shows <em>Page not found</em> instead of an empty screen.</li>
-<li>Every side panel (editors, invoke testers) and the Iceberg Health detail drawer opens at least
-  <code>min(1100px, 92%</code> of the window<code>)</code> wide.</li>
+<li>Every side panel (editors, invoke testers) opens at least <code>min(1100px, 92%</code> of the window<code>)</code> wide.</li>
+<li>The console works the same over plain <code>http://&lt;host&gt;:&lt;port&gt;</code> as on <code>localhost</code> or <code>https</code>: it uses no
+  browser API that exists only in a secure context (a query id is made with <code>crypto.getRandomValues</code>,
+  copy buttons fall back to a hidden text area when the Clipboard API is not available). An error
+  thrown inside a page is shown in a red bar at the top of the page instead of only in the browser
+  console.</li>
 <li>An expired access token is renewed with the refresh token without leaving the page. Login, refresh
   and logout are always served by the leader master, so behind a load balancer a refresh never lands on
   a master that does not know the session.</li>
@@ -3297,8 +3251,29 @@ as the window is open. See <a href="../cluster-maintenance/">Cluster Maintenance
 result grid pages 50 rows at a time (previous / next, rows numbered across pages) with each column's
 Arrow type under its name and <code>NULL</code> shown as such.</p>
 <ul>
-<li><strong>Cancel</strong> stops the running query on the cluster, not only in the browser. The page chooses the
-  query's ID before sending it, so it can cancel a query whose first result has not arrived yet.</li>
+<li><strong>One statement, written as in any SQL client.</strong> A trailing <code>;</code> (with whitespace or a comment after
+  it) is accepted — <code>select * from iceberg.stream.events;</code> runs as is. A second statement after the <code>;</code>
+  is refused with <em>Only one statement can be run at a time</em>. A leading comment line is fine.</li>
+<li><strong>Names</strong> resolve case-insensitively (<code>SELECT * FROM ICEBERG.STREAM.EVENTS</code>), and a namespace or column
+  that is a reserved SQL word — <code>stream</code>, <code>default</code>, <code>year</code>, <code>value</code>, <code>timestamp</code> — needs no quoting when
+  it is part of a dotted name (<code>iceberg.stream.events</code>, <code>e.timestamp</code>).</li>
+<li><strong>Row cap.</strong> The page receives at most <code>ontul.admin.query.max.rows</code> rows (default 1000). The cap is
+  planned into the query as a <code>LIMIT</code> — added when the query has none, lowered when it is larger — so the
+  engine stops reading once it has the rows; a <code>select *</code> over a large, still-growing streaming table
+  answers in seconds instead of reading the whole table into one response (which used to run the master
+  out of memory). When the result was cut, the header says <em>Showing the first 1000 rows (result
+  truncated …)</em>. Aggregates such as <code>count(*)</code> are not affected. For a full result use a job, JDBC /
+  Flight SQL or <code>POST /v1/api/sql</code>, which are not capped.</li>
+<li><strong>Feedback.</strong> The moment you click <strong>Execute</strong> the button spins and <strong>Cancel</strong> appears.</li>
+<li>An empty result (a <code>WHERE</code> that matches nothing, a table a streaming job has not committed to yet)
+  shows the column headers and <em>0 rows</em>.</li>
+<li>
+<p>A <code>DOUBLE</code> keeps its decimal point (<code>3.0</code>, not <code>3</code>), the same in the Catalog Browser.</p>
+</li>
+<li>
+<p><strong>Cancel</strong> stops the running query on the cluster, not only in the browser. The page chooses the
+  query's ID before sending it, so it can cancel a query whose first result has not arrived yet.</p>
+</li>
 <li>Statements that return no rows — <code>INSERT</code>, <code>CREATE</code>, <code>DROP</code>, <code>CALL</code> and so on — show a banner with
   the command tag and row count instead of an empty table.</li>
 <li>A failed statement shows the error and how long it ran.</li>
@@ -3306,7 +3281,7 @@ Arrow type under its name and <code>NULL</code> shown as such.</p>
   exact <code>SUM</code>) are sent as strings, so the page shows the digits the engine computed rather than a
   rounded number.</li>
 <li>History lists your own queries (administrators see all), newest first, with their command tag,
-  duration, row count and the time they ran; clicking one puts it back in the editor. Secrets in the SQL
+  duration, row count (kept by the server, so it is still there after a reload) and the time they ran; clicking one puts it back in the editor. Secrets in the SQL
   text are masked. <strong>Clear view</strong> hides the list in this browser; the server keeps its history.</li>
 </ul>
 <h3 id="catalog-browser">Catalog Browser</h3>
@@ -3467,7 +3442,12 @@ for its column-level lineage and downstream impact. See <a href="../data-lineage
 </ul>
 <p>Both pages take a <strong>time range</strong> (<em>Any time</em>, <em>Last hour</em>, <em>Last 24h</em>, <em>Last 7 days</em>, <em>Last 30 days</em>,
 or <strong>Custom range…</strong> with From / To pickers) and a maximum number of events, and say so when a result
-is cut at that maximum. A non-administrator sees only their own events, and the settings are read-only
+is cut at that maximum.</p>
+<p>On the overview, <strong>Fetch max</strong> (100 / 400 / 1000 / 5000, capped by <code>ontul.audit.viewer.max.page</code>) is
+how many of the newest events are fetched from the server — the toolbar says how many were — and the
+<strong>Recent events</strong> table and the drill-down table each have a <strong>Rows</strong> selector (50 / 100 / 500, default
+100) with <strong>Prev</strong> / <strong>Next</strong> and <em>Showing X–Y of N</em>, so every fetched event can be paged through in
+the server's order. A non-administrator sees only their own events, and the settings are read-only
 for them. They show local and S3-tiered events as one log, so turning tiering on — even
 with no local copy kept — does not empty the page. Denied attempts appear alongside allowed ones, so a
 refused certification or an IAM-blocked write is visible here.</p>
@@ -3483,6 +3463,12 @@ cluster-wide, with no restart</strong> — the change is persisted to the replic
 every node. One S3 connection and base prefix cover all four (<code>&lt;prefix&gt;/spill</code>, <code>&lt;prefix&gt;/job-logs</code>,
 <code>&lt;prefix&gt;/exchange</code>). <strong>Test Connection</strong> checks the bucket of the prefix with the stored keys. Job logs of
 work running on workers are shipped to <code>&lt;prefix&gt;/job-logs</code> once S3 is chosen.</p>
+<p>With S3 chosen, the job <strong>history</strong> (each job's final state) is kept on the master's disk and also copied
+to <code>&lt;prefix&gt;/job-logs/jobHistory/</code> with the same connection's keys, so a job's status reads
+<code>COMPLETED</code> / <code>FAILED</code> from any master behind a load balancer, and after a master is replaced. (It used
+to switch the history to S3 through a file-system client with no S3 support and no keys: every job then
+ended without a history and its status read <code>UNKNOWN</code>.) A status request that lands on a master which
+did not run the job asks the master that did before falling back to the S3 log segments.</p>
 <h3 id="drivers">Drivers</h3>
 <p>Upload JDBC driver JARs for federated catalogs. Drivers are stored durably and synced to every
 worker, so a new driver does not require rebuilding an image.</p>
@@ -3546,20 +3532,6 @@ Changing them needs <code>AdministratorAccess</code>; everyone else sees the pag
 <p>Key management interface for viewing and managing encryption keys: create keys, rotate them and see
 each key's versions. Administrators only. Key IDs are trimmed and checked for duplicates before
 creation. No key material is ever shown.</p>
-<h3 id="iceberg-health-detail-drawer">Iceberg Health (detail drawer)</h3>
-<p>Clicking a table opens its detail drawer: score and grade, data / delete files, size, records, average
-file size against the target, snapshots, manifests, metadata generations, the open findings with a
-remedy button that runs the matching maintenance operation, the file-size distribution (<strong>Deep scan</strong>
-reads every manifest on demand), a trend chart, what each maintenance run changed, recent maintenance
-jobs, and the table's location and UUID. <strong>Live</strong> turns the 15-second refresh off and on.</p>
-<h3 id="iceberg-health">Iceberg Health</h3>
-<p>Continuous table-health collection for every registered Iceberg table: small-file counts, snapshot
-and manifest growth, delete-file accumulation, and the findings derived from them (<code>NO_MAINTENANCE</code>,
-<code>STALE_MAINTENANCE</code>, <code>MAINTENANCE_ERRORS</code> and friends). Includes a time series per table so you can
-see whether a problem is growing, and an effects view that shows what the last maintenance run
-actually changed. Collection runs on the leader only — see
-<a href="../high-availability/#leader-only-background-services">High Availability</a> for why, and how to
-aggregate the matching Prometheus gauges without double-counting across a failover.</p>
 <h3 id="maintenance">Maintenance</h3>
 <p>Configure and monitor Iceberg table maintenance — snapshot expiration, data compaction, manifest rewrite, orphan-file cleanup, and position-delete consolidation. Per-table configuration covers per-operation toggles plus Spark-aligned parameters (target file size, compaction <code>window_hours</code> and <code>min_input_files</code>, snapshot retention and <code>retain_last</code>, orphan safety window) and a <strong>schedule</strong> that is either a fixed interval or a 5-field UNIX <strong>cron</strong> (e.g. <code>0 */2 * * *</code>) which overrides the interval. A <strong>Manual Trigger</strong> runs any single operation (or all) on demand against a wildcard table pattern, with full job history.</p>
 <p>Settings are validated on save, and an invalid value is reported rather than stored: snapshot retention

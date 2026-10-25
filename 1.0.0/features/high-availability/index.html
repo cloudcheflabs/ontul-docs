@@ -1968,34 +1968,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../iceberg/observability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Observability (Table Health)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../iceberg/metadata-tables/" class="md-nav__link">
         
   
@@ -2914,10 +2886,6 @@ on the leader alone. Followers start them and hold them idle, taking over on ele
 <tr>
 <td>Iceberg table maintenance</td>
 <td>Two masters compacting one table collide at commit; concurrent <code>remove_orphan_files</code> is unsafe.</td>
-</tr>
-<tr>
-<td>Iceberg health collection</td>
-<td>Table health is a property of the table, not of the master that read it — collecting on every master would multiply object-store metadata reads for identical results.</td>
 </tr>
 <tr>
 <td>Streaming job reconciler</td>

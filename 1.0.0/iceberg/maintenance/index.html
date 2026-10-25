@@ -14,7 +14,7 @@
         <link rel="prev" href="../integration/">
       
       
-        <link rel="next" href="../observability/">
+        <link rel="next" href="../metadata-tables/">
       
       
         
@@ -1848,17 +1848,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#did-it-actually-help" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Did it actually help?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#procedure-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1973,34 +1962,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Observability (Table Health)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -2935,12 +2896,6 @@ such as Polaris may advertise the endpoint as clients <em>outside</em> the clust
 <code>http://localhost:8000</code> next to an internal <code>http://nginx:80</code>); writing a rewritten manifest or
 deleting expired files through that address fails from inside the cluster. Using the catalog's own
 S3 settings keeps maintenance on the same storage path as Ontul's queries and writes.</p>
-<h2 id="did-it-actually-help">Did it actually help?</h2>
-<p>Maintenance that runs is not the same as maintenance that helped. Every run is bracketed with a
-health sample taken before it starts and again once it commits, so the Admin UI can show what the
-run changed — <code>data files 9 → 1</code>, <code>deletes 3 → 0</code>, <code>score 65 → 100</code> — instead of only that it
-succeeded. That record, the health score behind it, and the findings that point at these procedures
-are described in <a href="../observability/">Iceberg Observability</a>.</p>
 <h2 id="procedure-reference">Procedure reference</h2>
 <p>All maintenance ops are on-demand <code>ALTER TABLE &lt;table&gt; EXECUTE &lt;procedure&gt;(param =&gt; value, …)</code>
 procedures (Trino-style named arguments). The same operations run on a schedule via the
