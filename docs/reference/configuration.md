@@ -364,6 +364,9 @@ metadata store as `storage.jobLogs.*` / `storage.exchange.*` referencing an S3 c
 | --- | --- | --- |
 | `ontul.admin.token.access.expiry.ms` | `900000` | Lifetime (ms) of short-lived JWT access tokens issued after login. After expiry the client must use its refresh token to obtain a new access token (default 15 minutes). |
 | `ontul.admin.token.refresh.expiry.ms` | `86400000` | Lifetime (ms) of JWT refresh tokens, which let a client mint new access tokens without re-authenticating (default 24 hours). Effectively the maximum idle session length. |
+| `ontul.connection.test.timeout.ms` | `5000` | How long a connection **Test** (`POST /admin/connections/test`) waits for a JDBC, NeorunBase, Kafka or HTTP endpoint before reporting it unreachable. |
+| `ontul.sts.min.duration.seconds` | `60` | Shortest STS session (`POST /admin/sts/assume-role` `durationSeconds`) the server accepts. |
+| `ontul.sts.max.duration.seconds` | `43200` | Longest STS session the server accepts (12 hours). A request outside the range is refused with `400`. |
 | `ontul.admin.http.max.content.size.bytes` | `10485760` | Maximum accepted Admin HTTP request body size (bytes); larger requests are rejected (default 10 MiB). Raise if uploading large dependency JARs/drivers via the Admin API. |
 
 ## Authentication — Password Storage

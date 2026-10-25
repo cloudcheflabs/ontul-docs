@@ -116,6 +116,11 @@ Response: `{"status":"ok","ingested":2}`.
 - The body may be a single event or an array.
 - `ts` (epoch millis) is the time the access happened. It is optional — when omitted, the server time is used. A plugin that reports asynchronously should send the access time; the event is still tiered correctly even if it arrives after newer events have been tiered (see [How tiering picks events](#how-tiering-picks-events)).
 - `decision` is optional (older plugins omit it); when present it is stored and searchable.
+- Recording an event for **another** user (`userId` different from the caller) needs administrator access —
+  engine plugins use an administrator's token. Any other caller may only record events as themselves, so a
+  user cannot forge another person's audit trail (`403`).
+- `GET /admin/audit` returns a non-administrator's own events only; changing the audit settings needs
+  administrator access.
 - Ingested events are indistinguishable from native ones in search, filters, and the Admin UI, other than their `source`.
 
 The companion lineage endpoint is `POST /v1/api/lineage` — see [Data Lineage](data-lineage.md#external-engine-lineage-ingestion).
