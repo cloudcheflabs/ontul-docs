@@ -3021,6 +3021,8 @@ table.</p>
 <h2 id="external-engine-lineage-ingestion">External-Engine Lineage Ingestion</h2>
 <p>Ontul is not only the source of lineage — it is also a <strong>collection point</strong> for other engines. Trino, Spark, and Flink authorization plugins (as deployed by <a href="https://www.cloudchef-labs.com">Chango</a>) already route their access-control decisions through Ontul IAM; the same plugins push the <strong>lineage edges</strong> they observe into Ontul over a REST endpoint, so lineage from every engine lands in one replicated store.</p>
 <p>The endpoint lives at the server root, <strong>not</strong> under <code>/admin</code>:</p>
+<p>Recording lineage needs administrator access (engine plugins use an administrator's token): the graph is
+governance metadata every user reads, so a non-administrator gets <code>403</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>POST /v1/api/lineage
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>Authorization: Token &lt;ontul-token&gt;        # or: Bearer &lt;jwt&gt; / AccessKey
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>Content-Type: application/json

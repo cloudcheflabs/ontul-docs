@@ -1622,6 +1622,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#sessions-and-catalogs-behind-a-load-balancer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sessions and catalogs behind a load balancer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#leader-only-background-services" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2872,6 +2883,22 @@
 <li><strong>Control-plane writes</strong> (catalog &amp; connector registration, IAM users/groups/policies/keys, KMS, connection credentials, driver upload, semantic-view edits) received on a <strong>follower</strong> are <strong>transparently forwarded to the leader</strong> over the internal protocol, applied once on the leader's RocksDB, and broadcast back to every follower as a snapshot. A leader-unaware proxy is therefore correct for writes as well as reads — the forwarding happens inside the engine, not in the load balancer.</li>
 <li><strong>Metadata recorded as a side effect on a follower</strong> — audit records, lineage edges, the live status and run history of a Flow owned by that follower, UDF and materialized-view definitions created by SQL on it — is written locally and also forwarded to the leader, which stores it and replicates it back. Replication itself stays one-way (leader → followers): without the forward, the next leader snapshot would replace the follower's copy and the record would be lost. See <code>ontul.metadata.forward.*</code> in the <a href="../../reference/configuration/#metadata">configuration reference</a>. A follower receives a snapshot for every replicated write, but rebuilds its query catalogs only when a catalog definition or a semantic view actually changed — so a stream of audit records does not disturb the queries running on it.</li>
 <li><strong>Table data written by SQL DML</strong> (<code>INSERT</code>, <code>CREATE TABLE</code>, <code>MERGE</code>, …) commits to the <strong>external catalog/storage the connector points at</strong> — Iceberg-on-Polaris + object storage, JDBC, etc. — which is the shared source of truth. Ontul is a processing engine, not a store, so no divergent per-Master copy of table data exists and nothing is lost if a follower dies mid-session.</li>
+</ul>
+<h3 id="sessions-and-catalogs-behind-a-load-balancer">Sessions and catalogs behind a load balancer</h3>
+<ul>
+<li><strong>Login, token refresh and logout are served by the leader.</strong> Refresh tokens live in the session store
+  the leader replicates; a follower forwards these three calls, so a refresh never lands on a master that
+  does not know the session (which used to log users out at every other refresh).</li>
+<li><strong>Right after a restart.</strong> The console's own files are served on a pool of their own, so the page
+  loads even while API calls wait for a leader that is still starting. A forwarded sign-in that the
+  leader does not answer within 15 seconds gets <code>503</code> ("the leader master is not answering yet") instead
+  of holding a thread for a minute; retry after a few seconds.</li>
+<li><strong>IAM replicates with STS sessions alive.</strong> Temporary credentials are part of the IAM snapshot; a field
+  the follower could not read used to make every IAM sync fail while any STS session existed.</li>
+<li><strong>A follower applies catalog changes incrementally.</strong> When the leader's metadata changes, the follower
+  rebuilds only the catalogs that were added, removed or changed — off the sync thread — instead of
+  reconnecting every catalog; the leader gets its acknowledgement at once and queries on the follower
+  keep seeing every unchanged catalog.</li>
 </ul>
 <h3 id="leader-only-background-services">Leader-only background services</h3>
 <p>Request handling is leader-unaware, but a few <strong>background</strong> services are cluster singletons and run

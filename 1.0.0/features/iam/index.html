@@ -3190,6 +3190,12 @@
 </tr>
 </tbody>
 </table>
+<p><strong>Catalog DDL is authorized too.</strong> <code>CREATE SCHEMA</code>, <code>DROP SCHEMA</code>, <code>DROP TABLE</code>, <code>DROP VIEW</code>, <code>CREATE VIEW</code>,
+<code>ALTER TABLE</code>, <code>OPTIMIZE</code>, <code>VACUUM</code> and the other maintenance statements need <code>data:CreateTable</code>,
+<code>data:DropTable</code> or <code>data:AlterTable</code> on the schema (<code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code>) or table resource —
+see the <a href="../iam-policy-templates/#action-namespace">action namespace</a>. A user with no matching policy is
+refused, like any other statement. Scheduled table maintenance runs as the internal principal <code>system</code>,
+which is not an IAM user and cannot be created as one.</p>
 <p>The write <strong>target</strong> is authorized in addition to the read sources: granting a user <code>data:Select</code> on a table does <strong>not</strong> let them <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code> into it — a separate <code>data:Insert</code>/<code>data:Update</code>/<code>data:Delete</code> grant (or a wildcard such as <code>data:*</code>) on that table resource is required. So the <code>SalesReadWrite</code> example above (<code>["data:Select","data:Insert"]</code> on <code>data:table:ice.sales.*</code>) permits both reading and inserting across the <code>ice.sales</code> schema, while a read-only policy that lists only <code>data:Select</code> blocks every write to those tables.</p>
 <p>The engine authorization is the enforcement point the <a href="../../">chango Trino / Spark / Flink authz plugins</a> also call over REST — so the same policy governs a table whether it is touched by an external engine or by an Ontul SQL statement.</p>
 <h3 id="creating-and-updating-policies">Creating and updating policies</h3>

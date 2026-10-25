@@ -3163,10 +3163,14 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># List all connections (no credentials returned)</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>GET<span class="w"> </span>/admin/connections
 <a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Test a connection without exposing secrets</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Test a connection with its stored credentials (administrators; secrets are never returned)</span>
 <a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>POST<span class="w"> </span>/admin/connections/test
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="o">{</span><span class="s2">&quot;id&quot;</span>:<span class="w"> </span><span class="s2">&quot;warehouse-s3&quot;</span><span class="o">}</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="o">{</span><span class="s2">&quot;connectionId&quot;</span>:<span class="w"> </span><span class="s2">&quot;warehouse-s3&quot;</span>,<span class="w"> </span><span class="s2">&quot;prefix&quot;</span>:<span class="w"> </span><span class="s2">&quot;s3://warehouse/raw/&quot;</span><span class="o">}</span><span class="w">   </span><span class="c1"># prefix: S3 only, optional</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="c1"># -&gt; {&quot;ok&quot;: true, &quot;message&quot;: &quot;Connected: bucket &#39;warehouse&#39; is readable and &#39;raw/&#39; has objects&quot;}</span>
 </code></pre></div>
+<p>Every type can be tested: S3 lists the bucket, JDBC and NeorunBase log in, Kafka asks for its brokers and
+topics, REST / RERANK / Elasticsearch must answer an HTTP <code>GET</code>, and DECIDE answers one real question —
+see <a href="../admin-ui/#connections">Admin UI → Connections</a>.</p>
 <p>The list response returns IDs, types, and non-secret properties only — encrypted fields (<code>secretKey</code>, <code>password</code>, <code>sasl.jaas.config</code>, …) are masked.</p>
 <h2 id="best-practices">Best Practices</h2>
 <ul>

@@ -1358,6 +1358,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#the-console-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The console shell
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#opening-pages-directly" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1677,6 +1688,17 @@
     <span class="md-ellipsis">
       
         KMS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iceberg-health-detail-drawer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Iceberg Health (detail drawer)
       
     </span>
   </a>
@@ -3112,6 +3134,24 @@
 
 <h1 id="admin-ui">Admin UI</h1>
 <p>Ontul includes a built-in web-based Admin UI for monitoring, managing, and operating the cluster.</p>
+<h2 id="the-console-shell">The console shell</h2>
+<ul>
+<li>The sidebar groups the pages (Core Infrastructure, Governance, Integrations, Semantic &amp; AI, Analytics) and
+  can be collapsed to icons with the button at its top edge; collapsed links keep their name as a tooltip.</li>
+<li>The version shown under the sidebar and on the login page is the running server's own
+  (<code>GET /admin/health</code> returns it from the build), not a string compiled into the UI.</li>
+<li>The header shows who is signed in and whether they are an <strong>Administrator</strong> or a <strong>User</strong>, a
+  <strong>Change password</strong> button (any user, not only administrators) and <strong>Sign out</strong>. Signing out revokes the
+  session's refresh token on the server.</li>
+<li>An address the console has no page for shows <em>Page not found</em> instead of an empty screen.</li>
+<li>Every side panel (editors, invoke testers) and the Iceberg Health detail drawer opens at least
+  <code>min(1100px, 92%</code> of the window<code>)</code> wide.</li>
+<li>An expired access token is renewed with the refresh token without leaving the page. Login, refresh
+  and logout are always served by the leader master, so behind a load balancer a refresh never lands on
+  a master that does not know the session.</li>
+</ul>
+<p>Dates, durations and counts are rendered from the server's values; a missing or out-of-range value is
+shown as <code>—</code> / <code>Never</code>, never as <code>Invalid Date</code>, <code>NaN</code> or a 1970 date.</p>
 <h2 id="opening-pages-directly">Opening pages directly</h2>
 <p>Every page has its own URL under <code>/admin/</code> (for example <code>/admin/audit</code>, <code>/admin/lineage</code>,
 <code>/admin/maintenance</code>) and can be bookmarked, shared, or reloaded. Some page URLs are also REST API
@@ -3132,7 +3172,7 @@ convenience; the check is what keeps a non-administrator out.</p>
 </thead>
 <tbody>
 <tr>
-<td>KMS, Backup &amp; Restore, STS</td>
+<td>KMS, Backup &amp; Restore, STS, node logs (Topology <strong>Logs</strong>)</td>
 <td>administrators only</td>
 <td>administrators only</td>
 </tr>
@@ -3142,9 +3182,14 @@ convenience; the check is what keeps a non-administrator out.</p>
 <td>administrators only</td>
 </tr>
 <tr>
-<td>SQL query history, jobs</td>
+<td>SQL query history, jobs (console and <code>/v1/api/job/*</code>: list, history, status, log)</td>
 <td>your own entries; administrators see everyone's</td>
-<td>your own queries and jobs; administrators any</td>
+<td>your own queries and jobs; killing another user's job needs <code>data:KillJob</code></td>
+</tr>
+<tr>
+<td>Audit events</td>
+<td>your own events; administrators see everyone's</td>
+<td>settings: administrators only. Recording an event (<code>POST /v1/api/audit</code>) for another user, and recording lineage (<code>POST /v1/api/lineage</code>), need administrator access</td>
 </tr>
 <tr>
 <td>Your own access key download</td>
@@ -3174,6 +3219,12 @@ masked before they leave the server. Any key whose name contains <code>secret</c
 <p>KMS key status lists each key's versions with their creation time and state only. No key material is
 returned by any endpoint.</p>
 <h3 id="access-keys-and-tokens">Access keys and tokens</h3>
+<p>Each key shows when it was created and when it expires (<em>No expiry</em>, <em>Expires <date></em>, or <em>Expired <date></em>
+in red). The server accepts an expiry in epoch milliseconds; <code>0</code>, a missing value, or a value past year
+9999 (some clients send <code>Long.MAX_VALUE/2</code> for "forever") means the key never expires, and is listed as
+<code>0</code>. An expiry already in the past, a non-numeric value, or a key for a user that does not exist is
+refused (<code>400</code> / <code>404</code>) rather than creating a key that is dead on arrival. The <strong>Expiration Date</strong> picker
+refuses a date in the past or one that is not a valid date.</p>
 <p>Deleting an access key, or a user, revokes the key's token immediately: a request presenting it is
 refused from the next call on, not when a cache expires. A token is accepted only while its key exists,
 is <strong>Active</strong> and is not past its expiry date. An expiry date picked in the UI means <em>to the end of that
@@ -3181,12 +3232,17 @@ day</em>. The download icon for a key is shown only to an administrator and to t
 server enforces the same rule.</p>
 <h2 id="pages">Pages</h2>
 <h3 id="dashboard">Dashboard</h3>
-<p>Cluster overview with real-time metrics: query throughput, latency, active queries, worker status, and JVM heap usage. <strong>All / Masters / Workers</strong> tabs break the same metrics down per node, which is where per-worker heap and active-task figures live.</p>
+<p>Stat cards for the number of masters and workers, and per-node charts of the last hour: <strong>CPU Usage (%)</strong>,
+<strong>Memory Usage (MB)</strong> (JVM heap), <strong>Query Count</strong>, <strong>Active Queries</strong>, <strong>Job Count (cumulative)</strong> and <strong>Active
+Jobs</strong>, refreshed every 15 seconds. <strong>All / Masters / Workers</strong> (or a click on a stat card) limits the chart
+lines to that kind of node. The charts appear once a few samples have been collected.</p>
 <h3 id="topology">Topology</h3>
 <p>The <strong>Cluster Topology</strong> page lists every node the cluster depends on, refreshed every 10 seconds:</p>
 <ul>
 <li><strong>Masters</strong> — node ID, host, admin and internal ports, role (<strong>Leader</strong> / Follower) and status, with a
-  <strong>Logs</strong> button that tails the node's log.</li>
+  <strong>Logs</strong> button that tails the node's log (administrators only — node logs carry every user's
+  statements). The log viewer polls every two seconds; <strong>LIVE</strong> / <strong>PAUSED</strong> stops and resumes it.
+  <strong>Refresh</strong> re-reads every list at once.</li>
 <li><strong>Workers</strong> — node ID, host, internal and Flight ports, status and <strong>Logs</strong>.</li>
 </ul>
 <p><strong>Logs</strong> shows that node's own log, whichever master served the page: a follower's log is fetched from
@@ -3237,7 +3293,9 @@ with a token you already hold.) The same data is available as JSON from <code>GE
 Master while leaving reads, settings and job control available; a banner stays on screen for as long
 as the window is open. See <a href="../cluster-maintenance/">Cluster Maintenance Mode</a>.</p>
 <h3 id="sql-query">SQL Query</h3>
-<p>Built-in SQL editor with syntax highlighting, <code>Ctrl+Enter</code> execution, result table, and query history.</p>
+<p>Built-in SQL editor: <code>Ctrl+Enter</code> (or <strong>Execute</strong>) runs the statement, <code>Tab</code> inserts two spaces, and the
+result grid pages 50 rows at a time (previous / next, rows numbered across pages) with each column's
+Arrow type under its name and <code>NULL</code> shown as such.</p>
 <ul>
 <li><strong>Cancel</strong> stops the running query on the cluster, not only in the browser. The page chooses the
   query's ID before sending it, so it can cancel a query whose first result has not arrived yet.</li>
@@ -3247,13 +3305,19 @@ as the window is open. See <a href="../cluster-maintenance/">Cluster Maintenance
 <li>Integers beyond JavaScript's exact range (±2<sup>53</sup>−1, for example a large <code>BIGINT</code> ID or an
   exact <code>SUM</code>) are sent as strings, so the page shows the digits the engine computed rather than a
   rounded number.</li>
-<li>History lists your own queries (administrators see all), with their command tag. Secrets in the SQL
-  text are masked. <strong>Clear view</strong> empties the result pane without touching history.</li>
+<li>History lists your own queries (administrators see all), newest first, with their command tag,
+  duration, row count and the time they ran; clicking one puts it back in the editor. Secrets in the SQL
+  text are masked. <strong>Clear view</strong> hides the list in this browser; the server keeps its history.</li>
 </ul>
 <h3 id="catalog-browser">Catalog Browser</h3>
 <p>Point-and-click walk through a catalog: <strong>Catalogs → Schemas → Tables</strong>, then the selected table's
 column list and a sample of up to 100 rows. It is the counterpart to typing <code>SHOW SCHEMAS</code>,
 <code>SHOW TABLES</code>, <code>DESCRIBE</code> and <code>SELECT</code> by hand — for the times you do not yet know what to type.</p>
+<p>Names are quoted when the page builds its statements, so a schema called like a reserved word (Lance's
+<code>default</code> namespace) or an index with a <code>-</code> in it browses like any other. <code>SHOW SCHEMAS</code>, <code>SHOW TABLES</code>
+and <code>DESCRIBE</code> accept quoted names (<code>SHOW TABLES FROM "tpch"."tiny"</code>), and name an unknown catalog as an
+error instead of returning an empty list. In queries, a dotted name with <code>default</code> as a later part
+(<code>lance.default.events</code>) needs no quoting.</p>
 <p>It drives the same query endpoint the SQL Query page does, because catalog metadata is answered by
 the query engine; there is no separate introspection API, and adding one would give two code paths
 that could disagree about what a table looks like. A statement that fails is shown with the
@@ -3277,16 +3341,56 @@ permissions, a broken storage path — keeps its column list and reports only th
 <li>Masked secrets are restored from the stored catalog when you save without retyping them.</li>
 </ul>
 <h3 id="connections">Connections</h3>
-<p>Manage physical connections (S3, JDBC, Kafka) — create, update, delete, and list. Credentials are encrypted at rest via KMS.</p>
+<p>Manage connections of eight types — S3, JDBC, Kafka, REST, NeorunBase, Elasticsearch, RERANK (retriever
+re-ranking endpoint) and DECIDE (<code>ai_verdict</code> decision endpoint) — create, update, delete and list.
+Credentials are encrypted at rest via KMS. A card shows the first four properties (secrets masked) and
+<code>+N more</code>.</p>
 <ul>
 <li>Connection IDs may contain letters, digits, <code>_</code>, <code>.</code> and <code>-</code>.</li>
 <li>Secret fields are always shown as password fields and come back as <code>***</code>; see
   <a href="#secrets-are-never-sent-back">Secrets are never sent back</a> for how edits treat them.</li>
-<li><strong>Test</strong> really connects. For S3 it checks the configured bucket exists and can be listed
-  (<code>HeadBucket</code>, then <code>ListObjectsV2</code>), or lists buckets when no bucket is set, using the same endpoint,
-  region and path-style settings jobs use. DECIDE connections have their own check; other types answer
-  <code>ok: false</code> with "Testing is supported for S3 and DECIDE connections" instead of claiming success.</li>
-<li>A connection type the form does not know keeps all of its properties when edited.</li>
+<li>
+<p><strong>Test</strong> (the bolt icon on every card) really connects with the stored credentials, and shows the answer
+  next to the connection:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>What Test does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S3</td>
+<td>checks the configured bucket exists and can be listed (<code>HeadBucket</code>, then <code>ListObjectsV2</code>), or lists buckets when no bucket is set, with the endpoint, region and path-style settings jobs use</td>
+</tr>
+<tr>
+<td>JDBC</td>
+<td>opens a connection (uploaded drivers included) and reports the database product and version</td>
+</tr>
+<tr>
+<td>NeorunBase</td>
+<td>logs in over pg-wire and checks the admin endpoint's <code>/admin/health</code></td>
+</tr>
+<tr>
+<td>Kafka</td>
+<td>asks the cluster for its brokers, cluster id and topics (<code>AdminClient</code>), with the SASL settings of the connection</td>
+</tr>
+<tr>
+<td>REST, RERANK, Elasticsearch</td>
+<td><code>GET</code> of the base URL / first host; any answer below 500 counts as reachable</td>
+</tr>
+<tr>
+<td>DECIDE</td>
+<td>asks the endpoint one real question and reports the model that answered</td>
+</tr>
+</tbody>
+</table>
+<p>Each check gives up after <code>ontul.connection.test.timeout.ms</code> (5 s). A type with no check says so.
+- A connection type the form does not know keeps all of its properties when edited (token- and
+  password-like properties as password fields).
+- Saving clears the typed secrets from the form, so they do not stay in the page after the panel closes.</p>
+</li>
 </ul>
 <h3 id="semantic-layer">Semantic Layer</h3>
 <p>Register and govern <a href="../semantic-layer/">semantic views</a> — curated metrics and dimensions over a
@@ -3312,11 +3416,18 @@ a certified link over a draft object type displays as DRAFT with the offending e
 <p>Governed write-backs — the only way an agent changes data. Each action declares its target object
 type, its mode (<code>DML</code> against the Iceberg system of record, or <code>OPERATION</code> calling a REST/ERP
 connector), a typed parameter contract, and whether it requires approval. An <strong>invoke tester</strong>
-drawer runs one with real arguments.</p>
+drawer runs one with real arguments and an optional idempotency key, and shows the server's full answer
+(for OPERATION, the system's status code and response; a failed call answers <code>ok: false</code>). Parameters
+are validated by type (<code>LONG</code>, <code>DOUBLE</code>, <code>BOOLEAN</code>, <code>IDENT</code>), so a value cannot inject SQL. An
+idempotency key is scoped to the caller and the action: the same key on another action runs that action.</p>
 <h3 id="action-workflows">Action Workflows</h3>
-<p>Multi-step Sagas composed of action types, authored as JSON or kiok-style YAML (importable and
-exportable). On a step failure the completed steps are compensated in reverse order; the page
-shows the run ledger.</p>
+<p>Multi-step Sagas composed of action types, authored as kiok-style YAML. Clicking a workflow opens its
+YAML in the same vocabulary the editor documents — steps with <code>id</code>, <code>action</code>, <code>args</code>, <code>requires</code>,
+<code>compensate</code>, <code>compensateArgs</code> — without server-owned fields (certification, timestamps). Each card draws
+the DAG; clicking a step opens the referenced action type to view or edit (or says it is not registered).
+<strong>Invoke</strong> runs the workflow with a JSON input and an optional idempotency key and draws the outcome
+step by step; on a step failure the completed steps are compensated in reverse order and the run shows
+<code>rolled_back</code> with the compensations. Idempotency keys are scoped to the caller and the workflow.</p>
 <h3 id="certification-on-every-ontology-page">Certification on every ontology page</h3>
 <p>Retrievers, Link Types, Action Types and Action Workflows show the same trust badge as Object Types
 and Semantic Views — <strong>DRAFT</strong>, <strong>CERTIFIED</strong> (with who signed it off), <strong>STALE</strong> (edited after
@@ -3326,7 +3437,10 @@ badge is the server's <code>effectiveStatus</code>, so a link over a draft objec
 Certifying needs administrator access or the <code>ontology:Certify</code> action.</p>
 <h3 id="ontology-graph">Ontology Graph</h3>
 <p>Visual type-graph of object types and the link types connecting them — the schema-level map an
-agent traverses, rendered for humans.</p>
+agent traverses, rendered for humans. Nodes list their properties (★ marks the primary key); JOIN edges
+are solid, GRAPH edges dashed and animated. Clicking a node shows its read source, property → column
+bindings and links (clicking a link moves to the other type); <strong>Focus</strong> isolates the node and its
+neighbours; the namespace selector shows one <code>catalog.schema</code> at a time.</p>
 <h3 id="flow">Flow</h3>
 <p>The visual <a href="../../streaming/flow/">Ontul Flow</a> builder and operator console: a drag-and-drop
 <code>source → transform → sink</code> canvas backed by an editable JSON/YAML spec (both directions stay in
@@ -3353,15 +3467,22 @@ for its column-level lineage and downstream impact. See <a href="../data-lineage
 </ul>
 <p>Both pages take a <strong>time range</strong> (<em>Any time</em>, <em>Last hour</em>, <em>Last 24h</em>, <em>Last 7 days</em>, <em>Last 30 days</em>,
 or <strong>Custom range…</strong> with From / To pickers) and a maximum number of events, and say so when a result
-is cut at that maximum. They show local and S3-tiered events as one log, so turning tiering on — even
+is cut at that maximum. A non-administrator sees only their own events, and the settings are read-only
+for them. They show local and S3-tiered events as one log, so turning tiering on — even
 with no local copy kept — does not empty the page. Denied attempts appear alongside allowed ones, so a
 refused certification or an IAM-blocked write is visible here.</p>
 <h3 id="lance-maintenance">Lance Maintenance</h3>
-<p>Compaction and cleanup for <a href="../lance-integration/">Lance</a> datasets, mirroring the Iceberg
-Maintenance page for the vector/AI format.</p>
+<p>Compaction and cleanup for <a href="../lance-integration/">Lance</a> datasets: <strong>OPTIMIZE</strong> (fragment compaction;
+<code>target_rows_per_fragment</code>, streaming window, cooldown, <code>min_input_files</code>, <code>materialize_deletions</code>,
+<code>defer_index_remap</code>, <code>dry_run</code>) and <strong>VACUUM</strong> (reclaim old versions; <code>retain_last</code>, <code>older_than_days</code>,
+<code>before_version</code>). VACUUM asks for confirmation showing the exact statement. Recent runs list each
+statement with its result and duration.</p>
 <h3 id="storage">Storage</h3>
-<p>Switch the exchange and job-log backends between local disk and S3 <strong>at runtime, cluster-wide, with
-no restart</strong> — the change is persisted to the replicated metadata store and pushed to every node.</p>
+<p>Switch the dependency, spill, exchange and job-log backends between local disk and S3 <strong>at runtime,
+cluster-wide, with no restart</strong> — the change is persisted to the replicated metadata store and pushed to
+every node. One S3 connection and base prefix cover all four (<code>&lt;prefix&gt;/spill</code>, <code>&lt;prefix&gt;/job-logs</code>,
+<code>&lt;prefix&gt;/exchange</code>). <strong>Test Connection</strong> checks the bucket of the prefix with the stored keys. Job logs of
+work running on workers are shipped to <code>&lt;prefix&gt;/job-logs</code> once S3 is chosen.</p>
 <h3 id="drivers">Drivers</h3>
 <p>Upload JDBC driver JARs for federated catalogs. Drivers are stored durably and synced to every
 worker, so a new driver does not require rebuilding an image.</p>
@@ -3378,9 +3499,15 @@ worker, so a new driver does not require rebuilding an image.</p>
 </ul>
 <h3 id="jobs">Jobs</h3>
 <p>Monitor active and completed jobs, view real-time logs, and kill running jobs. Jobs are submitted with
-the SDK or <code>bin/submit.sh</code>; the page is for watching and stopping them. Non-administrators see their own
-jobs, and secrets in job configuration are masked. <strong>Kill</strong> stops the job on every worker running it and
-reports a failure instead of silently doing nothing.</p>
+the SDK, <code>bin/submit.sh</code>, the REST API or <code>SUBMIT STREAMING</code> in the SQL editor; the page is for watching
+and stopping them. Tabs: <strong>Active</strong>, <strong>History</strong> and <strong>Queries</strong> (each with its count). Rows show status,
+type, driver (MASTER / WORKER), user, start / end time and duration; the log icon opens the job's log
+(<strong>LIVE</strong> while it runs, then the full log: from S3 when job logs are stored there, otherwise from the
+worker's memory, which keeps a finished job's lines for 5 minutes — choose S3 on the Storage page to keep them). <strong>Kill</strong> asks for confirmation with the
+job's details, stops the job on every worker running it and reports a failure instead of silently doing
+nothing. Clicking a query opens its detail (status, command, duration, rows, time, id, error). <strong>Live</strong> /
+<strong>Paused</strong> turns the 3-second refresh on and off. Non-administrators see their own jobs, and secrets in
+job configuration (a Flow's sink password, for example) are masked — in the REST API too.</p>
 <h3 id="iam">IAM</h3>
 <p>Manage users, groups, and policies. Includes a visual policy editor for creating structured IAM policies with column-level and row-level security rules.</p>
 <ul>
@@ -3390,7 +3517,18 @@ reports a failure instead of silently doing nothing.</p>
   editing a policy written by the API or the CLI does not drop conditions.</li>
 <li><strong>New Policy</strong> refuses a name that already exists (<code>409</code>) instead of overwriting it.</li>
 <li>The editor stays open with the server's error when a save fails.</li>
-<li>Groups list their members.</li>
+<li>Groups list their members and count them; a member is removed with the × on hover, a policy detached
+  with the × on its chip.</li>
+<li>The built-in <code>admin</code> user cannot be deleted and is marked <em>protected</em>.</li>
+<li>User names <code>system</code> (the principal background maintenance runs as) and names containing <code>/</code> are
+  refused, and passwords must have at least 6 characters — checked by the server, not only the form.</li>
+<li><strong>STS Sessions</strong>: generate temporary credentials from one of the access keys with a TTL of 1 minute to
+  12 hours and an optional session name. The new credentials show the secret and session token on demand
+  (eye icon), copy buttons and a CSV download; the table shows each session's creation time, remaining TTL
+  and status, and <strong>Clear Expired</strong> removes expired ones. Temporary credentials authenticate over Flight SQL
+  and on <code>POST /v1/api/auth/accesskey</code> with <code>accessKey</code>, <code>secretKey</code> and <code>stsToken</code>; they stop working
+  when their parent key is revoked. The server refuses a duration outside
+  <code>ontul.sts.min.duration.seconds</code>–<code>ontul.sts.max.duration.seconds</code> (60–43200).</li>
 </ul>
 <h3 id="single-sign-on">Single Sign-On</h3>
 <p>Configure OIDC, SAML 2.0 and LDAP / Active Directory, on tabs of their own. Every value is a named
@@ -3408,6 +3546,12 @@ Changing them needs <code>AdministratorAccess</code>; everyone else sees the pag
 <p>Key management interface for viewing and managing encryption keys: create keys, rotate them and see
 each key's versions. Administrators only. Key IDs are trimmed and checked for duplicates before
 creation. No key material is ever shown.</p>
+<h3 id="iceberg-health-detail-drawer">Iceberg Health (detail drawer)</h3>
+<p>Clicking a table opens its detail drawer: score and grade, data / delete files, size, records, average
+file size against the target, snapshots, manifests, metadata generations, the open findings with a
+remedy button that runs the matching maintenance operation, the file-size distribution (<strong>Deep scan</strong>
+reads every manifest on demand), a trend chart, what each maintenance run changed, recent maintenance
+jobs, and the table's location and UUID. <strong>Live</strong> turns the 15-second refresh off and on.</p>
 <h3 id="iceberg-health">Iceberg Health</h3>
 <p>Continuous table-health collection for every registered Iceberg table: small-file counts, snapshot
 and manifest growth, delete-file accumulation, and the findings derived from them (<code>NO_MAINTENANCE</code>,
@@ -3424,8 +3568,11 @@ files a running write has not committed yet), and a valid 5-field cron expressio
 accepts any table name and suggests tables seen in health data and maintenance history. After <strong>Run
 Now</strong>, the history refreshes until the run finishes.</p>
 <h3 id="backup-restore">Backup &amp; Restore</h3>
-<p>Backup the cluster's KMS / IAM / metadata stores to S3 and restore from any prior backup. The page exposes manual <em>Backup Now</em>, a fixed-interval schedule, and a 5-field UNIX <strong>cron schedule</strong> (e.g. <code>0 2 * * *</code>); the next-fire timestamp is shown next to an active cron so you can see at a glance when the next run will land. See <a href="../backup-restore/">Backup &amp; Restore</a> for the full flow.</p>
-<p><em>Backup Now</em> needs a saved backup configuration. The backup list reports the storage error — a missing
+<p>Backup the cluster's KMS / IAM / metadata stores and connections to S3 and restore from any prior backup. The page exposes manual <em>Backup Now</em>, a fixed-interval schedule, and a 5-field UNIX <strong>cron schedule</strong> (e.g. <code>0 2 * * *</code>); the next-fire timestamp is shown next to an active cron so you can see at a glance when the next run will land. See <a href="../backup-restore/">Backup &amp; Restore</a> for the full flow.</p>
+<p>Backups are listed newest first with their UTC time; <strong>Restore</strong> asks for confirmation listing what is
+overwritten (KMS, IAM, metadata, connections). The job history shows every backup and restore with its
+time and duration. The form stays disabled until the saved configuration has loaded, so a value typed
+early is never overwritten by it. <em>Backup Now</em> needs a saved backup configuration. The backup list reports the storage error — a missing
 bucket, wrong credentials — instead of showing an empty list. Scheduled and cron backups run on the
 leader only, so a multi-master cluster takes one backup per run.</p>
 <h2 id="rest-api">REST API</h2>

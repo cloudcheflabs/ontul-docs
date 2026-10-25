@@ -4340,6 +4340,21 @@ metadata store as <code>storage.jobLogs.*</code> / <code>storage.exchange.*</cod
 <td>Lifetime (ms) of JWT refresh tokens, which let a client mint new access tokens without re-authenticating (default 24 hours). Effectively the maximum idle session length.</td>
 </tr>
 <tr>
+<td><code>ontul.connection.test.timeout.ms</code></td>
+<td><code>5000</code></td>
+<td>How long a connection <strong>Test</strong> (<code>POST /admin/connections/test</code>) waits for a JDBC, NeorunBase, Kafka or HTTP endpoint before reporting it unreachable.</td>
+</tr>
+<tr>
+<td><code>ontul.sts.min.duration.seconds</code></td>
+<td><code>60</code></td>
+<td>Shortest STS session (<code>POST /admin/sts/assume-role</code> <code>durationSeconds</code>) the server accepts.</td>
+</tr>
+<tr>
+<td><code>ontul.sts.max.duration.seconds</code></td>
+<td><code>43200</code></td>
+<td>Longest STS session the server accepts (12 hours). A request outside the range is refused with <code>400</code>.</td>
+</tr>
+<tr>
 <td><code>ontul.admin.http.max.content.size.bytes</code></td>
 <td><code>10485760</code></td>
 <td>Maximum accepted Admin HTTP request body size (bytes); larger requests are rejected (default 10 MiB). Raise if uploading large dependency JARs/drivers via the Admin API.</td>

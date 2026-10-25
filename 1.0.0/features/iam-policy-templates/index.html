@@ -3314,7 +3314,7 @@
 </tr>
 <tr>
 <td><code>data:CreateTable</code> / <code>data:DropTable</code> / <code>data:AlterTable</code></td>
-<td>DDL</td>
+<td>DDL. <code>CREATE SCHEMA</code> / <code>DROP SCHEMA</code> need <code>data:CreateTable</code> / <code>data:DropTable</code> on <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code>; <code>DROP TABLE</code> / <code>DROP VIEW</code> need <code>data:DropTable</code>, <code>CREATE VIEW</code> <code>data:CreateTable</code>, and <code>ALTER TABLE</code>, <code>OPTIMIZE</code>, <code>VACUUM</code>, <code>EXPIRE SNAPSHOTS</code> <code>data:AlterTable</code> on <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code>. <code>CREATE TABLE</code> / CTAS is authorized as <code>data:Insert</code> on the new table</td>
 </tr>
 <tr>
 <td><code>data:KillJob</code> / <code>data:CancelQuery</code></td>
