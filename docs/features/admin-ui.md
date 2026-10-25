@@ -12,8 +12,12 @@ Ontul includes a built-in web-based Admin UI for monitoring, managing, and opera
   **Change password** button (any user, not only administrators) and **Sign out**. Signing out revokes the
   session's refresh token on the server.
 - An address the console has no page for shows *Page not found* instead of an empty screen.
-- Every side panel (editors, invoke testers) and the Iceberg Health detail drawer opens at least
-  `min(1100px, 92%` of the window`)` wide.
+- Every side panel (editors, invoke testers) opens at least `min(1100px, 92%` of the window`)` wide.
+- The console works the same over plain `http://<host>:<port>` as on `localhost` or `https`: it uses no
+  browser API that exists only in a secure context (a query id is made with `crypto.getRandomValues`,
+  copy buttons fall back to a hidden text area when the Clipboard API is not available). An error
+  thrown inside a page is shown in a red bar at the top of the page instead of only in the browser
+  console.
 - An expired access token is renewed with the refresh token without leaving the page. Login, refresh
   and logout are always served by the leader master, so behind a load balancer a refresh never lands on
   a master that does not know the session.
@@ -159,6 +163,24 @@ Built-in SQL editor: `Ctrl+Enter` (or **Execute**) runs the statement, `Tab` ins
 result grid pages 50 rows at a time (previous / next, rows numbered across pages) with each column's
 Arrow type under its name and `NULL` shown as such.
 
+- **One statement, written as in any SQL client.** A trailing `;` (with whitespace or a comment after
+  it) is accepted — `select * from iceberg.stream.events;` runs as is. A second statement after the `;`
+  is refused with *Only one statement can be run at a time*. A leading comment line is fine.
+- **Names** resolve case-insensitively (`SELECT * FROM ICEBERG.STREAM.EVENTS`), and a namespace or column
+  that is a reserved SQL word — `stream`, `default`, `year`, `value`, `timestamp` — needs no quoting when
+  it is part of a dotted name (`iceberg.stream.events`, `e.timestamp`).
+- **Row cap.** The page receives at most `ontul.admin.query.max.rows` rows (default 1000). The cap is
+  planned into the query as a `LIMIT` — added when the query has none, lowered when it is larger — so the
+  engine stops reading once it has the rows; a `select *` over a large, still-growing streaming table
+  answers in seconds instead of reading the whole table into one response (which used to run the master
+  out of memory). When the result was cut, the header says *Showing the first 1000 rows (result
+  truncated …)*. Aggregates such as `count(*)` are not affected. For a full result use a job, JDBC /
+  Flight SQL or `POST /v1/api/sql`, which are not capped.
+- **Feedback.** The moment you click **Execute** the button spins and **Cancel** appears.
+- An empty result (a `WHERE` that matches nothing, a table a streaming job has not committed to yet)
+  shows the column headers and *0 rows*.
+- A `DOUBLE` keeps its decimal point (`3.0`, not `3`), the same in the Catalog Browser.
+
 - **Cancel** stops the running query on the cluster, not only in the browser. The page chooses the
   query's ID before sending it, so it can cancel a query whose first result has not arrived yet.
 - Statements that return no rows — `INSERT`, `CREATE`, `DROP`, `CALL` and so on — show a banner with
@@ -168,7 +190,7 @@ Arrow type under its name and `NULL` shown as such.
   exact `SUM`) are sent as strings, so the page shows the digits the engine computed rather than a
   rounded number.
 - History lists your own queries (administrators see all), newest first, with their command tag,
-  duration, row count and the time they ran; clicking one puts it back in the editor. Secrets in the SQL
+  duration, row count (kept by the server, so it is still there after a reload) and the time they ran; clicking one puts it back in the editor. Secrets in the SQL
   text are masked. **Clear view** hides the list in this browser; the server keeps its history.
 
 ### Catalog Browser
@@ -331,7 +353,13 @@ Two pages over the [audit log](audit-log.md):
 
 Both pages take a **time range** (*Any time*, *Last hour*, *Last 24h*, *Last 7 days*, *Last 30 days*,
 or **Custom range…** with From / To pickers) and a maximum number of events, and say so when a result
-is cut at that maximum. A non-administrator sees only their own events, and the settings are read-only
+is cut at that maximum.
+
+On the overview, **Fetch max** (100 / 400 / 1000 / 5000, capped by `ontul.audit.viewer.max.page`) is
+how many of the newest events are fetched from the server — the toolbar says how many were — and the
+**Recent events** table and the drill-down table each have a **Rows** selector (50 / 100 / 500, default
+100) with **Prev** / **Next** and *Showing X–Y of N*, so every fetched event can be paged through in
+the server's order. A non-administrator sees only their own events, and the settings are read-only
 for them. They show local and S3-tiered events as one log, so turning tiering on — even
 with no local copy kept — does not empty the page. Denied attempts appear alongside allowed ones, so a
 refused certification or an IAM-blocked write is visible here.
@@ -351,6 +379,13 @@ cluster-wide, with no restart** — the change is persisted to the replicated me
 every node. One S3 connection and base prefix cover all four (`<prefix>/spill`, `<prefix>/job-logs`,
 `<prefix>/exchange`). **Test Connection** checks the bucket of the prefix with the stored keys. Job logs of
 work running on workers are shipped to `<prefix>/job-logs` once S3 is chosen.
+
+With S3 chosen, the job **history** (each job's final state) is kept on the master's disk and also copied
+to `<prefix>/job-logs/jobHistory/` with the same connection's keys, so a job's status reads
+`COMPLETED` / `FAILED` from any master behind a load balancer, and after a master is replaced. (It used
+to switch the history to S3 through a file-system client with no S3 support and no keys: every job then
+ended without a history and its status read `UNKNOWN`.) A status request that lands on a master which
+did not run the job asks the master that did before falling back to the S3 log segments.
 
 ### Drivers
 
@@ -424,24 +459,6 @@ Changing them needs `AdministratorAccess`; everyone else sees the page read-only
 Key management interface for viewing and managing encryption keys: create keys, rotate them and see
 each key's versions. Administrators only. Key IDs are trimmed and checked for duplicates before
 creation. No key material is ever shown.
-
-### Iceberg Health (detail drawer)
-
-Clicking a table opens its detail drawer: score and grade, data / delete files, size, records, average
-file size against the target, snapshots, manifests, metadata generations, the open findings with a
-remedy button that runs the matching maintenance operation, the file-size distribution (**Deep scan**
-reads every manifest on demand), a trend chart, what each maintenance run changed, recent maintenance
-jobs, and the table's location and UUID. **Live** turns the 15-second refresh off and on.
-
-### Iceberg Health
-
-Continuous table-health collection for every registered Iceberg table: small-file counts, snapshot
-and manifest growth, delete-file accumulation, and the findings derived from them (`NO_MAINTENANCE`,
-`STALE_MAINTENANCE`, `MAINTENANCE_ERRORS` and friends). Includes a time series per table so you can
-see whether a problem is growing, and an effects view that shows what the last maintenance run
-actually changed. Collection runs on the leader only — see
-[High Availability](high-availability.md#leader-only-background-services) for why, and how to
-aggregate the matching Prometheus gauges without double-counting across a failover.
 
 ### Maintenance
 

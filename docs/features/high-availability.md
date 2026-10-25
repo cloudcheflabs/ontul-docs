@@ -41,7 +41,6 @@ on the leader alone. Followers start them and hold them idle, taking over on ele
 | Service | Why it must not run twice |
 | --- | --- |
 | Iceberg table maintenance | Two masters compacting one table collide at commit; concurrent `remove_orphan_files` is unsafe. |
-| Iceberg health collection | Table health is a property of the table, not of the master that read it — collecting on every master would multiply object-store metadata reads for identical results. |
 | Streaming job reconciler | Re-dispatching a streaming job from two masters would start it twice. |
 | KMS key lifecycle | Key creation and rotation are writes to the leader-owned state store. |
 

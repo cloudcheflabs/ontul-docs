@@ -682,8 +682,6 @@ On a 16 GB machine with 10.7 GB given to Docker.
 | ERP CDC | 5 tables / 1,214 rows, compared by value |
 | One DAG run | about 50–70 seconds |
 
-![Iceberg health](../images/demo/ontul-iceberg-health.png)
-
 ---
 
 ## The defects found while building this
