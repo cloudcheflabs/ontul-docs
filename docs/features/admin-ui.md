@@ -2,6 +2,25 @@
 
 Ontul includes a built-in web-based Admin UI for monitoring, managing, and operating the cluster.
 
+## The console shell
+
+- The sidebar groups the pages (Core Infrastructure, Governance, Integrations, Semantic & AI, Analytics) and
+  can be collapsed to icons with the button at its top edge; collapsed links keep their name as a tooltip.
+- The version shown under the sidebar and on the login page is the running server's own
+  (`GET /admin/health` returns it from the build), not a string compiled into the UI.
+- The header shows who is signed in and whether they are an **Administrator** or a **User**, a
+  **Change password** button (any user, not only administrators) and **Sign out**. Signing out revokes the
+  session's refresh token on the server.
+- An address the console has no page for shows *Page not found* instead of an empty screen.
+- Every side panel (editors, invoke testers) and the Iceberg Health detail drawer opens at least
+  `min(1100px, 92%` of the window`)` wide.
+- An expired access token is renewed with the refresh token without leaving the page. Login, refresh
+  and logout are always served by the leader master, so behind a load balancer a refresh never lands on
+  a master that does not know the session.
+
+Dates, durations and counts are rendered from the server's values; a missing or out-of-range value is
+shown as `—` / `Never`, never as `Invalid Date`, `NaN` or a 1970 date.
+
 ## Opening pages directly
 
 Every page has its own URL under `/admin/` (for example `/admin/audit`, `/admin/lineage`,
@@ -18,9 +37,10 @@ convenience; the check is what keeps a non-administrator out.
 
 | Area | Read | Change |
 |---|---|---|
-| KMS, Backup & Restore, STS | administrators only | administrators only |
+| KMS, Backup & Restore, STS, node logs (Topology **Logs**) | administrators only | administrators only |
 | IAM (users, groups, policies, keys), SSO, connections, catalogs, drivers, storage and other `/admin/config/*` settings, Iceberg maintenance, health scan, audit settings, cluster maintenance mode | any signed-in user (secrets masked) | administrators only |
-| SQL query history, jobs | your own entries; administrators see everyone's | your own queries and jobs; administrators any |
+| SQL query history, jobs (console and `/v1/api/job/*`: list, history, status, log) | your own entries; administrators see everyone's | your own queries and jobs; killing another user's job needs `data:KillJob` |
+| Audit events | your own events; administrators see everyone's | settings: administrators only. Recording an event (`POST /v1/api/audit`) for another user, and recording lineage (`POST /v1/api/lineage`), need administrator access |
 | Your own access key download | the key's owner or an administrator | — |
 
 "Administrator" means a user whose policies grant `AdministratorAccess`. A non-administrator who calls
@@ -49,6 +69,13 @@ returned by any endpoint.
 
 ### Access keys and tokens
 
+Each key shows when it was created and when it expires (*No expiry*, *Expires <date>*, or *Expired <date>*
+in red). The server accepts an expiry in epoch milliseconds; `0`, a missing value, or a value past year
+9999 (some clients send `Long.MAX_VALUE/2` for "forever") means the key never expires, and is listed as
+`0`. An expiry already in the past, a non-numeric value, or a key for a user that does not exist is
+refused (`400` / `404`) rather than creating a key that is dead on arrival. The **Expiration Date** picker
+refuses a date in the past or one that is not a valid date.
+
 Deleting an access key, or a user, revokes the key's token immediately: a request presenting it is
 refused from the next call on, not when a cache expires. A token is accepted only while its key exists,
 is **Active** and is not past its expiry date. An expiry date picked in the UI means *to the end of that
@@ -59,14 +86,19 @@ server enforces the same rule.
 
 ### Dashboard
 
-Cluster overview with real-time metrics: query throughput, latency, active queries, worker status, and JVM heap usage. **All / Masters / Workers** tabs break the same metrics down per node, which is where per-worker heap and active-task figures live.
+Stat cards for the number of masters and workers, and per-node charts of the last hour: **CPU Usage (%)**,
+**Memory Usage (MB)** (JVM heap), **Query Count**, **Active Queries**, **Job Count (cumulative)** and **Active
+Jobs**, refreshed every 15 seconds. **All / Masters / Workers** (or a click on a stat card) limits the chart
+lines to that kind of node. The charts appear once a few samples have been collected.
 
 ### Topology
 
 The **Cluster Topology** page lists every node the cluster depends on, refreshed every 10 seconds:
 
 - **Masters** — node ID, host, admin and internal ports, role (**Leader** / Follower) and status, with a
-  **Logs** button that tails the node's log.
+  **Logs** button that tails the node's log (administrators only — node logs carry every user's
+  statements). The log viewer polls every two seconds; **LIVE** / **PAUSED** stops and resumes it.
+  **Refresh** re-reads every list at once.
 - **Workers** — node ID, host, internal and Flight ports, status and **Logs**.
 
 **Logs** shows that node's own log, whichever master served the page: a follower's log is fetched from
@@ -123,7 +155,9 @@ as the window is open. See [Cluster Maintenance Mode](cluster-maintenance.md).
 
 ### SQL Query
 
-Built-in SQL editor with syntax highlighting, `Ctrl+Enter` execution, result table, and query history.
+Built-in SQL editor: `Ctrl+Enter` (or **Execute**) runs the statement, `Tab` inserts two spaces, and the
+result grid pages 50 rows at a time (previous / next, rows numbered across pages) with each column's
+Arrow type under its name and `NULL` shown as such.
 
 - **Cancel** stops the running query on the cluster, not only in the browser. The page chooses the
   query's ID before sending it, so it can cancel a query whose first result has not arrived yet.
@@ -133,14 +167,21 @@ Built-in SQL editor with syntax highlighting, `Ctrl+Enter` execution, result tab
 - Integers beyond JavaScript's exact range (±2<sup>53</sup>−1, for example a large `BIGINT` ID or an
   exact `SUM`) are sent as strings, so the page shows the digits the engine computed rather than a
   rounded number.
-- History lists your own queries (administrators see all), with their command tag. Secrets in the SQL
-  text are masked. **Clear view** empties the result pane without touching history.
+- History lists your own queries (administrators see all), newest first, with their command tag,
+  duration, row count and the time they ran; clicking one puts it back in the editor. Secrets in the SQL
+  text are masked. **Clear view** hides the list in this browser; the server keeps its history.
 
 ### Catalog Browser
 
 Point-and-click walk through a catalog: **Catalogs → Schemas → Tables**, then the selected table's
 column list and a sample of up to 100 rows. It is the counterpart to typing `SHOW SCHEMAS`,
 `SHOW TABLES`, `DESCRIBE` and `SELECT` by hand — for the times you do not yet know what to type.
+
+Names are quoted when the page builds its statements, so a schema called like a reserved word (Lance's
+`default` namespace) or an index with a `-` in it browses like any other. `SHOW SCHEMAS`, `SHOW TABLES`
+and `DESCRIBE` accept quoted names (`SHOW TABLES FROM "tpch"."tiny"`), and name an unknown catalog as an
+error instead of returning an empty list. In queries, a dotted name with `default` as a later part
+(`lance.default.events`) needs no quoting.
 
 It drives the same query endpoint the SQL Query page does, because catalog metadata is answered by
 the query engine; there is no separate introspection API, and adding one would give two code paths
@@ -168,16 +209,30 @@ Register, unregister, and manage data source catalogs. View connector type, conn
 
 ### Connections
 
-Manage physical connections (S3, JDBC, Kafka) — create, update, delete, and list. Credentials are encrypted at rest via KMS.
+Manage connections of eight types — S3, JDBC, Kafka, REST, NeorunBase, Elasticsearch, RERANK (retriever
+re-ranking endpoint) and DECIDE (`ai_verdict` decision endpoint) — create, update, delete and list.
+Credentials are encrypted at rest via KMS. A card shows the first four properties (secrets masked) and
+`+N more`.
 
 - Connection IDs may contain letters, digits, `_`, `.` and `-`.
 - Secret fields are always shown as password fields and come back as `***`; see
   [Secrets are never sent back](#secrets-are-never-sent-back) for how edits treat them.
-- **Test** really connects. For S3 it checks the configured bucket exists and can be listed
-  (`HeadBucket`, then `ListObjectsV2`), or lists buckets when no bucket is set, using the same endpoint,
-  region and path-style settings jobs use. DECIDE connections have their own check; other types answer
-  `ok: false` with "Testing is supported for S3 and DECIDE connections" instead of claiming success.
-- A connection type the form does not know keeps all of its properties when edited.
+- **Test** (the bolt icon on every card) really connects with the stored credentials, and shows the answer
+  next to the connection:
+
+    | Type | What Test does |
+    |---|---|
+    | S3 | checks the configured bucket exists and can be listed (`HeadBucket`, then `ListObjectsV2`), or lists buckets when no bucket is set, with the endpoint, region and path-style settings jobs use |
+    | JDBC | opens a connection (uploaded drivers included) and reports the database product and version |
+    | NeorunBase | logs in over pg-wire and checks the admin endpoint's `/admin/health` |
+    | Kafka | asks the cluster for its brokers, cluster id and topics (`AdminClient`), with the SASL settings of the connection |
+    | REST, RERANK, Elasticsearch | `GET` of the base URL / first host; any answer below 500 counts as reachable |
+    | DECIDE | asks the endpoint one real question and reports the model that answered |
+
+    Each check gives up after `ontul.connection.test.timeout.ms` (5 s). A type with no check says so.
+- A connection type the form does not know keeps all of its properties when edited (token- and
+  password-like properties as password fields).
+- Saving clears the typed secrets from the form, so they do not stay in the page after the panel closes.
 
 ### Semantic Layer
 
@@ -212,13 +267,20 @@ a certified link over a draft object type displays as DRAFT with the offending e
 Governed write-backs — the only way an agent changes data. Each action declares its target object
 type, its mode (`DML` against the Iceberg system of record, or `OPERATION` calling a REST/ERP
 connector), a typed parameter contract, and whether it requires approval. An **invoke tester**
-drawer runs one with real arguments.
+drawer runs one with real arguments and an optional idempotency key, and shows the server's full answer
+(for OPERATION, the system's status code and response; a failed call answers `ok: false`). Parameters
+are validated by type (`LONG`, `DOUBLE`, `BOOLEAN`, `IDENT`), so a value cannot inject SQL. An
+idempotency key is scoped to the caller and the action: the same key on another action runs that action.
 
 ### Action Workflows
 
-Multi-step Sagas composed of action types, authored as JSON or kiok-style YAML (importable and
-exportable). On a step failure the completed steps are compensated in reverse order; the page
-shows the run ledger.
+Multi-step Sagas composed of action types, authored as kiok-style YAML. Clicking a workflow opens its
+YAML in the same vocabulary the editor documents — steps with `id`, `action`, `args`, `requires`,
+`compensate`, `compensateArgs` — without server-owned fields (certification, timestamps). Each card draws
+the DAG; clicking a step opens the referenced action type to view or edit (or says it is not registered).
+**Invoke** runs the workflow with a JSON input and an optional idempotency key and draws the outcome
+step by step; on a step failure the completed steps are compensated in reverse order and the run shows
+`rolled_back` with the compensations. Idempotency keys are scoped to the caller and the workflow.
 
 ### Certification on every ontology page
 
@@ -232,7 +294,10 @@ Certifying needs administrator access or the `ontology:Certify` action.
 ### Ontology Graph
 
 Visual type-graph of object types and the link types connecting them — the schema-level map an
-agent traverses, rendered for humans.
+agent traverses, rendered for humans. Nodes list their properties (★ marks the primary key); JOIN edges
+are solid, GRAPH edges dashed and animated. Clicking a node shows its read source, property → column
+bindings and links (clicking a link moves to the other type); **Focus** isolates the node and its
+neighbours; the namespace selector shows one `catalog.schema` at a time.
 
 ### Flow
 
@@ -266,19 +331,26 @@ Two pages over the [audit log](audit-log.md):
 
 Both pages take a **time range** (*Any time*, *Last hour*, *Last 24h*, *Last 7 days*, *Last 30 days*,
 or **Custom range…** with From / To pickers) and a maximum number of events, and say so when a result
-is cut at that maximum. They show local and S3-tiered events as one log, so turning tiering on — even
+is cut at that maximum. A non-administrator sees only their own events, and the settings are read-only
+for them. They show local and S3-tiered events as one log, so turning tiering on — even
 with no local copy kept — does not empty the page. Denied attempts appear alongside allowed ones, so a
 refused certification or an IAM-blocked write is visible here.
 
 ### Lance Maintenance
 
-Compaction and cleanup for [Lance](lance-integration.md) datasets, mirroring the Iceberg
-Maintenance page for the vector/AI format.
+Compaction and cleanup for [Lance](lance-integration.md) datasets: **OPTIMIZE** (fragment compaction;
+`target_rows_per_fragment`, streaming window, cooldown, `min_input_files`, `materialize_deletions`,
+`defer_index_remap`, `dry_run`) and **VACUUM** (reclaim old versions; `retain_last`, `older_than_days`,
+`before_version`). VACUUM asks for confirmation showing the exact statement. Recent runs list each
+statement with its result and duration.
 
 ### Storage
 
-Switch the exchange and job-log backends between local disk and S3 **at runtime, cluster-wide, with
-no restart** — the change is persisted to the replicated metadata store and pushed to every node.
+Switch the dependency, spill, exchange and job-log backends between local disk and S3 **at runtime,
+cluster-wide, with no restart** — the change is persisted to the replicated metadata store and pushed to
+every node. One S3 connection and base prefix cover all four (`<prefix>/spill`, `<prefix>/job-logs`,
+`<prefix>/exchange`). **Test Connection** checks the bucket of the prefix with the stored keys. Job logs of
+work running on workers are shipped to `<prefix>/job-logs` once S3 is chosen.
 
 ### Drivers
 
@@ -298,9 +370,15 @@ worker, so a new driver does not require rebuilding an image.
 ### Jobs
 
 Monitor active and completed jobs, view real-time logs, and kill running jobs. Jobs are submitted with
-the SDK or `bin/submit.sh`; the page is for watching and stopping them. Non-administrators see their own
-jobs, and secrets in job configuration are masked. **Kill** stops the job on every worker running it and
-reports a failure instead of silently doing nothing.
+the SDK, `bin/submit.sh`, the REST API or `SUBMIT STREAMING` in the SQL editor; the page is for watching
+and stopping them. Tabs: **Active**, **History** and **Queries** (each with its count). Rows show status,
+type, driver (MASTER / WORKER), user, start / end time and duration; the log icon opens the job's log
+(**LIVE** while it runs, then the full log: from S3 when job logs are stored there, otherwise from the
+worker's memory, which keeps a finished job's lines for 5 minutes — choose S3 on the Storage page to keep them). **Kill** asks for confirmation with the
+job's details, stops the job on every worker running it and reports a failure instead of silently doing
+nothing. Clicking a query opens its detail (status, command, duration, rows, time, id, error). **Live** /
+**Paused** turns the 3-second refresh on and off. Non-administrators see their own jobs, and secrets in
+job configuration (a Flow's sink password, for example) are masked — in the REST API too.
 
 ### IAM
 
@@ -312,7 +390,18 @@ Manage users, groups, and policies. Includes a visual policy editor for creating
   editing a policy written by the API or the CLI does not drop conditions.
 - **New Policy** refuses a name that already exists (`409`) instead of overwriting it.
 - The editor stays open with the server's error when a save fails.
-- Groups list their members.
+- Groups list their members and count them; a member is removed with the × on hover, a policy detached
+  with the × on its chip.
+- The built-in `admin` user cannot be deleted and is marked *protected*.
+- User names `system` (the principal background maintenance runs as) and names containing `/` are
+  refused, and passwords must have at least 6 characters — checked by the server, not only the form.
+- **STS Sessions**: generate temporary credentials from one of the access keys with a TTL of 1 minute to
+  12 hours and an optional session name. The new credentials show the secret and session token on demand
+  (eye icon), copy buttons and a CSV download; the table shows each session's creation time, remaining TTL
+  and status, and **Clear Expired** removes expired ones. Temporary credentials authenticate over Flight SQL
+  and on `POST /v1/api/auth/accesskey` with `accessKey`, `secretKey` and `stsToken`; they stop working
+  when their parent key is revoked. The server refuses a duration outside
+  `ontul.sts.min.duration.seconds`–`ontul.sts.max.duration.seconds` (60–43200).
 
 ### Single Sign-On
 
@@ -336,6 +425,14 @@ Key management interface for viewing and managing encryption keys: create keys, 
 each key's versions. Administrators only. Key IDs are trimmed and checked for duplicates before
 creation. No key material is ever shown.
 
+### Iceberg Health (detail drawer)
+
+Clicking a table opens its detail drawer: score and grade, data / delete files, size, records, average
+file size against the target, snapshots, manifests, metadata generations, the open findings with a
+remedy button that runs the matching maintenance operation, the file-size distribution (**Deep scan**
+reads every manifest on demand), a trend chart, what each maintenance run changed, recent maintenance
+jobs, and the table's location and UUID. **Live** turns the 15-second refresh off and on.
+
 ### Iceberg Health
 
 Continuous table-health collection for every registered Iceberg table: small-file counts, snapshot
@@ -358,9 +455,12 @@ Now**, the history refreshes until the run finishes.
 
 ### Backup & Restore
 
-Backup the cluster's KMS / IAM / metadata stores to S3 and restore from any prior backup. The page exposes manual *Backup Now*, a fixed-interval schedule, and a 5-field UNIX **cron schedule** (e.g. `0 2 * * *`); the next-fire timestamp is shown next to an active cron so you can see at a glance when the next run will land. See [Backup & Restore](backup-restore.md) for the full flow.
+Backup the cluster's KMS / IAM / metadata stores and connections to S3 and restore from any prior backup. The page exposes manual *Backup Now*, a fixed-interval schedule, and a 5-field UNIX **cron schedule** (e.g. `0 2 * * *`); the next-fire timestamp is shown next to an active cron so you can see at a glance when the next run will land. See [Backup & Restore](backup-restore.md) for the full flow.
 
-*Backup Now* needs a saved backup configuration. The backup list reports the storage error — a missing
+Backups are listed newest first with their UTC time; **Restore** asks for confirmation listing what is
+overwritten (KMS, IAM, metadata, connections). The job history shows every backup and restore with its
+time and duration. The form stays disabled until the saved configuration has loaded, so a value typed
+early is never overwritten by it. *Backup Now* needs a saved backup configuration. The backup list reports the storage error — a missing
 bucket, wrong credentials — instead of showing an empty list. Scheduled and cron backups run on the
 leader only, so a multi-master cluster takes one backup per run.
 

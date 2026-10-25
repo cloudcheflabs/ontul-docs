@@ -77,6 +77,31 @@ curl -X POST http://localhost:8080/v1/api/job/submit \
   }'
 ```
 
+The same endpoint also takes a Flow-style **nested spec** — the JSON a Flow or `SUBMIT STREAMING`
+uses — either in `config` or as the `sql` text:
+
+```bash
+curl -X POST http://localhost:8080/v1/api/job/submit \
+  -H "Authorization: Token $ONTUL_USER_TOKEN" -H "Content-Type: application/json" \
+  -d '{
+    "name": "orders-to-iceberg",
+    "type": "STREAMING",
+    "config": {
+      "kafka": {"connectionId": "kafka-prod", "topic": "orders", "format": "json", "groupId": "orders-ice"},
+      "sink": {"type": "table", "table": "ice.sales.orders"},
+      "operations": [], "commitIntervalMs": 2000, "numWorkers": 1
+    }
+  }'
+```
+
+A nested spec goes through `SUBMIT STREAMING`, so its source and sink tables are authorized exactly as in
+SQL (`data:Select` / `data:Insert`, plus `data:Update` / `data:Delete` for upsert and CDC writes); a user
+who may not write the sink table gets `403`. In the flat form, `sink.table` is authorized as `data:Insert`.
+
+The job API answers for the caller: `list` and `history` show your own jobs (administrators see all),
+`status/{id}` and `{id}/log` answer `404` for another user's job, `kill/{id}` needs to be your job or
+`data:KillJob`, and the job's statement and configuration come back with secrets masked.
+
 #### CLASS Job (Custom Java)
 
 ```bash
@@ -88,6 +113,8 @@ curl -X POST http://localhost:8080/v1/api/deps \
   --data-binary @my-etl-job.jar
 
 # Response: {"path": "deps/my-etl-job.jar"}
+# The file name is a plain name: letters, digits, '.', '_', '+', '-'. A name with '/', '\\' or '..' is refused
+# (400), so an upload can never land outside the dependency directory.
 
 # 2. Submit CLASS job
 curl -X POST http://localhost:8080/v1/api/job/submit \

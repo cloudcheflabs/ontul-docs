@@ -31,7 +31,7 @@ Every policy is a JSON document with a `Version` and a list of `Statement`s. Eac
 | `data:Select` | Read rows — gates an actual scan |
 | `data:SelectTable` | Metadata-only read — gates *discovery*: listing or describing a semantic view, a retriever, a catalog table. Distinct from `data:Select`, and what a retriever invoke is authorized under |
 | `data:Insert` / `data:Update` / `data:Delete` / `data:Merge` | Write / row-level DML |
-| `data:CreateTable` / `data:DropTable` / `data:AlterTable` | DDL |
+| `data:CreateTable` / `data:DropTable` / `data:AlterTable` | DDL. `CREATE SCHEMA` / `DROP SCHEMA` need `data:CreateTable` / `data:DropTable` on `data:schema:<catalog>.<schema>`; `DROP TABLE` / `DROP VIEW` need `data:DropTable`, `CREATE VIEW` `data:CreateTable`, and `ALTER TABLE`, `OPTIMIZE`, `VACUUM`, `EXPIRE SNAPSHOTS` `data:AlterTable` on `data:table:<catalog>.<schema>.<table>`. `CREATE TABLE` / CTAS is authorized as `data:Insert` on the new table |
 | `data:KillJob` / `data:CancelQuery` | Job / query control |
 | `UDF:EXECUTE` / `UDF:CREATE` / `UDF:DROP` | User-defined function use / authoring |
 | `UDF:CREATE_GLOBAL` / `UDF:DROP_GLOBAL` | Global (cluster-wide) UDF authoring |

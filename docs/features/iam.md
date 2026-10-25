@@ -91,6 +91,13 @@ Both the tables a query **reads** and the table it **writes** are authorized, ea
 | `UPDATE t SET …` | **target `t`** | `data:Update` |
 | `DELETE FROM t …` | **target `t`** | `data:Delete` |
 
+**Catalog DDL is authorized too.** `CREATE SCHEMA`, `DROP SCHEMA`, `DROP TABLE`, `DROP VIEW`, `CREATE VIEW`,
+`ALTER TABLE`, `OPTIMIZE`, `VACUUM` and the other maintenance statements need `data:CreateTable`,
+`data:DropTable` or `data:AlterTable` on the schema (`data:schema:<catalog>.<schema>`) or table resource —
+see the [action namespace](iam-policy-templates.md#action-namespace). A user with no matching policy is
+refused, like any other statement. Scheduled table maintenance runs as the internal principal `system`,
+which is not an IAM user and cannot be created as one.
+
 The write **target** is authorized in addition to the read sources: granting a user `data:Select` on a table does **not** let them `INSERT`/`UPDATE`/`DELETE` into it — a separate `data:Insert`/`data:Update`/`data:Delete` grant (or a wildcard such as `data:*`) on that table resource is required. So the `SalesReadWrite` example above (`["data:Select","data:Insert"]` on `data:table:ice.sales.*`) permits both reading and inserting across the `ice.sales` schema, while a read-only policy that lists only `data:Select` blocks every write to those tables.
 
 The engine authorization is the enforcement point the [chango Trino / Spark / Flink authz plugins](../index.md) also call over REST — so the same policy governs a table whether it is touched by an external engine or by an Ontul SQL statement.

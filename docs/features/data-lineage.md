@@ -115,6 +115,9 @@ Ontul is not only the source of lineage — it is also a **collection point** fo
 
 The endpoint lives at the server root, **not** under `/admin`:
 
+Recording lineage needs administrator access (engine plugins use an administrator's token): the graph is
+governance metadata every user reads, so a non-administrator gets `403`.
+
 ```
 POST /v1/api/lineage
 Authorization: Token <ontul-token>        # or: Bearer <jwt> / AccessKey

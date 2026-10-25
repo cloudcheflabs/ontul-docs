@@ -17,6 +17,22 @@ Any Master accepts both reads and writes — clients never need to know which Ma
 - **Metadata recorded as a side effect on a follower** — audit records, lineage edges, the live status and run history of a Flow owned by that follower, UDF and materialized-view definitions created by SQL on it — is written locally and also forwarded to the leader, which stores it and replicates it back. Replication itself stays one-way (leader → followers): without the forward, the next leader snapshot would replace the follower's copy and the record would be lost. See `ontul.metadata.forward.*` in the [configuration reference](../reference/configuration.md#metadata). A follower receives a snapshot for every replicated write, but rebuilds its query catalogs only when a catalog definition or a semantic view actually changed — so a stream of audit records does not disturb the queries running on it.
 - **Table data written by SQL DML** (`INSERT`, `CREATE TABLE`, `MERGE`, …) commits to the **external catalog/storage the connector points at** — Iceberg-on-Polaris + object storage, JDBC, etc. — which is the shared source of truth. Ontul is a processing engine, not a store, so no divergent per-Master copy of table data exists and nothing is lost if a follower dies mid-session.
 
+### Sessions and catalogs behind a load balancer
+
+- **Login, token refresh and logout are served by the leader.** Refresh tokens live in the session store
+  the leader replicates; a follower forwards these three calls, so a refresh never lands on a master that
+  does not know the session (which used to log users out at every other refresh).
+- **Right after a restart.** The console's own files are served on a pool of their own, so the page
+  loads even while API calls wait for a leader that is still starting. A forwarded sign-in that the
+  leader does not answer within 15 seconds gets `503` ("the leader master is not answering yet") instead
+  of holding a thread for a minute; retry after a few seconds.
+- **IAM replicates with STS sessions alive.** Temporary credentials are part of the IAM snapshot; a field
+  the follower could not read used to make every IAM sync fail while any STS session existed.
+- **A follower applies catalog changes incrementally.** When the leader's metadata changes, the follower
+  rebuilds only the catalogs that were added, removed or changed — off the sync thread — instead of
+  reconnecting every catalog; the leader gets its acknowledgement at once and queries on the follower
+  keep seeing every unchanged catalog.
+
 ### Leader-only background services
 
 Request handling is leader-unaware, but a few **background** services are cluster singletons and run

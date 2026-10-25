@@ -242,10 +242,15 @@ Source.kafka("events-kafka", "user-events")
 # List all connections (no credentials returned)
 GET /admin/connections
 
-# Test a connection without exposing secrets
+# Test a connection with its stored credentials (administrators; secrets are never returned)
 POST /admin/connections/test
-{"id": "warehouse-s3"}
+{"connectionId": "warehouse-s3", "prefix": "s3://warehouse/raw/"}   # prefix: S3 only, optional
+# -> {"ok": true, "message": "Connected: bucket 'warehouse' is readable and 'raw/' has objects"}
 ```
+
+Every type can be tested: S3 lists the bucket, JDBC and NeorunBase log in, Kafka asks for its brokers and
+topics, REST / RERANK / Elasticsearch must answer an HTTP `GET`, and DECIDE answers one real question —
+see [Admin UI → Connections](admin-ui.md#connections).
 
 The list response returns IDs, types, and non-secret properties only — encrypted fields (`secretKey`, `password`, `sasl.jaas.config`, …) are masked.
 
