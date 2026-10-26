@@ -7,10 +7,17 @@ Three trigger modes share the same backup/restore implementation:
 | Trigger | Where it's configured | When to use |
 |---|---|---|
 | **Manual** | Admin UI → *Backup & Restore* → *Backup Now*, or `POST /admin/backup/run` | Before destructive ops (schema migrations, KMS key rotation) |
-| **Fixed-interval** | `intervalHours` field on `/admin/backup/configure` | Safety net: "every N hours, no matter what" |
-| **Cron** | `/admin/backup/cron`, or the *Cron Schedule* card in the Admin UI | Wall-clock schedules: "every night at 02:00" |
+| **Fixed-interval** | *Auto Backup Interval* in the Admin UI, or `intervalHours` on `/admin/backup/configure` | Safety net: "every N hours, no matter what" |
+| **Cron** | *Cron Expression* in the Admin UI, or `cron` on `/admin/backup/configure` (also `/admin/backup/cron`) | Wall-clock schedules: "every night at 02:00" |
 
-The two automatic modes coexist — if both are set, ontul fires both. Clear one (`intervalHours: 0` or empty cron) to use only the other.
+The two automatic modes are independent:
+
+| Interval | Cron | What runs |
+|---|---|---|
+| `0` | empty | no automatic backup |
+| `N` | empty | every N hours |
+| `0` | `0 2 * * *` | the cron only |
+| `N` | `0 2 * * *` | both (each fires on its own schedule) |
 
 ## Setting up S3 storage
 
@@ -47,7 +54,28 @@ curl -X POST http://localhost:8080/admin/backup/configure \
   }'
 ```
 
-The settings are persisted in the metadata store and survive restarts — a fresh leader picks up the same target without re-running `configure`.
+`configure` checks everything before it saves anything, and saves all of it or nothing:
+
+- `connectionId` must name an existing **S3** connection and `s3Prefix` must be an `s3://bucket[/path]`
+  location (a valid bucket name); `intervalHours` is `0`–`8784`; `cron`, when given, is a 5-field UNIX
+  cron expression (the same grammar as table maintenance).
+- The target is then checked with the connection's own keys — the bucket is read (HEAD + a one-key
+  listing under the prefix) and a probe object is written under the prefix and deleted again — so a
+  missing bucket, a read-only key or a wrong endpoint is reported when you save, not by the first
+  scheduled backup. Turning every schedule off on the target already saved skips this check, so you can
+  always stop backups to a bucket that has gone away.
+- A refused save answers `400` with a message naming the field or the S3 reason, for example
+  `s3Prefix is required: an S3 location such as s3://bucket/path` or
+  `S3 check failed for s3://no-such-bucket/b with connection 'objstore': bucket 'no-such-bucket' is not readable: not found (no such bucket) [NoSuchBucket] — nothing was saved`.
+- A successful save answers `{"status":"ok","config":{...}}` with the schedule now in force, including
+  `intervalNextFireMillis` and `cronNextFireMillis` (0 when that schedule is off) and `cronTimeZone`.
+
+`cron` is optional in the body: **absent** leaves the current cron schedule as it is (callers written
+before cron existed), **`""` or `null`** clears it.
+
+The settings are persisted in the metadata store and survive restarts. Every master re-reads them
+(on each 30-second scheduler tick and whenever the configuration is read), so a master that becomes
+leader runs — and reports — the schedule saved last, not the one it booted with.
 
 ## Cron-driven backup
 
@@ -71,7 +99,7 @@ curl -X POST http://localhost:8080/admin/backup/cron \
 
 The cron expression persists under `backup.cron` in the metadata store, so a restart or leader change re-arms the same schedule.
 
-The combined-form endpoint also accepts cron, useful for setting everything in one round-trip from the Admin UI:
+The combined-form endpoint takes the cron too — this is what the Admin UI's **Save Config** sends:
 
 ```bash
 curl -X POST http://localhost:8080/admin/backup/configure \
@@ -101,7 +129,7 @@ Backup ids are unique per master: a second backup started in the same second as 
 
 The history is exposed at `GET /admin/backup/history` (last 100 entries) and the available backup ids at `GET /admin/backup/list` (newest first).
 
-`/admin/backup/list` checks that the bucket exists before listing it and pages through every backup under the prefix. When the target cannot be read — a missing bucket, wrong credentials, a deleted connection — it answers `502` with the storage error, and the Admin UI shows that error instead of "No backups found". With no backup configured it answers `[]`. *Backup Now* in the UI is enabled only once a configuration has been saved. Saving a configuration always re-arms the interval schedule (an interval of `0` turns it off).
+`/admin/backup/list` checks that the bucket exists before listing it and pages through every backup under the prefix. When the target cannot be read — a missing bucket, wrong credentials, a deleted connection — it answers `502` with the storage error, and the Admin UI shows that error instead of "No backups found". With no backup configured it answers `[]`. *Backup Now* in the UI is enabled only once a configuration has been saved. Saving a configuration always re-arms the interval schedule (an interval of `0` turns it off). Since a configuration can only be saved after its bucket passed the check above, a `502` from the list now means the target broke after it was saved (bucket deleted, key revoked).
 
 Scheduled and cron backups run on the **leader only**: every master keeps the schedule, but a follower's tick does nothing, so a three-master cluster takes one backup per run rather than three. All backup endpoints, including the reads, need administrator access.
 
@@ -143,8 +171,8 @@ The Admin UI exposes this as a *Restore* button on each entry in the *Available 
 
 | Method | Path | Body | Purpose |
 |---|---|---|---|
-| `GET` | `/admin/backup/config` | — | Current config + scheduler state (`cron`, `cronScheduled`, `cronNextFireMillis`) |
-| `POST` | `/admin/backup/configure` | `{connectionId, s3Prefix, intervalHours, cron?}` | Set connection / prefix / fixed-interval / cron in one call |
+| `GET` | `/admin/backup/config` | — | Current config + scheduler state (`scheduled`, `intervalNextFireMillis`, `cron`, `cronScheduled`, `cronNextFireMillis`, `cronTimeZone`, last backup) |
+| `POST` | `/admin/backup/configure` | `{connectionId, s3Prefix, intervalHours, cron?}` | Validate, check the bucket (read + probe write/delete) and save connection / prefix / fixed-interval / cron in one call; `400` with the reason otherwise |
 | `POST` | `/admin/backup/cron` | `{cron: string \| null}` | Set or clear the cron schedule |
 | `POST` | `/admin/backup/run` | — | Trigger a backup immediately |
 | `POST` | `/admin/backup/restore` | `{backupId}` | Restore from a specific backup id |

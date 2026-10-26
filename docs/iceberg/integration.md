@@ -254,6 +254,31 @@ WHEN NOT MATCHED THEN INSERT (id, region, amount) VALUES (s.id, s.region, s.amou
 
 The alias column list (`s (id, region, amount)`) is applied positionally to the source columns, so `ON` / `SET` / `INSERT` can reference them by name. Both `AS s (...)` and `s (...)` spellings are accepted.
 
+**How rows match, and what MERGE refuses.**
+
+- Key columns are compared as values of the **target column's type**: `DECIMAL` `1.5` matches a stored
+  `1.50`, a `DATE` from the source matches the stored date, a `DOUBLE` `1.0` matches an `INT` `1`. (They
+  used to be compared as text of whatever each side decoded to, so such a row read as *not matched* and
+  `WHEN NOT MATCHED THEN INSERT` added it a second time.) A source value that cannot be converted to the
+  key column's type matches nothing.
+- A target row matched by **more than one source row** fails the MERGE — `MERGE: one target row matched
+  more than one source row (...); make the USING query return at most one row per key` — as in the SQL
+  standard and Trino. The first source row used to win and the others were inserted as duplicates.
+- An `UPDATE` that changes a **partition column** writes the row into its new partition.
+- The commit is validated against concurrent writers: the data files it deletes from must still exist,
+  and no conflicting data or delete files for its keys may have been committed since it read the table.
+  When a compaction (`OPTIMIZE`, maintenance `rewrite_data_files`), a streaming append/upsert or another
+  MERGE got there first, the MERGE re-reads the table and tries again, up to `ontul.merge.commit.attempts`
+  (default 4); after that it fails and changes nothing. (Without the check, a compaction committed during
+  a MERGE left the old row in the compacted file next to the updated one.) `UPDATE` and `DELETE` validate
+  the same way and fail instead of committing over a rewritten file.
+- The SQL page's row cap (`ontul.admin.query.max.rows`) applies to the rows a `SELECT` shows only; the
+  `USING` query of a MERGE (and any query a DML statement runs) always reads every row. It used to inherit
+  the cap, so a MERGE run from the SQL page or `/admin/query/execute` processed only the first 1001
+  source rows.
+- On a v3 table, a repeated MERGE replaces the deletion vector only of the data files it deletes from;
+  the vectors of other files stay as they are.
+
 ### Format version 3 — deletion vectors
 
 Ontul reads and writes Iceberg **format-version 3**. The headline v3 feature is the **deletion vector**, which replaces position-delete files: instead of writing a parquet file of `(file_path, pos)` rows, a v3 table stores a roaring bitmap of deleted row positions for each data file inside a [Puffin](https://iceberg.apache.org/puffin-spec/) file (`deletion-vector-v1` blob). Deletion vectors are more compact and far cheaper to apply at read time (a bitmap membership test instead of a join against delete rows).
