@@ -2770,17 +2770,48 @@
 </tr>
 <tr>
 <td><strong>Fixed-interval</strong></td>
-<td><code>intervalHours</code> field on <code>/admin/backup/configure</code></td>
+<td><em>Auto Backup Interval</em> in the Admin UI, or <code>intervalHours</code> on <code>/admin/backup/configure</code></td>
 <td>Safety net: "every N hours, no matter what"</td>
 </tr>
 <tr>
 <td><strong>Cron</strong></td>
-<td><code>/admin/backup/cron</code>, or the <em>Cron Schedule</em> card in the Admin UI</td>
+<td><em>Cron Expression</em> in the Admin UI, or <code>cron</code> on <code>/admin/backup/configure</code> (also <code>/admin/backup/cron</code>)</td>
 <td>Wall-clock schedules: "every night at 02:00"</td>
 </tr>
 </tbody>
 </table>
-<p>The two automatic modes coexist — if both are set, ontul fires both. Clear one (<code>intervalHours: 0</code> or empty cron) to use only the other.</p>
+<p>The two automatic modes are independent:</p>
+<table>
+<thead>
+<tr>
+<th>Interval</th>
+<th>Cron</th>
+<th>What runs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>empty</td>
+<td>no automatic backup</td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td>empty</td>
+<td>every N hours</td>
+</tr>
+<tr>
+<td><code>0</code></td>
+<td><code>0 2 * * *</code></td>
+<td>the cron only</td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td><code>0 2 * * *</code></td>
+<td>both (each fires on its own schedule)</td>
+</tr>
+</tbody>
+</table>
 <h2 id="setting-up-s3-storage">Setting up S3 storage</h2>
 <p>Backups go to an S3 bucket (or any S3-compatible store like shannonstore) accessed through an entry in the <strong>Connection Store</strong>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/connections<span class="w"> </span><span class="se">\</span>
@@ -2809,7 +2840,27 @@
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="s1">    &quot;intervalHours&quot;: 0</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="s1">  }&#39;</span>
 </code></pre></div>
-<p>The settings are persisted in the metadata store and survive restarts — a fresh leader picks up the same target without re-running <code>configure</code>.</p>
+<p><code>configure</code> checks everything before it saves anything, and saves all of it or nothing:</p>
+<ul>
+<li><code>connectionId</code> must name an existing <strong>S3</strong> connection and <code>s3Prefix</code> must be an <code>s3://bucket[/path]</code>
+  location (a valid bucket name); <code>intervalHours</code> is <code>0</code>–<code>8784</code>; <code>cron</code>, when given, is a 5-field UNIX
+  cron expression (the same grammar as table maintenance).</li>
+<li>The target is then checked with the connection's own keys — the bucket is read (HEAD + a one-key
+  listing under the prefix) and a probe object is written under the prefix and deleted again — so a
+  missing bucket, a read-only key or a wrong endpoint is reported when you save, not by the first
+  scheduled backup. Turning every schedule off on the target already saved skips this check, so you can
+  always stop backups to a bucket that has gone away.</li>
+<li>A refused save answers <code>400</code> with a message naming the field or the S3 reason, for example
+  <code>s3Prefix is required: an S3 location such as s3://bucket/path</code> or
+  <code>S3 check failed for s3://no-such-bucket/b with connection 'objstore': bucket 'no-such-bucket' is not readable: not found (no such bucket) [NoSuchBucket] — nothing was saved</code>.</li>
+<li>A successful save answers <code>{"status":"ok","config":{...}}</code> with the schedule now in force, including
+  <code>intervalNextFireMillis</code> and <code>cronNextFireMillis</code> (0 when that schedule is off) and <code>cronTimeZone</code>.</li>
+</ul>
+<p><code>cron</code> is optional in the body: <strong>absent</strong> leaves the current cron schedule as it is (callers written
+before cron existed), <strong><code>""</code> or <code>null</code></strong> clears it.</p>
+<p>The settings are persisted in the metadata store and survive restarts. Every master re-reads them
+(on each 30-second scheduler tick and whenever the configuration is read), so a master that becomes
+leader runs — and reports — the schedule saved last, not the one it booted with.</p>
 <h2 id="cron-driven-backup">Cron-driven backup</h2>
 <p>Use a 5-field UNIX cron expression (same grammar as the kiok DAG scheduler):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/cron<span class="w"> </span><span class="se">\</span>
@@ -2824,7 +2875,7 @@
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;cron&quot;: null}&#39;</span>
 </code></pre></div>
 <p>The cron expression persists under <code>backup.cron</code> in the metadata store, so a restart or leader change re-arms the same schedule.</p>
-<p>The combined-form endpoint also accepts cron, useful for setting everything in one round-trip from the Admin UI:</p>
+<p>The combined-form endpoint takes the cron too — this is what the Admin UI's <strong>Save Config</strong> sends:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/configure<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
@@ -2845,7 +2896,7 @@
 </code></pre></div>
 <p>Backup ids are unique per master: a second backup started in the same second as the previous one takes the next free second, so two backups never write the same files.</p>
 <p>The history is exposed at <code>GET /admin/backup/history</code> (last 100 entries) and the available backup ids at <code>GET /admin/backup/list</code> (newest first).</p>
-<p><code>/admin/backup/list</code> checks that the bucket exists before listing it and pages through every backup under the prefix. When the target cannot be read — a missing bucket, wrong credentials, a deleted connection — it answers <code>502</code> with the storage error, and the Admin UI shows that error instead of "No backups found". With no backup configured it answers <code>[]</code>. <em>Backup Now</em> in the UI is enabled only once a configuration has been saved. Saving a configuration always re-arms the interval schedule (an interval of <code>0</code> turns it off).</p>
+<p><code>/admin/backup/list</code> checks that the bucket exists before listing it and pages through every backup under the prefix. When the target cannot be read — a missing bucket, wrong credentials, a deleted connection — it answers <code>502</code> with the storage error, and the Admin UI shows that error instead of "No backups found". With no backup configured it answers <code>[]</code>. <em>Backup Now</em> in the UI is enabled only once a configuration has been saved. Saving a configuration always re-arms the interval schedule (an interval of <code>0</code> turns it off). Since a configuration can only be saved after its bucket passed the check above, a <code>502</code> from the list now means the target broke after it was saved (bucket deleted, key revoked).</p>
 <p>Scheduled and cron backups run on the <strong>leader only</strong>: every master keeps the schedule, but a follower's tick does nothing, so a three-master cluster takes one backup per run rather than three. All backup endpoints, including the reads, need administrator access.</p>
 <h2 id="restore">Restore</h2>
 <p>Restore is destructive — it overwrites the current stores. Ontul runs it in three phases on the leader:</p>
@@ -2890,13 +2941,13 @@ rather than assuming the window you opened is still open.</p>
 <td><code>GET</code></td>
 <td><code>/admin/backup/config</code></td>
 <td>—</td>
-<td>Current config + scheduler state (<code>cron</code>, <code>cronScheduled</code>, <code>cronNextFireMillis</code>)</td>
+<td>Current config + scheduler state (<code>scheduled</code>, <code>intervalNextFireMillis</code>, <code>cron</code>, <code>cronScheduled</code>, <code>cronNextFireMillis</code>, <code>cronTimeZone</code>, last backup)</td>
 </tr>
 <tr>
 <td><code>POST</code></td>
 <td><code>/admin/backup/configure</code></td>
 <td><code>{connectionId, s3Prefix, intervalHours, cron?}</code></td>
-<td>Set connection / prefix / fixed-interval / cron in one call</td>
+<td>Validate, check the bucket (read + probe write/delete) and save connection / prefix / fixed-interval / cron in one call; <code>400</code> with the reason otherwise</td>
 </tr>
 <tr>
 <td><code>POST</code></td>

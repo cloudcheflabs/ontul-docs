@@ -3089,7 +3089,11 @@
 <li>The sidebar groups the pages (Core Infrastructure, Governance, Integrations, Semantic &amp; AI, Analytics) and
   can be collapsed to icons with the button at its top edge; collapsed links keep their name as a tooltip.</li>
 <li>The version shown under the sidebar and on the login page is the running server's own
-  (<code>GET /admin/health</code> returns it from the build), not a string compiled into the UI.</li>
+  (<code>GET /admin/health</code> returns it from the build), not a string compiled into the UI. Every release of a
+  version is labelled the same (<code>1.0.0</code>), so <code>/admin/health</code> also returns <code>build</code> — the commit the
+  package was built from and its time, e.g. <code>{"status":"ok","version":"1.0.0","build":"e52b9527ee
+  2026-10-26T07:44:13+09:00"}</code> — and each master logs it at startup. Quote it in a problem report to
+  say exactly which build is running.</li>
 <li>The header shows who is signed in and whether they are an <strong>Administrator</strong> or a <strong>User</strong>, a
   <strong>Change password</strong> button (any user, not only administrators) and <strong>Sign out</strong>. Signing out revokes the
   session's refresh token on the server.</li>
@@ -3461,8 +3465,20 @@ statement with its result and duration.</p>
 <p>Switch the dependency, spill, exchange and job-log backends between local disk and S3 <strong>at runtime,
 cluster-wide, with no restart</strong> — the change is persisted to the replicated metadata store and pushed to
 every node. One S3 connection and base prefix cover all four (<code>&lt;prefix&gt;/spill</code>, <code>&lt;prefix&gt;/job-logs</code>,
-<code>&lt;prefix&gt;/exchange</code>). <strong>Test Connection</strong> checks the bucket of the prefix with the stored keys. Job logs of
-work running on workers are shipped to <code>&lt;prefix&gt;/job-logs</code> once S3 is chosen.</p>
+<code>&lt;prefix&gt;/exchange</code>). <strong>Test Connection</strong> checks the bucket of the prefix with the stored keys — it reads
+the bucket and writes and deletes a probe object under the prefix. Job logs of work running on workers
+are shipped to <code>&lt;prefix&gt;/job-logs</code> once S3 is chosen.</p>
+<p>With an S3 connection chosen, <strong>S3 Base Prefix is required</strong>: <em>Save &amp; Sync</em> is blocked and the field is
+marked until it holds an <code>s3://bucket/path</code> location. The server enforces the same rule for
+<code>POST /admin/config/storage</code> — an area with a connection and no (or an invalid) prefix is refused with
+<code>400</code> naming the field (e.g. <code>deps.s3Prefix is required for an S3 backend</code>), as is a prefix without a
+connection, a connection that does not exist or is not S3, and an unknown setting name. (Saving only a
+connection used to answer "ok" and store empty prefixes for all four areas.) Before anything is stored,
+the save makes the same check as Test Connection for every area — bucket read, then a probe object
+written and deleted under the prefix — and a failure is refused with the reason shown on the page,
+e.g. <code>S3 check failed for deps.s3Prefix s3://no-such-bucket/x with connection 'objstore': bucket
+'no-such-bucket' is not readable: not found (no such bucket) [NoSuchBucket] — nothing was saved</code>.
+After a save the page reloads what the server stored.</p>
 <p>With S3 chosen, the job <strong>history</strong> (each job's final state) is kept on the master's disk and also copied
 to <code>&lt;prefix&gt;/job-logs/jobHistory/</code> with the same connection's keys, so a job's status reads
 <code>COMPLETED</code> / <code>FAILED</code> from any master behind a load balancer, and after a master is replaced. (It used
@@ -3540,7 +3556,7 @@ files a running write has not committed yet), and a valid 5-field cron expressio
 accepts any table name and suggests tables seen in health data and maintenance history. After <strong>Run
 Now</strong>, the history refreshes until the run finishes.</p>
 <h3 id="backup-restore">Backup &amp; Restore</h3>
-<p>Backup the cluster's KMS / IAM / metadata stores and connections to S3 and restore from any prior backup. The page exposes manual <em>Backup Now</em>, a fixed-interval schedule, and a 5-field UNIX <strong>cron schedule</strong> (e.g. <code>0 2 * * *</code>); the next-fire timestamp is shown next to an active cron so you can see at a glance when the next run will land. See <a href="../backup-restore/">Backup &amp; Restore</a> for the full flow.</p>
+<p>Backup the cluster's KMS / IAM / metadata stores and connections to S3 and restore from any prior backup. The page exposes manual <em>Backup Now</em> and one <strong>Configuration</strong> form: S3 connection, S3 prefix, <em>Auto Backup Interval</em> (hours, 0 = off) and <em>Cron Expression</em> (5-field UNIX, e.g. <code>0 2 * * *</code>, empty = none). <strong>Save Config</strong> sends all four fields in one request — the cron typed on the page used to be left out, so it could be seen but not set or changed. The page checks the fields first (connection chosen, <code>s3://bucket/path</code> prefix, 5 cron fields) and marks the ones that are wrong; the server repeats those checks, validates the cron values and checks the bucket with the connection's keys (read, then write and delete a probe object), and a refusal is shown under the button with its reason. After a save the page reads the configuration back and shows <strong>what the server has scheduled</strong> — "Every N hours — next run …" and "Cron … (time zone) — next run …", or "No automatic backup is scheduled" — rather than the values that were typed. <strong>Turn Off Schedules</strong> clears both. See <a href="../backup-restore/">Backup &amp; Restore</a> for the full flow.</p>
 <p>Backups are listed newest first with their UTC time; <strong>Restore</strong> asks for confirmation listing what is
 overwritten (KMS, IAM, metadata, connections). The job history shows every backup and restore with its
 time and duration. The form stays disabled until the saved configuration has loaded, so a value typed

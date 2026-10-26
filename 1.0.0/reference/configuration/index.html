@@ -4244,6 +4244,21 @@ metadata store as <code>storage.jobLogs.*</code> / <code>storage.exchange.*</cod
 <td>Most rows the Admin UI's SQL Query page receives for one statement. Planned into the query as a <code>LIMIT</code> (added when missing, lowered when larger), so the scan stops early; the page then says the result was truncated. <code>/v1/api/sql</code>, Flight SQL / JDBC and jobs are not capped. <code>0</code> disables the cap.</td>
 </tr>
 <tr>
+<td><code>ontul.admin.forward.query.timeout.seconds</code></td>
+<td><code>3600</code></td>
+<td>Seconds a follower master waits for the leader to answer a SQL statement it forwarded (SQL page, <code>/admin/query/execute</code>, <code>/v1/api/sql</code> behind a load balancer). A timeout is answered <code>504</code> saying the statement may still be running or may have completed — check Query History before retrying. (It used to be the general 60 s and answered "leader is not answering yet", inviting a second run of a long MERGE / OPTIMIZE / CTAS.)</td>
+</tr>
+<tr>
+<td><code>ontul.admin.forward.timeout.seconds</code></td>
+<td><code>60</code></td>
+<td>Seconds a follower master waits for the leader to answer any other forwarded admin request (sign-in calls use at most 15).</td>
+</tr>
+<tr>
+<td><code>ontul.merge.commit.attempts</code></td>
+<td><code>4</code></td>
+<td>How many times a <code>MERGE INTO</code> an Iceberg table is planned and committed when a concurrent commit (compaction, streaming append/upsert, another MERGE) conflicts with it. Each attempt re-reads the table; when all conflict the MERGE fails and changes nothing.</td>
+</tr>
+<tr>
 <td><code>ontul.admin.token.access.expiry.ms</code></td>
 <td><code>900000</code></td>
 <td>Lifetime (ms) of short-lived JWT access tokens issued after login. After expiry the client must use its refresh token to obtain a new access token (default 15 minutes).</td>

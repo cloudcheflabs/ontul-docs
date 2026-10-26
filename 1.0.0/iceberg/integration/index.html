@@ -3421,6 +3421,31 @@ truncate/identity</code> all round-trip correctly through the distributed commit
 <a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="k">WHEN</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="n">MATCHED</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">amount</span><span class="p">);</span>
 </code></pre></div>
 <p>The alias column list (<code>s (id, region, amount)</code>) is applied positionally to the source columns, so <code>ON</code> / <code>SET</code> / <code>INSERT</code> can reference them by name. Both <code>AS s (...)</code> and <code>s (...)</code> spellings are accepted.</p>
+<p><strong>How rows match, and what MERGE refuses.</strong></p>
+<ul>
+<li>Key columns are compared as values of the <strong>target column's type</strong>: <code>DECIMAL</code> <code>1.5</code> matches a stored
+  <code>1.50</code>, a <code>DATE</code> from the source matches the stored date, a <code>DOUBLE</code> <code>1.0</code> matches an <code>INT</code> <code>1</code>. (They
+  used to be compared as text of whatever each side decoded to, so such a row read as <em>not matched</em> and
+  <code>WHEN NOT MATCHED THEN INSERT</code> added it a second time.) A source value that cannot be converted to the
+  key column's type matches nothing.</li>
+<li>A target row matched by <strong>more than one source row</strong> fails the MERGE — <code>MERGE: one target row matched
+  more than one source row (...); make the USING query return at most one row per key</code> — as in the SQL
+  standard and Trino. The first source row used to win and the others were inserted as duplicates.</li>
+<li>An <code>UPDATE</code> that changes a <strong>partition column</strong> writes the row into its new partition.</li>
+<li>The commit is validated against concurrent writers: the data files it deletes from must still exist,
+  and no conflicting data or delete files for its keys may have been committed since it read the table.
+  When a compaction (<code>OPTIMIZE</code>, maintenance <code>rewrite_data_files</code>), a streaming append/upsert or another
+  MERGE got there first, the MERGE re-reads the table and tries again, up to <code>ontul.merge.commit.attempts</code>
+  (default 4); after that it fails and changes nothing. (Without the check, a compaction committed during
+  a MERGE left the old row in the compacted file next to the updated one.) <code>UPDATE</code> and <code>DELETE</code> validate
+  the same way and fail instead of committing over a rewritten file.</li>
+<li>The SQL page's row cap (<code>ontul.admin.query.max.rows</code>) applies to the rows a <code>SELECT</code> shows only; the
+  <code>USING</code> query of a MERGE (and any query a DML statement runs) always reads every row. It used to inherit
+  the cap, so a MERGE run from the SQL page or <code>/admin/query/execute</code> processed only the first 1001
+  source rows.</li>
+<li>On a v3 table, a repeated MERGE replaces the deletion vector only of the data files it deletes from;
+  the vectors of other files stay as they are.</li>
+</ul>
 <h3 id="format-version-3-deletion-vectors">Format version 3 — deletion vectors</h3>
 <p>Ontul reads and writes Iceberg <strong>format-version 3</strong>. The headline v3 feature is the <strong>deletion vector</strong>, which replaces position-delete files: instead of writing a parquet file of <code>(file_path, pos)</code> rows, a v3 table stores a roaring bitmap of deleted row positions for each data file inside a <a href="https://iceberg.apache.org/puffin-spec/">Puffin</a> file (<code>deletion-vector-v1</code> blob). Deletion vectors are more compact and far cheaper to apply at read time (a bitmap membership test instead of a join against delete rows).</p>
 <p>On a v3 table, <code>DELETE</code> / <code>UPDATE</code> / <code>MERGE</code> write deletion vectors (one per touched data file, packed into a Puffin file) and commit a <code>RowDelta</code>; the read path detects the <code>PUFFIN</code>-format delete files and applies the bitmap. A repeated row-level operation on the same data file reads the existing vector, unions the new positions, and supersedes the old vector (a data file carries at most one deletion vector). The deletion-vector codec is hand-rolled to the Iceberg/Delta byte layout and verified against Iceberg's own reference reader, so other v3 engines read Ontul-written vectors.</p>
