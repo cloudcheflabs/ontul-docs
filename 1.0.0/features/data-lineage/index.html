@@ -2963,7 +2963,11 @@ table.</p>
 </tbody>
 </table>
 <h2 id="rest-api">REST API</h2>
-<p>Read-only lineage endpoints (any authenticated user):</p>
+<p>Read-only lineage endpoints (any authenticated user). Lineage names tables, so it follows the table
+read grants: for a non-administrator the table asked about must be one they may <code>data:Select</code> (else <code>403
+Access denied</code>), and only tables they may read appear in the answer — graph nodes and edges, impacted
+tables, column-lineage sources, PII-flow targets. <code>SHOW LINEAGE</code> / <code>SHOW LINEAGE COLUMNS</code> /
+<code>SHOW LINEAGE DOWNSTREAM</code> filter the same way. Administrators see the whole graph.</p>
 <table>
 <thead>
 <tr>

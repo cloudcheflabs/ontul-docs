@@ -3698,6 +3698,10 @@ see <a href="../iam-policy-templates/#ontology-certifier-domain-owner">IAM Polic
 as the rest of the admin surface. Reads are IAM-filtered on the backing read
 source; registration/deletion is administrator-gated; action invoke is gated on
 <code>ontology:InvokeAction</code>; certification on <code>ontology:Certify</code>.</p>
+<p>For a non-administrator, link types, action types and workflows follow the object types they rest on: a link
+type is listed (and fetchable) only when both of its object types are, an action type only when its object
+type is (its SQL template names the target table), a workflow only when every step's action type is;
+otherwise <code>GET</code> answers <code>403</code>. An action type with no object type (a pure OPERATION) stays visible.</p>
 <table>
 <thead>
 <tr>

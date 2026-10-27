@@ -3302,6 +3302,16 @@ the query engine; there is no separate introspection API, and adding one would g
 that could disagree about what a table looks like. A statement that fails is shown with the
 statement that failed rather than leaving an empty pane. A table that describes but will not read —
 permissions, a broken storage path — keeps its column list and reports only the preview as failed.</p>
+<p><strong>What a user sees.</strong> Every pane lists only what the signed-in user may read, by the same rule as the
+Flight SQL / JDBC catalog tree (see <a href="../bi-integration/">BI integration</a>): a table appears when the user
+may <code>data:Select</code> it (<code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code>, a Deny wins), a schema or a catalog when
+some table in it is readable or a policy grants all of it (<code>data:table:ice.sales.*</code>,
+<code>data:table:ice.*.*</code>). The catalog list (<code>GET /admin/catalogs</code>), <code>SHOW SCHEMAS</code> / <code>SHOW TABLES</code> and
+<code>DESCRIBE</code> are filtered on the server, so the same holds for the API and the SQL Query page: <code>DESCRIBE</code>
+or a preview (<code>SELECT</code>) of a table the user may not read answers <code>Access denied</code> instead of its columns
+or rows. For a non-administrator the catalog list carries no configuration or connection id, and
+its table count counts only the tables that user may read. A user with no policy sees no catalogs; administrators see everything. Earlier releases listed
+every catalog and showed any table's columns to any signed-in user.</p>
 <h3 id="catalogs">Catalogs</h3>
 <p>Register, unregister, and manage data source catalogs. View connector type, connection ID, table count, and configuration for each catalog.</p>
 <ul>
@@ -3436,7 +3446,8 @@ under a name that is already taken answers <code>409</code> instead of replacing
 <p>Table-level lineage graph built from executed DML, views, started flows and edges pushed by other
 engines: which sources feed which targets, each edge labelled with the operation that introduced it
 (<code>CTAS</code>, <code>INSERT_INTO</code>, <code>MERGE_INTO</code>, <code>VIEW</code>, …). Enter a table, pick direction and depth; click a node
-for its column-level lineage and downstream impact. See <a href="../data-lineage/">Data Lineage</a>.</p>
+for its column-level lineage and downstream impact. A non-administrator traces only from a table they
+may read and sees only the tables they may read in the graph. See <a href="../data-lineage/">Data Lineage</a>.</p>
 <h3 id="audit">Audit</h3>
 <p>Two pages over the <a href="../audit-log/">audit log</a>:</p>
 <ul>
@@ -3493,7 +3504,9 @@ One S3 connection and base prefix cover all four (dependencies directly under th
 </tbody>
 </table>
 <p>(Before this release dependency uploads kept the storage the master booted with until it restarted, and
-spill kept the worker's boot backend.) The page lists the same per-area summary under its title. <strong>Test Connection</strong> checks the bucket of the prefix with the stored keys — it reads
+spill kept the worker's boot backend.) The spill / exchange backend a switch replaces is closed on the
+worker once nothing uses it any more — at once, or when the last spill written to it is released or the last
+streaming job that started on it ends. The page lists the same per-area summary under its title. <strong>Test Connection</strong> checks the bucket of the prefix with the stored keys — it reads
 the bucket and writes and deletes a probe object under the prefix. Job logs of work running on workers
 are shipped to <code>&lt;prefix&gt;/job-logs</code> once S3 is chosen.</p>
 <p>With an S3 connection chosen, <strong>S3 Base Prefix is required</strong>: <em>Save &amp; Sync</em> is blocked and the field is
@@ -3583,6 +3596,9 @@ and <code>retain_last</code> at least 1, the orphan-file safety window at least 
 files a running write has not committed yet), and a valid 5-field cron expression. The table field
 accepts any table name and suggests tables seen in health data and maintenance history. After <strong>Run
 Now</strong>, the history refreshes until the run finishes.</p>
+<p>A non-administrator sees maintenance history only for tables they may read (<code>data:Select</code>), and reading
+the configuration of a table they may not read answers <code>403</code>; changing settings and running maintenance
+are administrator-only.</p>
 <h3 id="backup-restore">Backup &amp; Restore</h3>
 <p>Backup the cluster's KMS / IAM / metadata stores and connections to S3 and restore from any prior backup. The page exposes manual <em>Backup Now</em> and one <strong>Configuration</strong> form: S3 connection, S3 prefix, <em>Auto Backup Interval</em> (hours, 0 = off) and <em>Cron Expression</em> (5-field UNIX, e.g. <code>0 2 * * *</code>, empty = none). <strong>Save Config</strong> sends all four fields in one request — the cron typed on the page used to be left out, so it could be seen but not set or changed. The page checks the fields first (connection chosen, <code>s3://bucket/path</code> prefix, 5 cron fields) and marks the ones that are wrong; the server repeats those checks, validates the cron values and checks the bucket with the connection's keys (read, then write and delete a probe object), and a refusal is shown under the button with its reason. After a save the page reads the configuration back and shows <strong>what the server has scheduled</strong> — "Every N hours — next run …" and "Cron … (time zone) — next run …", or "No automatic backup is scheduled" — rather than the values that were typed. <strong>Turn Off Schedules</strong> clears both. See <a href="../backup-restore/">Backup &amp; Restore</a> for the full flow.</p>
 <p>Backups are listed newest first with their UTC time; <strong>Restore</strong> asks for confirmation listing what is

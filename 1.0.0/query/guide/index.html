@@ -3377,6 +3377,10 @@ return the previous outcome instead of applying the write twice. The statement r
 <a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">DESC</span>
 </code></pre></div>
 <p>Returns the physical execution plan showing SCAN, FILTER, PROJECT, and SORT operators.</p>
+<p>The plan is authorized like a run of the statement: it is planned first, then every table the plan scans
+(qualified by the planner, so unqualified names count too) and every name the statement writes must be
+readable by the caller (<code>data:Select</code>). Otherwise EXPLAIN answers <code>Access denied</code> and returns no plan —
+earlier releases returned the plan (columns, filters, files) of any table to any user.</p>
 <hr />
 <h2 id="cross-catalog-federation">Cross-Catalog Federation</h2>
 <p>Join data across different catalogs in a single SQL query:</p>

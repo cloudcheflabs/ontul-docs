@@ -3022,7 +3022,8 @@ anonymous user for whom IAM was skipped.) Ontul accepts these credential forms; 
 (Flight SQL <code>GetCatalogs</code> / <code>GetDbSchemas</code> / <code>GetTables</code>) and <code>SHOW CATALOGS</code> / <code>SHOW SCHEMAS</code> / <code>SHOW TABLES</code>
 list a table only when the caller may <code>data:Select</code> it, and a schema or catalog only when some table in it is
 readable (or a policy grants every table of it, e.g. <code>data:table:ice.sales.*</code>). A user with no policy sees an
-empty tree; administrators see everything.</p>
+empty tree; administrators see everything. <code>DESCRIBE</code> of a table the caller may not read answers <code>Access denied</code>,
+and the Admin UI's Catalog Browser and catalog list follow the same rule.</p>
 <h2 id="tableau-desktop-server">Tableau Desktop / Server</h2>
 <p>Tableau 2023.1+ ships the Arrow Flight SQL JDBC driver wiring; older versions need it added manually.</p>
 <h3 id="one-time-driver-setup">One-time driver setup</h3>
