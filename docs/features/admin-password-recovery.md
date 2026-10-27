@@ -42,9 +42,63 @@ rotation.
 | **Socket path marker** | `bin/master.socket` — written when the socket binds, removed on shutdown |
 | **Network surface** | none — Unix domain socket only |
 | **Downtime** | none — applied in-process on the live master |
-| **Cluster sync** | automatic — leader pushes the new state to followers |
+| **Cluster sync** | the leader applies the reset and pushes it to every node before answering; a follower forwards it to the leader (see [HA clusters](#ha-clusters)) |
 | **Audit log** | `data/iam-audit/reset.log` (mode `600`, append-only) |
 | **Post-reset state** | `requirePasswordChange = true` (forced rotation on next login) |
+
+## HA clusters
+
+IAM is owned by the leader master. Running `ontul-cli iam:reset-password` on a **follower** forwards the
+reset to the leader. The leader applies it, pushes the new IAM state to every master and worker, and only
+then answers; the follower also confirms that its own copy has the new password (pulling it from the
+leader if needed) and the CLI notes that the reset was applied on the leader. Running it on the leader
+applies it directly.
+
+If no leader is elected, or the leader does not answer within `ontul.admin.socket.forward.timeout.ms`
+(default `30000`), the CLI exits with status `1`, names the leader it tried and prints
+**"the password was NOT changed"**. A follower never changes the password on its own, and the leader
+discards a forwarded reset that reaches it too late, so a paused leader that comes back cannot apply a
+reset the CLI already reported as failed. (Before, a follower changed its own copy and broadcast its
+whole IAM snapshot, so a concurrent IAM change on the leader could silently undo the reset while the CLI
+reported success.)
+
+Every reset is written to the audit log with a fingerprint of the new password hash — the first 12 hex
+characters of its SHA-256, never the password or the hash — and its route: `forwardedTo=<leader>` on the
+follower and `forwardedFrom=<follower>` on the leader, with the same fingerprint, so one reset can be
+followed across both logs. (The fingerprint used to be the hash's first 8 characters, which is the
+algorithm tag `pbkdf2-s` for every password.)
+
+```properties
+# conf/ontul.properties
+# How long a follower waits for the leader to apply a forwarded CLI reset before failing with
+# "the password was NOT changed". Default 30000.
+ontul.admin.socket.forward.timeout.ms=30000
+```
+
+## Which Java the CLI uses
+
+`bin/ontul-cli.sh` (and every other launcher in `bin/`) runs `$JAVA_HOME/bin/java` when `JAVA_HOME` is set,
+otherwise the `java` on `PATH`. A JDK installed outside `PATH` (for example `/opt/openlogic-openjdk-17...`) works
+with just `JAVA_HOME`; the launchers used to run a bare `java` and failed with `exec: java: not found` (exit 127).
+If `JAVA_HOME` points at a directory without an executable `bin/java`, the launcher exits 1 and names it; with no
+Java at all it exits 1 with "Java not found. Install Java 17 or later, or set JAVA_HOME to its directory."
+
+## After a reset: change the password once
+
+A reset (generated or given) marks the account `requirePasswordChange`. Until the password is changed, every
+other API call answers `403 {"error":"Password change required: this account has an initial or reset password
+that must be changed first (POST /admin/auth/change-password)."}` and Flight SQL / JDBC refuses the login. The CLI
+prints the generated password alone on stdout (so `P=$(bin/ontul-cli.sh iam:reset-password)` captures just it)
+and a note with the two calls on stderr:
+
+```bash
+curl -s -X POST http://<master>:8080/admin/auth/login -H 'Content-Type: application/json' \
+     -d '{"username":"admin","password":"<reset password>"}'            # -> accessToken
+curl -s -X POST http://<master>:8080/admin/auth/change-password -H 'Authorization: Bearer <accessToken>' \
+     -H 'Content-Type: application/json' -d '{"oldPassword":"<reset password>","newPassword":"<new>"}'
+```
+
+Signing in to the Admin UI with the reset password asks for the new one the same way.
 
 ## Quick start
 

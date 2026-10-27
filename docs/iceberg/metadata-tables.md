@@ -17,7 +17,7 @@ Quote the table reference (`"orders$snapshots"`) so the `$` is taken literally.
 | `$refs` | Branches and tags — `name`, `type`, `snapshot_id`, retention settings. |
 | `$manifests` | Manifest files of the current snapshot with per-manifest file/row counts. |
 | `$files` | Data files of the current snapshot — `file_path`, `file_format`, `record_count`, `file_size_in_bytes`, column stats. |
-| `$partitions` | Per-partition `record_count`, `file_count`, `total_data_file_size_in_bytes`. |
+| `$partitions` | One row per partition: `partition` (its path, e.g. `d_day=2024-01-01`; `"partition"` must be quoted in SQL), `spec_id`, `record_count`, `file_count`, `total_data_file_size_in_bytes`. |
 | `$metadata_files` | The `metadata.json` log with `table_uuid` — detects table **recreation** (Ontul-specific; see below). |
 
 ## `$snapshots` — write statistics

@@ -94,7 +94,7 @@ small-file problem caused by frequent commits (especially streaming).
 | `window_hours` | int | — (whole table) | **ontul extension.** Compact only the append-only files added by commits in the last *N* hours. Delete-bearing files are skipped (run a full `optimize` for those). Ideal for streaming tables — you never rescan history. |
 | `window_cooldown_minutes` | int | `0` (ad-hoc) | **Concurrency-safety.** Exclude files added in the last *N* minutes — the "hot zone" an active writer is appending to. Pulls the window's upper bound back to `now − N min`. |
 | `seq_margin` | int | `0` (ad-hoc) | **Concurrency-safety.** Only rewrite files whose data sequence number is `≤ tip − margin`, i.e. committed strictly behind the live tip. Clock-independent "behind the writer". |
-| `skip_active_partitions` | bool | `false` (ad-hoc) | **Concurrency-safety.** Skip any partition written within the cooldown window, so compaction never touches a partition an active writer is appending to. |
+| `skip_active_partitions` | bool | `false` (ad-hoc) | **Concurrency-safety.** Skip any partition written within the cooldown window (`window_cooldown_minutes`), so compaction never touches a partition an active writer is appending to. A partition is *active* exactly when it was written within the cooldown: with a cooldown of `0` no partition is active. (A hidden 10-minute floor used to apply, so with cooldown 0 a freshly written partitioned table was never compacted while the same unpartitioned table was.) |
 | `max_commit_retries` | int | `3` (always on) | Bounded re-plan + retry on a concurrent-commit conflict (`CommitFailedException`/`ValidationException`). Pure safety net; absorbs transient races so nothing surfaces to the caller. |
 
 ```sql
@@ -126,6 +126,12 @@ strategy that keeps compaction strictly **behind** the writer:
   tip — clock-independent, so it's robust even with clock skew or bursty commits.
 - **Bounded retry** (`max_commit_retries`) re-plans and retries on any residual conflict, so transient
   races never surface to the caller.
+
+When these filters leave too few files to compact, the result says which files were left alone and why,
+e.g. `No compaction needed (12 files, 0 small cold, 0 rewritable, min_input_files=5; skipped 12 written within
+the cooldown (10 min))` or `...; skipped 3 in the last 1 commit(s) (seq_margin), 6 in 3 active partition(s)
+(written within the cooldown 10 min)`. Scheduled maintenance and **Run Now** record such a run in the history
+as **skipped** (with that text), not as a successful compaction and not silently.
 
 Defaults differ by caller: **ad-hoc `EXECUTE optimize` keeps the safety filters OFF** (predictable —
 rewrites the whole table just as before, but now with retry on), while **scheduled auto-maintenance
@@ -243,6 +249,22 @@ REMOVE ORPHAN FILES ice.sales.orders;
 >
 > ⚠️ `remove_orphan_files` requires S3 credentials in the catalog config and uses the table location
 > as the listing root — point catalogs at a dedicated prefix per table so the listing is bounded.
+>
+> The listing uses path-style S3 addressing against the catalog's `s3.endpoint`, exactly like every other
+> read, write and maintenance operation. It used to fall back to virtual-host style (`bucket.host`) unless the
+> catalog said `s3.pathStyle=true`, and failed with `UnknownHostException` on an endpoint such as
+> `http://nginx:80` while `expire_snapshots` / `rewrite_*` on the same table worked.
+
+**Errors carry their cause.** A failing maintenance operation reports the whole cause chain, ending with the
+root cause — e.g. `... See cause for the exact endpoint ... <- SdkClientException: Unable to execute HTTP
+request: s3-host <- UnknownHostException: s3-host` — in the SQL error, in the maintenance history entry and in
+the master log (with the stack trace).
+
+**History per table.** `GET /admin/maintenance/history` filters on one table (exact `catalog.schema.table`) by
+`?table=`, the `X-Table-Key` header, or the older `X-Table-Filter` header; plus `status` (`ok`, `skipped`,
+`error`), `operation`, `since`, `until` and `limit`. The Maintenance page has the same table filter above the
+Job History. `POST /admin/maintenance/run` without `tableKey`, with an unknown `operation`, or with a body that
+is not a JSON object answers `400` with a message (it used to be a `500`).
 
 ---
 
