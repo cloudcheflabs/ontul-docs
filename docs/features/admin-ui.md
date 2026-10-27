@@ -222,7 +222,8 @@ some table in it is readable or a policy grants all of it (`data:table:ice.sales
 `data:table:ice.*.*`). The catalog list (`GET /admin/catalogs`), `SHOW SCHEMAS` / `SHOW TABLES` and
 `DESCRIBE` are filtered on the server, so the same holds for the API and the SQL Query page: `DESCRIBE`
 or a preview (`SELECT`) of a table the user may not read answers `Access denied` instead of its columns
-or rows. A user with no policy sees no catalogs; administrators see everything. Earlier releases listed
+or rows. For a non-administrator the catalog list carries no configuration or connection id, and
+its table count counts only the tables that user may read. A user with no policy sees no catalogs; administrators see everything. Earlier releases listed
 every catalog and showed any table's columns to any signed-in user.
 
 ### Catalogs
@@ -509,6 +510,10 @@ and `retain_last` at least 1, the orphan-file safety window at least 24 hours (s
 files a running write has not committed yet), and a valid 5-field cron expression. The table field
 accepts any table name and suggests tables seen in health data and maintenance history. After **Run
 Now**, the history refreshes until the run finishes.
+
+A non-administrator sees maintenance history only for tables they may read (`data:Select`), and reading
+the configuration of a table they may not read answers `403`; changing settings and running maintenance
+are administrator-only.
 
 ### Backup & Restore
 

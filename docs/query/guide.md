@@ -290,6 +290,11 @@ ORDER BY price DESC
 
 Returns the physical execution plan showing SCAN, FILTER, PROJECT, and SORT operators.
 
+The plan is authorized like a run of the statement: it is planned first, then every table the plan scans
+(qualified by the planner, so unqualified names count too) and every name the statement writes must be
+readable by the caller (`data:Select`). Otherwise EXPLAIN answers `Access denied` and returns no plan —
+earlier releases returned the plan (columns, filters, files) of any table to any user.
+
 ---
 
 ## Cross-Catalog Federation
