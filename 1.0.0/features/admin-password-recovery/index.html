@@ -1492,6 +1492,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#ha-clusters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HA clusters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-java-the-cli-uses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which Java the CLI uses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#after-a-reset-change-the-password-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        After a reset: change the password once
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2883,7 +2916,7 @@ rotation.</p>
 </tr>
 <tr>
 <td><strong>Cluster sync</strong></td>
-<td>automatic — leader pushes the new state to followers</td>
+<td>the leader applies the reset and pushes it to every node before answering; a follower forwards it to the leader (see <a href="#ha-clusters">HA clusters</a>)</td>
 </tr>
 <tr>
 <td><strong>Audit log</strong></td>
@@ -2895,21 +2928,62 @@ rotation.</p>
 </tr>
 </tbody>
 </table>
+<h2 id="ha-clusters">HA clusters</h2>
+<p>IAM is owned by the leader master. Running <code>ontul-cli iam:reset-password</code> on a <strong>follower</strong> forwards the
+reset to the leader. The leader applies it, pushes the new IAM state to every master and worker, and only
+then answers; the follower also confirms that its own copy has the new password (pulling it from the
+leader if needed) and the CLI notes that the reset was applied on the leader. Running it on the leader
+applies it directly.</p>
+<p>If no leader is elected, or the leader does not answer within <code>ontul.admin.socket.forward.timeout.ms</code>
+(default <code>30000</code>), the CLI exits with status <code>1</code>, names the leader it tried and prints
+<strong>"the password was NOT changed"</strong>. A follower never changes the password on its own, and the leader
+discards a forwarded reset that reaches it too late, so a paused leader that comes back cannot apply a
+reset the CLI already reported as failed. (Before, a follower changed its own copy and broadcast its
+whole IAM snapshot, so a concurrent IAM change on the leader could silently undo the reset while the CLI
+reported success.)</p>
+<p>Every reset is written to the audit log with a fingerprint of the new password hash — the first 12 hex
+characters of its SHA-256, never the password or the hash — and its route: <code>forwardedTo=&lt;leader&gt;</code> on the
+follower and <code>forwardedFrom=&lt;follower&gt;</code> on the leader, with the same fingerprint, so one reset can be
+followed across both logs. (The fingerprint used to be the hash's first 8 characters, which is the
+algorithm tag <code>pbkdf2-s</code> for every password.)</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># conf/ontul.properties</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># How long a follower waits for the leader to apply a forwarded CLI reset before failing with</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># &quot;the password was NOT changed&quot;. Default 30000.</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="na">ontul.admin.socket.forward.timeout.ms</span><span class="o">=</span><span class="s">30000</span>
+</code></pre></div>
+<h2 id="which-java-the-cli-uses">Which Java the CLI uses</h2>
+<p><code>bin/ontul-cli.sh</code> (and every other launcher in <code>bin/</code>) runs <code>$JAVA_HOME/bin/java</code> when <code>JAVA_HOME</code> is set,
+otherwise the <code>java</code> on <code>PATH</code>. A JDK installed outside <code>PATH</code> (for example <code>/opt/openlogic-openjdk-17...</code>) works
+with just <code>JAVA_HOME</code>; the launchers used to run a bare <code>java</code> and failed with <code>exec: java: not found</code> (exit 127).
+If <code>JAVA_HOME</code> points at a directory without an executable <code>bin/java</code>, the launcher exits 1 and names it; with no
+Java at all it exits 1 with "Java not found. Install Java 17 or later, or set JAVA_HOME to its directory."</p>
+<h2 id="after-a-reset-change-the-password-once">After a reset: change the password once</h2>
+<p>A reset (generated or given) marks the account <code>requirePasswordChange</code>. Until the password is changed, every
+other API call answers <code>403 {"error":"Password change required: this account has an initial or reset password
+that must be changed first (POST /admin/auth/change-password)."}</code> and Flight SQL / JDBC refuses the login. The CLI
+prints the generated password alone on stdout (so <code>P=$(bin/ontul-cli.sh iam:reset-password)</code> captures just it)
+and a note with the two calls on stderr:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://&lt;master&gt;:8080/admin/auth/login<span class="w"> </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">     </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;&lt;reset password&gt;&quot;}&#39;</span><span class="w">            </span><span class="c1"># -&gt; accessToken</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://&lt;master&gt;:8080/admin/auth/change-password<span class="w"> </span>-H<span class="w"> </span><span class="s1">&#39;Authorization: Bearer &lt;accessToken&gt;&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">     </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;oldPassword&quot;:&quot;&lt;reset password&gt;&quot;,&quot;newPassword&quot;:&quot;&lt;new&gt;&quot;}&#39;</span>
+</code></pre></div>
+<p>Signing in to the Admin UI with the reset password asks for the new one the same way.</p>
 <h2 id="quick-start">Quick start</h2>
 <p>The simplest invocation lets the master generate a strong 20-character
 password and print it to stdout. The new password must be changed on the
 admin's next login (the <code>requirePasswordChange</code> flag is set automatically).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Inside the master host or container:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>bin/ontul-cli.sh<span class="w"> </span>iam:reset-password
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Inside the master host or container:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>bin/ontul-cli.sh<span class="w"> </span>iam:reset-password
 </code></pre></div>
 <p>Sample output (TTY):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>  ┌────────────────────────────────────────────────────────────┐
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  │  Password reset for user: admin                            │
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  │                                                            │
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  │  New temporary password: K3p9WvTx7qLm8zXa#-Bd              │
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  │                                                            │
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  │  Must be changed on next login (requirePasswordChange).    │
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  └────────────────────────────────────────────────────────────┘
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>  ┌────────────────────────────────────────────────────────────┐
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  │  Password reset for user: admin                            │
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  │                                                            │
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>  │  New temporary password: K3p9WvTx7qLm8zXa#-Bd              │
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>  │                                                            │
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>  │  Must be changed on next login (requirePasswordChange).    │
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  └────────────────────────────────────────────────────────────┘
 </code></pre></div>
 <h2 id="input-modes">Input modes</h2>
 <table>
@@ -2944,20 +3018,20 @@ admin's next login (the <code>requirePasswordChange</code> flag is set automatic
 </tbody>
 </table>
 <p>Resetting a different user is also supported:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>bin/ontul-cli.sh<span class="w"> </span>iam:reset-password<span class="w"> </span>--user<span class="w"> </span>some-user<span class="w"> </span>--new-password<span class="w"> </span><span class="s1">&#39;NewPass123&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>bin/ontul-cli.sh<span class="w"> </span>iam:reset-password<span class="w"> </span>--user<span class="w"> </span>some-user<span class="w"> </span>--new-password<span class="w"> </span><span class="s1">&#39;NewPass123&#39;</span>
 </code></pre></div>
 <h2 id="configuration">Configuration</h2>
 <p>The recovery socket is enabled by default. Every key below lives in
 <code>conf/ontul.properties</code> and is read at master startup:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># conf/ontul.properties</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># Set false to remove the local recovery path entirely.</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="na">ontul.admin.socket.enabled</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="s">true</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="na">ontul.admin.socket.path</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="s">${ontul.base.data.dir}/admin.sock</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># Name of the file under &lt;ontul.home&gt;/bin that receives the socket path the</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># master actually bound to (see &quot;How the CLI finds the socket&quot; below).</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="na">ontul.admin.socket.marker.file</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s">master.socket</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1"># Append-only audit trail of socket operations.</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="na">ontul.iam.audit.dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">${ontul.base.data.dir}/iam-audit</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># conf/ontul.properties</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># Set false to remove the local recovery path entirely.</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="na">ontul.admin.socket.enabled</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="s">true</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="na">ontul.admin.socket.path</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="s">${ontul.base.data.dir}/admin.sock</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># Name of the file under &lt;ontul.home&gt;/bin that receives the socket path the</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># master actually bound to (see &quot;How the CLI finds the socket&quot; below).</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="na">ontul.admin.socket.marker.file</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s">master.socket</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># Append-only audit trail of socket operations.</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="na">ontul.iam.audit.dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">${ontul.base.data.dir}/iam-audit</span>
 </code></pre></div>
 <p>The socket follows <code>ontul.base.data.dir</code>. If you launch the master with
 <code>-Dontul.base.data.dir=/var/lib/ontul</code> the socket moves to
@@ -2984,8 +3058,8 @@ shutdown. <code>bin/ontul-cli.sh</code> prefers it.</p>
 <code>/data/admin.sock</code> and the properties file still saying <code>./data</code>, only the marker
 knows where to connect.</p>
 <p>To rename the marker, change one key — both ends read it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># conf/ontul.properties</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>ontul.admin.socket.marker.file<span class="w"> </span><span class="o">=</span><span class="w"> </span>ontul-recovery.socket
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># conf/ontul.properties</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>ontul.admin.socket.marker.file<span class="w"> </span><span class="o">=</span><span class="w"> </span>ontul-recovery.socket
 </code></pre></div>
 <p>Restart the master; it publishes <code>bin/ontul-recovery.socket</code>, and the CLI
 picks the new name up from the same properties file.</p>
@@ -2993,42 +3067,42 @@ picks the new name up from the same properties file.</p>
 <p><code>ONTUL_MASTER_KEY</code> must be exported for the master process. The start script does not pre-check it, but KMS is enabled by default and the master cannot unseal its keystore without the key, so startup fails during KMS initialisation.
 The variable name itself is configurable — <code>ontul.kms.master.key.env</code> in
 <code>conf/ontul.properties</code> names the variable the master reads:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ONTUL_MASTER_KEY</span><span class="o">=</span><span class="s1">&#39;replace-with-a-32-char-or-longer-secret&#39;</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>bin/start-master.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ONTUL_MASTER_KEY</span><span class="o">=</span><span class="s1">&#39;replace-with-a-32-char-or-longer-secret&#39;</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>bin/start-master.sh
 </code></pre></div>
 <p><code>bin/ontul-cli.sh</code> does <strong>not</strong> need it. The CLI only opens the Unix socket and
 hands the request to the running master, which already holds the unsealed key,
 so this works with the variable unset:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">unset</span><span class="w"> </span>ONTUL_MASTER_KEY
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>bin/ontul-cli.sh<span class="w"> </span>ping
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># pong</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">unset</span><span class="w"> </span>ONTUL_MASTER_KEY
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>bin/ontul-cli.sh<span class="w"> </span>ping
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># pong</span>
 </code></pre></div>
 <p>If a CLI invocation complains about the key rather than the socket, you are
 running a start script, not the CLI.</p>
 <h3 id="worked-examples">Worked examples</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># 1. On the host, as the same OS user that runs the master:</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">cd</span><span class="w"> </span>/opt/ontul
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>bin/ontul-cli.sh<span class="w"> </span>ping
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>bin/ontul-cli.sh<span class="w"> </span>iam:reset-password
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># 2. The master runs as a service account and you are root:</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>sudo<span class="w"> </span>-u<span class="w"> </span>ontul<span class="w"> </span>/opt/ontul/bin/ontul-cli.sh<span class="w"> </span>iam:reset-password
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># 3. Inside a container:</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>ontul-master-1<span class="w"> </span>/app/bin/ontul-cli.sh<span class="w"> </span>iam:reset-password
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="c1"># 4. Data dir was relocated at launch — no extra flags needed, the CLI</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="c1">#    reads the published marker:</span>
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>cat<span class="w"> </span>/opt/ontul/bin/master.socket
-<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="c1"># /var/lib/ontul/admin.sock</span>
-<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>bin/ontul-cli.sh<span class="w"> </span>ping
-<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>
-<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="c1"># 5. Socket in a non-standard place and no marker (the master is stopped,</span>
-<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="c1">#    or you are on a host where the marker was cleaned up):</span>
-<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>bin/ontul-cli.sh<span class="w"> </span>--socket<span class="w"> </span>/var/lib/ontul/admin.sock<span class="w"> </span>iam:reset-password
-<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>
-<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="c1"># 6. Non-interactive automation, password from stdin so it never reaches argv:</span>
-<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;S0me!Strong!Pass&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bin/ontul-cli.sh<span class="w"> </span>iam:reset-password<span class="w"> </span>--new-password<span class="w"> </span>-
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># 1. On the host, as the same OS user that runs the master:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nb">cd</span><span class="w"> </span>/opt/ontul
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>bin/ontul-cli.sh<span class="w"> </span>ping
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>bin/ontul-cli.sh<span class="w"> </span>iam:reset-password
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="c1"># 2. The master runs as a service account and you are root:</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>sudo<span class="w"> </span>-u<span class="w"> </span>ontul<span class="w"> </span>/opt/ontul/bin/ontul-cli.sh<span class="w"> </span>iam:reset-password
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="c1"># 3. Inside a container:</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>ontul-master-1<span class="w"> </span>/app/bin/ontul-cli.sh<span class="w"> </span>iam:reset-password
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="c1"># 4. Data dir was relocated at launch — no extra flags needed, the CLI</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="c1">#    reads the published marker:</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>cat<span class="w"> </span>/opt/ontul/bin/master.socket
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="c1"># /var/lib/ontul/admin.sock</span>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>bin/ontul-cli.sh<span class="w"> </span>ping
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="c1"># 5. Socket in a non-standard place and no marker (the master is stopped,</span>
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a><span class="c1">#    or you are on a host where the marker was cleaned up):</span>
+<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>bin/ontul-cli.sh<span class="w"> </span>--socket<span class="w"> </span>/var/lib/ontul/admin.sock<span class="w"> </span>iam:reset-password
+<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>
+<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="c1"># 6. Non-interactive automation, password from stdin so it never reaches argv:</span>
+<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;S0me!Strong!Pass&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bin/ontul-cli.sh<span class="w"> </span>iam:reset-password<span class="w"> </span>--new-password<span class="w"> </span>-
 </code></pre></div>
 <h2 id="security-model">Security model</h2>
 <p><strong>1. The socket is OS-gated.</strong>
@@ -3040,7 +3114,7 @@ Every successful reset appends a JSON line to <code>data/iam-audit/reset.log</co
 (mode <code>600</code>). The plaintext password is <strong>never</strong> logged — only the first
 8 characters of its hash, the user, whether it was master-generated, and
 the OS user that invoked the CLI.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="s2">&quot;2026-05-23T16:00:46.922Z&quot;</span><span class="p">,</span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="s2">&quot;iam.reset-password&quot;</span><span class="p">,</span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="s2">&quot;admin&quot;</span><span class="p">,</span><span class="nt">&quot;generated&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span><span class="nt">&quot;hashFp&quot;</span><span class="p">:</span><span class="s2">&quot;OYV/Ojf/&quot;</span><span class="p">,</span><span class="nt">&quot;invokedAs&quot;</span><span class="p">:</span><span class="s2">&quot;root&quot;</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="s2">&quot;2026-05-23T16:00:46.922Z&quot;</span><span class="p">,</span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="s2">&quot;iam.reset-password&quot;</span><span class="p">,</span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="s2">&quot;admin&quot;</span><span class="p">,</span><span class="nt">&quot;generated&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span><span class="nt">&quot;hashFp&quot;</span><span class="p">:</span><span class="s2">&quot;OYV/Ojf/&quot;</span><span class="p">,</span><span class="nt">&quot;invokedAs&quot;</span><span class="p">:</span><span class="s2">&quot;root&quot;</span><span class="p">}</span>
 </code></pre></div>
 <p><strong>3. The new password is exposed exactly once.</strong>
 For master-generated passwords, the plaintext is returned only on the

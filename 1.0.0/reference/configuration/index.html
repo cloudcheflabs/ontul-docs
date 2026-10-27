@@ -4259,6 +4259,26 @@ metadata store as <code>storage.jobLogs.*</code> / <code>storage.exchange.*</cod
 <td>How many times a <code>MERGE INTO</code> an Iceberg table is planned and committed when a concurrent commit (compaction, streaming append/upsert, another MERGE) conflicts with it. Each attempt re-reads the table; when all conflict the MERGE fails and changes nothing.</td>
 </tr>
 <tr>
+<td><code>ontul.admin.socket.forward.timeout.ms</code></td>
+<td><code>30000</code></td>
+<td>How long a follower master waits for the leader to apply an <code>ontul-cli iam:reset-password</code> it forwarded. On timeout (or with no leader) the CLI exits 1 with "the password was NOT changed".</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.writer.max.open.partitions</code></td>
+<td><code>8</code></td>
+<td>When an <code>INSERT</code>, CTAS or streaming sink writes a partitioned Iceberg table, rows are clustered by partition in memory and each partition is written as one file; this is how many partition files are written (open) at once, in parallel.</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.writer.max.buffered.bytes</code></td>
+<td><code>0</code></td>
+<td>Memory budget in bytes for rows buffered (not yet in a file) by all partitioned writers of one JVM. When it is exceeded, the writer that crossed it writes its largest partitions to files right away (complete files, committed with the rest). <code>0</code> = <code>ontul.iceberg.writer.max.buffered.heap.fraction</code> of the JVM max heap.</td>
+</tr>
+<tr>
+<td><code>ontul.iceberg.writer.max.buffered.heap.fraction</code></td>
+<td><code>0.25</code></td>
+<td>Fraction of the JVM max heap used as the budget when <code>ontul.iceberg.writer.max.buffered.bytes</code> is <code>0</code>.</td>
+</tr>
+<tr>
 <td><code>ontul.admin.token.access.expiry.ms</code></td>
 <td><code>900000</code></td>
 <td>Lifetime (ms) of short-lived JWT access tokens issued after login. After expiry the client must use its refresh token to obtain a new access token (default 15 minutes).</td>

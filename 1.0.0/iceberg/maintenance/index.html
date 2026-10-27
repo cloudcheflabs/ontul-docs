@@ -2958,7 +2958,7 @@ small-file problem caused by frequent commits (especially streaming).</p>
 <td><code>skip_active_partitions</code></td>
 <td>bool</td>
 <td><code>false</code> (ad-hoc)</td>
-<td><strong>Concurrency-safety.</strong> Skip any partition written within the cooldown window, so compaction never touches a partition an active writer is appending to.</td>
+<td><strong>Concurrency-safety.</strong> Skip any partition written within the cooldown window (<code>window_cooldown_minutes</code>), so compaction never touches a partition an active writer is appending to. A partition is <em>active</em> exactly when it was written within the cooldown: with a cooldown of <code>0</code> no partition is active. (A hidden 10-minute floor used to apply, so with cooldown 0 a freshly written partitioned table was never compacted while the same unpartitioned table was.)</td>
 </tr>
 <tr>
 <td><code>max_commit_retries</code></td>
@@ -2995,6 +2995,11 @@ strategy that keeps compaction strictly <strong>behind</strong> the writer:</p>
 <li><strong>Bounded retry</strong> (<code>max_commit_retries</code>) re-plans and retries on any residual conflict, so transient
   races never surface to the caller.</li>
 </ul>
+<p>When these filters leave too few files to compact, the result says which files were left alone and why,
+e.g. <code>No compaction needed (12 files, 0 small cold, 0 rewritable, min_input_files=5; skipped 12 written within
+the cooldown (10 min))</code> or <code>...; skipped 3 in the last 1 commit(s) (seq_margin), 6 in 3 active partition(s)
+(written within the cooldown 10 min)</code>. Scheduled maintenance and <strong>Run Now</strong> record such a run in the history
+as <strong>skipped</strong> (with that text), not as a successful compaction and not silently.</p>
 <p>Defaults differ by caller: <strong>ad-hoc <code>EXECUTE optimize</code> keeps the safety filters OFF</strong> (predictable —
 rewrites the whole table just as before, but now with retry on), while <strong>scheduled auto-maintenance
 passes SAFE defaults</strong> (cooldown 10 min, seq_margin 1, skip-active on, retries 3) from the per-table
@@ -3153,7 +3158,20 @@ now-unreferenced physical files behind on some object stores).</p>
 <code>scanned=23 wouldDelete=14</code> yet the table still has all 10 rows (nothing deleted).</p>
 <p>⚠️ <code>remove_orphan_files</code> requires S3 credentials in the catalog config and uses the table location
 as the listing root — point catalogs at a dedicated prefix per table so the listing is bounded.</p>
+<p>The listing uses path-style S3 addressing against the catalog's <code>s3.endpoint</code>, exactly like every other
+read, write and maintenance operation. It used to fall back to virtual-host style (<code>bucket.host</code>) unless the
+catalog said <code>s3.pathStyle=true</code>, and failed with <code>UnknownHostException</code> on an endpoint such as
+<code>http://nginx:80</code> while <code>expire_snapshots</code> / <code>rewrite_*</code> on the same table worked.</p>
 </blockquote>
+<p><strong>Errors carry their cause.</strong> A failing maintenance operation reports the whole cause chain, ending with the
+root cause — e.g. <code>... See cause for the exact endpoint ... &lt;- SdkClientException: Unable to execute HTTP
+request: s3-host &lt;- UnknownHostException: s3-host</code> — in the SQL error, in the maintenance history entry and in
+the master log (with the stack trace).</p>
+<p><strong>History per table.</strong> <code>GET /admin/maintenance/history</code> filters on one table (exact <code>catalog.schema.table</code>) by
+<code>?table=</code>, the <code>X-Table-Key</code> header, or the older <code>X-Table-Filter</code> header; plus <code>status</code> (<code>ok</code>, <code>skipped</code>,
+<code>error</code>), <code>operation</code>, <code>since</code>, <code>until</code> and <code>limit</code>. The Maintenance page has the same table filter above the
+Job History. <code>POST /admin/maintenance/run</code> without <code>tableKey</code>, with an unknown <code>operation</code>, or with a body that
+is not a JSON object answers <code>400</code> with a message (it used to be a <code>500</code>).</p>
 <hr />
 <h3 id="rollback_to_timestamp-rollback_to_snapshot-revert-the-table"><code>rollback_to_timestamp</code> / <code>rollback_to_snapshot</code> — revert the table</h3>
 <p>Resets the table's current snapshot to an earlier version — to recover from a bad write, or to
