@@ -378,10 +378,20 @@ statement with its result and duration.
 
 ### Storage
 
-Switch the dependency, spill, exchange and job-log backends between local disk and S3 **at runtime,
-cluster-wide, with no restart** — the change is persisted to the replicated metadata store and pushed to
-every node. One S3 connection and base prefix cover all four (`<prefix>/spill`, `<prefix>/job-logs`,
-`<prefix>/exchange`). **Test Connection** checks the bucket of the prefix with the stored keys — it reads
+Switch the dependency, spill, exchange and job-log backends between local disk and S3 **without a
+restart** — the change is persisted to the replicated metadata store and pushed to every master and worker.
+One S3 connection and base prefix cover all four (dependencies directly under the prefix, `<prefix>/spill`,
+`<prefix>/job-logs`, `<prefix>/exchange`). What *Save & Sync* changes, and when:
+
+| Area | Applies |
+|---|---|
+| Dependencies | the next upload (`POST /v1/api/deps`) on **every master**, leader and followers, goes to the new storage; jars uploaded before stay where they were written, and jobs keep the paths they were submitted with |
+| Spill | new spills on every worker go to the new storage; data already spilled is read back from where it was written |
+| Job logs | at once (masters and workers rebuild their job-log store) |
+| Flow exchange | streaming jobs started afterwards; running jobs keep the checkpoint backend they started with |
+
+(Before this release dependency uploads kept the storage the master booted with until it restarted, and
+spill kept the worker's boot backend.) The page lists the same per-area summary under its title. **Test Connection** checks the bucket of the prefix with the stored keys — it reads
 the bucket and writes and deletes a probe object under the prefix. Job logs of work running on workers
 are shipped to `<prefix>/job-logs` once S3 is chosen.
 

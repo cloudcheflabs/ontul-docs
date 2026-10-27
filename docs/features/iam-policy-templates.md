@@ -32,7 +32,9 @@ Every policy is a JSON document with a `Version` and a list of `Statement`s. Eac
 | `data:SelectTable` | Metadata-only read — gates *discovery*: listing or describing a semantic view, a retriever, a catalog table. Distinct from `data:Select`, and what a retriever invoke is authorized under |
 | `data:Insert` / `data:Update` / `data:Delete` / `data:Merge` | Write / row-level DML |
 | `data:CreateTable` / `data:DropTable` / `data:AlterTable` | DDL. `CREATE SCHEMA` / `DROP SCHEMA` need `data:CreateTable` / `data:DropTable` on `data:schema:<catalog>.<schema>`; `DROP TABLE` / `DROP VIEW` need `data:DropTable`, `CREATE VIEW` `data:CreateTable`, and `ALTER TABLE`, `OPTIMIZE`, `VACUUM`, `EXPIRE SNAPSHOTS` `data:AlterTable` on `data:table:<catalog>.<schema>.<table>`. `CREATE TABLE` / CTAS is authorized as `data:Insert` on the new table |
-| `data:KillJob` / `data:CancelQuery` | Job / query control |
+| `data:KillJob` / `data:CancelQuery` | Job / query control (Flight `CancelQuery` included) |
+| `data:UploadS3` | Server-side S3 write: Flight `UPLOAD_S3` and `WRITE_S3` statements, on `data:s3:<bucket>/<key>` |
+| `data:MapExecute` | Run a caller-supplied function on the workers (Flight `MAP_EXECUTE` / `PY_MAP_EXECUTE`), on `data:compute:map` / `data:compute:py-map` |
 | `UDF:EXECUTE` / `UDF:CREATE` / `UDF:DROP` | User-defined function use / authoring |
 | `UDF:CREATE_GLOBAL` / `UDF:DROP_GLOBAL` | Global (cluster-wide) UDF authoring |
 | `ontology:Certify` | Bless an ontology subtree as CERTIFIED — an ownership decision, deliberately separate from the admin rights needed to *edit* the ontology. See [Ontology](ontology.md#who-may-certify) |
@@ -48,6 +50,8 @@ Every policy is a JSON document with a `Version` and a list of `Statement`s. Eac
 | Table | `data:table:<catalog>.<schema>.<table>` | `data:table:ice.*.*` |
 | Schema | `data:schema:<catalog>.<schema>` | `data:schema:ice.team_a` |
 | Job / query | `data:job:<id>` / `data:query:<id>` | `data:job:*` |
+| S3 location (server-side writes) | `data:s3:<bucket>/<key>` | `data:s3:team-bucket/exports/*` |
+| Remote function execution | `data:compute:map` / `data:compute:py-map` | `data:compute:*` |
 | UDF | `udf:<name>` | `udf:mask_*` |
 | Semantic view / retriever | `<catalog>.<schema>.<name>` — the object's own fqn, not a `data:table:` prefix | `semantic.rag.*` |
 | Ontology object / action | `ontology.<schema>.<name>` | `ontology.sales.*` |

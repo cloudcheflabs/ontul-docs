@@ -30,6 +30,16 @@ AccessKey authentication:
 props.put("user", "AccessKey " + accessKey + ":" + secretKey);
 ```
 
+Or the driver's `token` property (an `OTOK…` user token or a login JWT; sent as `Bearer`):
+
+```java
+props.put("token", userToken);
+```
+
+Credentials are always required: a connection without them, or with a wrong password or token, is refused
+with `UNAUTHENTICATED: invalid or missing credentials`. See
+[Authentication for BI clients](../features/bi-integration.md#authentication-for-bi-clients) for every form.
+
 ### Python SDK
 
 ```python

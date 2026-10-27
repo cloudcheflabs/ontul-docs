@@ -82,16 +82,25 @@ The endpoint is **public** — it leaks no secrets and BI users need it _before_
 
 ## Authentication for BI clients
 
-Ontul accepts four credential forms over Flight SQL. Pick whichever the BI tool offers:
+**Flight SQL / JDBC always requires valid credentials.** A connection or call with no credentials, a wrong
+password, an unknown user or a garbage token is refused with `UNAUTHENTICATED: invalid or missing
+credentials` — on the handshake and on every later call. (Earlier releases served such a caller as an
+anonymous user for whom IAM was skipped.) Ontul accepts these credential forms; pick whichever the tool offers:
 
-| Form | Header / field | Notes |
+| Form | How the client sends it | Notes |
 | --- | --- | --- |
-| **Bearer JWT** | `authorization: Bearer <jwt>` | From `POST /admin/auth/login`. Short-lived (15 min default). Best for interactive use. |
-| **Basic** | `authorization: Basic base64(user:pass)` | What Tableau / Power BI / Looker offer out-of-the-box. Master logs in on each Flight session. |
-| **Access Key** | `authorization: AccessKey AKIA…:<secret>` | Long-lived, suitable for service accounts. Issue via `POST /admin/iam/keys`. |
-| **Token** | `authorization: Token OTOK…` | Long-lived bearer token, also from `POST /admin/iam/keys`. |
+| **Username / password** | JDBC `user` / `password` properties (HTTP Basic on the handshake), or `authorization: Basic base64(user:pass)` | What Tableau / Power BI / Looker offer out of the box. The server then issues a session bearer the driver re-uses. A directory (LDAP) password works when SSO is configured. |
+| **Access key** | JDBC `user=AKIA…`, `password=<secret>`; or `user="AccessKey AKIA…:<secret>"`; or `authorization: AccessKey AKIA…:<secret>` | Long-lived, suitable for service accounts. Issue via `POST /admin/iam/keys`. Temporary `ASIA…` keys from STS work the same way. |
+| **Token** | JDBC `token=<OTOK… or JWT>` property (the driver sends it as `Bearer`); or `user="Token <OTOK… or JWT>"`; or `authorization: Token <…>` | The long-lived `OTOK…` user token from `POST /admin/iam/keys`, or the short-lived JWT from `POST /admin/auth/login`. The JDBC `token` property works since this release (it was always refused before). |
+| **Bearer JWT** | `authorization: Bearer <jwt>` | From `POST /admin/auth/login` (15 min default). |
 
 Whatever IAM policies attach to the credential — column masks, row filters, semantic metric `allowedRoles`, mandatory-filter `${user.attr.X}` substitutions — apply automatically. The BI tool doesn't need (and shouldn't have) a side channel into IAM.
+
+The catalog tree a tool introspects follows the same policies: `getCatalogs` / `getSchemas` / `getTables`
+(Flight SQL `GetCatalogs` / `GetDbSchemas` / `GetTables`) and `SHOW CATALOGS` / `SHOW SCHEMAS` / `SHOW TABLES`
+list a table only when the caller may `data:Select` it, and a schema or catalog only when some table in it is
+readable (or a policy grants every table of it, e.g. `data:table:ice.sales.*`). A user with no policy sees an
+empty tree; administrators see everything.
 
 ## Tableau Desktop / Server
 

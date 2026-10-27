@@ -115,15 +115,48 @@ curl -X POST http://localhost:8080/admin/backup/configure \
 
 ## Layout of a backup
 
-Each run writes to `<s3Prefix>/<timestamp>/`:
+Each run writes to `<s3Prefix>/<timestamp>/`. **Every part is encrypted** — nothing in the bucket is readable
+without the cluster's KMS master key:
 
 ```
 s3://my-ontul-backups/cluster/20260529-120000/
-  ├── kms.bin            # encrypted KMS keystore
-  ├── iam.json           # users, policies, access keys
-  ├── metadata.json      # catalog metadata snapshot
+  ├── kms.bin            # the KMS keystore as stored: wrapped with the cluster master key
+  ├── iam.bin            # users, password hashes, groups, policies, access keys + secrets + tokens,
+  │                      #   STS and federated sessions -- sealed with the `backup` KMS key
+  ├── metadata.bin       # catalog configs (with their credentials), SSO settings, flows, every other
+  │                      #   config key -- sealed with the `backup` KMS key
   └── connections.bin    # every connection, sealed with the `connections` KMS key
 ```
+
+`iam.bin` and `metadata.bin` are KMS envelopes (a random data key per part, wrapped by the `backup` KMS key).
+The `backup` key is created on the first backup and travels inside the same backup's `kms.bin`, which is itself
+wrapped with the master key named by `ontul.kms.master.key.env` (`ONTUL_MASTER_KEY` in the examples). There is
+no backup without KMS: a cluster with KMS disabled refuses to back up rather than write credentials in the
+clear.
+
+### Which key restores a backup
+
+A backup restores on a cluster started with **the same KMS master key** as the cluster that wrote it — the
+original cluster, or a rebuilt one given the same master key. Keep the master key with your disaster-recovery
+material; without it a backup cannot be opened (that is the point). A restore loads the backup's `kms.bin`
+first and decrypts **every** part before importing anything. A backup written under a different master key is
+refused with `backup <id> cannot be decrypted with the keys in its kms.bin (...). It was written by a cluster
+with a different KMS master key; restore it on a cluster started with that master key. Nothing was restored`
+and the cluster keeps its current keystore and state.
+
+!!! warning "Backups taken before this release are plaintext"
+    Earlier releases wrote `iam.json` and `metadata.json` as **plaintext JSON**: every user's access key id,
+    secret and token, password hashes, STS / federated sessions, and the catalog / SSO / flow configs with their
+    S3 keys, OIDC client secret, LDAP bind password, SAML private key and inline JDBC passwords. Anyone who could
+    read the backup bucket could read them. Those backups **still restore** (a backup without `iam.bin` /
+    `metadata.bin` is read from the `.json` parts, with a warning in the master log), but you should:
+
+    1. take a new backup (it is encrypted), then
+    2. **delete** every old `<s3Prefix>/<id>/iam.json` and `metadata.json` object — they keep revoked keys and
+       old secrets readable forever, and
+    3. **rotate** what they exposed: users' access keys and tokens (delete and re-create them), user passwords,
+       the SSO OIDC client secret, LDAP bind password and SAML signing key, and the credentials inside catalog,
+       connection and flow configs, starting with the most privileged.
 
 Backup ids are unique per master: a second backup started in the same second as the previous one takes the next free second, so two backups never write the same files.
 
@@ -138,7 +171,7 @@ Scheduled and cron backups run on the **leader only**: every master keeps the sc
 Restore is destructive — it overwrites the current stores. Ontul runs it in three phases on the leader:
 
 1. **Block requests.** Marks the leader not-ready (`/admin/ready` returns 503) so clients fail fast instead of querying half-restored state.
-2. **Download + import.** Pulls each store from S3 and imports it into KMS / IAM / Metadata / Connections in-process. KMS comes first, because its key opens `connections.bin`. The restored connections replace the current set: one created after the backup is removed, one deleted after it comes back with its credentials. A backup taken before connections were included has no `connections.bin`; restoring it keeps the current connections.
+2. **Download + import.** Pulls each store from S3, loads the backup's KMS keystore, decrypts every part (refusing the whole restore, with the previous keystore put back, if one does not decrypt), then imports IAM / Metadata / Connections in-process. The leader then reloads its catalogs, semantic views and storage settings from the restored metadata, so a catalog restored from the backup can be queried at once. The restored connections replace the current set: one created after the backup is removed, one deleted after it comes back with its credentials. A backup taken before connections were included has no `connections.bin`; restoring it keeps the current connections.
 3. **Broadcast + wait.** Pushes the recovered KMS keystore, IAM snapshot, metadata and connections to every follower over the internal NIO protocol, then waits for the cluster-ready signal before re-accepting traffic.
 
 If a step fails (the bucket cannot be read, a file times out), the restore answers with the error and the cluster is **returned to service** with the state the leader holds at that point — the stores imported before the failure plus the untouched rest, pushed to every node so they agree. It no longer stays "not ready" until a restart. Check the restore history entry and run the restore again once the storage problem is fixed.
