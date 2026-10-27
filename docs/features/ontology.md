@@ -600,6 +600,11 @@ as the rest of the admin surface. Reads are IAM-filtered on the backing read
 source; registration/deletion is administrator-gated; action invoke is gated on
 `ontology:InvokeAction`; certification on `ontology:Certify`.
 
+For a non-administrator, link types, action types and workflows follow the object types they rest on: a link
+type is listed (and fetchable) only when both of its object types are, an action type only when its object
+type is (its SQL template names the target table), a workflow only when every step's action type is;
+otherwise `GET` answers `403`. An action type with no object type (a pure OPERATION) stays visible.
+
 | Method + path | Purpose |
 | --- | --- |
 | `GET/POST /api/v1/object-types` | List / register object types. |

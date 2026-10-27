@@ -100,7 +100,11 @@ SHOW LINEAGE COLUMNS iceberg_catalog.demo.cust_orders;
 
 ## REST API
 
-Read-only lineage endpoints (any authenticated user):
+Read-only lineage endpoints (any authenticated user). Lineage names tables, so it follows the table
+read grants: for a non-administrator the table asked about must be one they may `data:Select` (else `403
+Access denied`), and only tables they may read appear in the answer — graph nodes and edges, impacted
+tables, column-lineage sources, PII-flow targets. `SHOW LINEAGE` / `SHOW LINEAGE COLUMNS` /
+`SHOW LINEAGE DOWNSTREAM` filter the same way. Administrators see the whole graph.
 
 | Endpoint | Returns |
 |---|---|

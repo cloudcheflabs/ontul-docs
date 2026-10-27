@@ -230,7 +230,9 @@ pile of S3 objects you track out-of-band:
   (WAP), so a dataset of unstructured assets has the same time-travel and audit→publish story as any
   other Lance table.
 - **Governed access.** Reading the bytes goes **through Ontul's IAM** (see below) — the same
-  `data:SelectTable` check that guards the row guards its blob, instead of handing out raw S3 URLs.
+  `data:Select` grant that guards the row guards its blob, instead of handing out raw S3 URLs. (Earlier
+  releases checked only the discovery verb `data:SelectTable`, which let a user who may only see a table
+  read its blobs.)
 
 ### Use cases
 
