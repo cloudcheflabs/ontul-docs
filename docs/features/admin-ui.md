@@ -215,6 +215,16 @@ that could disagree about what a table looks like. A statement that fails is sho
 statement that failed rather than leaving an empty pane. A table that describes but will not read —
 permissions, a broken storage path — keeps its column list and reports only the preview as failed.
 
+**What a user sees.** Every pane lists only what the signed-in user may read, by the same rule as the
+Flight SQL / JDBC catalog tree (see [BI integration](bi-integration.md)): a table appears when the user
+may `data:Select` it (`data:table:<catalog>.<schema>.<table>`, a Deny wins), a schema or a catalog when
+some table in it is readable or a policy grants all of it (`data:table:ice.sales.*`,
+`data:table:ice.*.*`). The catalog list (`GET /admin/catalogs`), `SHOW SCHEMAS` / `SHOW TABLES` and
+`DESCRIBE` are filtered on the server, so the same holds for the API and the SQL Query page: `DESCRIBE`
+or a preview (`SELECT`) of a table the user may not read answers `Access denied` instead of its columns
+or rows. A user with no policy sees no catalogs; administrators see everything. Earlier releases listed
+every catalog and showed any table's columns to any signed-in user.
+
 ### Catalogs
 
 Register, unregister, and manage data source catalogs. View connector type, connection ID, table count, and configuration for each catalog.
@@ -345,7 +355,8 @@ under a name that is already taken answers `409` instead of replacing the other 
 Table-level lineage graph built from executed DML, views, started flows and edges pushed by other
 engines: which sources feed which targets, each edge labelled with the operation that introduced it
 (`CTAS`, `INSERT_INTO`, `MERGE_INTO`, `VIEW`, …). Enter a table, pick direction and depth; click a node
-for its column-level lineage and downstream impact. See [Data Lineage](data-lineage.md).
+for its column-level lineage and downstream impact. A non-administrator traces only from a table they
+may read and sees only the tables they may read in the graph. See [Data Lineage](data-lineage.md).
 
 ### Audit
 
@@ -391,7 +402,9 @@ One S3 connection and base prefix cover all four (dependencies directly under th
 | Flow exchange | streaming jobs started afterwards; running jobs keep the checkpoint backend they started with |
 
 (Before this release dependency uploads kept the storage the master booted with until it restarted, and
-spill kept the worker's boot backend.) The page lists the same per-area summary under its title. **Test Connection** checks the bucket of the prefix with the stored keys — it reads
+spill kept the worker's boot backend.) The spill / exchange backend a switch replaces is closed on the
+worker once nothing uses it any more — at once, or when the last spill written to it is released or the last
+streaming job that started on it ends. The page lists the same per-area summary under its title. **Test Connection** checks the bucket of the prefix with the stored keys — it reads
 the bucket and writes and deletes a probe object under the prefix. Job logs of work running on workers
 are shipped to `<prefix>/job-logs` once S3 is chosen.
 

@@ -100,7 +100,8 @@ The catalog tree a tool introspects follows the same policies: `getCatalogs` / `
 (Flight SQL `GetCatalogs` / `GetDbSchemas` / `GetTables`) and `SHOW CATALOGS` / `SHOW SCHEMAS` / `SHOW TABLES`
 list a table only when the caller may `data:Select` it, and a schema or catalog only when some table in it is
 readable (or a policy grants every table of it, e.g. `data:table:ice.sales.*`). A user with no policy sees an
-empty tree; administrators see everything.
+empty tree; administrators see everything. `DESCRIBE` of a table the caller may not read answers `Access denied`,
+and the Admin UI's Catalog Browser and catalog list follow the same rule.
 
 ## Tableau Desktop / Server
 
