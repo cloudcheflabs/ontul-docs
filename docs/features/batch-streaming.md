@@ -28,6 +28,17 @@ SUBMITTED → PLANNING → RUNNING → COMPLETED
 - **FAILED**: Error during execution
 - **KILLED**: Stopped by user via REST API or Admin UI
 
+### Jobs run as their submitter
+
+A job whose driver runs on a **worker** (BATCH with `ontul.job.driver.mode=worker`, CLASS, PYTHON) reads and
+writes through the master's Flight SQL, and it does so **as the user who submitted it**: the master mints a
+credential for the submitter (a JWT, valid for `ontul.job.credential.ttl.ms`, default 7 days) and hands it to the
+worker-side driver; an `ontul.user.accessKey` / `ontul.user.secretKey` pair in the job config is used instead
+when present. The job therefore has exactly its submitter's IAM rights — a table the submitter may not read
+fails the job with an access-denied error. (Earlier releases ran such a job with no identity when it was
+submitted with a JWT or user token, and IAM was skipped.) The minted token is not stored in the job config, and
+a worker clears the previous job's credential before the next job starts.
+
 ---
 
 ## Submitting Jobs
@@ -112,7 +123,9 @@ curl -X POST http://localhost:8080/v1/api/deps \
   -H "Content-Type: application/octet-stream" \
   --data-binary @my-etl-job.jar
 
-# Response: {"path": "deps/my-etl-job.jar"}
+# Response: {"path": "deps/my-etl-job.jar"}   (local storage)
+#       or  {"path": "s3://bucket/prefix/my-etl-job.jar"}  when the Storage page puts dependencies on S3 --
+#           the next upload after Save & Sync goes there on every master, no restart
 # The file name is a plain name: letters, digits, '.', '_', '+', '-'. A name with '/', '\\' or '..' is refused
 # (400), so an upload can never land outside the dependency directory.
 

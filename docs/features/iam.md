@@ -31,15 +31,34 @@ Users carry an opaque id, a hashed password, group memberships, access keys, and
 
 | Operation | Endpoint |
 | --- | --- |
-| Create user | `POST /admin/iam/users` `{username, password}` |
+| Create user | `POST /admin/iam/users` `{username, password, groups?, policyNames?, attributes?}` |
 | List users | `GET  /admin/iam/users` |
 | Delete user | `DELETE /admin/iam/users/{username}` |
 | Add to group | `POST /admin/iam/add-user-to-group` `{username, groupName}` |
-| Create group | `POST /admin/iam/groups` `{groupName}` |
+| Create group | `POST /admin/iam/groups` `{groupName, policyNames?}` |
 | Issue access key | `POST /admin/iam/keys` `{username, expiresAt?}` |
 
+Creating a group can attach its policies in the same call, and creating a user can place it in groups,
+attach policies directly and set its attributes:
+
+```bash
+curl -s -X POST "http://<master>:8080/admin/iam/groups" -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' -d '{"groupName": "analysts", "policyNames": ["ReadSales"]}'
+# 201 {"status":"ok","groupName":"analysts","policyNames":["ReadSales"]}
+```
+
+Everything named is checked **before** anything is stored: an unknown policy or group answers `400` with the
+reason (`Policy not found: ReadSalez`, `Group not found: x`) and **no group / user is created**. A field the
+endpoint does not act on is refused rather than ignored (`unknown field 'members' (accepted: groupName,
+policyNames)`), and a missing required field answers `400` naming it (`groupName is required`, `username is
+required`, `password is required`). Earlier releases answered `201` for a group created with `policyNames`
+while dropping the policies.
+
+In the Admin UI each group row has an **Attach Policy** button (administrators only) next to the delete
+button; expanding the row still shows the attached policies with their detach buttons and *Attach Custom*.
+
 !!! note "Field-name aliases"
-    `POST /admin/auth/login` accepts the user identifier as either `username` or `user`, and `POST /admin/iam/keys` accepts either `username` or `userId`. The canonical field is `username` in both cases; the aliases exist so clients and SDKs that use a different field name interoperate without a mapping layer.
+    `POST /admin/auth/login` accepts the user identifier as either `username` or `user`, and `POST /admin/iam/keys`, `POST /admin/iam/users`, `add-user-to-group` and `remove-user-from-group` accept either `username` or `userId`. The canonical field is `username`; the aliases exist so clients and SDKs that use a different field name interoperate without a mapping layer.
 
 ## Policy-Based Access Control
 
@@ -69,7 +88,8 @@ Ontul uses AWS-style JSON policies to manage permissions. Actions live in the `d
 - **Action verbs in `data:` namespace** — runtime SQL: `data:Select`, `data:Insert`, `data:Update`, `data:Delete`, `data:Merge`. Catalog DDL: `data:CreateTable`, `data:DropTable`, `data:AlterTable`. Operational: `data:KillJob`, `data:CancelQuery`. The metadata-only `data:SelectTable` verb gates discovery surfaces (e.g. semantic-view listing, table catalog browse) — distinct from the runtime `data:Select` that gates actual scans.
 - **UDF actions** stay in the `UDF:` namespace — see [UDF Permissions](#udf-permissions).
 - **Ontology actions** live in the `ontology:` namespace and gate the [ontology](ontology.md) surface: `ontology:InvokeAction` (perform a governed write-back), `ontology:InvokeWorkflow` (run a multi-step Saga), `ontology:Certify` (sign off on a definition). Administrators are always allowed; for everyone else these are deny-by-default like any other action.
-- **Resources**: `data:table:<catalog>.<schema>.<table>`, `data:schema:<catalog>.<schema>`, `data:job:*`, `data:query:*`, `udf:<name>`. Wildcards `*` and `?` are supported. **Semantic-layer and ontology objects are addressed by their BARE fully-qualified name** — `semantic.rag.*`, `ontology.sales.*` — *not* prefixed with `data:table:`. A policy written as `data:table:ontology.sales.*` never matches, which reads like "IAM is broken" rather than "the pattern did not match".
+- **Server-side S3 writes and remote functions** — `data:UploadS3` on `data:s3:<bucket>/<key>` gates the Flight `UPLOAD_S3` action and the `WRITE_S3 '<s3 path>' ...` statement (the master writes where the caller names); `data:MapExecute` on `data:compute:map` / `data:compute:py-map` gates the Flight `MAP_EXECUTE` / `PY_MAP_EXECUTE` actions (the caller's function runs on every worker); the Flight `CancelQuery` action needs `data:CancelQuery` on `data:query:<id>`, like `POST /admin/query/cancel`. All deny by default; administrators pass.
+- **Resources**: `data:table:<catalog>.<schema>.<table>`, `data:schema:<catalog>.<schema>`, `data:job:*`, `data:query:*`, `data:s3:<bucket>/<key>`, `data:compute:map`, `udf:<name>`. Wildcards `*` and `?` are supported. **Semantic-layer and ontology objects are addressed by their BARE fully-qualified name** — `semantic.rag.*`, `ontology.sales.*` — *not* prefixed with `data:table:`. A policy written as `data:table:ontology.sales.*` never matches, which reads like "IAM is broken" rather than "the pattern did not match".
 - **Attachment**: policies attach to users (direct) or groups (via group membership).
 - **Deny rules take precedence** over allow rules.
 - **Deny-by-default**: no matching policies means access is denied.
