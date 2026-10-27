@@ -2691,6 +2691,15 @@
 <li><strong>FAILED</strong>: Error during execution</li>
 <li><strong>KILLED</strong>: Stopped by user via REST API or Admin UI</li>
 </ul>
+<h3 id="jobs-run-as-their-submitter">Jobs run as their submitter</h3>
+<p>A job whose driver runs on a <strong>worker</strong> (BATCH with <code>ontul.job.driver.mode=worker</code>, CLASS, PYTHON) reads and
+writes through the master's Flight SQL, and it does so <strong>as the user who submitted it</strong>: the master mints a
+credential for the submitter (a JWT, valid for <code>ontul.job.credential.ttl.ms</code>, default 7 days) and hands it to the
+worker-side driver; an <code>ontul.user.accessKey</code> / <code>ontul.user.secretKey</code> pair in the job config is used instead
+when present. The job therefore has exactly its submitter's IAM rights — a table the submitter may not read
+fails the job with an access-denied error. (Earlier releases ran such a job with no identity when it was
+submitted with a JWT or user token, and IAM was skipped.) The minted token is not stored in the job config, and
+a worker clears the previous job's credential before the next job starts.</p>
 <hr />
 <h2 id="submitting-jobs">Submitting Jobs</h2>
 <h3 id="1-rest-api">1. REST API</h3>
@@ -2757,24 +2766,26 @@ who may not write the sink table gets <code>403</code>. In the flat form, <code>
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/octet-stream&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span>--data-binary<span class="w"> </span>@my-etl-job.jar
 <a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># Response: {&quot;path&quot;: &quot;deps/my-etl-job.jar&quot;}</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># The file name is a plain name: letters, digits, &#39;.&#39;, &#39;_&#39;, &#39;+&#39;, &#39;-&#39;. A name with &#39;/&#39;, &#39;\\&#39; or &#39;..&#39; is refused</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># (400), so an upload can never land outside the dependency directory.</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="c1"># 2. Submit CLASS job</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/v1/api/job/submit<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="s1">    &quot;name&quot;: &quot;custom-etl&quot;,</span>
-<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="s1">    &quot;type&quot;: &quot;CLASS&quot;,</span>
-<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="s1">    &quot;className&quot;: &quot;com.example.MyEtlJob&quot;,</span>
-<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="s1">    &quot;deps&quot;: [&quot;deps/my-etl-job.jar&quot;],</span>
-<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="s1">    &quot;args&quot;: {</span>
-<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="s1">      &quot;input&quot;: &quot;s3://bucket/raw/data&quot;,</span>
-<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="s1">      &quot;output&quot;: &quot;ice.warehouse.processed&quot;</span>
-<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="s1">    }</span>
-<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="s1">  }&#39;</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># Response: {&quot;path&quot;: &quot;deps/my-etl-job.jar&quot;}   (local storage)</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1">#       or  {&quot;path&quot;: &quot;s3://bucket/prefix/my-etl-job.jar&quot;}  when the Storage page puts dependencies on S3 --</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1">#           the next upload after Save &amp; Sync goes there on every master, no restart</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># The file name is a plain name: letters, digits, &#39;.&#39;, &#39;_&#39;, &#39;+&#39;, &#39;-&#39;. A name with &#39;/&#39;, &#39;\\&#39; or &#39;..&#39; is refused</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="c1"># (400), so an upload can never land outside the dependency directory.</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="c1"># 2. Submit CLASS job</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/v1/api/job/submit<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="s1">    &quot;name&quot;: &quot;custom-etl&quot;,</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="s1">    &quot;type&quot;: &quot;CLASS&quot;,</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="s1">    &quot;className&quot;: &quot;com.example.MyEtlJob&quot;,</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="s1">    &quot;deps&quot;: [&quot;deps/my-etl-job.jar&quot;],</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="s1">    &quot;args&quot;: {</span>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="s1">      &quot;input&quot;: &quot;s3://bucket/raw/data&quot;,</span>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="s1">      &quot;output&quot;: &quot;ice.warehouse.processed&quot;</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="s1">    }</span>
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="s1">  }&#39;</span>
 </code></pre></div>
 <h4 id="python-job">PYTHON Job</h4>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># 1. Upload Python script</span>

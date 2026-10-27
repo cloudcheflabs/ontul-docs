@@ -2982,39 +2982,47 @@
 </code></pre></div>
 <p>The endpoint is <strong>public</strong> — it leaks no secrets and BI users need it <em>before</em> they have credentials. If your cluster sits behind nginx, the returned host / port reflect the externally-routable values (configured via <code>flight-sql.advertised-host</code> and <code>master-flight-sql-port</code> in the master config).</p>
 <h2 id="authentication-for-bi-clients">Authentication for BI clients</h2>
-<p>Ontul accepts four credential forms over Flight SQL. Pick whichever the BI tool offers:</p>
+<p><strong>Flight SQL / JDBC always requires valid credentials.</strong> A connection or call with no credentials, a wrong
+password, an unknown user or a garbage token is refused with <code>UNAUTHENTICATED: invalid or missing
+credentials</code> — on the handshake and on every later call. (Earlier releases served such a caller as an
+anonymous user for whom IAM was skipped.) Ontul accepts these credential forms; pick whichever the tool offers:</p>
 <table>
 <thead>
 <tr>
 <th>Form</th>
-<th>Header / field</th>
+<th>How the client sends it</th>
 <th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Bearer JWT</strong></td>
-<td><code>authorization: Bearer &lt;jwt&gt;</code></td>
-<td>From <code>POST /admin/auth/login</code>. Short-lived (15 min default). Best for interactive use.</td>
+<td><strong>Username / password</strong></td>
+<td>JDBC <code>user</code> / <code>password</code> properties (HTTP Basic on the handshake), or <code>authorization: Basic base64(user:pass)</code></td>
+<td>What Tableau / Power BI / Looker offer out of the box. The server then issues a session bearer the driver re-uses. A directory (LDAP) password works when SSO is configured.</td>
 </tr>
 <tr>
-<td><strong>Basic</strong></td>
-<td><code>authorization: Basic base64(user:pass)</code></td>
-<td>What Tableau / Power BI / Looker offer out-of-the-box. Master logs in on each Flight session.</td>
-</tr>
-<tr>
-<td><strong>Access Key</strong></td>
-<td><code>authorization: AccessKey AKIA…:&lt;secret&gt;</code></td>
-<td>Long-lived, suitable for service accounts. Issue via <code>POST /admin/iam/keys</code>.</td>
+<td><strong>Access key</strong></td>
+<td>JDBC <code>user=AKIA…</code>, <code>password=&lt;secret&gt;</code>; or <code>user="AccessKey AKIA…:&lt;secret&gt;"</code>; or <code>authorization: AccessKey AKIA…:&lt;secret&gt;</code></td>
+<td>Long-lived, suitable for service accounts. Issue via <code>POST /admin/iam/keys</code>. Temporary <code>ASIA…</code> keys from STS work the same way.</td>
 </tr>
 <tr>
 <td><strong>Token</strong></td>
-<td><code>authorization: Token OTOK…</code></td>
-<td>Long-lived bearer token, also from <code>POST /admin/iam/keys</code>.</td>
+<td>JDBC <code>token=&lt;OTOK… or JWT&gt;</code> property (the driver sends it as <code>Bearer</code>); or <code>user="Token &lt;OTOK… or JWT&gt;"</code>; or <code>authorization: Token &lt;…&gt;</code></td>
+<td>The long-lived <code>OTOK…</code> user token from <code>POST /admin/iam/keys</code>, or the short-lived JWT from <code>POST /admin/auth/login</code>. The JDBC <code>token</code> property works since this release (it was always refused before).</td>
+</tr>
+<tr>
+<td><strong>Bearer JWT</strong></td>
+<td><code>authorization: Bearer &lt;jwt&gt;</code></td>
+<td>From <code>POST /admin/auth/login</code> (15 min default).</td>
 </tr>
 </tbody>
 </table>
 <p>Whatever IAM policies attach to the credential — column masks, row filters, semantic metric <code>allowedRoles</code>, mandatory-filter <code>${user.attr.X}</code> substitutions — apply automatically. The BI tool doesn't need (and shouldn't have) a side channel into IAM.</p>
+<p>The catalog tree a tool introspects follows the same policies: <code>getCatalogs</code> / <code>getSchemas</code> / <code>getTables</code>
+(Flight SQL <code>GetCatalogs</code> / <code>GetDbSchemas</code> / <code>GetTables</code>) and <code>SHOW CATALOGS</code> / <code>SHOW SCHEMAS</code> / <code>SHOW TABLES</code>
+list a table only when the caller may <code>data:Select</code> it, and a schema or catalog only when some table in it is
+readable (or a policy grants every table of it, e.g. <code>data:table:ice.sales.*</code>). A user with no policy sees an
+empty tree; administrators see everything.</p>
 <h2 id="tableau-desktop-server">Tableau Desktop / Server</h2>
 <p>Tableau 2023.1+ ships the Arrow Flight SQL JDBC driver wiring; older versions need it added manually.</p>
 <h3 id="one-time-driver-setup">One-time driver setup</h3>

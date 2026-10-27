@@ -3849,6 +3849,11 @@ See <a href="../../features/cluster-maintenance/">Cluster Maintenance Mode</a>.<
 <td>Directory where submitted-job history and job logs are stored. Accepts a local path or an S3 path (e.g. <code>s3://bucket/ontul/job-history</code>). If a jobLogs S3 storage connection is configured in the Admin UI, that S3 location overrides this value.</td>
 </tr>
 <tr>
+<td><code>ontul.job.credential.ttl.ms</code></td>
+<td><code>604800000</code></td>
+<td>Lifetime (ms, default 7 days) of the credential the master mints for a job a <strong>worker</strong> drives (BATCH in worker mode, CLASS, PYTHON). The worker-side driver calls back into Flight SQL <strong>as the job's submitter</strong> with it, so the job has exactly its submitter's rights. When the job config carries <code>ontul.user.accessKey</code> / <code>ontul.user.secretKey</code>, those are used instead. A job that outlives the TTL can no longer query; raise it for very long batch jobs. The token is never stored in the job config.</td>
+</tr>
+<tr>
 <td><code>ontul.job.large.row.threshold</code></td>
 <td><code>100000</code></td>
 <td>Row-count threshold above which a job's result set is treated as "large" and handled via the streaming/spill path rather than buffered fully in memory.</td>

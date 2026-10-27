@@ -3462,10 +3462,38 @@ refused certification or an IAM-blocked write is visible here.</p>
 <code>before_version</code>). VACUUM asks for confirmation showing the exact statement. Recent runs list each
 statement with its result and duration.</p>
 <h3 id="storage">Storage</h3>
-<p>Switch the dependency, spill, exchange and job-log backends between local disk and S3 <strong>at runtime,
-cluster-wide, with no restart</strong> — the change is persisted to the replicated metadata store and pushed to
-every node. One S3 connection and base prefix cover all four (<code>&lt;prefix&gt;/spill</code>, <code>&lt;prefix&gt;/job-logs</code>,
-<code>&lt;prefix&gt;/exchange</code>). <strong>Test Connection</strong> checks the bucket of the prefix with the stored keys — it reads
+<p>Switch the dependency, spill, exchange and job-log backends between local disk and S3 <strong>without a
+restart</strong> — the change is persisted to the replicated metadata store and pushed to every master and worker.
+One S3 connection and base prefix cover all four (dependencies directly under the prefix, <code>&lt;prefix&gt;/spill</code>,
+<code>&lt;prefix&gt;/job-logs</code>, <code>&lt;prefix&gt;/exchange</code>). What <em>Save &amp; Sync</em> changes, and when:</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Applies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dependencies</td>
+<td>the next upload (<code>POST /v1/api/deps</code>) on <strong>every master</strong>, leader and followers, goes to the new storage; jars uploaded before stay where they were written, and jobs keep the paths they were submitted with</td>
+</tr>
+<tr>
+<td>Spill</td>
+<td>new spills on every worker go to the new storage; data already spilled is read back from where it was written</td>
+</tr>
+<tr>
+<td>Job logs</td>
+<td>at once (masters and workers rebuild their job-log store)</td>
+</tr>
+<tr>
+<td>Flow exchange</td>
+<td>streaming jobs started afterwards; running jobs keep the checkpoint backend they started with</td>
+</tr>
+</tbody>
+</table>
+<p>(Before this release dependency uploads kept the storage the master booted with until it restarted, and
+spill kept the worker's boot backend.) The page lists the same per-area summary under its title. <strong>Test Connection</strong> checks the bucket of the prefix with the stored keys — it reads
 the bucket and writes and deletes a probe object under the prefix. Job logs of work running on workers
 are shipped to <code>&lt;prefix&gt;/job-logs</code> once S3 is chosen.</p>
 <p>With an S3 connection chosen, <strong>S3 Base Prefix is required</strong>: <em>Save &amp; Sync</em> is blocked and the field is

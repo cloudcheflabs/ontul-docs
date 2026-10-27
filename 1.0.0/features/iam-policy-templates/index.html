@@ -3290,7 +3290,15 @@
 </tr>
 <tr>
 <td><code>data:KillJob</code> / <code>data:CancelQuery</code></td>
-<td>Job / query control</td>
+<td>Job / query control (Flight <code>CancelQuery</code> included)</td>
+</tr>
+<tr>
+<td><code>data:UploadS3</code></td>
+<td>Server-side S3 write: Flight <code>UPLOAD_S3</code> and <code>WRITE_S3</code> statements, on <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code></td>
+</tr>
+<tr>
+<td><code>data:MapExecute</code></td>
+<td>Run a caller-supplied function on the workers (Flight <code>MAP_EXECUTE</code> / <code>PY_MAP_EXECUTE</code>), on <code>data:compute:map</code> / <code>data:compute:py-map</code></td>
 </tr>
 <tr>
 <td><code>UDF:EXECUTE</code> / <code>UDF:CREATE</code> / <code>UDF:DROP</code></td>
@@ -3346,6 +3354,16 @@
 <td>Job / query</td>
 <td><code>data:job:&lt;id&gt;</code> / <code>data:query:&lt;id&gt;</code></td>
 <td><code>data:job:*</code></td>
+</tr>
+<tr>
+<td>S3 location (server-side writes)</td>
+<td><code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code></td>
+<td><code>data:s3:team-bucket/exports/*</code></td>
+</tr>
+<tr>
+<td>Remote function execution</td>
+<td><code>data:compute:map</code> / <code>data:compute:py-map</code></td>
+<td><code>data:compute:*</code></td>
 </tr>
 <tr>
 <td>UDF</td>
