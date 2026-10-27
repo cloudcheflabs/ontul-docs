@@ -237,10 +237,61 @@ Both forms are stripped by a SQL preprocessor and routed through `TableScan.useS
 | `CREATE TABLE catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...` | Same path as INSERT, plus catalog refresh so the new table is queryable immediately. |
 | `DELETE FROM catalog.ns.t WHERE <pred>` | Merge-on-read. Workers scan their assigned files, evaluate the predicate row-by-row, and write deletes — position-delete parquet on v2 tables, **deletion vectors** on v3 (see [Format version 3](#format-version-3-deletion-vectors)); master commits one `RowDelta`. |
 | `UPDATE catalog.ns.t SET col = expr [WHERE <pred>]` | RowDelta — original rows marked deleted (position-delete on v2, deletion vector on v3) plus a new data file with updated values. |
-| `MERGE INTO catalog.ns.t USING (<source>) ON (<eq+non-equi>) WHEN MATCHED THEN UPDATE SET ... [WHEN NOT MATCHED THEN INSERT (...) VALUES (...)]` | Composite-key joins (multiple `AND`-connected equalities) and non-equi remainder predicates are supported. The `WHEN NOT MATCHED` branch is optional — a `MATCHED`-only MERGE is valid. Single-RowDelta commit. |
+| `MERGE INTO catalog.ns.t [[AS] t] USING (<query>) \| <table> [[AS] s] ON <cond> WHEN MATCHED [AND <cond>] THEN UPDATE SET ... \| DELETE ... WHEN NOT MATCHED [AND <cond>] THEN INSERT [(...)] VALUES (...)` | Source is a subquery / `VALUES` or a table name (any catalog). Several `WHEN` clauses, evaluated in order (SQL standard / Trino). Composite-key joins and non-equi remainder predicates are supported. Single-RowDelta commit. |
 | `OPTIMIZE catalog.ns.t` | Delete-aware compaction: small data files are read with their position-/equality-deletes applied, written as one or more compacted files, deletes dropped. |
 
+**Writing into many partitions.** An `INSERT`, CTAS or streaming sink into a partitioned table used to keep one
+open Parquet writer per partition until commit. Each holds per-column buffers and its whole row group, so one
+statement spanning a few thousand day partitions ran a worker with `-Xmx896m` out of heap. The writer now works
+like Spark's clustered write: rows are clustered by partition in memory and each partition is written as one
+file, at most `ontul.iceberg.writer.max.open.partitions` (default 8) at a time. When the rows buffered by all
+writers of the JVM exceed the budget (`ontul.iceberg.writer.max.buffered.bytes`, by default a quarter of the
+heap), the writer that crossed it writes its largest partitions to files right away; a partition that receives
+more rows later gets another file. Memory and open files stay bounded at any partition count (verified with
+2,556 and 8,805 day partitions from one statement on workers with `-Xmx896m`). A write that fits the budget gives
+one file per partition per worker task; larger writes give one file per partition per flush, which `OPTIMIZE`
+compacts. A table with thousands of one-row files is slow to read, as with any engine — compact it.
+
 `MERGE INTO` parsing tolerates aliases without `AS` (`MERGE INTO t alias ...`), nested-paren source subqueries (`USING (SELECT * FROM (VALUES ...))`), and composite ON conditions like `t.id = s.id AND t.region = s.region`.
+
+**The source can be a table.** `USING <table>` needs no parentheses and no `SELECT * FROM`: the name may be
+`table`, `schema.table` or fully qualified, in any catalog (`USING tpch.tiny.nation n`). Without an alias,
+columns are qualified by the tables' own names, as in Trino:
+
+```sql
+MERGE INTO ice.sales.orders USING ice.staging.order_updates
+ON orders.id = order_updates.id
+WHEN MATCHED THEN UPDATE SET total = order_updates.total;
+```
+
+**Several WHEN clauses, with conditions, and DELETE.** A MERGE takes any number of
+`WHEN MATCHED [AND <condition>] THEN UPDATE SET ... | DELETE` and
+`WHEN NOT MATCHED [AND <condition>] THEN INSERT [(<columns>)] VALUES (...)` clauses. As in the SQL standard
+and Trino they are evaluated **in the order written**: for a matched target row the first `WHEN MATCHED`
+clause whose condition holds acts on it (later ones are not looked at); if none holds, the row is left as it
+is. A source row that matched a target row is never inserted. For an unmatched source row the first
+`WHEN NOT MATCHED` clause whose condition holds inserts it; if none holds, nothing is inserted.
+
+```sql
+MERGE INTO ice.sales.orders AS t
+USING ice.staging.changes AS c
+ON t.id = c.id
+WHEN MATCHED AND c.op = 'D' THEN DELETE                          -- checked first
+WHEN MATCHED AND (c.op = 'U' OR c.total > t.total) THEN UPDATE SET total = c.total
+WHEN MATCHED THEN UPDATE SET status = 'seen'                       -- every other matched row
+WHEN NOT MATCHED AND c.op <> 'D' THEN INSERT (id, total, status) VALUES (c.id, c.total, 'new');
+```
+
+- A condition may use target and source columns: comparisons with literals or with another column,
+  `IS [NOT] NULL`, `IN`, `AND` / `OR` / `NOT`. An unqualified column name is resolved to whichever side has
+  it; a name both sides have must be qualified. A condition Ontul cannot evaluate row by row fails the
+  MERGE before anything is written, instead of being ignored.
+- `INSERT VALUES (...)` without a column list fills every target column in table order.
+- `WHEN MATCHED ... THEN DELETE` needs the `data:Delete` privilege on the target in addition to
+  `data:Insert`.
+- `WHEN NOT MATCHED BY SOURCE` (not in the SQL standard or Trino) is refused with an error.
+- `SET` and `INSERT VALUES` take literals and column references; compute anything else in the `USING`
+  query and assign the resulting column.
 
 The source relation may carry a **Trino-style column-alias list** so a bare `VALUES` block can be used directly as the MERGE source without an inner `SELECT ... AS`:
 
@@ -446,7 +497,7 @@ UPDATE ice.sales.orders SET total = 999 WHERE id = 1;
 
 ### MERGE INTO
 
-Composite key (multiple `AND`-connected equalities) and non-equi remainder predicates are both supported. The source can be an inline `VALUES`, a `SELECT`, or any subquery — including nested parentheses around a `VALUES` list.
+Composite key (multiple `AND`-connected equalities) and non-equi remainder predicates are both supported. The source can be an inline `VALUES`, a `SELECT`, any subquery — including nested parentheses around a `VALUES` list — or a table name (`USING ice.staging.changes c`). Several `WHEN [NOT] MATCHED [AND <condition>]` clauses, including `THEN DELETE`, are evaluated in order; see [Write](#write) above.
 
 ```sql
 MERGE INTO ice.sales.orders t
