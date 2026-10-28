@@ -85,10 +85,10 @@ Ontul uses AWS-style JSON policies to manage permissions. Actions live in the `d
 }
 ```
 
-- **Action verbs in `data:` namespace** — runtime SQL: `data:Select`, `data:Insert`, `data:Update`, `data:Delete` (`MERGE` is checked as `data:Insert`, plus `data:Delete` when it has `WHEN MATCHED THEN DELETE`; `data:Merge` is only used by the chango Trino gateway). Catalog DDL: `data:CreateTable`, `data:DropTable`, `data:AlterTable`. Operational: `data:KillJob`, `data:CancelQuery`. The metadata-only `data:SelectTable` verb gates discovery surfaces (semantic views, object types, retrievers: listing and fetching their definitions) — distinct from the runtime `data:Select` that gates actual scans. A `data:Select` grant on a name also makes it discoverable, so a user who may read a table sees the views and object types built on it; reading table data (including Lance blobs) always needs `data:Select`. Catalog / schema / table listings, `DESCRIBE`, `EXPLAIN` and lineage follow `data:Select` (see [BI integration](bi-integration.md)).
+- **Action verbs in `data:` namespace** — runtime SQL: `data:Select`, `data:Insert`, `data:Update`, `data:Delete` `data:Merge`. Catalog DDL: `data:CreateTable`, `data:DropTable`, `data:AlterTable`, `data:CreateSchema`, `data:DropSchema`, `data:CreateView`, `data:DropView` (legacy aliases still accepted, see the table below). Operational: `data:KillJob`, `data:CancelQuery`. The metadata-only `data:SelectTable` verb gates discovery surfaces (semantic views, object types, retrievers: listing and fetching their definitions) — distinct from the runtime `data:Select` that gates actual scans. A `data:Select` grant on a name also makes it discoverable, so a user who may read a table sees the views and object types built on it; reading table data (including Lance blobs) always needs `data:Select`. Catalog / schema / table listings, `DESCRIBE`, `EXPLAIN` and lineage follow `data:Select` (see [BI integration](bi-integration.md)).
 - **UDF actions** stay in the `UDF:` namespace — see [UDF Permissions](#udf-permissions).
 - **Ontology actions** live in the `ontology:` namespace and gate the [ontology](ontology.md) surface: `ontology:InvokeAction` (perform a governed write-back), `ontology:InvokeWorkflow` (run a multi-step Saga), `ontology:Certify` (sign off on a definition). Administrators are always allowed; for everyone else these are deny-by-default like any other action.
-- **Server-side S3 writes and remote functions** — `data:UploadS3` on `data:s3:<bucket>/<key>` gates the Flight `UPLOAD_S3` action and the `WRITE_S3 '<s3 path>' ...` statement (the master writes where the caller names); `data:MapExecute` on `data:compute:map` / `data:compute:py-map` gates the Flight `MAP_EXECUTE` / `PY_MAP_EXECUTE` actions (the caller's function runs on every worker); the Flight `CancelQuery` action needs `data:CancelQuery` on `data:query:<id>`, like `POST /admin/query/cancel`. All deny by default; administrators pass.
+- **Server-side S3 reads, writes and remote functions** — `data:ReadS3` on `data:s3:<bucket>/<key>` gates `read_s3('<s3 path>', ...)` (the master reads where the caller names, with inline keys, a stored connection's or its own credentials); `data:UploadS3` on the same resource gates the Flight `UPLOAD_S3` action and the `WRITE_S3 '<s3 path>' ...` statement (the master writes where the caller names); `data:MapExecute` on `data:compute:map` / `data:compute:py-map` gates the Flight `MAP_EXECUTE` / `PY_MAP_EXECUTE` actions (the caller's function runs on every worker); the Flight `CancelQuery` action needs `data:CancelQuery` on `data:query:<id>`, like `POST /admin/query/cancel`. All deny by default; administrators pass.
 - **Resources**: `data:table:<catalog>.<schema>.<table>`, `data:schema:<catalog>.<schema>`, `data:job:*`, `data:query:*`, `data:s3:<bucket>/<key>`, `data:compute:map`, `udf:<name>`. Wildcards `*` and `?` are supported. There is no `data:catalog:` resource: a whole catalog is `data:table:<catalog>.*.*` plus `data:schema:<catalog>.*`. **Semantic-layer and ontology objects are addressed by their BARE fully-qualified name** — `semantic.rag.*`, `ontology.sales.*` — *not* prefixed with `data:table:`. A policy written as `data:table:ontology.sales.*` never matches, which reads like "IAM is broken" rather than "the pattern did not match".
 - **Attachment**: policies attach to users (direct) or groups (via group membership).
 - **Deny rules take precedence** over allow rules.
@@ -126,40 +126,71 @@ The engine authorization is the enforcement point the [chango Trino / Spark / Fl
 
 What each operation is authorized as — the exact `(action, resource)` pair the engine evaluates. The same table is
 in the Admin UI policy editor (**Action & resource reference**), and a denial names the pair it checked, e.g.
-`Access denied: no matching policy for user 'wf-runner' to data:CreateTable on 'data:schema:iceberg.wf'`: grant
+`Access denied: no matching policy for user 'wf-runner' to data:CreateSchema on 'data:schema:iceberg.wf'`: grant
 exactly that.
 
-| Operation | Action | Resource |
-|---|---|---|
-| `SELECT`, `EXPLAIN`, `DESCRIBE`, `SHOW …` (listings are filtered) | `data:Select` | `data:table:<catalog>.<schema>.<table>` |
-| `INSERT INTO` | `data:Insert` | `data:table:<catalog>.<schema>.<table>` |
-| `CREATE TABLE`, `CREATE TABLE AS SELECT` | `data:Insert` | `data:table:<catalog>.<schema>.<table>` |
-| `UPDATE` | `data:Update` | `data:table:<catalog>.<schema>.<table>` |
-| `DELETE FROM` | `data:Delete` | `data:table:<catalog>.<schema>.<table>` |
-| `MERGE INTO` (+ `data:Delete` with `WHEN MATCHED THEN DELETE`) | `data:Insert` | `data:table:<catalog>.<schema>.<table>` |
-| `CREATE SCHEMA` / `NAMESPACE` / `DATABASE` | `data:CreateTable` | `data:schema:<catalog>.<schema>` |
-| `DROP SCHEMA` | `data:DropTable` | `data:schema:<catalog>.<schema>` |
-| `CREATE [MATERIALIZED] VIEW` | `data:CreateTable` | `data:table:<catalog>.<schema>.<view>` |
-| `DROP TABLE` / `DROP VIEW` | `data:DropTable` | `data:table:<catalog>.<schema>.<table>` |
-| `ALTER TABLE` / `VIEW`, `OPTIMIZE`, `VACUUM`, `EXPIRE SNAPSHOTS`, `REMOVE ORPHAN FILES`, `REWRITE MANIFESTS` | `data:AlterTable` | `data:table:<catalog>.<schema>.<table>` |
-| `WRITE_S3`, Flight `UPLOAD_S3` | `data:UploadS3` | `data:s3:<bucket>/<key>` |
-| Flight `MAP_EXECUTE` / `PY_MAP_EXECUTE` | `data:MapExecute` | `data:compute:map` / `data:compute:py-map` |
-| Cancel a query (SQL page, Flight `CancelQuery`) | `data:CancelQuery` | `data:query:*` (Flight: `data:query:<id>`) |
-| Kill a job (the job's owner needs nothing on `/v1/api`) | `data:KillJob` | `data:job:*` |
-| Streaming flow: source table / sink table (+ `data:Update`, `data:Delete` for CDC / upsert) | `data:Select` / `data:Insert` | `data:table:<catalog>.<schema>.<table>` |
-| Semantic views, retrievers, object types: list / get / invoke | `data:SelectTable` | `<catalog>.<schema>.<name>` (no prefix) |
-| UDF in a query / register / drop (`GLOBAL` scope: `_GLOBAL`) | `UDF:EXECUTE` / `UDF:CREATE` / `UDF:DROP` | `udf:<name>` |
-| `ai_verdict()` / `ai_verdict_one()` | `AI:DECIDE` | `connection:<connectionId>` |
-| `CALL` an action / workflow / operation | `ontology:InvokeAction` / `InvokeWorkflow` / `InvokeOperation` | `<catalog>.<schema>.<action>` (operation: `operation:<catalog>:<op>`) |
-| Certify an ontology object | `ontology:Certify` | `ontology.<schema>.<name>` |
+Action names follow the SQL statement — the same names the chango Trino gateway sends to
+`/v1/api/authz/check`. Where Ontul used another name before, that name is a **legacy alias**: an Allow of it still
+grants the statement, and a Deny of either the action or its legacy alias denies it, so existing policies keep
+working and an existing Deny cannot be stepped around by the rename.
+
+| Operation | Action | Resource | Legacy alias |
+|---|---|---|---|
+| `SELECT`, `EXPLAIN`, `DESCRIBE`, `SHOW …` (listings are filtered) | `data:Select` | `data:table:<catalog>.<schema>.<table>` | |
+| `INSERT INTO` an existing table | `data:Insert` | `data:table:<catalog>.<schema>.<table>` | |
+| `CREATE TABLE` | `data:CreateTable` | `data:table:<catalog>.<schema>.<table>` | `data:Insert` |
+| `CREATE TABLE … AS SELECT` — filling the new table is part of creating it (no separate `data:Insert`), plus `data:Select` on every source table | `data:CreateTable` | `data:table:<catalog>.<schema>.<table>` | `data:Insert` |
+| `UPDATE` | `data:Update` | `data:table:<catalog>.<schema>.<table>` | |
+| `DELETE FROM` | `data:Delete` | `data:table:<catalog>.<schema>.<table>` | |
+| `MERGE INTO` | `data:Merge` | `data:table:<catalog>.<schema>.<table>` | `data:Insert` (+ `data:Delete` with `WHEN MATCHED THEN DELETE`) |
+| `CREATE SCHEMA` / `NAMESPACE` / `DATABASE` | `data:CreateSchema` | `data:schema:<catalog>.<schema>` | `data:CreateTable` |
+| `DROP SCHEMA` | `data:DropSchema` | `data:schema:<catalog>.<schema>` | `data:DropTable` |
+| `CREATE [MATERIALIZED] VIEW` | `data:CreateView` | `data:table:<catalog>.<schema>.<view>` | `data:CreateTable` |
+| `DROP VIEW` / `DROP MATERIALIZED VIEW` | `data:DropView` | `data:table:<catalog>.<schema>.<view>` | `data:DropTable` |
+| `DROP TABLE` | `data:DropTable` | `data:table:<catalog>.<schema>.<table>` | |
+| `ALTER TABLE` / `VIEW`, `OPTIMIZE`, `VACUUM`, `EXPIRE SNAPSHOTS`, `REMOVE ORPHAN FILES`, `REWRITE MANIFESTS` | `data:AlterTable` | `data:table:<catalog>.<schema>.<table>` | |
+| `CREATE INDEX` / `DROP INDEX … ON <table>`, `COMMENT ON TABLE` / `COLUMN` | `data:AlterTable` | `data:table:<catalog>.<schema>.<table>` | |
+| `PUBLISH WAP` (a WAP branch appended to main) | `data:Insert` | `data:table:<catalog>.<schema>.<table>` | |
+| `INSERT … SELECT`, subqueries of `UPDATE` / `DELETE` / `MERGE`: every table read | `data:Select` | `data:table:<catalog>.<schema>.<table>` | |
+| `match()` / `vector_search()` (refused when column / row rules apply to the caller) | `data:Select` | `data:table:<catalog>.<schema>.<table>` | |
+| `INSERT` / `UPDATE` / `DELETE` on a JDBC catalog (sent to the database): every other table it names | `data:Select` | `data:table:<catalog>.<schema>.<table>` | |
+| `WRITE_S3`, Flight `UPLOAD_S3` | `data:UploadS3` | `data:s3:<bucket>/<key>` | |
+| `read_s3()` — whatever credentials it carries (inline keys, a `connectionId`, or the server's own default chain) | `data:ReadS3` | `data:s3:<bucket>/<key>` | |
+| Flight `MAP_EXECUTE` / `PY_MAP_EXECUTE` | `data:MapExecute` | `data:compute:map` / `data:compute:py-map` | |
+| Cancel a query (SQL page, Flight `CancelQuery`) | `data:CancelQuery` | `data:query:*` (Flight: `data:query:<id>`) | |
+| Kill a job (the job's owner needs nothing on `/v1/api`) | `data:KillJob` | `data:job:*` | |
+| Streaming flow: source table / sink table (+ `data:Update`, `data:Delete` for CDC / upsert) | `data:Select` / `data:Insert` | `data:table:<catalog>.<schema>.<table>` | |
+| Semantic views, retrievers, object types: list / get / invoke | `data:SelectTable` | `<catalog>.<schema>.<name>` (no prefix) | |
+| UDF in a query / register / drop (`GLOBAL` scope: `_GLOBAL`) | `UDF:EXECUTE` / `UDF:CREATE` / `UDF:DROP` | `udf:<name>` | |
+| `ai_verdict()` / `ai_verdict_one()` | `AI:DECIDE` | `connection:<connectionId>` | |
+| `CALL` an action / workflow / operation | `ontology:InvokeAction` / `InvokeWorkflow` / `InvokeOperation` | `<catalog>.<schema>.<action>` (operation: `operation:<catalog>:<op>`) | |
+| Certify an ontology object | `ontology:Certify` | `ontology.<schema>.<name>` | |
+
+!!! note "Migrating to the statement names"
+    Nothing has to change for existing policies: `data:CreateTable` on `data:schema:…` still allows `CREATE SCHEMA`,
+    `data:Insert` still allows `CREATE TABLE` / CTAS and (with `data:Delete` for `WHEN MATCHED THEN DELETE`)
+    `MERGE`, and a Deny written with the old name still denies. Saving a policy with `data:CreateTable` /
+    `data:DropTable` on a `data:schema:` resource is answered with a note naming `data:CreateSchema` /
+    `data:DropSchema`. To migrate, replace the legacy name with the action in the table (or add it next to the
+    legacy one); the policy templates already use the new names. `/v1/api/authz/check` answers with the same
+    rules, and a `data:CreateSchema` / `data:DropSchema` check on the gateway's `data:table:<catalog>.<schema>`
+    spelling is also answered by a `data:schema:<catalog>.<schema>` grant.
 
 How matching works:
 
 - Case-insensitive. `*` matches any characters (including `.` and `:`), `?` exactly one. `"*"` alone matches everything.
 - There is **no hierarchy**: `data:table:iceberg.wf.*` does not cover `data:schema:iceberg.wf`. A role that creates its
   own schema needs a `data:schema:` statement as well — see the **ETL Schema Owner (one schema)** template below.
-- Names are checked as written in the statement, so write tables and schemas fully qualified (`catalog.schema.table`)
-  to match qualified grants.
+- Names are checked as the engine resolves them, not as written: quotes are removed and case is ignored, so
+  `"ICEBERG"."NS"."T"` meets a statement on `data:table:iceberg.ns.t`. A `SELECT` must name `catalog.schema.table`
+  (Ontul has no default catalog or schema; `SELECT * FROM t` fails to plan). In DDL / DML a two-part `catalog.table`
+  is `catalog.default.table` — what the statement acts on — and is checked as that.
+- A statement whose target cannot be read from it (e.g. `COMMENT ON SCHEMA …`), and a JDBC-catalog `INSERT` /
+  `UPDATE` / `DELETE` that holds more than one statement or names a table not written as
+  `catalog.schema.table` of that catalog, is refused for anyone but an administrator.
+- S3 resources are `data:s3:<bucket>/<key>` without the scheme; `data:s3:bucket/team/*` grants everything under
+  `team/`. A path that is not `s3://` / `s3a://`, or that has a `.` / `..` segment, is refused whatever the policy says
+  (Hadoop would have normalized `team/../secret` to `secret`).
 - Administration routes (users, groups, policies, catalogs, connections, KMS, backup, …) are not governed by actions:
   they need the built-in `AdministratorAccess` policy.
 
@@ -169,9 +200,10 @@ A grant for an ETL role that owns one schema (create it, create / load / change 
 {
   "Version": "2024-01-01",
   "Statement": [
-    { "Sid": "EtlSchema", "Effect": "Allow", "Action": ["data:CreateTable", "data:DropTable"], "Resource": "data:schema:iceberg.etl" },
+    { "Sid": "EtlSchema", "Effect": "Allow", "Action": ["data:CreateSchema", "data:DropSchema"], "Resource": "data:schema:iceberg.etl" },
     { "Sid": "EtlTables", "Effect": "Allow",
-      "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete", "data:CreateTable", "data:DropTable", "data:AlterTable"],
+      "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete", "data:Merge", "data:CreateTable", "data:DropTable",
+                 "data:AlterTable", "data:CreateView", "data:DropView"],
       "Resource": "data:table:iceberg.etl.*" }
   ]
 }
@@ -191,25 +223,27 @@ Vocabulary is **warned about, not refused**: the document is stored and the answ
 which the Admin UI shows after Save. A warning is given when
 
 - an action in a namespace Ontul owns (`data:`, `UDF:`, `AI:`, `ontology:`) is not one Ontul's engine checks —
-  with what it checks instead, e.g. `Statement 2: 'data:CreateSchema' is not an action Ontul's own engine checks —
-  CREATE SCHEMA is authorized as data:CreateTable on data:schema:<catalog>.<schema> (the chango Trino gateway sends
-  data:CreateSchema to /v1/api/authz/check, so keep it only for that). ...`;
+  with what it checks instead, e.g. `Statement 2: 'data:CreateNamespace' is not an action Ontul's own engine
+  checks — CREATE SCHEMA / NAMESPACE / DATABASE is authorized as data:CreateSchema on data:schema:<catalog>.<schema>. ...`;
+- a legacy name is used — a note, not a problem: `Statement 1: data:CreateTable on 'data:schema:iceberg.wf' is the
+  legacy alias of data:CreateSchema (still accepted; data:CreateSchema is the name to use)`;
 - a `data:` resource is not a form Ontul checks (`data:catalog:…`, `data:tables:…`);
 - none of a statement's resources has the form its action is checked on, e.g. `data:Insert` on
   `data:schema:iceberg.etl` (`data:Insert` is checked on `data:table:…`), so the statement never applies.
 
 These are warnings rather than errors because the same policies answer external engines (next section), which
-use some of those names.
+may use names of their own.
 
-### External engines use their own action names
+### External engines
 
 Trino, Spark and Flink (chango) ask Ontul through `POST /v1/api/authz/check` / `check-batch` with the action and
-resource **they** build; Ontul evaluates exactly what it receives. The chango Trino gateway checks `CREATE SCHEMA`
-as `data:CreateSchema`, `DROP SCHEMA` as `data:DropSchema`, `MERGE` as `data:Merge`, `CREATE VIEW` / `DROP VIEW`
-as `data:CreateView` / `data:DropView` and `CREATE TABLE` as `data:CreateTable` — all on
-`data:table:<catalog>.<schema>[.<table>]`. Ontul's own SQL checks the names in the table above. A policy that
-must work both in Ontul SQL and from Trino therefore needs both spellings (the templates keep `data:Merge` for
-this reason).
+resource **they** build. The chango Trino gateway uses the names in the table above (`data:CreateSchema`,
+`data:DropSchema`, `data:Merge`, `data:CreateView`, `data:DropView`, `data:CreateTable`, …), so one policy governs a
+statement in Ontul SQL and from Trino alike. The check applies the same legacy aliases (a `data:Merge` check from an
+engine, which cannot tell whether the MERGE deletes rows, takes the legacy `data:Insert` only together with
+`data:Delete`). The gateway names a schema `data:table:<catalog>.<schema>`; for `data:CreateSchema` /
+`data:DropSchema` on such a two-part name the check also asks `data:schema:<catalog>.<schema>` — an Allow on either
+allows, a Deny on either denies.
 
 ### Why was I denied?
 
@@ -217,9 +251,9 @@ A denial names the exact action and resource that was checked. When the caller's
 miss, the message adds a hint (only the caller's own Allow statements are looked at):
 
 ```text
-Access denied: no matching policy for user 'wf-runner' to data:CreateTable on 'data:schema:iceberg.wf'.
-  Hint: your policy grants data:CreateSchema on 'data:schema:iceberg.wf', which Ontul does not check —
-  CREATE SCHEMA is authorized as data:CreateTable on data:schema:<catalog>.<schema>
+Access denied: no matching policy for user 'wf-runner' to data:CreateSchema on 'data:schema:iceberg.wf'.
+  Hint: your policy grants data:CreateNamespace on 'data:schema:iceberg.wf', which Ontul does not check —
+  CREATE SCHEMA / NAMESPACE / DATABASE is authorized as data:CreateSchema on data:schema:<catalog>.<schema>
 Access denied: no matching policy for user 'etl' to data:Insert on 'data:table:iceberg.wf.t'.
   Hint: your policies grant data:Insert only on 'data:table:iceberg.etl.*'
 ```

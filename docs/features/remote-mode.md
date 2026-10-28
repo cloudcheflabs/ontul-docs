@@ -265,7 +265,7 @@ session.source(Source.sql(
 | Source | Description |
 |--------|-------------|
 | `Source.sql(query)` | Any SQL query across registered catalogs |
-| `Source.s3(path, format)` | Read from S3 (parquet, json, csv, binary) |
+| `Source.s3(path, format)` | Read from S3 (parquet, json, csv, binary) through the server's `read_s3()`; the caller needs `data:ReadS3` on `data:s3:<bucket>/<key>` ([IAM](iam.md)) |
 | `Source.data(list)` | In-memory data (client-side List of Maps) |
 | `Source.kafka(conn, topic)` | Kafka stream source (for streaming mode) |
 
