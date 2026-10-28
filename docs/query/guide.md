@@ -148,9 +148,21 @@ DROP TABLE IF EXISTS ice.examples.products   -- a no-op when it does not exist
 ```
 
 Like Trino, dropping an object that does not exist is an error (`Table 'ice.examples.products' does not exist`)
-unless `IF EXISTS`, creating one that exists is an error unless `IF NOT EXISTS`, and a DDL statement that fails is an
-error with its cause, never a success. See
+unless `IF EXISTS`, creating one that exists is an error unless `IF NOT EXISTS` (CTAS is the exception, below), and
+a DDL statement that fails is an error with its cause, never a success. See
 [Iceberg: missing objects and failures](../iceberg/integration.md#missing-objects-and-failures).
+
+!!! warning "CTAS onto an existing table appends — unlike Trino"
+    `CREATE TABLE t AS SELECT ...` (no `IF NOT EXISTS`) of a table that already exists **appends** the SELECT's
+    rows to it and answers `CREATE TABLE <rows written>`. Trino refuses that statement (`Table ... already
+    exists`). The SDK table sinks (Java `df.sink(Sink.table(...))`, Python `session.sink(table, target)`) and
+    materialized-view refresh rely on this append; use `INSERT INTO` when appending is what you mean, and
+    `DROP TABLE` first when you want to replace a table.
+
+    `CREATE TABLE IF NOT EXISTS t AS SELECT ...` of an existing table is a **no-op**, like Trino: nothing is read
+    or written, and the answer is `CREATE TABLE 0 (table <catalog.schema.table> already exists; nothing written)`
+    (update count 0 over Flight SQL / JDBC). It used to append as well, so re-running a script "to make sure the
+    table is there" added the rows again each time.
 
 ### DML
 
