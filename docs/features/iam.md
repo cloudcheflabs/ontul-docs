@@ -147,6 +147,7 @@ working and an existing Deny cannot be stepped around by the rename.
 | `DROP SCHEMA` | `data:DropSchema` | `data:schema:<catalog>.<schema>` | `data:DropTable` |
 | `CREATE [MATERIALIZED] VIEW` | `data:CreateView` | `data:table:<catalog>.<schema>.<view>` | `data:CreateTable` |
 | `DROP VIEW` / `DROP MATERIALIZED VIEW` | `data:DropView` | `data:table:<catalog>.<schema>.<view>` | `data:DropTable` |
+| `REFRESH MATERIALIZED VIEW` | `data:Insert` | `data:table:<catalog>.<schema>.<view>` | — |
 | `DROP TABLE` | `data:DropTable` | `data:table:<catalog>.<schema>.<table>` | |
 | `ALTER TABLE` / `VIEW`, `OPTIMIZE`, `VACUUM`, `EXPIRE SNAPSHOTS`, `REMOVE ORPHAN FILES`, `REWRITE MANIFESTS` | `data:AlterTable` | `data:table:<catalog>.<schema>.<table>` | |
 | `CREATE INDEX` / `DROP INDEX … ON <table>`, `COMMENT ON TABLE` / `COLUMN` | `data:AlterTable` | `data:table:<catalog>.<schema>.<table>` | |
