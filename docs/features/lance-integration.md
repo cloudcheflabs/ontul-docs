@@ -206,6 +206,20 @@ audit = session.sql("SELECT count(*) FROM lance.public.events")  # main is uncha
 session.execute("PUBLISH WAP lance.public.events BRANCH 'stage_2024_06'")
 ```
 
+Branch-isolated WAP works on local datasets and on S3, including S3-compatible stores behind a custom endpoint
+with path-style access (ShannonStore, MinIO): the branch is created and committed with the catalog's S3 settings.
+The same works over JDBC / Flight SQL, where `SET` scopes to the connection:
+
+```sql
+SET ontul.lance.wap.branch = 'stage_2024_06';
+INSERT INTO lance.public.events SELECT * FROM staging.batch;    -- staged: main still shows the old rows
+PUBLISH WAP lance.public.events BRANCH 'stage_2024_06';          -- PUBLISH WAP lance.public.events branch 'stage_2024_06' → main v7
+```
+
+`PUBLISH WAP` appends the branch's staged fragments to `main` and drops the branch; it needs `data:Insert` on the
+table. Publishing a branch that does not exist (never staged, or already published) fails with
+`PUBLISH WAP failed: no WAP branch '<b>' on this table (nothing was staged on it, or it was already published)`.
+
 ## Blob V2 — unstructured data as a first-class column
 
 A Lance **Blob V2** column stores large unstructured values — video, audio, images, PDFs, raw
@@ -307,9 +321,9 @@ namespaces.
   checkpoint-barrier integration is in progress).
 - `UPDATE` is non-atomic (delete + re-append) and assumes the SET preserves column types; use
   `MERGE` for atomic new-value upserts.
-- Branch-isolated WAP works on local/dir datasets; on S3/Polaris, branch operations are currently
-  blocked by a Lance Java binding (they don't thread storage credentials), so WAP there errors
-  clearly rather than writing to `main` — use tag-based publish on S3 until that is fixed.
+- Branch-isolated WAP works on local datasets and on S3 (custom endpoints and path-style included). Earlier
+  releases failed on S3 behind a custom endpoint with `Bucket '<bucket>' not found`: the branch was created without
+  the catalog's S3 settings.
 - Blob V2 columns store unstructured data (video/audio/images/docs) as a first-class, governed,
   versioned column; reads are served through a governed, IAM-gated streaming endpoint and the SDK
   (`stream_blob` / `read_blob`) — see **[Blob V2](#blob-v2-unstructured-data-as-a-first-class-column)**.

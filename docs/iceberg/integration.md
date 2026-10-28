@@ -143,7 +143,7 @@ Ontul sends `header.X-Iceberg-Access-Delegation: ""` on every catalog call so Po
 | `DROP TABLE [IF EXISTS] catalog.ns.t` | Honors Polaris `polaris.config.drop-with-purge.enabled` for actual S3 cleanup. |
 | `DROP SCHEMA [IF EXISTS] catalog.namespace` | Namespace must be empty. |
 | `CREATE [OR REPLACE] VIEW catalog.ns.v AS <SELECT>` | Persisted via Iceberg's view spec; see [Views](#views). |
-| `DROP VIEW [IF EXISTS] catalog.ns.v` | |
+| `DROP VIEW [IF EXISTS] catalog.ns.v` | Stops resolving on every master at once; see [Views](#views). |
 | `COMMENT ON TABLE catalog.ns.t IS '...'` | |
 | `COMMENT ON COLUMN catalog.ns.t.col IS '...'` | |
 
@@ -575,6 +575,19 @@ SELECT max(total)  FROM ice.sales.v_recent;
 
 DROP VIEW IF EXISTS ice.sales.v_recent;
 ```
+
+**Dropped and re-created objects.** A `DROP VIEW` or `DROP TABLE` stops resolving at once on every master, not
+only the one that ran it: the next query on any master answers
+`Object 'v_recent' not found within 'ice.sales'`. A view or table re-created under the same name resolves to its
+new definition (a view's new body, a table's new columns) everywhere. Changes made by another engine directly in
+the catalog — Trino or Spark dropping a table, replacing or dropping a view — are noticed on the next query that
+reads the object: a view whose body changed is re-planned with the catalog's current body, and a dropped table or
+view is "not found". A catalog refresh (`POST /admin/catalogs/<name>/refresh`, or the lookup Ontul does when a
+query names an unknown object) also removes what the catalog no longer lists — but never what it could not list
+(a namespace that failed to list keeps its tables) and never semantic views, which live in Ontul.
+
+Earlier releases kept every table and view they had seen: a dropped view went on answering from its stored SQL,
+a dropped table failed with `cannot plan a scan ...: Table does not exist`, and both stayed in `SHOW TABLES`.
 
 ### Cross-catalog federation
 
