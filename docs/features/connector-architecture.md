@@ -92,6 +92,33 @@ JDBC, KAFKA, NEORUNBASE, REST, RERANK, S3` (case ignored, stored upper-case), ot
 `unknown connection type 'S4' (accepted: ...)`; only `connectionId`, `type`, `description` and `properties` are
 accepted; `properties` values are strings; `connectionId` is required and cannot be changed by an update.
 
+**`POST` creates, `PUT` updates.** `POST /admin/catalogs` only registers a new catalog. A name that is already
+registered — compared ignoring case, as SQL resolves names (`ICEBERG` is `iceberg`), the built-in `tpch` / `tpcds`
+included — is refused and the existing catalog is left exactly as it was (config, connector, queries):
+
+```
+409 {"error": "Catalog 'iceberg' already exists; update it with PUT /admin/catalogs/iceberg"}
+```
+
+To change a catalog, send the whole registration to `PUT /admin/catalogs/<name>`: it is checked like a
+registration, replaces the stored config and rebuilds the catalog on every master (the workers drop their cached
+connector). A secret sent back as the list's mask `***` keeps the stored value; a config that cannot connect is
+refused (`400`) and the previous catalog keeps serving. A `PUT` whose body names another existing catalog (a rename
+onto it) is `409` the same way. `PUT` of a name that is not registered registers it, so a script that must be
+re-runnable and apply edits uses `PUT`. The Admin UI's **Edit catalog** panel sends `PUT`; **Register Catalog** sends
+`POST` and shows the `409` text in the panel. Earlier releases replaced the catalog on a `POST` of an existing name.
+
+Connections work the same way: `POST /admin/connections` with a `connectionId` that exists is
+
+```
+409 {"error": "Connection 'warehouse-s3' already exists; update it with PUT /admin/connections/warehouse-s3"}
+```
+
+and the stored connection is unchanged (earlier releases answered `400 Connection already exists: <id>`). Update it
+with `PUT /admin/connections/<id>` (**Edit connection** in the Admin UI). A catalog that uses the connection keeps the
+settings it was built with until it is reloaded: `POST /admin/catalogs/<name>/reload` (the catalog card's **Reload**)
+rebuilds it from the updated connection on every master and on every worker.
+
 ## Built-in Connectors
 
 ### Catalog Connectors (Query/Batch)

@@ -988,9 +988,9 @@ post() {  # post <path> <json> <label>
   local out code
   out=$(curl -s -o /tmp/regdemo-post.out -w '%{http_code}' -X POST "$ONTUL$1" "${AUTH[@]}" -d "$2")
   code="$out"
-  # "already exists" arrives as 400 rather than 409, so the status code alone
-  # cannot distinguish a re-run from a real failure. This script promises to be
-  # idempotent; treating that message as success is what keeps the promise.
+  # POST only creates: an existing name answers 409 ("... already exists; update it
+  # with PUT ..."). This script promises to be idempotent; treating that as success
+  # is what keeps the promise (some older servers said "already exists" with a 400).
   case "$code" in
     2*)  step "$3" ;;
     409) step "$3 (already present)" ;;
@@ -1000,6 +1000,20 @@ post() {  # post <path> <json> <label>
            printf '\033[31m  %s -> HTTP %s: %s\033[0m\n' "$3" "$code" "$(head -c 300 /tmp/regdemo-post.out)" >&2
            return 1
          fi ;;
+  esac
+}
+
+# Catalogs go through PUT /admin/catalogs/<name>: it registers the catalog, or replaces the one of that name
+# (validated, reloaded on every master). POST only creates -- an existing name is a 409 -- so a re-run with
+# POST would keep an edited definition unapplied, and a catalog registered before its tables existed would
+# never re-discover them.
+put_catalog() {  # put_catalog <name> <json> <label>
+  local code
+  code=$(curl -s -o /tmp/regdemo-post.out -w '%{http_code}' -X PUT "$ONTUL/admin/catalogs/$1" "${AUTH[@]}" -d "$2")
+  case "$code" in
+    2*) step "$3" ;;
+    *)  printf '\033[31m  %s -> HTTP %s: %s\033[0m\n' "$3" "$code" "$(head -c 300 /tmp/regdemo-post.out)" >&2
+        return 1 ;;
   esac
 }
 
@@ -1076,7 +1090,7 @@ log "1/6  Catalogs"
 # 'warehouse' also has to be the Polaris catalog name, because the connector
 # derives the REST 'prefix' from it. A warehouse that is an S3 URI produces a
 # prefix that no catalog answers to.
-post /admin/catalogs "$(cat <<JSON
+put_catalog ice "$(cat <<JSON
 {"name":"ice","config":{
    "connector":"iceberg",
    "catalog.rest.uri":"$POLARIS_URI_INTERNAL",
@@ -1150,9 +1164,9 @@ done
 # through the connection rather than repeating them here. ERP is federated on
 # purpose: a leave balance copied into the lake overnight is a number that was
 # true yesterday, quoted with the confidence of one that is true now.
-post /admin/catalogs '{"name":"erp","config":{"connector":"jdbc","connectionId":"erp"}}' \
+put_catalog erp '{"name":"erp","config":{"connector":"jdbc","connectionId":"erp"}}' \
   "erp (postgres, federated)"
-post /admin/catalogs '{"name":"gw","config":{"connector":"jdbc","connectionId":"groupware"}}' \
+put_catalog gw '{"name":"gw","config":{"connector":"jdbc","connectionId":"groupware"}}' \
   "gw (mysql — the approval system, the authority on effective dates)"
 
 # ── 3. Schema. Iceberg first — the semantic views read from it, and a view over
@@ -1198,7 +1212,7 @@ step "  applied"
 # tables, so every query against it fails with "Object 'nb' not found" rather than
 # with anything about configuration. preferQueryMode=simple because NeorunBase
 # serves the simple query protocol.
-post /admin/catalogs "$(cat <<JSON
+put_catalog nb "$(cat <<JSON
 {"name":"nb","config":{"connector":"neorunbase",
    "jdbcUrl":"jdbc:postgresql://$NEORUNBASE_INTERNAL_HOST:5432/neorunbase?preferQueryMode=simple",
    "endpoint":"http://$NEORUNBASE_INTERNAL_HOST:8080",
@@ -1378,6 +1392,11 @@ bash infra/register.sh
   captures the table list at registration time. Register first on a fresh install
   and it resolves zero tables, after which every query fails with
   `Object 'nb' not found` — which says nothing about configuration.
+- **Catalogs are registered with `PUT /admin/catalogs/<name>`.** `POST` only creates:
+  a second run would get `409 Catalog '<name>' already exists; update it with PUT
+  /admin/catalogs/<name>` and keep the old definition. `PUT` registers the catalog
+  or replaces it (checked like a registration, reloaded on every master), so an
+  edited definition takes effect and the NeorunBase catalog re-discovers its tables.
 - **Connections are deleted and recreated.** Treating "already exists" as success
   exists to make re-runs safe, not to **ignore a changed definition**. Edit a
   timeout or a model revision in the file, re-run, and if nothing happens the
