@@ -2028,6 +2028,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Partition evolution">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#missing-objects-and-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Missing objects and failures
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3262,11 +3279,11 @@
 <tbody>
 <tr>
 <td><code>CREATE SCHEMA [IF NOT EXISTS] catalog.namespace</code></td>
-<td>Creates an Iceberg namespace.</td>
+<td>Creates an Iceberg namespace. An existing one is an error (<code>Schema 'c.ns' already exists</code>) unless <code>IF NOT EXISTS</code>.</td>
 </tr>
 <tr>
 <td><code>CREATE TABLE [IF NOT EXISTS] catalog.ns.t (cols) [USING iceberg] [PARTITIONED BY (...)] [SORT BY (...)] [WITH (props) \| TBLPROPERTIES (props)]</code></td>
-<td>Format v2, with optional hidden partitioning and sort order. <code>USING iceberg</code> (Spark style) is accepted and ignored; <code>WITH</code> and <code>TBLPROPERTIES</code> are interchangeable property clauses.</td>
+<td>Format v2, with optional hidden partitioning and sort order. <code>USING iceberg</code> (Spark style) is accepted and ignored; <code>WITH</code> and <code>TBLPROPERTIES</code> are interchangeable property clauses. An existing table is an error (<code>Table 'c.ns.t' already exists</code>) unless <code>IF NOT EXISTS</code>, which leaves it unchanged.</td>
 </tr>
 <tr>
 <td><code>CREATE TABLE catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...</code></td>
@@ -3274,11 +3291,11 @@
 </tr>
 <tr>
 <td><code>DROP TABLE [IF EXISTS] catalog.ns.t</code></td>
-<td>Honors Polaris <code>polaris.config.drop-with-purge.enabled</code> for actual S3 cleanup.</td>
+<td>Honors Polaris <code>polaris.config.drop-with-purge.enabled</code> for actual S3 cleanup. A missing table is an error unless <code>IF EXISTS</code>; see <a href="#missing-objects-and-failures">Missing objects and failures</a>.</td>
 </tr>
 <tr>
 <td><code>DROP SCHEMA [IF EXISTS] catalog.namespace</code></td>
-<td>Namespace must be empty.</td>
+<td>Namespace must be empty (<code>Cannot drop non-empty schema 'c.ns'</code>, with or without <code>IF EXISTS</code>).</td>
 </tr>
 <tr>
 <td><code>CREATE [OR REPLACE] VIEW catalog.ns.v AS &lt;SELECT&gt;</code></td>
@@ -3286,7 +3303,7 @@
 </tr>
 <tr>
 <td><code>DROP VIEW [IF EXISTS] catalog.ns.v</code></td>
-<td>Stops resolving on every master at once; see <a href="#views">Views</a>.</td>
+<td>Stops resolving on every master at once; see <a href="#views">Views</a>. A missing view is an error unless <code>IF EXISTS</code>.</td>
 </tr>
 <tr>
 <td><code>COMMENT ON TABLE catalog.ns.t IS '...'</code></td>
@@ -3563,6 +3580,64 @@ is. A source row that matched a target row is never inserted. For an unmatched s
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">ns</span><span class="p">.</span><span class="n">t</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">add_partition_field</span><span class="p">(</span><span class="n">field</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;region&#39;</span><span class="p">);</span>
 <a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">ns</span><span class="p">.</span><span class="n">t</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">drop_partition_field</span><span class="p">(</span><span class="n">field</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;region&#39;</span><span class="p">);</span>
 </code></pre></div>
+<h3 id="missing-objects-and-failures">Missing objects and failures</h3>
+<p>DDL answers like Trino. Dropping an object that does not exist is an error naming it, and <code>IF EXISTS</code> makes it a
+no-op; creating one that exists is an error, and <code>IF NOT EXISTS</code> makes it a no-op. A statement that fails is an
+error carrying the cause -- never a success:</p>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DROP TABLE ice.ns.missing</code></td>
+<td><code>Table 'ice.ns.missing' does not exist</code></td>
+</tr>
+<tr>
+<td><code>DROP TABLE ice.missing</code></td>
+<td><code>Table 'ice.default.missing' does not exist</code> (a two-part name is read in <code>default</code>)</td>
+</tr>
+<tr>
+<td><code>DROP VIEW ice.ns.missing</code></td>
+<td><code>View 'ice.ns.missing' does not exist</code></td>
+</tr>
+<tr>
+<td><code>DROP SCHEMA ice.missing</code></td>
+<td><code>Schema 'ice.missing' does not exist</code></td>
+</tr>
+<tr>
+<td><code>DROP SCHEMA [IF EXISTS] ice.ns</code> (with tables)</td>
+<td><code>Cannot drop non-empty schema 'ice.ns'</code></td>
+</tr>
+<tr>
+<td><code>CREATE SCHEMA ice.ns</code> (exists)</td>
+<td><code>Schema 'ice.ns' already exists</code></td>
+</tr>
+<tr>
+<td><code>CREATE TABLE ice.ns.t (...)</code> (exists)</td>
+<td><code>Table 'ice.ns.t' already exists</code></td>
+</tr>
+<tr>
+<td><code>DROP TABLE tpch.tiny.nation</code></td>
+<td><code>DROP TABLE is not supported for catalog 'tpch' (connector tpch)</code></td>
+</tr>
+<tr>
+<td><code>DROP TABLE nocat.s.t</code></td>
+<td><code>Catalog 'nocat' is not loaded on this master</code></td>
+</tr>
+<tr>
+<td>a drop the catalog refuses</td>
+<td><code>DROP TABLE ice.ns.t failed: &lt;the catalog's reason&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>Quoted names are unquoted first (<code>DROP TABLE "ice"."ns"."T"</code> drops <code>ice.ns.T</code>). Earlier releases answered success
+when the drop failed, when nothing by that name existed, for a catalog that does not exist or cannot drop tables,
+and for <code>DROP SCHEMA IF EXISTS</code> of a schema that would not drop; <code>CREATE TABLE</code> of an existing table answered success
+and kept the old definition.</p>
 <p>Partition spec evolution preserves history — files written under the old spec keep their original partition values, new files use the new spec. Reads transparently span both.</p>
 <h2 id="views">Views</h2>
 <p>Views are persisted via the Iceberg view spec (<code>ViewCatalog.buildView</code>) and remain interoperable with other Iceberg-aware engines. Internally Ontul registers each view as an <code>OntulViewTable</code> whose body is re-planned with Ontul's own SQL parser/validator at every reference, so view-body identifiers resolve under the same case rules as user queries.</p>
@@ -3700,12 +3775,21 @@ query names an unknown object) also removes what the catalog no longer lists —
 (a namespace that failed to list keeps its tables) and never semantic views, which live in Ontul.</p>
 <p>Earlier releases kept every table and view they had seen: a dropped view went on answering from its stored SQL,
 a dropped table failed with <code>cannot plan a scan ...: Table does not exist</code>, and both stayed in <code>SHOW TABLES</code>.</p>
+<p><strong>A view whose base table is gone.</strong> Dropping a table does not drop the views that read it (as in Trino). A query
+on such a view names the view and the missing table, on every master and whichever engine dropped the table:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>View &#39;ice.sales.v_recent&#39; is invalid: its base table &#39;ice.sales.orders&#39; does not exist
+</code></pre></div>
+<p>A view whose body no longer plans for another reason (a column it reads was dropped) answers
+<code>View '&lt;view&gt;' is invalid: &lt;reason&gt;</code>. Only queries on that view fail: <code>SHOW TABLES</code>, <code>SHOW SCHEMAS</code>, the Catalog
+Browser and every other table and view of the schema answer as before, the view can be dropped, and re-creating the
+base table makes it valid again.
+Earlier releases answered <code>Column 'id' not found in any table</code>, naming neither the view nor the table.</p>
 <h3 id="cross-catalog-federation">Cross-catalog federation</h3>
 <p>Iceberg tables can be joined directly with other registered catalogs (JDBC, file, TPC-DS, etc.) in a single query — the planner pushes filters and projection into each connector and shuffles only the bare minimum across workers.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">name</span>
-<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="n">o</span>
-<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">postgres</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">customers</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span>
-<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">name</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="n">o</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">postgres</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">customers</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
 </code></pre></div>
 <h2 id="access-control">Access control</h2>
 <p>Ontul IAM is the authoritative policy boundary for Iceberg data — column-level masking, row-level filters, table-level grants, plus job/source/sink scopes that Polaris's catalog-level RBAC does not express. Polaris-side table IAM is bypassed by design (no vended credentials, no delegated reads). See <a href="../../features/iam/">IAM</a>.</p>
