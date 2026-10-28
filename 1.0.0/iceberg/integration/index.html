@@ -3615,7 +3615,23 @@ appends to an existing table (below). A statement that fails is an error carryin
 </tr>
 <tr>
 <td><code>CREATE TABLE ice.ns.t AS SELECT ...</code> (t exists)</td>
-<td><strong>appends</strong> the rows: <code>CREATE TABLE &lt;n&gt;</code>. This differs from Trino (an error); the SDK table sink and materialized-view refresh rely on it</td>
+<td><strong>appends</strong> the rows: <code>CREATE TABLE &lt;n&gt;</code>. This differs from Trino (an error); the SDK table sink relies on it</td>
+</tr>
+<tr>
+<td><code>REFRESH MATERIALIZED VIEW ice.ns.mv</code></td>
+<td><strong>replaces</strong> the stored rows in one <code>overwrite</code> snapshot: <code>REFRESH MATERIALIZED VIEW &lt;n&gt;</code> (see <a href="../../query/guide/#materialized-views">materialized views</a>)</td>
+</tr>
+<tr>
+<td><code>CREATE MATERIALIZED VIEW ice.ns.mv ...</code> (exists)</td>
+<td><code>Materialized view 'ice.ns.mv' already exists</code></td>
+</tr>
+<tr>
+<td><code>REFRESH</code> / <code>DROP MATERIALIZED VIEW ice.ns.missing</code></td>
+<td><code>Materialized view 'ice.ns.missing' does not exist</code></td>
+</tr>
+<tr>
+<td><code>DROP TABLE ice.ns.mv</code> (a materialized view)</td>
+<td><code>'ice.ns.mv' is a materialized view; use DROP MATERIALIZED VIEW ice.ns.mv</code></td>
 </tr>
 <tr>
 <td><code>DROP TABLE ice.ns.missing</code></td>
