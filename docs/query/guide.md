@@ -155,14 +155,63 @@ a DDL statement that fails is an error with its cause, never a success. See
 !!! warning "CTAS onto an existing table appends — unlike Trino"
     `CREATE TABLE t AS SELECT ...` (no `IF NOT EXISTS`) of a table that already exists **appends** the SELECT's
     rows to it and answers `CREATE TABLE <rows written>`. Trino refuses that statement (`Table ... already
-    exists`). The SDK table sinks (Java `df.sink(Sink.table(...))`, Python `session.sink(table, target)`) and
-    materialized-view refresh rely on this append; use `INSERT INTO` when appending is what you mean, and
-    `DROP TABLE` first when you want to replace a table.
+    exists`). The SDK table sinks (Java `df.sink(Sink.table(...))`, Python `session.sink(table, target)`) rely
+    on this append; use `INSERT INTO` when appending is what you mean, and `DROP TABLE` first when you want to
+    replace a table. (Materialized-view refresh does not use it: it replaces, see below.)
 
     `CREATE TABLE IF NOT EXISTS t AS SELECT ...` of an existing table is a **no-op**, like Trino: nothing is read
     or written, and the answer is `CREATE TABLE 0 (table <catalog.schema.table> already exists; nothing written)`
     (update count 0 over Flight SQL / JDBC). It used to append as well, so re-running a script "to make sure the
     table is there" added the rows again each time.
+
+### Materialized views
+
+A materialized view stores a query's result in an Iceberg table of the same name, so reading it costs a table scan
+instead of the query. It is refreshed by `REFRESH MATERIALIZED VIEW`, and with `REFRESH EVERY` also on a schedule.
+
+```sql
+CREATE MATERIALIZED VIEW ice.sales.revenue_by_region AS
+SELECT region, sum(amount) AS revenue FROM ice.sales.orders GROUP BY region;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS ice.sales.open_orders
+REFRESH EVERY 5 MINUTES                 -- SECOND(S) | MINUTE(S) | HOUR(S) | DAY(S), at least 1 second
+AS SELECT * FROM ice.sales.orders WHERE status = 'open';
+
+REFRESH MATERIALIZED VIEW ice.sales.revenue_by_region;   -- REFRESH MATERIALIZED VIEW <rows now stored>
+SELECT * FROM ice.sales.revenue_by_region;
+DROP MATERIALIZED VIEW [IF EXISTS] ice.sales.revenue_by_region;   -- the definition and its table
+```
+
+- **A refresh replaces the stored rows.** The query runs again and its result replaces the previous one in a
+  single Iceberg `overwrite` snapshot (every file of the previous result removed, the new files added, one commit).
+  After a refresh the view holds exactly the query's current result -- an empty result empties it -- and a query
+  running while a refresh commits reads the previous result or the new one in full, never a mix, an empty table
+  or both. If the refresh fails (the query no longer plans, a write fails), the previous result stays as it was.
+  Earlier releases refreshed with a plain CTAS, which appends: every refresh added the whole result again.
+- **Always a full refresh.** There is no incremental refresh; each refresh recomputes the whole query.
+- **Iceberg only.** The view's storage must be an Iceberg catalog: only Iceberg can swap a table's contents in one
+  commit. Other catalogs are refused (`A materialized view is stored in an Iceberg table; catalog '<c>' is not an
+  Iceberg catalog`) rather than refreshed by delete-then-insert, during which readers would see an empty table.
+- **Between refreshes the view is a snapshot.** Changes to the base tables show up at the next refresh.
+- **Scheduled refresh** (`REFRESH EVERY`) runs on the leader master only; definitions are replicated to every
+  master, so a view created through any master is refreshed, and a leader change needs nothing. A failed scheduled
+  refresh is logged and tried again one interval later. (`-Dontul.mv.refresh.tick.ms`, default `1000`, is how
+  often the leader checks which views are due.)
+- **Whose rights.** The query runs with the rights of the view's owner (the user who created it), for a `REFRESH`
+  by anyone and for the scheduled refresh: row filters and column masks of the owner apply, and a refresh fails
+  once the owner can no longer read a base table. `CREATE MATERIALIZED VIEW` needs `data:CreateView` on the view
+  (and the owner `data:Select` on what it reads), `REFRESH MATERIALIZED VIEW` needs `data:Insert` on the view,
+  `DROP MATERIALIZED VIEW` needs `data:DropView`.
+- **The columns are fixed at CREATE.** When the query later yields other columns (a `SELECT *` over a base table
+  that gained a column), the refresh fails with the two column lists; drop and create the view again.
+  `CREATE OR REPLACE MATERIALIZED VIEW` is not supported.
+- Answers like Trino: `Materialized view '<v>' already exists` (`IF NOT EXISTS`: `CREATE MATERIALIZED VIEW 0
+  (materialized view <v> already exists; nothing written)`), `Table '<t>' already exists` when a table holds the
+  name, `Materialized view '<v>' does not exist` for `REFRESH` / `DROP` of a missing one (`DROP ... IF EXISTS`:
+  no-op), and `DROP TABLE` of a view is refused: `'<v>' is a materialized view; use DROP MATERIALIZED VIEW <v>`.
+
+The cluster's table maintenance treats the storage table like any other Iceberg table (its compaction commits show
+as `replace` snapshots between the refreshes' `overwrite` snapshots in `"<view>$snapshots"`).
 
 ### DML
 

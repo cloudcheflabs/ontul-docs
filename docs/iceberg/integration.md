@@ -416,7 +416,11 @@ appends to an existing table (below). A statement that fails is an error carryin
 | Statement | Answer |
 |---|---|
 | `CREATE TABLE IF NOT EXISTS ice.ns.t AS SELECT ...` (t exists) | `CREATE TABLE 0 (table ice.ns.t already exists; nothing written)` — nothing is read or written |
-| `CREATE TABLE ice.ns.t AS SELECT ...` (t exists) | **appends** the rows: `CREATE TABLE <n>`. This differs from Trino (an error); the SDK table sink and materialized-view refresh rely on it |
+| `CREATE TABLE ice.ns.t AS SELECT ...` (t exists) | **appends** the rows: `CREATE TABLE <n>`. This differs from Trino (an error); the SDK table sink relies on it |
+| `REFRESH MATERIALIZED VIEW ice.ns.mv` | **replaces** the stored rows in one `overwrite` snapshot: `REFRESH MATERIALIZED VIEW <n>` (see [materialized views](../query/guide.md#materialized-views)) |
+| `CREATE MATERIALIZED VIEW ice.ns.mv ...` (exists) | `Materialized view 'ice.ns.mv' already exists` |
+| `REFRESH` / `DROP MATERIALIZED VIEW ice.ns.missing` | `Materialized view 'ice.ns.missing' does not exist` |
+| `DROP TABLE ice.ns.mv` (a materialized view) | `'ice.ns.mv' is a materialized view; use DROP MATERIALIZED VIEW ice.ns.mv` |
 | `DROP TABLE ice.ns.missing` | `Table 'ice.ns.missing' does not exist` |
 | `DROP TABLE ice.missing` | `Table 'ice.default.missing' does not exist` (a two-part name is read in `default`) |
 | `DROP VIEW ice.ns.missing` | `View 'ice.ns.missing' does not exist` |
