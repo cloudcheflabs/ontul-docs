@@ -2918,6 +2918,24 @@
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>                    ▼
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>   Iceberg  /  NeorunBase  /  JDBC catalogs
 </code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Java 17+ clients: add <code>--add-opens=java.base/java.nio=ALL-UNNAMED</code></p>
+<p>The Arrow Flight SQL JDBC driver reads results through Arrow's off-heap memory, which on Java 17 and later
+needs the JVM option <strong><code>--add-opens=java.base/java.nio=ALL-UNNAMED</code></strong> in the <em>client</em> JVM — your Java
+application, DBeaver, DataGrip / IntelliJ, or any other JDBC tool that runs the driver.</p>
+<p>Without it the connection <strong>authenticates fine</strong> and the query <strong>runs on the server</strong> (the Ontul master
+logs it as successful), but reading the result fails in the client, typically with
+<code>Failed to read message.</code> — so it looks like "the server says success, the client got nothing". Set it:</p>
+<ul>
+<li><strong>Java application</strong>: <code>java --add-opens=java.base/java.nio=ALL-UNNAMED -jar app.jar</code>, or for every JVM
+  on the machine <code>export JDK_JAVA_OPTIONS="--add-opens=java.base/java.nio=ALL-UNNAMED"</code>.</li>
+<li><strong>DBeaver</strong>: add a line <code>--add-opens=java.base/java.nio=ALL-UNNAMED</code> after <code>-vmargs</code> in <code>dbeaver.ini</code>
+  (macOS: <code>DBeaver.app/Contents/Eclipse/dbeaver.ini</code>), then restart DBeaver.</li>
+<li><strong>DataGrip / IntelliJ</strong>: <strong>Help → Edit Custom VM Options…</strong>, add the same line and restart; or put it in the
+  data source's <strong>Advanced → VM options</strong> (the driver runs in a separate JVM there).</li>
+<li><strong>Maven / Gradle tests</strong>: add it to the Surefire <code>argLine</code> / the <code>test { jvmArgs ... }</code> block.</li>
+</ul>
+</div>
 <h2 id="what-bi-tools-see">What BI tools see</h2>
 <p>When a BI client introspects the catalog, three things change versus a plain Iceberg / JDBC connection:</p>
 <table>
@@ -3075,7 +3093,9 @@ and the Admin UI's Catalog Browser and catalog list follow the same rule.</p>
 </tbody>
 </table>
 <h2 id="dbeaver-community">DBeaver Community</h2>
-<p>DBeaver Community 23.3+ has a built-in <strong>Apache Arrow Flight SQL</strong> driver entry. No manual jar wrangling.</p>
+<p>DBeaver Community 23.3+ has a built-in <strong>Apache Arrow Flight SQL</strong> driver entry. No manual jar wrangling.
+On Java 17+ (current DBeaver bundles it) add <code>--add-opens=java.base/java.nio=ALL-UNNAMED</code> after <code>-vmargs</code> in
+<code>dbeaver.ini</code> first — see the warning at the top of this page.</p>
 <ol>
 <li><strong>Database → New Database Connection</strong> → search "Arrow Flight SQL".</li>
 <li>URL: <code>jdbc:arrow-flight-sql://&lt;host&gt;:47470/</code></li>
@@ -3137,7 +3157,8 @@ and the Admin UI's Catalog Browser and catalog list follow the same rule.</p>
 <p>Bind the database, browse the catalog tree, and build dashboards. The same semantic surface applies — Superset sees VIEWs with measure / dimension columns.</p>
 <h2 id="jetbrains-datagrip-intellij-database-tools">JetBrains DataGrip / IntelliJ Database Tools</h2>
 <ol>
-<li><strong>Database → New → Data Source → Other → Apache Arrow Flight SQL</strong> (DataGrip 2024.1+).</li>
+<li><strong>Database → New → Data Source → Other → Apache Arrow Flight SQL</strong> (DataGrip 2024.1+). Put
+   <code>--add-opens=java.base/java.nio=ALL-UNNAMED</code> in the data source's <strong>Advanced → VM options</strong> (Java 17+).</li>
 <li>URL: <code>jdbc:arrow-flight-sql://&lt;host&gt;:47470/</code></li>
 <li>User / password.</li>
 <li>Test connection → introspect.</li>
@@ -3165,39 +3186,42 @@ and the Admin UI's Catalog Browser and catalog list follow the same rule.</p>
 <a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">    </span><span class="p">}</span>
 <a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="p">}</span>
 </code></pre></div>
+<p>Run it with <code>--add-opens=java.base/java.nio=ALL-UNNAMED</code> on Java 17+ (see the warning at the top of this page):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>java<span class="w"> </span>--add-opens<span class="o">=</span>java.base/java.nio<span class="o">=</span>ALL-UNNAMED<span class="w"> </span>-cp<span class="w"> </span>app.jar:flight-sql-jdbc-driver-18.1.0.jar<span class="w"> </span>com.example.App
+</code></pre></div>
 <p>The result columns are exactly what the SELECT named — semantic-view column metadata flows through JDBC <code>ResultSetMetaData</code> as well.</p>
 <h2 id="python-clients">Python clients</h2>
 <p><code>adbc_driver_flightsql</code> is the recommended Python entry point:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pip<span class="w"> </span>install<span class="w"> </span>adbc_driver_flightsql<span class="w"> </span>adbc_driver_manager<span class="w"> </span>pyarrow<span class="w"> </span>pandas
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>pip<span class="w"> </span>install<span class="w"> </span>adbc_driver_flightsql<span class="w"> </span>adbc_driver_manager<span class="w"> </span>pyarrow<span class="w"> </span>pandas
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">adbc_driver_flightsql.dbapi</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">flightsql</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">conn</span> <span class="o">=</span> <span class="n">flightsql</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="s2">&quot;grpc://localhost:47470&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">db_kwargs</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>        <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="s2">&quot;alice&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>        <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="s2">&quot;secret&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="p">},</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="p">)</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="n">cur</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT customer.region, profit_margin FROM saas.core.sales&quot;</span><span class="p">)</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="n">df</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetch_arrow_table</span><span class="p">()</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">()</span>
-<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">adbc_driver_flightsql.dbapi</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">flightsql</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">conn</span> <span class="o">=</span> <span class="n">flightsql</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="s2">&quot;grpc://localhost:47470&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">db_kwargs</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>        <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="s2">&quot;alice&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>        <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="s2">&quot;secret&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="p">},</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="p">)</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="n">cur</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT customer.region, profit_margin FROM saas.core.sales&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="n">df</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetch_arrow_table</span><span class="p">()</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">()</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 </code></pre></div>
 <p>The query is rewritten server-side just like the BI tool path; the Python client receives one pandas DataFrame with the aggregated results.</p>
 <h2 id="ha-and-load-balancing">HA and load balancing</h2>
 <p>When multiple Ontul masters run behind nginx, the Flight SQL upstream must use <strong>sticky load balancing</strong>. A single Flight query is two RPCs — <code>GetFlightInfo</code> followed by <code>DoGet</code> — and round-robin sends them to different masters. The second master cannot resolve the result handle minted by the first, and the client sees <code>No results for handle: &lt;uuid&gt;</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">upstream</span><span class="w"> </span><span class="no">on</span><span class="s">tul_flight</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="no">on</span><span class="n">tul-master-1</span><span class="p">:</span><span class="mi">47470</span><span class="p">;</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="no">on</span><span class="n">tul-master-2</span><span class="p">:</span><span class="mi">47470</span><span class="p">;</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="p">}</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="k">server</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">47470</span><span class="w"> </span><span class="s">http2</span><span class="p">;</span>
-<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">    </span><span class="kn">grpc_pass</span><span class="w"> </span><span class="s">grpc://ontul_flight</span><span class="p">;</span>
-<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">upstream</span><span class="w"> </span><span class="no">on</span><span class="s">tul_flight</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="no">on</span><span class="n">tul-master-1</span><span class="p">:</span><span class="mi">47470</span><span class="p">;</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="no">on</span><span class="n">tul-master-2</span><span class="p">:</span><span class="mi">47470</span><span class="p">;</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="p">}</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="k">server</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">47470</span><span class="w"> </span><span class="s">http2</span><span class="p">;</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">    </span><span class="kn">grpc_pass</span><span class="w"> </span><span class="s">grpc://ontul_flight</span><span class="p">;</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="p">}</span>
 </code></pre></div>
 <p>The admin REST upstream needs the same treatment for stateful flows (catalog registration, semantic view PATCH / certify, IAM mutations). Read-only routes like <code>/api/v1/bi/connection-info</code> are stateless and tolerate round-robin, but the simplest pattern is to hash by client there too.</p>
 <h2 id="troubleshooting">Troubleshooting</h2>
@@ -3209,6 +3233,10 @@ and the Admin UI's Catalog Browser and catalog list follow the same rule.</p>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>JDBC connects, the server logs the query as successful, but the client fails reading the result (<code>Failed to read message.</code>)</td>
+<td>Java 17+ client without <code>--add-opens=java.base/java.nio=ALL-UNNAMED</code> — add it to the client JVM (see the warning at the top). The master logs <code>Flight stream ... cancelled by the client</code> when a client drops a result stream mid-transfer.</td>
+</tr>
 <tr>
 <td>Tableau "test connection" returns "No results for handle …"</td>
 <td>nginx isn't using sticky load balancing — see the previous section.</td>

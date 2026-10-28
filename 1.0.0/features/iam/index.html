@@ -1448,10 +1448,54 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#creating-and-updating-policies" class="md-nav__link">
+  <a href="#canonical-actions-and-resources" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating and updating policies
+        Canonical actions and resources
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-and-warnings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation and warnings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-engines-use-their-own-action-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External engines use their own action names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-was-i-denied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why was I denied?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-updating-and-deleting-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating, updating and deleting policies
       
     </span>
   </a>
@@ -3114,11 +3158,11 @@ button; expanding the row still shows the attached policies with their detach bu
 <a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="p">}</span>
 </code></pre></div>
 <ul>
-<li><strong>Action verbs in <code>data:</code> namespace</strong> — runtime SQL: <code>data:Select</code>, <code>data:Insert</code>, <code>data:Update</code>, <code>data:Delete</code>, <code>data:Merge</code>. Catalog DDL: <code>data:CreateTable</code>, <code>data:DropTable</code>, <code>data:AlterTable</code>. Operational: <code>data:KillJob</code>, <code>data:CancelQuery</code>. The metadata-only <code>data:SelectTable</code> verb gates discovery surfaces (semantic views, object types, retrievers: listing and fetching their definitions) — distinct from the runtime <code>data:Select</code> that gates actual scans. A <code>data:Select</code> grant on a name also makes it discoverable, so a user who may read a table sees the views and object types built on it; reading table data (including Lance blobs) always needs <code>data:Select</code>. Catalog / schema / table listings, <code>DESCRIBE</code>, <code>EXPLAIN</code> and lineage follow <code>data:Select</code> (see <a href="../bi-integration/">BI integration</a>).</li>
+<li><strong>Action verbs in <code>data:</code> namespace</strong> — runtime SQL: <code>data:Select</code>, <code>data:Insert</code>, <code>data:Update</code>, <code>data:Delete</code> (<code>MERGE</code> is checked as <code>data:Insert</code>, plus <code>data:Delete</code> when it has <code>WHEN MATCHED THEN DELETE</code>; <code>data:Merge</code> is only used by the chango Trino gateway). Catalog DDL: <code>data:CreateTable</code>, <code>data:DropTable</code>, <code>data:AlterTable</code>. Operational: <code>data:KillJob</code>, <code>data:CancelQuery</code>. The metadata-only <code>data:SelectTable</code> verb gates discovery surfaces (semantic views, object types, retrievers: listing and fetching their definitions) — distinct from the runtime <code>data:Select</code> that gates actual scans. A <code>data:Select</code> grant on a name also makes it discoverable, so a user who may read a table sees the views and object types built on it; reading table data (including Lance blobs) always needs <code>data:Select</code>. Catalog / schema / table listings, <code>DESCRIBE</code>, <code>EXPLAIN</code> and lineage follow <code>data:Select</code> (see <a href="../bi-integration/">BI integration</a>).</li>
 <li><strong>UDF actions</strong> stay in the <code>UDF:</code> namespace — see <a href="#udf-permissions">UDF Permissions</a>.</li>
 <li><strong>Ontology actions</strong> live in the <code>ontology:</code> namespace and gate the <a href="../ontology/">ontology</a> surface: <code>ontology:InvokeAction</code> (perform a governed write-back), <code>ontology:InvokeWorkflow</code> (run a multi-step Saga), <code>ontology:Certify</code> (sign off on a definition). Administrators are always allowed; for everyone else these are deny-by-default like any other action.</li>
 <li><strong>Server-side S3 writes and remote functions</strong> — <code>data:UploadS3</code> on <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code> gates the Flight <code>UPLOAD_S3</code> action and the <code>WRITE_S3 '&lt;s3 path&gt;' ...</code> statement (the master writes where the caller names); <code>data:MapExecute</code> on <code>data:compute:map</code> / <code>data:compute:py-map</code> gates the Flight <code>MAP_EXECUTE</code> / <code>PY_MAP_EXECUTE</code> actions (the caller's function runs on every worker); the Flight <code>CancelQuery</code> action needs <code>data:CancelQuery</code> on <code>data:query:&lt;id&gt;</code>, like <code>POST /admin/query/cancel</code>. All deny by default; administrators pass.</li>
-<li><strong>Resources</strong>: <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code>, <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code>, <code>data:job:*</code>, <code>data:query:*</code>, <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code>, <code>data:compute:map</code>, <code>udf:&lt;name&gt;</code>. Wildcards <code>*</code> and <code>?</code> are supported. <strong>Semantic-layer and ontology objects are addressed by their BARE fully-qualified name</strong> — <code>semantic.rag.*</code>, <code>ontology.sales.*</code> — <em>not</em> prefixed with <code>data:table:</code>. A policy written as <code>data:table:ontology.sales.*</code> never matches, which reads like "IAM is broken" rather than "the pattern did not match".</li>
+<li><strong>Resources</strong>: <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code>, <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code>, <code>data:job:*</code>, <code>data:query:*</code>, <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code>, <code>data:compute:map</code>, <code>udf:&lt;name&gt;</code>. Wildcards <code>*</code> and <code>?</code> are supported. There is no <code>data:catalog:</code> resource: a whole catalog is <code>data:table:&lt;catalog&gt;.*.*</code> plus <code>data:schema:&lt;catalog&gt;.*</code>. <strong>Semantic-layer and ontology objects are addressed by their BARE fully-qualified name</strong> — <code>semantic.rag.*</code>, <code>ontology.sales.*</code> — <em>not</em> prefixed with <code>data:table:</code>. A policy written as <code>data:table:ontology.sales.*</code> never matches, which reads like "IAM is broken" rather than "the pattern did not match".</li>
 <li><strong>Attachment</strong>: policies attach to users (direct) or groups (via group membership).</li>
 <li><strong>Deny rules take precedence</strong> over allow rules.</li>
 <li><strong>Deny-by-default</strong>: no matching policies means access is denied.</li>
@@ -3185,19 +3229,189 @@ refused, like any other statement. Scheduled table maintenance runs as the inter
 which is not an IAM user and cannot be created as one.</p>
 <p>The write <strong>target</strong> is authorized in addition to the read sources: granting a user <code>data:Select</code> on a table does <strong>not</strong> let them <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code> into it — a separate <code>data:Insert</code>/<code>data:Update</code>/<code>data:Delete</code> grant (or a wildcard such as <code>data:*</code>) on that table resource is required. So the <code>SalesReadWrite</code> example above (<code>["data:Select","data:Insert"]</code> on <code>data:table:ice.sales.*</code>) permits both reading and inserting across the <code>ice.sales</code> schema, while a read-only policy that lists only <code>data:Select</code> blocks every write to those tables.</p>
 <p>The engine authorization is the enforcement point the <a href="../../">chango Trino / Spark / Flink authz plugins</a> also call over REST — so the same policy governs a table whether it is touched by an external engine or by an Ontul SQL statement.</p>
-<h3 id="creating-and-updating-policies">Creating and updating policies</h3>
-<p>The same endpoint handles both — <code>POST /admin/iam/policies</code> is upsert. Re-posting with an existing <code>name</code> overwrites the document and propagates the new content to follower masters via <code>pushUpdate()</code>. The next query the affected user issues sees the new policy; no cache invalidation is needed because effective policies are computed per-query.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Initial creation</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="nv">$ADMIN_URL</span>/admin/iam/policies<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;name&quot;:&quot;AnalystAccess&quot;,&quot;document&quot;: { … v1 … }}&#39;</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Update — same `name`, new document</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="nv">$ADMIN_URL</span>/admin/iam/policies<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;name&quot;:&quot;AnalystAccess&quot;,&quot;document&quot;: { … v2 … }}&#39;</span>
+<h3 id="canonical-actions-and-resources">Canonical actions and resources</h3>
+<p>What each operation is authorized as — the exact <code>(action, resource)</code> pair the engine evaluates. The same table is
+in the Admin UI policy editor (<strong>Action &amp; resource reference</strong>), and a denial names the pair it checked, e.g.
+<code>Access denied: no matching policy for user 'wf-runner' to data:CreateTable on 'data:schema:iceberg.wf'</code>: grant
+exactly that.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Action</th>
+<th>Resource</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SELECT</code>, <code>EXPLAIN</code>, <code>DESCRIBE</code>, <code>SHOW …</code> (listings are filtered)</td>
+<td><code>data:Select</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+</tr>
+<tr>
+<td><code>INSERT INTO</code></td>
+<td><code>data:Insert</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+</tr>
+<tr>
+<td><code>CREATE TABLE</code>, <code>CREATE TABLE AS SELECT</code></td>
+<td><code>data:Insert</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+</tr>
+<tr>
+<td><code>UPDATE</code></td>
+<td><code>data:Update</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+</tr>
+<tr>
+<td><code>DELETE FROM</code></td>
+<td><code>data:Delete</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+</tr>
+<tr>
+<td><code>MERGE INTO</code> (+ <code>data:Delete</code> with <code>WHEN MATCHED THEN DELETE</code>)</td>
+<td><code>data:Insert</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+</tr>
+<tr>
+<td><code>CREATE SCHEMA</code> / <code>NAMESPACE</code> / <code>DATABASE</code></td>
+<td><code>data:CreateTable</code></td>
+<td><code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code></td>
+</tr>
+<tr>
+<td><code>DROP SCHEMA</code></td>
+<td><code>data:DropTable</code></td>
+<td><code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code></td>
+</tr>
+<tr>
+<td><code>CREATE [MATERIALIZED] VIEW</code></td>
+<td><code>data:CreateTable</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;view&gt;</code></td>
+</tr>
+<tr>
+<td><code>DROP TABLE</code> / <code>DROP VIEW</code></td>
+<td><code>data:DropTable</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+</tr>
+<tr>
+<td><code>ALTER TABLE</code> / <code>VIEW</code>, <code>OPTIMIZE</code>, <code>VACUUM</code>, <code>EXPIRE SNAPSHOTS</code>, <code>REMOVE ORPHAN FILES</code>, <code>REWRITE MANIFESTS</code></td>
+<td><code>data:AlterTable</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+</tr>
+<tr>
+<td><code>WRITE_S3</code>, Flight <code>UPLOAD_S3</code></td>
+<td><code>data:UploadS3</code></td>
+<td><code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code></td>
+</tr>
+<tr>
+<td>Flight <code>MAP_EXECUTE</code> / <code>PY_MAP_EXECUTE</code></td>
+<td><code>data:MapExecute</code></td>
+<td><code>data:compute:map</code> / <code>data:compute:py-map</code></td>
+</tr>
+<tr>
+<td>Cancel a query (SQL page, Flight <code>CancelQuery</code>)</td>
+<td><code>data:CancelQuery</code></td>
+<td><code>data:query:*</code> (Flight: <code>data:query:&lt;id&gt;</code>)</td>
+</tr>
+<tr>
+<td>Kill a job (the job's owner needs nothing on <code>/v1/api</code>)</td>
+<td><code>data:KillJob</code></td>
+<td><code>data:job:*</code></td>
+</tr>
+<tr>
+<td>Streaming flow: source table / sink table (+ <code>data:Update</code>, <code>data:Delete</code> for CDC / upsert)</td>
+<td><code>data:Select</code> / <code>data:Insert</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+</tr>
+<tr>
+<td>Semantic views, retrievers, object types: list / get / invoke</td>
+<td><code>data:SelectTable</code></td>
+<td><code>&lt;catalog&gt;.&lt;schema&gt;.&lt;name&gt;</code> (no prefix)</td>
+</tr>
+<tr>
+<td>UDF in a query / register / drop (<code>GLOBAL</code> scope: <code>_GLOBAL</code>)</td>
+<td><code>UDF:EXECUTE</code> / <code>UDF:CREATE</code> / <code>UDF:DROP</code></td>
+<td><code>udf:&lt;name&gt;</code></td>
+</tr>
+<tr>
+<td><code>ai_verdict()</code> / <code>ai_verdict_one()</code></td>
+<td><code>AI:DECIDE</code></td>
+<td><code>connection:&lt;connectionId&gt;</code></td>
+</tr>
+<tr>
+<td><code>CALL</code> an action / workflow / operation</td>
+<td><code>ontology:InvokeAction</code> / <code>InvokeWorkflow</code> / <code>InvokeOperation</code></td>
+<td><code>&lt;catalog&gt;.&lt;schema&gt;.&lt;action&gt;</code> (operation: <code>operation:&lt;catalog&gt;:&lt;op&gt;</code>)</td>
+</tr>
+<tr>
+<td>Certify an ontology object</td>
+<td><code>ontology:Certify</code></td>
+<td><code>ontology.&lt;schema&gt;.&lt;name&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>How matching works:</p>
+<ul>
+<li>Case-insensitive. <code>*</code> matches any characters (including <code>.</code> and <code>:</code>), <code>?</code> exactly one. <code>"*"</code> alone matches everything.</li>
+<li>There is <strong>no hierarchy</strong>: <code>data:table:iceberg.wf.*</code> does not cover <code>data:schema:iceberg.wf</code>. A role that creates its
+  own schema needs a <code>data:schema:</code> statement as well — see the <strong>ETL Schema Owner (one schema)</strong> template below.</li>
+<li>Names are checked as written in the statement, so write tables and schemas fully qualified (<code>catalog.schema.table</code>)
+  to match qualified grants.</li>
+<li>Administration routes (users, groups, policies, catalogs, connections, KMS, backup, …) are not governed by actions:
+  they need the built-in <code>AdministratorAccess</code> policy.</li>
+</ul>
+<p>A grant for an ETL role that owns one schema (create it, create / load / change / drop its tables, nothing else):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EtlSchema&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;data:CreateTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropTable&quot;</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:schema:iceberg.etl&quot;</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EtlTables&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Insert&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Delete&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:CreateTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:AlterTable&quot;</span><span class="p">],</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:iceberg.etl.*&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">}</span>
 </code></pre></div>
-<p>Both calls return <code>201 Created</code>. Distinguish create-vs-update on the client side by <code>GET /admin/iam/policies</code> first if needed; the server doesn't differentiate.</p>
+<h3 id="validation-and-warnings">Validation and warnings</h3>
+<p>Every create and update checks the document the way the evaluator will read it. A document it cannot read as
+written is <strong>refused with <code>400</code></strong> and a message naming the statement and field:</p>
+<ul>
+<li><code>Statement</code> must be a non-empty array; only <code>Sid</code>, <code>Effect</code>, <code>Action</code>, <code>Resource</code>, <code>Columns</code>, <code>Condition</code> and
+  <code>MaskedColumns</code> are allowed in a statement (an AWS-style <code>NotAction</code> would otherwise be silently ignored).</li>
+<li><code>Effect</code> must be <code>Allow</code>, <code>Deny</code> or <code>Mask</code>; <code>Action</code> and <code>Resource</code> are a string or a non-empty list of strings
+  without spaces; a <code>Mask</code> statement needs <code>MaskedColumns</code>, and every mask expression must parse.</li>
+</ul>
+<p>Vocabulary is <strong>warned about, not refused</strong>: the document is stored and the answer carries <code>"warnings": [...]</code>,
+which the Admin UI shows after Save. A warning is given when</p>
+<ul>
+<li>an action in a namespace Ontul owns (<code>data:</code>, <code>UDF:</code>, <code>AI:</code>, <code>ontology:</code>) is not one Ontul's engine checks —
+  with what it checks instead, e.g. <code>Statement 2: 'data:CreateSchema' is not an action Ontul's own engine checks —
+  CREATE SCHEMA is authorized as data:CreateTable on data:schema:&lt;catalog&gt;.&lt;schema&gt; (the chango Trino gateway sends
+  data:CreateSchema to /v1/api/authz/check, so keep it only for that). ...</code>;</li>
+<li>a <code>data:</code> resource is not a form Ontul checks (<code>data:catalog:…</code>, <code>data:tables:…</code>);</li>
+<li>none of a statement's resources has the form its action is checked on, e.g. <code>data:Insert</code> on
+  <code>data:schema:iceberg.etl</code> (<code>data:Insert</code> is checked on <code>data:table:…</code>), so the statement never applies.</li>
+</ul>
+<p>These are warnings rather than errors because the same policies answer external engines (next section), which
+use some of those names.</p>
+<h3 id="external-engines-use-their-own-action-names">External engines use their own action names</h3>
+<p>Trino, Spark and Flink (chango) ask Ontul through <code>POST /v1/api/authz/check</code> / <code>check-batch</code> with the action and
+resource <strong>they</strong> build; Ontul evaluates exactly what it receives. The chango Trino gateway checks <code>CREATE SCHEMA</code>
+as <code>data:CreateSchema</code>, <code>DROP SCHEMA</code> as <code>data:DropSchema</code>, <code>MERGE</code> as <code>data:Merge</code>, <code>CREATE VIEW</code> / <code>DROP VIEW</code>
+as <code>data:CreateView</code> / <code>data:DropView</code> and <code>CREATE TABLE</code> as <code>data:CreateTable</code> — all on
+<code>data:table:&lt;catalog&gt;.&lt;schema&gt;[.&lt;table&gt;]</code>. Ontul's own SQL checks the names in the table above. A policy that
+must work both in Ontul SQL and from Trino therefore needs both spellings (the templates keep <code>data:Merge</code> for
+this reason).</p>
+<h3 id="why-was-i-denied">Why was I denied?</h3>
+<p>A denial names the exact action and resource that was checked. When the caller's <strong>own</strong> policies hold a near
+miss, the message adds a hint (only the caller's own Allow statements are looked at):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Access denied: no matching policy for user &#39;wf-runner&#39; to data:CreateTable on &#39;data:schema:iceberg.wf&#39;.
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  Hint: your policy grants data:CreateSchema on &#39;data:schema:iceberg.wf&#39;, which Ontul does not check —
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  CREATE SCHEMA is authorized as data:CreateTable on data:schema:&lt;catalog&gt;.&lt;schema&gt;
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Access denied: no matching policy for user &#39;etl&#39; to data:Insert on &#39;data:table:iceberg.wf.t&#39;.
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  Hint: your policies grant data:Insert only on &#39;data:table:iceberg.etl.*&#39;
+</code></pre></div>
+<p>No hint means nothing in the caller's policies comes close: the grant is simply missing.</p>
+<h3 id="creating-updating-and-deleting-policies">Creating, updating and deleting policies</h3>
 <table>
 <thead>
 <tr>
@@ -3207,8 +3421,12 @@ which is not an IAM user and cannot be created as one.</p>
 </thead>
 <tbody>
 <tr>
-<td>Create / update policy</td>
-<td><code>POST   /admin/iam/policies</code></td>
+<td>Create policy</td>
+<td><code>POST   /admin/iam/policies</code> <code>{name, document, ifNotExists}</code></td>
+</tr>
+<tr>
+<td>Update policy (keeps attachments)</td>
+<td><code>PUT    /admin/iam/policies/{name}</code> <code>{document}</code></td>
 </tr>
 <tr>
 <td>List policies</td>
@@ -3216,7 +3434,7 @@ which is not an IAM user and cannot be created as one.</p>
 </tr>
 <tr>
 <td>Delete policy</td>
-<td><code>DELETE /admin/iam/policies/{name}</code></td>
+<td><code>DELETE /admin/iam/policies/{name}[?detach=true]</code></td>
 </tr>
 <tr>
 <td>Attach policy to group</td>
@@ -3228,21 +3446,49 @@ which is not an IAM user and cannot be created as one.</p>
 </tr>
 </tbody>
 </table>
-<p>The <code>AdministratorAccess</code> policy is reserved — <code>deletePolicy</code> rejects attempts to remove it.</p>
+<p>All of them are administrator-only, handled by the leader (a follower forwards the request), replicated to every
+master, and recorded in the audit log (<code>iam:CreatePolicy</code> / <code>iam:UpdatePolicy</code> / <code>iam:DeletePolicy</code> on
+<code>iam:policy:&lt;name&gt;</code>).</p>
+<p><strong>Update in place.</strong> <code>PUT /admin/iam/policies/{name}</code> replaces the document and keeps the name and <strong>every group and
+user attachment</strong>, so fixing a policy reaches its members on their next request — no re-attaching, no new token.
+<code>404</code> if there is no such policy, <code>400</code> for an invalid document, <code>403</code> for the built-in <code>AdministratorAccess</code>. The
+answer lists where the policy is attached:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span><span class="nv">$ADMIN_URL</span>/admin/iam/policies/wf-runner-policy<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;document&quot;: { … corrected document … }}&#39;</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># 200 {&quot;status&quot;:&quot;ok&quot;,&quot;policyName&quot;:&quot;wf-runner-policy&quot;,&quot;attachedGroups&quot;:[&quot;wf-runners&quot;],&quot;attachedUsers&quot;:[]}</span>
+</code></pre></div>
+<p>Do not delete and re-create a policy to change it: a re-created policy is attached to nothing.</p>
+<p><strong>Create.</strong> With <code>"ifNotExists": true</code> (what the Admin UI sends) an existing name is refused with
+<code>409 Policy 'x' already exists; update it with PUT /admin/iam/policies/x (or Edit in the console), which keeps its
+group and user attachments</code>. Without it, <code>POST</code> still replaces the document of an existing policy (attachments are
+kept), as it always has, for scripts that rely on it; use <code>PUT</code> for updates.</p>
+<p><strong>Delete.</strong> A policy still attached to a group or user is <strong>refused</strong> with <code>409</code>, naming them:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Policy &#39;wf-runner-policy&#39; is attached to group(s) wf-runners; detach it first, or delete with ?detach=true to detach it from all of them. ...&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w"> </span><span class="nt">&quot;attachedGroups&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;wf-runners&quot;</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;attachedUsers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]}</span>
+</code></pre></div>
+<p>Deleting an attached policy changes what every member may do at once — and widens it when the policy holds a
+<code>Deny</code> — so it is never done silently: detach it first, or send <code>DELETE …?detach=true</code> to detach it from all of
+them and delete it in one step (the answer lists <code>detachedGroups</code> / <code>detachedUsers</code>). The Admin UI's <strong>Delete</strong>
+shows the groups and users it is attached to and sends <code>detach=true</code> only after you confirm. The built-in
+<code>AdministratorAccess</code> policy cannot be changed or deleted (<code>403</code>).</p>
+<p>In the Admin UI each policy card shows where it is attached and has <strong>Edit</strong> and <strong>Delete</strong>; <strong>Edit</strong> opens the
+policy editor with the document loaded and says "Attached to: … — saving keeps these attachments". The built-in
+policy is marked <em>Built-in · read-only</em>. <code>GET /admin/iam/users</code> lists each user's directly attached policies in
+<code>policyNames</code>.</p>
 <h3 id="certification-without-admin-rights">Certification without admin rights</h3>
 <p>Certifying an ontology or semantic-layer definition is an <strong>ownership</strong> decision, not an editing
 one, so it has its own action. That lets a domain owner sign off on their own subtree without
 being made an administrator — and, equally, lets someone edit definitions without being able to
 bless their own work:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CertifySalesOntology&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology:Certify&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology.sales.*&quot;</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="p">}]</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CertifySalesOntology&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology:Certify&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ontology.sales.*&quot;</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="p">}]</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="p">}</span>
 </code></pre></div>
 <p>With this attached, the user may call <code>POST /api/v1/object-types/{fqn}/certify</code> (and
 <code>/decertify</code>) for anything under <code>ontology.sales</code>, and the recorded <code>certifiedBy</code> is <strong>their</strong> id.
@@ -3277,27 +3523,27 @@ certify / decertify / refusal is written to the <a href="../audit-log/">Audit Lo
 <p>Precedence on conflict: <strong>Deny &gt; Mask &gt; Allow</strong>. A column listed in both a Deny and a Mask statement disappears entirely; the mask never fires.</p>
 <h3 id="column-deny">Column Deny</h3>
 <p>Denied columns vanish from the SCAN output via an injected <code>PROJECT</code> node. A <code>SELECT *</code> from a user with <code>Columns: ["ssn"]</code> in a Deny statement gets every column except <code>ssn</code>. An explicit <code>SELECT ssn FROM ...</code> planned by Calcite earlier in the pipeline will fail at validation; the deny mechanism is designed for the <code>SELECT *</code> and "show me everything" patterns that BI tools emit.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;HideSsnFromAnalysts&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:hr.core.employees&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">&quot;Columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;ssn&quot;</span><span class="p">]</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;HideSsnFromAnalysts&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:hr.core.employees&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="nt">&quot;Columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;ssn&quot;</span><span class="p">]</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="p">}</span>
 </code></pre></div>
 <h3 id="column-masking">Column Masking</h3>
 <p>Mask statements replace each named column's value with a SQL expression evaluated at the worker. The output column keeps its original name and Arrow type — downstream operations (<code>WHERE</code>, joins, aggregations) work, just on the masked values.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MaskHrPii&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mask&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:hr.core.employees&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="nt">&quot;MaskedColumns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="nt">&quot;phone&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;&#39;***-***-XXXX&#39;&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;MD5(email)&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">&quot;salary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ROUND(salary, -3)&quot;</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="p">{</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MaskHrPii&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mask&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:hr.core.employees&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="nt">&quot;MaskedColumns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="nt">&quot;phone&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;&#39;***-***-XXXX&#39;&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;MD5(email)&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">    </span><span class="nt">&quot;salary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ROUND(salary, -3)&quot;</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="p">}</span>
 </code></pre></div>
 <p>Examples of what each pattern yields:</p>
 <table>
@@ -3338,55 +3584,55 @@ certify / decertify / refusal is written to the <a href="../audit-log/">Audit Lo
 </table>
 <h4 id="how-a-mask-query-looks">How a mask query looks</h4>
 <p>A user in <code>analyst-group</code> running:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="n">salary</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">hr</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">employees</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">department</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Engineering&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="n">salary</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">hr</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">employees</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">department</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Engineering&#39;</span><span class="p">;</span>
 </code></pre></div>
 <p>receives the rewritten plan (conceptually):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">       </span><span class="s1">&#39;***-***-XXXX&#39;</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">       </span><span class="n">ROUND</span><span class="p">(</span><span class="n">salary</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="p">)</span><span class="w">   </span><span class="k">AS</span><span class="w"> </span><span class="n">salary</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">hr</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">employees</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">department</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Engineering&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">       </span><span class="s1">&#39;***-***-XXXX&#39;</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">       </span><span class="n">ROUND</span><span class="p">(</span><span class="n">salary</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="p">)</span><span class="w">   </span><span class="k">AS</span><span class="w"> </span><span class="n">salary</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">hr</span><span class="p">.</span><span class="n">core</span><span class="p">.</span><span class="n">employees</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">department</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Engineering&#39;</span><span class="p">;</span>
 </code></pre></div>
 <p>Same query as an admin (no policies apply) returns the raw <code>name</code>, <code>phone</code>, and <code>salary</code>.</p>
 <h4 id="user-context-templating">User-context templating</h4>
 <p>The mask expression supports the same templating tokens as the <a href="../semantic-layer/#mandatory-filters-with-user-context-templating">semantic layer's mandatory filters</a> — <code>${user.id}</code>, <code>${user.roles}</code>, <code>${user.attr.&lt;key&gt;}</code>. The substitution happens after policy load and before SQL parsing, so a single policy can implement role-aware unmasking without one statement per role:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="p">{</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ConditionalSsnMask&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mask&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:hr.core.employees&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="nt">&quot;MaskedColumns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="nt">&quot;ssn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CASE WHEN ${user.id} = &#39;compliance_admin&#39; THEN ssn ELSE &#39;***-**-&#39; || RIGHT(ssn, 4) END&quot;</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ConditionalSsnMask&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mask&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:hr.core.employees&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span><span class="nt">&quot;MaskedColumns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="nt">&quot;ssn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CASE WHEN ${user.id} = &#39;compliance_admin&#39; THEN ssn ELSE &#39;***-**-&#39; || RIGHT(ssn, 4) END&quot;</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="p">}</span>
 </code></pre></div>
 <p><code>${user.id}</code> substitutes to a single-quoted SQL literal — <code>'compliance_admin'</code> — so write it bare, <strong>without</strong> wrapping it in your own quotes. The same convention applies to <code>${user.attr.&lt;key&gt;}</code>: bare in the expression, the resolver adds the quotes. Missing user attributes resolve to the empty string <code>''</code>. The substitution escapes embedded <code>'</code> in values — basic SQL-injection defence for a feature whose inputs come from admin DDL, not user prompts.</p>
 <h4 id="precedence-between-mask-statements">Precedence between Mask statements</h4>
 <p>When multiple Mask statements target the same column (e.g. two groups both attach masks to <code>ssn</code>), the <strong>lexicographically smallest <code>Sid</code> wins</strong> — deterministic across cluster restarts and snapshot replays. Attach order, group join order, and policy creation time are intentionally not part of the precedence calculation.</p>
 <h4 id="validation">Validation</h4>
 <p>Mask expressions are parse-checked at policy-attach time. <code>POST /admin/iam/policies</code> with a syntactically broken expression returns <code>400 Bad Request</code> with the parser's message:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>$<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="nv">$ADMIN_URL</span>/admin/iam/policies<span class="w"> </span>-d<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="s1">&#39;{</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="s1">  &quot;name&quot;: &quot;Bad&quot;,</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="s1">  &quot;document&quot;: {</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="s1">    &quot;Version&quot;: &quot;2024-01-01&quot;,</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="s1">    &quot;Statement&quot;: [</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="s1">      {</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="s1">        &quot;Sid&quot;: &quot;BadMask&quot;,</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="s1">        &quot;Effect&quot;: &quot;Mask&quot;,</span>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="s1">        &quot;Action&quot;: &quot;data:Select&quot;,</span>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="s1">        &quot;Resource&quot;: &quot;data:table:x&quot;,</span>
-<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="s1">        &quot;MaskedColumns&quot;: { &quot;c&quot;: &quot;SUBSTR(&quot; }</span>
-<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="s1">      }</span>
-<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="s1">    ]</span>
-<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="s1">  }</span>
-<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="s1">}&#39;</span>
-<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="o">{</span><span class="s2">&quot;error&quot;</span>:<span class="s2">&quot;Mask expression for column &#39;c&#39; fails to parse: SUBSTR(&quot;</span><span class="o">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>$<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="nv">$ADMIN_URL</span>/admin/iam/policies<span class="w"> </span>-d<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="s1">&#39;{</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="s1">  &quot;name&quot;: &quot;Bad&quot;,</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="s1">  &quot;document&quot;: {</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="s1">    &quot;Version&quot;: &quot;2024-01-01&quot;,</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="s1">    &quot;Statement&quot;: [</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="s1">      {</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="s1">        &quot;Sid&quot;: &quot;BadMask&quot;,</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="s1">        &quot;Effect&quot;: &quot;Mask&quot;,</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="s1">        &quot;Action&quot;: &quot;data:Select&quot;,</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="s1">        &quot;Resource&quot;: &quot;data:table:x&quot;,</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="s1">        &quot;MaskedColumns&quot;: { &quot;c&quot;: &quot;SUBSTR(&quot; }</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="s1">      }</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="s1">    ]</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="s1">  }</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="s1">}&#39;</span>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="o">{</span><span class="s2">&quot;error&quot;</span>:<span class="s2">&quot;Mask expression for column &#39;c&#39; fails to parse: SUBSTR(&quot;</span><span class="o">}</span>
 </code></pre></div>
 <p>At query time, the master plans each mask through Calcite against the actual table schema, so a syntactically-valid expression that references a non-existent column or uses an unsupported function fails at the per-table compile step. The failure is logged and the column falls through unmasked — never silently aborts the whole query — but the master log surfaces it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>WARN  QueryService - [&lt;queryId&gt;] IAM mask compile failed for
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>      data:table:hr.core.employees.salary — leaving raw:
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>      No match found for function signature ROUND(&lt;NUMERIC&gt;, &lt;NUMERIC&gt;)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>WARN  QueryService - [&lt;queryId&gt;] IAM mask compile failed for
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>      data:table:hr.core.employees.salary — leaving raw:
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>      No match found for function signature ROUND(&lt;NUMERIC&gt;, &lt;NUMERIC&gt;)
 </code></pre></div>
 <p>Watch for that line after attaching a new mask policy; it's the only signal that an expression looks valid SQL but the planner doesn't understand it.</p>
 <h4 id="limitations">Limitations</h4>
@@ -3397,22 +3643,22 @@ certify / decertify / refusal is written to the <a href="../audit-log/">Audit Lo
 </ul>
 <h2 id="row-level-security">Row-Level Security</h2>
 <p>Apply WHERE-condition filters to restrict which rows a user can see. The condition is AND'd into the query's existing WHERE inside an injected FILTER node, evaluated at the SCAN layer — before any user predicate, before any mask.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ApacOnly&quot;</span><span class="p">,</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:ice.sales.orders&quot;</span><span class="p">,</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;region = &#39;APAC&#39;&quot;</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="p">{</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ApacOnly&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:ice.sales.orders&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;region = &#39;APAC&#39;&quot;</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="p">}</span>
 </code></pre></div>
 <p><code>Condition</code> supports the <code>${user.userId}</code> substitution for per-user scoping. The semantic layer's mandatory filters use a richer token set (<code>${user.id}</code>, <code>${user.roles}</code>, <code>${user.attr.&lt;key&gt;}</code>) and are the recommended path for new policies — see <a href="../semantic-layer/#mandatory-filters-with-user-context-templating">Semantic Layer → Mandatory filters</a>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="p">{</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OwnRowsOnly&quot;</span><span class="p">,</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:ice.app.user_events&quot;</span><span class="p">,</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user_id = &#39;${user.userId}&#39;&quot;</span>
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OwnRowsOnly&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:ice.app.user_events&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user_id = &#39;${user.userId}&#39;&quot;</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="p">}</span>
 </code></pre></div>
 <p>Multiple matching Allow statements with conditions are joined with <code>AND</code> — every applicable row filter applies. The combined predicate evaluates against the raw column values, before any column masks, so row filters on PII columns (e.g. "tenant_id = X") work even when those columns are masked in the projection.</p>
 <h2 id="udf-permissions">UDF Permissions</h2>
@@ -3448,11 +3694,11 @@ certify / decertify / refusal is written to the <a href="../audit-log/">Audit Lo
 </tbody>
 </table>
 <p>UDF resources are addressed as <code>udf:&lt;name&gt;</code>, so policies can target an exact function or a wildcard family:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UDF:EXECUTE&quot;</span><span class="p">,</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;udf:mask_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:hash_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:geohash&quot;</span><span class="p">]</span>
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UDF:EXECUTE&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;udf:mask_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:hash_*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;udf:geohash&quot;</span><span class="p">]</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>The Admin UI policy editor ships with templates <em>UDF Execute Any</em>, <em>UDF Author</em>, <em>UDF Sandbox</em>, <em>UDF Deny Sensitive</em>, <em>UDF Global Admin</em>, and <em>UDF Global Read-Only</em>. See the <a href="../udf/">UDF feature page</a> and the <a href="../../use-cases/udf-tutorial/">UDF tutorial</a> for the full lifecycle.</p>
 <h2 id="decision-endpoint-permissions">Decision Endpoint Permissions</h2>
@@ -3477,23 +3723,23 @@ of its own.</p>
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="p">{</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CheapModelOnly&quot;</span><span class="p">,</span>
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AI:DECIDE&quot;</span><span class="p">,</span>
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;connection:jev-small&quot;</span>
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;NoVendorX&quot;</span><span class="p">,</span>
-<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="p">,</span>
-<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AI:DECIDE&quot;</span><span class="p">,</span>
-<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;connection:vendor-x&quot;</span>
-<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="w">  </span><span class="p">]</span>
-<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="p">{</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CheapModelOnly&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AI:DECIDE&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;connection:jev-small&quot;</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;NoVendorX&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AI:DECIDE&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;connection:vendor-x&quot;</span>
+<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a><span class="p">}</span>
 </code></pre></div>
 <p>Two controls follow from granting per endpoint rather than per function: an
 allow list for who may bill the expensive model, and a deny that expresses
@@ -3525,30 +3771,30 @@ records a human decision instead of pretending to a check. See
 <li>Save, then <strong>Certify</strong> (the badge button) to flip <code>DRAFT → CERTIFIED</code>.</li>
 </ol>
 <p>The equivalent REST call (what the UI issues under the hood — <code>POST /api/v1/semantic-views</code>):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://&lt;master&gt;:8080/api/v1/semantic-views&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="s1">  &quot;catalog&quot;: &quot;tpch&quot;, &quot;schema&quot;: &quot;sales&quot;, &quot;name&quot;: &quot;region_sales&quot;,</span>
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="s1">  &quot;baseSql&quot;: &quot;SELECT region, amount, discount, status FROM tpch.sales.orders&quot;,</span>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="s1">  &quot;metrics&quot;: [</span>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="s1">    {&quot;name&quot;: &quot;revenue&quot;, &quot;expr&quot;: &quot;SUM(amount * (1 - discount))&quot;, &quot;synonyms&quot;: [&quot;매출&quot;]},</span>
-<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="s1">    {&quot;name&quot;: &quot;vip_revenue&quot;, &quot;expr&quot;: &quot;SUM(amount) FILTER (WHERE tier=&#39;&#39;VIP&#39;&#39;)&quot;,</span>
-<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="s1">     &quot;allowedRoles&quot;: [&quot;finance&quot;], &quot;mandatoryFilters&quot;: [&quot;status=&#39;&#39;COMPLETED&#39;&#39;&quot;]}</span>
-<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="s1">  ],</span>
-<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="s1">  &quot;dimensions&quot;: [{&quot;name&quot;: &quot;region&quot;}]</span>
-<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="s1">}&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://&lt;master&gt;:8080/api/v1/semantic-views&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Token </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="s1">  &quot;catalog&quot;: &quot;tpch&quot;, &quot;schema&quot;: &quot;sales&quot;, &quot;name&quot;: &quot;region_sales&quot;,</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="s1">  &quot;baseSql&quot;: &quot;SELECT region, amount, discount, status FROM tpch.sales.orders&quot;,</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="s1">  &quot;metrics&quot;: [</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="s1">    {&quot;name&quot;: &quot;revenue&quot;, &quot;expr&quot;: &quot;SUM(amount * (1 - discount))&quot;, &quot;synonyms&quot;: [&quot;매출&quot;]},</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="s1">    {&quot;name&quot;: &quot;vip_revenue&quot;, &quot;expr&quot;: &quot;SUM(amount) FILTER (WHERE tier=&#39;&#39;VIP&#39;&#39;)&quot;,</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="s1">     &quot;allowedRoles&quot;: [&quot;finance&quot;], &quot;mandatoryFilters&quot;: [&quot;status=&#39;&#39;COMPLETED&#39;&#39;&quot;]}</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="s1">  ],</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="s1">  &quot;dimensions&quot;: [{&quot;name&quot;: &quot;region&quot;}]</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="s1">}&#39;</span>
 </code></pre></div>
 <p>A retriever's <code>allowedRoles</code> is configured the same way under <strong>Semantic &amp; AI → Retrievers → Register Retriever</strong> (or <code>POST /api/v1/retrievers</code>).</p>
 <h3 id="set-up-the-iam-group-that-backs-allowedroles">Set up the IAM group that backs <code>allowedRoles</code></h3>
 <p><code>allowedRoles: ["finance"]</code> only gates access if the <code>finance</code> group exists and the caller is a member. Create the group and add the user (Admin UI <strong>IAM</strong> page, or REST — see <a href="#users-and-groups">Users and Groups</a>):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Create the group named in allowedRoles</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://&lt;master&gt;:8080/admin/iam/groups&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$JWT</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;groupName&quot;: &quot;finance&quot;}&#39;</span>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="c1"># Add the user to it — now `alice` satisfies the metric&#39;s allowedRoles</span>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://&lt;master&gt;:8080/admin/iam/add-user-to-group&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$JWT</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;: &quot;alice&quot;, &quot;groupName&quot;: &quot;finance&quot;}&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Create the group named in allowedRoles</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://&lt;master&gt;:8080/admin/iam/groups&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$JWT</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;groupName&quot;: &quot;finance&quot;}&#39;</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="c1"># Add the user to it — now `alice` satisfies the metric&#39;s allowedRoles</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://&lt;master&gt;:8080/admin/iam/add-user-to-group&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$JWT</span><span class="s2">&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;: &quot;alice&quot;, &quot;groupName&quot;: &quot;finance&quot;}&#39;</span>
 </code></pre></div>
 <p>Result: <code>alice</code> (in <code>finance</code>) can resolve <code>vip_revenue</code>; a user in only <code>viewer</code> is denied before the <code>tier='VIP'</code> formula is parsed — and the same <code>finance</code> membership lets <code>alice</code> invoke a retriever whose <code>allowedRoles</code> includes <code>finance</code>. One group membership governs both the analytics metric and the multi-modal retriever, consistently across SQL, BI, and MCP.</p>
 <div class="admonition note">
@@ -3557,36 +3803,36 @@ records a human decision instead of pretending to a check. See
 </div>
 <h2 id="end-to-end-example-tenant-scoped-masking-rls">End-to-end example: tenant-scoped masking + RLS</h2>
 <p>A complete policy that combines RBAC, masking, and row-level security for a multi-tenant SaaS application:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="p">{</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BaselineRead&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:saas.core.*&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">      </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tenant_id = &#39;${user.userId}&#39;&quot;</span>
-<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MaskCustomerPii&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mask&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:saas.core.customers&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="w">      </span><span class="nt">&quot;MaskedColumns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a><span class="w">        </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;MD5(email)&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a><span class="w">        </span><span class="nt">&quot;phone&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;&#39;***-***-XXXX&#39;&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a><span class="w">        </span><span class="nt">&quot;ssn&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;&#39;***-**-XXXX&#39;&quot;</span>
-<a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a><span class="w">      </span><span class="p">}</span>
-<a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a><span class="w">    </span><span class="p">{</span>
-<a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;HideInternalCols&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:saas.core.*&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a><span class="w">      </span><span class="nt">&quot;Columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;internal_notes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fraud_score&quot;</span><span class="p">]</span>
-<a id="__codelineno-17-28" name="__codelineno-17-28" href="#__codelineno-17-28"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a><span class="w">  </span><span class="p">]</span>
-<a id="__codelineno-17-30" name="__codelineno-17-30" href="#__codelineno-17-30"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="p">{</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BaselineRead&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:saas.core.*&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">      </span><span class="nt">&quot;Condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tenant_id = &#39;${user.userId}&#39;&quot;</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MaskCustomerPii&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mask&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:saas.core.customers&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a><span class="w">      </span><span class="nt">&quot;MaskedColumns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a><span class="w">        </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;MD5(email)&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a><span class="w">        </span><span class="nt">&quot;phone&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;&#39;***-***-XXXX&#39;&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a><span class="w">        </span><span class="nt">&quot;ssn&quot;</span><span class="p">:</span><span class="w">    </span><span class="s2">&quot;&#39;***-**-XXXX&#39;&quot;</span>
+<a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;HideInternalCols&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:saas.core.*&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a><span class="w">      </span><span class="nt">&quot;Columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;internal_notes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fraud_score&quot;</span><span class="p">]</span>
+<a id="__codelineno-20-28" name="__codelineno-20-28" href="#__codelineno-20-28"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-20-29" name="__codelineno-20-29" href="#__codelineno-20-29"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-20-30" name="__codelineno-20-30" href="#__codelineno-20-30"></a><span class="p">}</span>
 </code></pre></div>
 <p>For a user <code>tenant_acme</code> running <code>SELECT * FROM saas.core.customers</code>:</p>
 <ol>
