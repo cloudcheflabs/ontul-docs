@@ -21,6 +21,23 @@ The semantic layer makes that connection useful. Views registered through `/api/
    Iceberg  /  NeorunBase  /  JDBC catalogs
 ```
 
+!!! warning "Java 17+ clients: add `--add-opens=java.base/java.nio=ALL-UNNAMED`"
+    The Arrow Flight SQL JDBC driver reads results through Arrow's off-heap memory, which on Java 17 and later
+    needs the JVM option **`--add-opens=java.base/java.nio=ALL-UNNAMED`** in the *client* JVM — your Java
+    application, DBeaver, DataGrip / IntelliJ, or any other JDBC tool that runs the driver.
+
+    Without it the connection **authenticates fine** and the query **runs on the server** (the Ontul master
+    logs it as successful), but reading the result fails in the client, typically with
+    `Failed to read message.` — so it looks like "the server says success, the client got nothing". Set it:
+
+    - **Java application**: `java --add-opens=java.base/java.nio=ALL-UNNAMED -jar app.jar`, or for every JVM
+      on the machine `export JDK_JAVA_OPTIONS="--add-opens=java.base/java.nio=ALL-UNNAMED"`.
+    - **DBeaver**: add a line `--add-opens=java.base/java.nio=ALL-UNNAMED` after `-vmargs` in `dbeaver.ini`
+      (macOS: `DBeaver.app/Contents/Eclipse/dbeaver.ini`), then restart DBeaver.
+    - **DataGrip / IntelliJ**: **Help → Edit Custom VM Options…**, add the same line and restart; or put it in the
+      data source's **Advanced → VM options** (the driver runs in a separate JVM there).
+    - **Maven / Gradle tests**: add it to the Surefire `argLine` / the `test { jvmArgs ... }` block.
+
 ## What BI tools see
 
 When a BI client introspects the catalog, three things change versus a plain Iceberg / JDBC connection:
@@ -141,6 +158,8 @@ Tableau 2023.1+ ships the Arrow Flight SQL JDBC driver wiring; older versions ne
 ## DBeaver Community
 
 DBeaver Community 23.3+ has a built-in **Apache Arrow Flight SQL** driver entry. No manual jar wrangling.
+On Java 17+ (current DBeaver bundles it) add `--add-opens=java.base/java.nio=ALL-UNNAMED` after `-vmargs` in
+`dbeaver.ini` first — see the warning at the top of this page.
 
 1. **Database → New Database Connection** → search "Arrow Flight SQL".
 2. URL: `jdbc:arrow-flight-sql://<host>:47470/`
@@ -217,7 +236,8 @@ Bind the database, browse the catalog tree, and build dashboards. The same seman
 
 ## JetBrains DataGrip / IntelliJ Database Tools
 
-1. **Database → New → Data Source → Other → Apache Arrow Flight SQL** (DataGrip 2024.1+).
+1. **Database → New → Data Source → Other → Apache Arrow Flight SQL** (DataGrip 2024.1+). Put
+   `--add-opens=java.base/java.nio=ALL-UNNAMED` in the data source's **Advanced → VM options** (Java 17+).
 2. URL: `jdbc:arrow-flight-sql://<host>:47470/`
 3. User / password.
 4. Test connection → introspect.
@@ -250,6 +270,12 @@ try (Connection conn = DriverManager.getConnection(url, props);
         System.out.println(rs.getString("region") + "\t" + rs.getDouble("profit_margin"));
     }
 }
+```
+
+Run it with `--add-opens=java.base/java.nio=ALL-UNNAMED` on Java 17+ (see the warning at the top of this page):
+
+```bash
+java --add-opens=java.base/java.nio=ALL-UNNAMED -cp app.jar:flight-sql-jdbc-driver-18.1.0.jar com.example.App
 ```
 
 The result columns are exactly what the SELECT named — semantic-view column metadata flows through JDBC `ResultSetMetaData` as well.
@@ -304,6 +330,7 @@ The admin REST upstream needs the same treatment for stateful flows (catalog reg
 
 | Symptom | Likely cause / fix |
 | --- | --- |
+| JDBC connects, the server logs the query as successful, but the client fails reading the result (`Failed to read message.`) | Java 17+ client without `--add-opens=java.base/java.nio=ALL-UNNAMED` — add it to the client JVM (see the warning at the top). The master logs `Flight stream ... cancelled by the client` when a client drops a result stream mid-transfer. |
 | Tableau "test connection" returns "No results for handle …" | nginx isn't using sticky load balancing — see the previous section. |
 | BI tool browses the catalog but a semantic view shows raw `baseSql` columns instead of measures | The BI tool is running `SHOW COLUMNS` against the connector, not Ontul's DESCRIBE. Re-issue using `DESCRIBE <fqn>` from the SQL Runner to verify Ontul returns measures — if it does, the BI tool's introspection is too low-level. Filing an issue with the Kind discriminator usually resolves it. |
 | `revenue` is recognized but `customer.c_nation` returns an error | The semantic view doesn't declare a `customer` join, or the join's `target` table is missing. Re-fetch the view via `GET /api/v1/semantic-views/<fqn>` to confirm the `joins[]` array, and check the target exists in the catalog. |
