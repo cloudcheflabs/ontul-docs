@@ -3215,7 +3215,7 @@
 <tr>
 <td><code>ontul.zk.admin.probeTimeoutMs</code></td>
 <td><code>2000</code></td>
-<td>Admin UI topology: socket timeout (ms) for asking each ZooKeeper server its status with the <code>srvr</code> command. A server that does not answer in time is shown Offline.</td>
+<td>Admin UI topology: socket timeout (ms) for asking each ZooKeeper server its status with the <code>srvr</code> command and its server id (<code>myid</code>) with <code>conf</code>. A server that does not answer in time is shown Offline. <code>conf</code> is not on ZooKeeper's default <code>4lw.commands.whitelist</code>: add it (<code>srvr,conf</code>) and restart that server, or its server id is shown as unknown.</td>
 </tr>
 <tr>
 <td><code>ontul.zk.admin.probeCacheTtlMs</code></td>
