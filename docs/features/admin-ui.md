@@ -119,6 +119,7 @@ from the end if the file is truncated or rotated. ZooKeeper servers have no log 
     | Column | Meaning |
     |---|---|
     | Server | `host:port` from the connect string |
+    | Server id | the server's id (`myid`) as it reports it to the `conf` command; `server id unknown (...)` with the reason when it could not be read — the server is down, does not serve, or refuses `conf` |
     | Role | `leader`, `follower`, `observer` or `standalone`, as the server reports it; `unknown` when it answers but does not serve (no quorum) or has the `srvr` command disabled |
     | Status | **Online** when the server answered, **Offline** when it could not be reached within `ontul.zk.admin.probeTimeoutMs` — the probe error is shown under the badge |
     | Version | ZooKeeper version |
@@ -131,10 +132,30 @@ from the end if the file is truncated or rotated. ZooKeeper servers have no log 
     session** of the master that answered — `CONNECTED`, `RECONNECTED`, `SUSPENDED` (connection lost,
     session may still be alive) or `LOST` (session expired) — with its session ID.
 
+    Above the table, one red line per **server-id warning**. ZooKeeper itself never reports these
+    misconfigurations — two servers with the same `myid`, or servers configured with different ensembles,
+    just give an unstable or split service — so the page does:
+
+    | Warning | When |
+    |---|---|
+    | `Duplicate ZooKeeper server id N on a:2181, b:2181 — the ensemble is misconfigured; give every server a unique myid` | two or more servers report the same id |
+    | `ZooKeeper server a:2181 reports server id N, which is not in its own ensemble membership (…) — check its myid` | a server's id is not among its own `server.N` entries |
+    | `ZooKeeper servers disagree about the ensemble membership: … — every server must be configured with the same server.N list` | servers report different `server.N` lists |
+    | `ZooKeeper server id unknown on a:2181 (…) — a duplicate myid cannot be ruled out` | an id could not be read; the check is incomplete for that server, never shown as OK |
+    | `ZooKeeper servers a:2181, b:2181 run standalone — …` | several configured servers each run standalone (separate single-server ZooKeepers) |
+
+    A server that refuses `conf` shows `server id unknown (conf not in 4lw.commands.whitelist; add conf
+    there and restart that ZooKeeper server)`: `conf` is **not** on ZooKeeper's default whitelist, and
+    ZooKeeper reads `4lw.commands.whitelist` only at startup. The ZooKeeper bundled with Ontul
+    (`conf/zk/zoo.cfg`) allows `srvr,conf,ruok,stat,mntr`; for your own ensemble set
+    `4lw.commands.whitelist=srvr,conf` (plus whatever else you use) and restart each server.
+
 The ZooKeeper rows come from ZooKeeper's own `srvr` four-letter command, sent by the master to each
 server over a plain socket — the same answer `echo srvr | nc host 2181` gives. Nothing is written to
 ZooKeeper. `srvr` is in ZooKeeper's default `4lw.commands.whitelist` since 3.5; an ensemble that removed
-it still shows its servers as Online, with the role `unknown` and the server's refusal as the note.
+it still shows its servers as Online, with the role `unknown` and the server's refusal as the note. Each
+server that answers `srvr` is then asked `conf` (`echo conf | nc host 2181`) for its `serverId` and its
+`server.N` membership — the source of the Server id column and the warnings.
 A probe is reused for `ontul.zk.admin.probeCacheTtlMs` (5 s by default), so many open admin pages do not
 add load to the ensemble. Any master answers on its own: unlike other admin requests, this one is not
 forwarded to the leader, because finding the leader needs ZooKeeper. So the ZooKeeper section keeps
@@ -149,10 +170,15 @@ with a token you already hold.) The same data is available as JSON from `GET /ad
     {"host": "zk1", "port": 2181, "status": "UP", "mode": "leader", "version": "3.9.1",
      "zxid": "0x100000045", "connections": 5, "outstanding": 0,
      "latencyMinMs": 0, "latencyAvgMs": 0.42, "latencyMaxMs": 7, "nodeCount": 137,
-     "probeRttMs": 3, "error": null},
-    {"host": "zk3", "port": 2181, "status": "DOWN", "mode": null, "error": "ConnectException: Connection refused", "...": "..."}
+     "probeRttMs": 3, "error": null, "serverId": 1, "serverIdNote": null,
+     "membership": {"1": "zk1:2888:3888:participant;0.0.0.0:2181", "2": "zk2:2888:3888:participant;0.0.0.0:2181",
+                    "3": "zk3:2888:3888:participant;0.0.0.0:2181"}},
+    {"host": "zk3", "port": 2181, "status": "DOWN", "mode": null, "error": "ConnectException: Connection refused",
+     "serverId": null, "serverIdNote": "server id unknown (server is down)", "membership": {}, "...": "..."}
   ],
-  "session": {"state": "CONNECTED", "connected": true, "since": 1760774400000, "sessionId": "0x1000a3b2c0001"},
+  "warnings": ["ZooKeeper server id unknown on zk3:2181 (server is down) — a duplicate myid cannot be ruled out"],
+  "session": {"state": "CONNECTED", "connected": true, "since": 1760774400000, "sessionId": "0x1000a3b2c0001",
+              "connectedServer": "zk1/10.0.0.11:2181"},
   "reportedBy": "ontul-master-1:8080"
 }
 ```
