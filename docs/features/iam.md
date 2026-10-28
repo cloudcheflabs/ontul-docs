@@ -85,11 +85,11 @@ Ontul uses AWS-style JSON policies to manage permissions. Actions live in the `d
 }
 ```
 
-- **Action verbs in `data:` namespace** — runtime SQL: `data:Select`, `data:Insert`, `data:Update`, `data:Delete`, `data:Merge`. Catalog DDL: `data:CreateTable`, `data:DropTable`, `data:AlterTable`. Operational: `data:KillJob`, `data:CancelQuery`. The metadata-only `data:SelectTable` verb gates discovery surfaces (semantic views, object types, retrievers: listing and fetching their definitions) — distinct from the runtime `data:Select` that gates actual scans. A `data:Select` grant on a name also makes it discoverable, so a user who may read a table sees the views and object types built on it; reading table data (including Lance blobs) always needs `data:Select`. Catalog / schema / table listings, `DESCRIBE`, `EXPLAIN` and lineage follow `data:Select` (see [BI integration](bi-integration.md)).
+- **Action verbs in `data:` namespace** — runtime SQL: `data:Select`, `data:Insert`, `data:Update`, `data:Delete` (`MERGE` is checked as `data:Insert`, plus `data:Delete` when it has `WHEN MATCHED THEN DELETE`; `data:Merge` is only used by the chango Trino gateway). Catalog DDL: `data:CreateTable`, `data:DropTable`, `data:AlterTable`. Operational: `data:KillJob`, `data:CancelQuery`. The metadata-only `data:SelectTable` verb gates discovery surfaces (semantic views, object types, retrievers: listing and fetching their definitions) — distinct from the runtime `data:Select` that gates actual scans. A `data:Select` grant on a name also makes it discoverable, so a user who may read a table sees the views and object types built on it; reading table data (including Lance blobs) always needs `data:Select`. Catalog / schema / table listings, `DESCRIBE`, `EXPLAIN` and lineage follow `data:Select` (see [BI integration](bi-integration.md)).
 - **UDF actions** stay in the `UDF:` namespace — see [UDF Permissions](#udf-permissions).
 - **Ontology actions** live in the `ontology:` namespace and gate the [ontology](ontology.md) surface: `ontology:InvokeAction` (perform a governed write-back), `ontology:InvokeWorkflow` (run a multi-step Saga), `ontology:Certify` (sign off on a definition). Administrators are always allowed; for everyone else these are deny-by-default like any other action.
 - **Server-side S3 writes and remote functions** — `data:UploadS3` on `data:s3:<bucket>/<key>` gates the Flight `UPLOAD_S3` action and the `WRITE_S3 '<s3 path>' ...` statement (the master writes where the caller names); `data:MapExecute` on `data:compute:map` / `data:compute:py-map` gates the Flight `MAP_EXECUTE` / `PY_MAP_EXECUTE` actions (the caller's function runs on every worker); the Flight `CancelQuery` action needs `data:CancelQuery` on `data:query:<id>`, like `POST /admin/query/cancel`. All deny by default; administrators pass.
-- **Resources**: `data:table:<catalog>.<schema>.<table>`, `data:schema:<catalog>.<schema>`, `data:job:*`, `data:query:*`, `data:s3:<bucket>/<key>`, `data:compute:map`, `udf:<name>`. Wildcards `*` and `?` are supported. **Semantic-layer and ontology objects are addressed by their BARE fully-qualified name** — `semantic.rag.*`, `ontology.sales.*` — *not* prefixed with `data:table:`. A policy written as `data:table:ontology.sales.*` never matches, which reads like "IAM is broken" rather than "the pattern did not match".
+- **Resources**: `data:table:<catalog>.<schema>.<table>`, `data:schema:<catalog>.<schema>`, `data:job:*`, `data:query:*`, `data:s3:<bucket>/<key>`, `data:compute:map`, `udf:<name>`. Wildcards `*` and `?` are supported. There is no `data:catalog:` resource: a whole catalog is `data:table:<catalog>.*.*` plus `data:schema:<catalog>.*`. **Semantic-layer and ontology objects are addressed by their BARE fully-qualified name** — `semantic.rag.*`, `ontology.sales.*` — *not* prefixed with `data:table:`. A policy written as `data:table:ontology.sales.*` never matches, which reads like "IAM is broken" rather than "the pattern did not match".
 - **Attachment**: policies attach to users (direct) or groups (via group membership).
 - **Deny rules take precedence** over allow rules.
 - **Deny-by-default**: no matching policies means access is denied.
@@ -122,33 +122,160 @@ The write **target** is authorized in addition to the read sources: granting a u
 
 The engine authorization is the enforcement point the [chango Trino / Spark / Flink authz plugins](../index.md) also call over REST — so the same policy governs a table whether it is touched by an external engine or by an Ontul SQL statement.
 
-### Creating and updating policies
+### Canonical actions and resources
 
-The same endpoint handles both — `POST /admin/iam/policies` is upsert. Re-posting with an existing `name` overwrites the document and propagates the new content to follower masters via `pushUpdate()`. The next query the affected user issues sees the new policy; no cache invalidation is needed because effective policies are computed per-query.
+What each operation is authorized as — the exact `(action, resource)` pair the engine evaluates. The same table is
+in the Admin UI policy editor (**Action & resource reference**), and a denial names the pair it checked, e.g.
+`Access denied: no matching policy for user 'wf-runner' to data:CreateTable on 'data:schema:iceberg.wf'`: grant
+exactly that.
 
-```bash
-# Initial creation
-curl -X POST $ADMIN_URL/admin/iam/policies -H "Authorization: Bearer $TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '{"name":"AnalystAccess","document": { … v1 … }}'
+| Operation | Action | Resource |
+|---|---|---|
+| `SELECT`, `EXPLAIN`, `DESCRIBE`, `SHOW …` (listings are filtered) | `data:Select` | `data:table:<catalog>.<schema>.<table>` |
+| `INSERT INTO` | `data:Insert` | `data:table:<catalog>.<schema>.<table>` |
+| `CREATE TABLE`, `CREATE TABLE AS SELECT` | `data:Insert` | `data:table:<catalog>.<schema>.<table>` |
+| `UPDATE` | `data:Update` | `data:table:<catalog>.<schema>.<table>` |
+| `DELETE FROM` | `data:Delete` | `data:table:<catalog>.<schema>.<table>` |
+| `MERGE INTO` (+ `data:Delete` with `WHEN MATCHED THEN DELETE`) | `data:Insert` | `data:table:<catalog>.<schema>.<table>` |
+| `CREATE SCHEMA` / `NAMESPACE` / `DATABASE` | `data:CreateTable` | `data:schema:<catalog>.<schema>` |
+| `DROP SCHEMA` | `data:DropTable` | `data:schema:<catalog>.<schema>` |
+| `CREATE [MATERIALIZED] VIEW` | `data:CreateTable` | `data:table:<catalog>.<schema>.<view>` |
+| `DROP TABLE` / `DROP VIEW` | `data:DropTable` | `data:table:<catalog>.<schema>.<table>` |
+| `ALTER TABLE` / `VIEW`, `OPTIMIZE`, `VACUUM`, `EXPIRE SNAPSHOTS`, `REMOVE ORPHAN FILES`, `REWRITE MANIFESTS` | `data:AlterTable` | `data:table:<catalog>.<schema>.<table>` |
+| `WRITE_S3`, Flight `UPLOAD_S3` | `data:UploadS3` | `data:s3:<bucket>/<key>` |
+| Flight `MAP_EXECUTE` / `PY_MAP_EXECUTE` | `data:MapExecute` | `data:compute:map` / `data:compute:py-map` |
+| Cancel a query (SQL page, Flight `CancelQuery`) | `data:CancelQuery` | `data:query:*` (Flight: `data:query:<id>`) |
+| Kill a job (the job's owner needs nothing on `/v1/api`) | `data:KillJob` | `data:job:*` |
+| Streaming flow: source table / sink table (+ `data:Update`, `data:Delete` for CDC / upsert) | `data:Select` / `data:Insert` | `data:table:<catalog>.<schema>.<table>` |
+| Semantic views, retrievers, object types: list / get / invoke | `data:SelectTable` | `<catalog>.<schema>.<name>` (no prefix) |
+| UDF in a query / register / drop (`GLOBAL` scope: `_GLOBAL`) | `UDF:EXECUTE` / `UDF:CREATE` / `UDF:DROP` | `udf:<name>` |
+| `ai_verdict()` / `ai_verdict_one()` | `AI:DECIDE` | `connection:<connectionId>` |
+| `CALL` an action / workflow / operation | `ontology:InvokeAction` / `InvokeWorkflow` / `InvokeOperation` | `<catalog>.<schema>.<action>` (operation: `operation:<catalog>:<op>`) |
+| Certify an ontology object | `ontology:Certify` | `ontology.<schema>.<name>` |
 
-# Update — same `name`, new document
-curl -X POST $ADMIN_URL/admin/iam/policies -H "Authorization: Bearer $TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '{"name":"AnalystAccess","document": { … v2 … }}'
+How matching works:
+
+- Case-insensitive. `*` matches any characters (including `.` and `:`), `?` exactly one. `"*"` alone matches everything.
+- There is **no hierarchy**: `data:table:iceberg.wf.*` does not cover `data:schema:iceberg.wf`. A role that creates its
+  own schema needs a `data:schema:` statement as well — see the **ETL Schema Owner (one schema)** template below.
+- Names are checked as written in the statement, so write tables and schemas fully qualified (`catalog.schema.table`)
+  to match qualified grants.
+- Administration routes (users, groups, policies, catalogs, connections, KMS, backup, …) are not governed by actions:
+  they need the built-in `AdministratorAccess` policy.
+
+A grant for an ETL role that owns one schema (create it, create / load / change / drop its tables, nothing else):
+
+```json
+{
+  "Version": "2024-01-01",
+  "Statement": [
+    { "Sid": "EtlSchema", "Effect": "Allow", "Action": ["data:CreateTable", "data:DropTable"], "Resource": "data:schema:iceberg.etl" },
+    { "Sid": "EtlTables", "Effect": "Allow",
+      "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete", "data:CreateTable", "data:DropTable", "data:AlterTable"],
+      "Resource": "data:table:iceberg.etl.*" }
+  ]
+}
 ```
 
-Both calls return `201 Created`. Distinguish create-vs-update on the client side by `GET /admin/iam/policies` first if needed; the server doesn't differentiate.
+### Validation and warnings
+
+Every create and update checks the document the way the evaluator will read it. A document it cannot read as
+written is **refused with `400`** and a message naming the statement and field:
+
+- `Statement` must be a non-empty array; only `Sid`, `Effect`, `Action`, `Resource`, `Columns`, `Condition` and
+  `MaskedColumns` are allowed in a statement (an AWS-style `NotAction` would otherwise be silently ignored).
+- `Effect` must be `Allow`, `Deny` or `Mask`; `Action` and `Resource` are a string or a non-empty list of strings
+  without spaces; a `Mask` statement needs `MaskedColumns`, and every mask expression must parse.
+
+Vocabulary is **warned about, not refused**: the document is stored and the answer carries `"warnings": [...]`,
+which the Admin UI shows after Save. A warning is given when
+
+- an action in a namespace Ontul owns (`data:`, `UDF:`, `AI:`, `ontology:`) is not one Ontul's engine checks —
+  with what it checks instead, e.g. `Statement 2: 'data:CreateSchema' is not an action Ontul's own engine checks —
+  CREATE SCHEMA is authorized as data:CreateTable on data:schema:<catalog>.<schema> (the chango Trino gateway sends
+  data:CreateSchema to /v1/api/authz/check, so keep it only for that). ...`;
+- a `data:` resource is not a form Ontul checks (`data:catalog:…`, `data:tables:…`);
+- none of a statement's resources has the form its action is checked on, e.g. `data:Insert` on
+  `data:schema:iceberg.etl` (`data:Insert` is checked on `data:table:…`), so the statement never applies.
+
+These are warnings rather than errors because the same policies answer external engines (next section), which
+use some of those names.
+
+### External engines use their own action names
+
+Trino, Spark and Flink (chango) ask Ontul through `POST /v1/api/authz/check` / `check-batch` with the action and
+resource **they** build; Ontul evaluates exactly what it receives. The chango Trino gateway checks `CREATE SCHEMA`
+as `data:CreateSchema`, `DROP SCHEMA` as `data:DropSchema`, `MERGE` as `data:Merge`, `CREATE VIEW` / `DROP VIEW`
+as `data:CreateView` / `data:DropView` and `CREATE TABLE` as `data:CreateTable` — all on
+`data:table:<catalog>.<schema>[.<table>]`. Ontul's own SQL checks the names in the table above. A policy that
+must work both in Ontul SQL and from Trino therefore needs both spellings (the templates keep `data:Merge` for
+this reason).
+
+### Why was I denied?
+
+A denial names the exact action and resource that was checked. When the caller's **own** policies hold a near
+miss, the message adds a hint (only the caller's own Allow statements are looked at):
+
+```text
+Access denied: no matching policy for user 'wf-runner' to data:CreateTable on 'data:schema:iceberg.wf'.
+  Hint: your policy grants data:CreateSchema on 'data:schema:iceberg.wf', which Ontul does not check —
+  CREATE SCHEMA is authorized as data:CreateTable on data:schema:<catalog>.<schema>
+Access denied: no matching policy for user 'etl' to data:Insert on 'data:table:iceberg.wf.t'.
+  Hint: your policies grant data:Insert only on 'data:table:iceberg.etl.*'
+```
+
+No hint means nothing in the caller's policies comes close: the grant is simply missing.
+
+### Creating, updating and deleting policies
 
 | Operation | Endpoint |
 | --- | --- |
-| Create / update policy | `POST   /admin/iam/policies` |
+| Create policy | `POST   /admin/iam/policies` `{name, document, ifNotExists}` |
+| Update policy (keeps attachments) | `PUT    /admin/iam/policies/{name}` `{document}` |
 | List policies | `GET    /admin/iam/policies` |
-| Delete policy | `DELETE /admin/iam/policies/{name}` |
+| Delete policy | `DELETE /admin/iam/policies/{name}[?detach=true]` |
 | Attach policy to group | `POST   /admin/iam/attach-group-policy` `{groupName, policyName}` |
 | Detach policy from group | `POST   /admin/iam/detach-group-policy` `{groupName, policyName}` |
 
-The `AdministratorAccess` policy is reserved — `deletePolicy` rejects attempts to remove it.
+All of them are administrator-only, handled by the leader (a follower forwards the request), replicated to every
+master, and recorded in the audit log (`iam:CreatePolicy` / `iam:UpdatePolicy` / `iam:DeletePolicy` on
+`iam:policy:<name>`).
+
+**Update in place.** `PUT /admin/iam/policies/{name}` replaces the document and keeps the name and **every group and
+user attachment**, so fixing a policy reaches its members on their next request — no re-attaching, no new token.
+`404` if there is no such policy, `400` for an invalid document, `403` for the built-in `AdministratorAccess`. The
+answer lists where the policy is attached:
+
+```bash
+curl -X PUT $ADMIN_URL/admin/iam/policies/wf-runner-policy -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" -d '{"document": { … corrected document … }}'
+# 200 {"status":"ok","policyName":"wf-runner-policy","attachedGroups":["wf-runners"],"attachedUsers":[]}
+```
+
+Do not delete and re-create a policy to change it: a re-created policy is attached to nothing.
+
+**Create.** With `"ifNotExists": true` (what the Admin UI sends) an existing name is refused with
+`409 Policy 'x' already exists; update it with PUT /admin/iam/policies/x (or Edit in the console), which keeps its
+group and user attachments`. Without it, `POST` still replaces the document of an existing policy (attachments are
+kept), as it always has, for scripts that rely on it; use `PUT` for updates.
+
+**Delete.** A policy still attached to a group or user is **refused** with `409`, naming them:
+
+```json
+{"error": "Policy 'wf-runner-policy' is attached to group(s) wf-runners; detach it first, or delete with ?detach=true to detach it from all of them. ...",
+ "attachedGroups": ["wf-runners"], "attachedUsers": []}
+```
+
+Deleting an attached policy changes what every member may do at once — and widens it when the policy holds a
+`Deny` — so it is never done silently: detach it first, or send `DELETE …?detach=true` to detach it from all of
+them and delete it in one step (the answer lists `detachedGroups` / `detachedUsers`). The Admin UI's **Delete**
+shows the groups and users it is attached to and sends `detach=true` only after you confirm. The built-in
+`AdministratorAccess` policy cannot be changed or deleted (`403`).
+
+In the Admin UI each policy card shows where it is attached and has **Edit** and **Delete**; **Edit** opens the
+policy editor with the document loaded and says "Attached to: … — saving keeps these attachments". The built-in
+policy is marked *Built-in · read-only*. `GET /admin/iam/users` lists each user's directly attached policies in
+`policyNames`.
 
 ### Certification without admin rights
 
