@@ -69,6 +69,29 @@ POST /admin/catalogs
 
 Once registered, tables are immediately queryable via fully qualified names: `iceberg.db.my_table`, `neorun.public.events`.
 
+**A registration is checked before anything is stored** (`POST /admin/catalogs`, `PUT /admin/catalogs/<name>`).
+Every refusal is `400` with `{"error": "..."}` and leaves no catalog behind (an update leaves the catalog as it was):
+
+| Request | Answer |
+|---|---|
+| `"type": "ICEBERG_REST"` or `config.connector` not a known type | `unknown catalog type 'ICEBERG_REST' (accepted: elasticsearch, file, iceberg, jdbc, lance, neorunbase, rest-operation, tpcds, tpch)` (plus loaded plugin types) |
+| no type at all | `catalog type is required: config.connector (accepted: ...)` |
+| `config.connector` and `type` naming different types | `conflicting catalog types: 'iceberg' and type 'jdbc'` |
+| a top-level field other than `name`, `catalogName`, `config`, `connector`, `type` | `unknown field 'warehouse' (accepted: catalogName, config, connector, name, type)` |
+| a key the connector cannot work without | `config.catalog.rest.uri is required for catalog type 'iceberg'` (jdbc: `url`, elasticsearch: `hosts`, neorunbase: `endpoint` + `jdbcUrl`, rest-operation: `baseUrl` — unless a `connectionId` supplies them; lance: `warehouse`, or `polaris.uri` + `polaris.catalog`) |
+| `config.connectionId` of no stored connection | `Connection not found: <id>` |
+| an object or array as a config value | `config.<key> must be a string (...)` |
+| `config.catalog.type` other than `rest` for Iceberg | `config.catalog.type 'hadoop' is not supported (accepted: rest)` |
+
+The type is matched ignoring case (`"ICEBERG"` is `iceberg`) and stored by its canonical name; there are no other
+aliases. The type may be given as `config.connector` or the top-level `type` / `connector`. Earlier releases answered
+an unknown or missing type with `201` and created a `file` catalog.
+
+Connections follow the same rules (`POST` / `PUT /admin/connections`): the type is one of `DECIDE, ELASTICSEARCH,
+JDBC, KAFKA, NEORUNBASE, REST, RERANK, S3` (case ignored, stored upper-case), otherwise
+`unknown connection type 'S4' (accepted: ...)`; only `connectionId`, `type`, `description` and `properties` are
+accepted; `properties` values are strings; `connectionId` is required and cannot be changed by an update.
+
 ## Built-in Connectors
 
 ### Catalog Connectors (Query/Batch)

@@ -444,6 +444,81 @@ CREATE VIEW ice.ns.v_recent AS
 SELECT count(*) FROM ice.ns.v_recent;
 ```
 
+### Sharing a Polaris catalog with Trino (cross-engine views)
+
+Ontul and Trino (or Spark) can register the **same** Iceberg REST catalog — for example one Polaris warehouse — and
+use each other's tables and views: DDL in one engine, reads in the other. Register the catalog in Ontul as usual
+(Polaris without STS: `stsUnavailable: true`, no `roleArn`; Ontul reads S3 with its own keys). A Trino catalog on
+the same warehouse looks like this (Trino 476; Trino 451 cannot send the OAuth2 scope Polaris requires):
+
+```properties
+connector.name=iceberg
+iceberg.catalog.type=rest
+iceberg.rest-catalog.uri=http://polaris:8181/api/catalog
+iceberg.rest-catalog.warehouse=<polaris catalog>
+iceberg.rest-catalog.security=OAUTH2
+iceberg.rest-catalog.oauth2.credential=<client id>:<client secret>
+iceberg.rest-catalog.oauth2.scope=PRINCIPAL_ROLE:ALL
+iceberg.rest-catalog.vended-credentials-enabled=false
+fs.native-s3.enabled=true
+s3.endpoint=<S3 endpoint, e.g. ShannonStore>
+s3.path-style-access=true
+s3.region=us-east-1
+s3.aws-access-key=...
+s3.aws-secret-key=...
+```
+
+**Views another engine created.** An Iceberg view stores its SQL per *dialect* together with a `default-catalog`
+and `default-namespace`. Trino writes dialect `trino` and keeps unqualified names as written (re-formatted):
+
+| Trino statement | Stored in Polaris |
+|---|---|
+| `CREATE VIEW iceberg.wf.v1 AS SELECT k, v FROM iceberg.wf.t1 WHERE k = 1` (no session catalog) | `default-namespace: ["wf"]`, no `default-catalog`, SQL `SELECT k, v FROM iceberg.wf.t1 WHERE (k = 1)` |
+| `USE iceberg.wf; CREATE VIEW v2 AS SELECT k FROM t1 WHERE k = 2` | `default-catalog: "iceberg"`, `default-namespace: ["wf"]`, SQL `SELECT k FROM t1 WHERE (k = 2)` |
+
+Ontul reads both. The relations of another engine's view body are resolved as that engine would:
+
+- `t` → `<catalog>.<default-namespace>.t`; `ns.t` → `<catalog>.ns.t` (two parts are schema.table, as in Trino);
+- `<default-catalog>.ns.t` → `<catalog>.ns.t` when Ontul has no catalog of that name (Trino may call the catalog
+  `iceberg` while Ontul registered the same warehouse as `ice`);
+- `<catalog>` is the Ontul catalog the view was found in; without a stored default namespace the view's own
+  namespace is used; a CTE's name is not a relation.
+
+When a view has several SQL representations Ontul plans its own (`ontul`) if present, then the one closest to ANSI
+SQL (`trino` before `spark`), then the first. Spark's backtick-quoted names are read as quoted names. A body Ontul
+cannot read — a Trino lambda, a function Ontul does not have — fails only queries on that view, naming the view and
+the dialect:
+
+```text
+View 'iceberg.wf.v_bad' uses trino SQL that ontul cannot parse: No match found for function signature transform(...)
+```
+
+Note: Trino stores the **view's own namespace** as `default-namespace`, not the session schema it resolved names
+in. `USE iceberg.a; CREATE VIEW iceberg.b.v AS SELECT * FROM t` therefore stores `FROM t` with
+`default-namespace: ["b"]`; Trino itself then cannot read the view (`Table 'iceberg.b.t' does not exist`), and Ontul
+answers `View 'iceberg.b.v' is invalid: its base table 'iceberg.b.t' does not exist`. Create such views with
+qualified names.
+
+**Views Ontul creates** are stored with the dialect `ontul` and — so that Trino can read them (Trino reads only its
+own dialect: `Cannot read unsupported dialect 'ontul'`) — the same SQL again under `trino`, with
+`default-catalog` = the Ontul catalog name and `default-namespace` = the view's namespace. The body is fully
+qualified (Ontul's `CREATE VIEW` requires it), so Trino reads the same tables when it names the catalog as Ontul
+does. The catalog config key `view.also-dialects` (comma list, default `trino`, `none` = only `ontul`) chooses the
+extra dialects.
+
+**Replaced and dropped elsewhere.** `CREATE OR REPLACE VIEW` / `DROP VIEW` in Trino are noticed on the next query on
+every master: the new body is planned, a dropped view is `Object 'v' not found within 'iceberg.wf'`.
+
+**Listings.** `SHOW TABLES` lists tables and views, sorted by name, as Trino does. `SHOW VIEWS FROM <catalog>.<schema>`
+lists the views with whether Ontul can query each (`View`, `Status` = `valid` / `invalid`, `Reason`). `DESCRIBE`
+of a view shows the columns stored with it. The Catalog Browser marks views (`view`, and `view, invalid` with the
+reason on hover). All listings show a user only what they may `data:Select` — a user granted only a view sees the
+catalog, schema and view. Flight SQL `GetTables` types Iceberg views as `VIEW`.
+
+**Access control.** A view is authorized like any view: the caller needs `data:Select` on the view; the base tables
+it reads are reached through the view's grant (as Trino's default `SECURITY DEFINER`), and a direct query on a base
+table still needs its own grant. A Deny on the view denies.
+
 ## SQL examples
 
 Copy-pasteable recipes against an Iceberg catalog registered as `ice`. All statements run through Arrow Flight SQL, so any JDBC tool (DBeaver, DataGrip), the Ontul SDK, or the Admin UI's SQL editor can execute them.
