@@ -3478,14 +3478,24 @@ written is <strong>refused with <code>400</code></strong> and a message naming t
 which the Admin UI shows after Save. A warning is given when</p>
 <ul>
 <li>an action in a namespace Ontul owns (<code>data:</code>, <code>UDF:</code>, <code>AI:</code>, <code>ontology:</code>) is not one Ontul's engine checks —
-  with what it checks instead, e.g. <code>Statement 2: 'data:CreateNamespace' is not an action Ontul's own engine
-  checks — CREATE SCHEMA / NAMESPACE / DATABASE is authorized as data:CreateSchema on data:schema:&lt;catalog&gt;.&lt;schema&gt;. ...</code>;</li>
+  with what it checks instead, and that no engine integration sends it either, e.g. <code>Statement 2:
+  'data:CreateNamespace' is not an action Ontul checks — CREATE SCHEMA / NAMESPACE / DATABASE is authorized as
+  data:CreateSchema on data:schema:&lt;catalog&gt;.&lt;schema&gt;. No engine integration sends this either — it has no effect and
+  can be removed. ...</code>. <code>data:ShowSchemas</code>, <code>data:ShowTables</code>, <code>data:ShowCatalogs</code> and <code>data:Describe</code> are such
+  names: listings and DESCRIBE are authorized as <code>data:Select</code>;</li>
+<li>a name only the engine integrations send — a note, not a problem: the gateway's schema form
+  <code>data:CreateSchema</code> / <code>data:DropSchema</code> on <code>data:table:&lt;catalog&gt;.&lt;schema&gt;</code> answers <code>... is not checked by Ontul's
+  own SQL (it checks data:CreateSchema on data:schema:...); it is sent by the Trino/Spark/Flink gateway integration —
+  keep it if you use those</code>;</li>
 <li>a legacy name is used — a note, not a problem: <code>Statement 1: data:CreateTable on 'data:schema:iceberg.wf' is the
   legacy alias of data:CreateSchema (still accepted; data:CreateSchema is the name to use)</code>;</li>
 <li>a <code>data:</code> resource is not a form Ontul checks (<code>data:catalog:…</code>, <code>data:tables:…</code>);</li>
 <li>none of a statement's resources has the form its action is checked on, e.g. <code>data:Insert</code> on
-  <code>data:schema:iceberg.etl</code> (<code>data:Insert</code> is checked on <code>data:table:…</code>), so the statement never applies.</li>
+  <code>data:schema:iceberg.etl</code> or <code>data:Select</code> on <code>data:schema:…</code> (<code>data:Select</code> is checked on <code>data:table:…</code>), so the
+  statement never applies — "it has no effect and can be removed".</li>
 </ul>
+<p>The console's action reference (policy editor and Policies tab) is served by the server
+(<code>GET /admin/iam/policy-reference</code>) from the same vocabulary these warnings use.</p>
 <p>These are warnings rather than errors because the same policies answer external engines (next section), which
 may use names of their own.</p>
 <h3 id="external-engines">External engines</h3>

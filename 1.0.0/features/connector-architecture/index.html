@@ -2903,6 +2903,57 @@
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">}</span>
 </code></pre></div></p>
 <p>Once registered, tables are immediately queryable via fully qualified names: <code>iceberg.db.my_table</code>, <code>neorun.public.events</code>.</p>
+<p><strong>A registration is checked before anything is stored</strong> (<code>POST /admin/catalogs</code>, <code>PUT /admin/catalogs/&lt;name&gt;</code>).
+Every refusal is <code>400</code> with <code>{"error": "..."}</code> and leaves no catalog behind (an update leaves the catalog as it was):</p>
+<table>
+<thead>
+<tr>
+<th>Request</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"type": "ICEBERG_REST"</code> or <code>config.connector</code> not a known type</td>
+<td><code>unknown catalog type 'ICEBERG_REST' (accepted: elasticsearch, file, iceberg, jdbc, lance, neorunbase, rest-operation, tpcds, tpch)</code> (plus loaded plugin types)</td>
+</tr>
+<tr>
+<td>no type at all</td>
+<td><code>catalog type is required: config.connector (accepted: ...)</code></td>
+</tr>
+<tr>
+<td><code>config.connector</code> and <code>type</code> naming different types</td>
+<td><code>conflicting catalog types: 'iceberg' and type 'jdbc'</code></td>
+</tr>
+<tr>
+<td>a top-level field other than <code>name</code>, <code>catalogName</code>, <code>config</code>, <code>connector</code>, <code>type</code></td>
+<td><code>unknown field 'warehouse' (accepted: catalogName, config, connector, name, type)</code></td>
+</tr>
+<tr>
+<td>a key the connector cannot work without</td>
+<td><code>config.catalog.rest.uri is required for catalog type 'iceberg'</code> (jdbc: <code>url</code>, elasticsearch: <code>hosts</code>, neorunbase: <code>endpoint</code> + <code>jdbcUrl</code>, rest-operation: <code>baseUrl</code> — unless a <code>connectionId</code> supplies them; lance: <code>warehouse</code>, or <code>polaris.uri</code> + <code>polaris.catalog</code>)</td>
+</tr>
+<tr>
+<td><code>config.connectionId</code> of no stored connection</td>
+<td><code>Connection not found: &lt;id&gt;</code></td>
+</tr>
+<tr>
+<td>an object or array as a config value</td>
+<td><code>config.&lt;key&gt; must be a string (...)</code></td>
+</tr>
+<tr>
+<td><code>config.catalog.type</code> other than <code>rest</code> for Iceberg</td>
+<td><code>config.catalog.type 'hadoop' is not supported (accepted: rest)</code></td>
+</tr>
+</tbody>
+</table>
+<p>The type is matched ignoring case (<code>"ICEBERG"</code> is <code>iceberg</code>) and stored by its canonical name; there are no other
+aliases. The type may be given as <code>config.connector</code> or the top-level <code>type</code> / <code>connector</code>. Earlier releases answered
+an unknown or missing type with <code>201</code> and created a <code>file</code> catalog.</p>
+<p>Connections follow the same rules (<code>POST</code> / <code>PUT /admin/connections</code>): the type is one of <code>DECIDE, ELASTICSEARCH,
+JDBC, KAFKA, NEORUNBASE, REST, RERANK, S3</code> (case ignored, stored upper-case), otherwise
+<code>unknown connection type 'S4' (accepted: ...)</code>; only <code>connectionId</code>, <code>type</code>, <code>description</code> and <code>properties</code> are
+accepted; <code>properties</code> values are strings; <code>connectionId</code> is required and cannot be changed by an update.</p>
 <h2 id="built-in-connectors">Built-in Connectors</h2>
 <h3 id="catalog-connectors-querybatch">Catalog Connectors (Query/Batch)</h3>
 <p>Registered via <code>POST /admin/catalogs</code>. Used in SQL queries and batch pipelines.</p>
