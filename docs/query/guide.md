@@ -144,7 +144,13 @@ FROM ice.examples.products GROUP BY category
 -- Drop
 DROP TABLE ice.examples.products
 DROP SCHEMA ice.analytics
+DROP TABLE IF EXISTS ice.examples.products   -- a no-op when it does not exist
 ```
+
+Like Trino, dropping an object that does not exist is an error (`Table 'ice.examples.products' does not exist`)
+unless `IF EXISTS`, creating one that exists is an error unless `IF NOT EXISTS`, and a DDL statement that fails is an
+error with its cause, never a success. See
+[Iceberg: missing objects and failures](../iceberg/integration.md#missing-objects-and-failures).
 
 ### DML
 
