@@ -3286,7 +3286,7 @@
 </tr>
 <tr>
 <td><code>DROP VIEW [IF EXISTS] catalog.ns.v</code></td>
-<td></td>
+<td>Stops resolving on every master at once; see <a href="#views">Views</a>.</td>
 </tr>
 <tr>
 <td><code>COMMENT ON TABLE catalog.ns.t IS '...'</code></td>
@@ -3689,6 +3689,17 @@ is. A source row that matched a target row is never inserted. For an unmatched s
 <a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>
 <a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="k">DROP</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">v_recent</span><span class="p">;</span>
 </code></pre></div>
+<p><strong>Dropped and re-created objects.</strong> A <code>DROP VIEW</code> or <code>DROP TABLE</code> stops resolving at once on every master, not
+only the one that ran it: the next query on any master answers
+<code>Object 'v_recent' not found within 'ice.sales'</code>. A view or table re-created under the same name resolves to its
+new definition (a view's new body, a table's new columns) everywhere. Changes made by another engine directly in
+the catalog — Trino or Spark dropping a table, replacing or dropping a view — are noticed on the next query that
+reads the object: a view whose body changed is re-planned with the catalog's current body, and a dropped table or
+view is "not found". A catalog refresh (<code>POST /admin/catalogs/&lt;name&gt;/refresh</code>, or the lookup Ontul does when a
+query names an unknown object) also removes what the catalog no longer lists — but never what it could not list
+(a namespace that failed to list keeps its tables) and never semantic views, which live in Ontul.</p>
+<p>Earlier releases kept every table and view they had seen: a dropped view went on answering from its stored SQL,
+a dropped table failed with <code>cannot plan a scan ...: Table does not exist</code>, and both stayed in <code>SHOW TABLES</code>.</p>
 <h3 id="cross-catalog-federation">Cross-catalog federation</h3>
 <p>Iceberg tables can be joined directly with other registered catalogs (JDBC, file, TPC-DS, etc.) in a single query — the planner pushes filters and projection into each connector and shuffles only the bare minimum across workers.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">name</span>
