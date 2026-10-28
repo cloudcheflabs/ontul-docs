@@ -31,10 +31,13 @@ Every policy is a JSON document with a `Version` and a list of `Statement`s. Eac
 | `data:Select` | Read rows — gates an actual scan |
 | `data:SelectTable` | Metadata-only read — gates *discovery*: listing or describing a semantic view, a retriever, a catalog table. Distinct from `data:Select`, and what a retriever invoke is authorized under |
 | `data:Insert` / `data:Update` / `data:Delete` | Write / row-level DML. `MERGE` is authorized as `data:Insert`, plus `data:Delete` when it has `WHEN MATCHED THEN DELETE` |
-| `data:Merge` | **Not checked by Ontul's own SQL** — the chango Trino gateway checks a Trino `MERGE` as `data:Merge` through `/v1/api/authz/check`, which is why some templates keep it. Saving it is answered with a warning |
-| `data:CreateTable` / `data:DropTable` / `data:AlterTable` | DDL. `CREATE SCHEMA` / `DROP SCHEMA` need `data:CreateTable` / `data:DropTable` on `data:schema:<catalog>.<schema>`; `DROP TABLE` / `DROP VIEW` need `data:DropTable`, `CREATE VIEW` `data:CreateTable`, and `ALTER TABLE`, `OPTIMIZE`, `VACUUM`, `EXPIRE SNAPSHOTS` `data:AlterTable` on `data:table:<catalog>.<schema>.<table>`. `CREATE TABLE` / CTAS is authorized as `data:Insert` on the new table |
+| `data:CreateTable` / `data:DropTable` / `data:AlterTable` | DDL on `data:table:<catalog>.<schema>.<table>`: `CREATE TABLE` / CTAS need `data:CreateTable` on the new table (CTAS also `data:Select` on its sources; legacy alias `data:Insert`), `DROP TABLE` `data:DropTable`, and `ALTER TABLE`, `OPTIMIZE`, `VACUUM`, `EXPIRE SNAPSHOTS`, `CREATE` / `DROP INDEX` and `COMMENT ON` `data:AlterTable` |
+| `data:CreateSchema` / `data:DropSchema` | `CREATE SCHEMA` / `DROP SCHEMA` on `data:schema:<catalog>.<schema>` (legacy alias: `data:CreateTable` / `data:DropTable` on the schema) |
+| `data:CreateView` / `data:DropView` | `CREATE VIEW` / `DROP VIEW` on `data:table:<catalog>.<schema>.<view>` (legacy alias: `data:CreateTable` / `data:DropTable`) |
+| `data:Merge` | `MERGE INTO` on the target table (legacy alias: `data:Insert`, plus `data:Delete` with `WHEN MATCHED THEN DELETE`) |
 | `data:KillJob` / `data:CancelQuery` | Job / query control (Flight `CancelQuery` included) |
 | `data:UploadS3` | Server-side S3 write: Flight `UPLOAD_S3` and `WRITE_S3` statements, on `data:s3:<bucket>/<key>` |
+| `data:ReadS3` | Server-side S3 read: the `read_s3()` table function, on `data:s3:<bucket>/<key>` (e.g. `data:s3:landing/team-a/*`) |
 | `data:MapExecute` | Run a caller-supplied function on the workers (Flight `MAP_EXECUTE` / `PY_MAP_EXECUTE`), on `data:compute:map` / `data:compute:py-map` |
 | `UDF:EXECUTE` / `UDF:CREATE` / `UDF:DROP` | User-defined function use / authoring |
 | `UDF:CREATE_GLOBAL` / `UDF:DROP_GLOBAL` | Global (cluster-wide) UDF authoring |
@@ -296,9 +299,10 @@ Confine a team to a single schema (namespace) — everything within `ice.team_a`
 ### ETL Schema Owner (one schema)
 
 An ETL role that owns one schema: it may create the schema itself, create / load / change / drop the tables in it,
-and nothing outside it. `CREATE SCHEMA` is checked as `data:CreateTable` on `data:schema:<catalog>.<schema>`, which a
-`data:table:` grant never covers (there is no hierarchy), and `CREATE TABLE` / CTAS as `data:Insert` on the new
-table. Replace `ice.etl` with your catalog and schema in **both** statements.
+and nothing outside it. `CREATE SCHEMA` / `DROP SCHEMA` are checked as `data:CreateSchema` / `data:DropSchema` on
+`data:schema:<catalog>.<schema>`, which a `data:table:` grant never covers (there is no hierarchy), and
+`CREATE TABLE` / CTAS as `data:CreateTable` on the new table. Replace `ice.etl` with your catalog and schema in
+**both** statements.
 
 ```json
 {
@@ -307,13 +311,13 @@ table. Replace `ice.etl` with your catalog and schema in **both** statements.
     {
       "Sid": "EtlSchema",
       "Effect": "Allow",
-      "Action": ["data:CreateTable", "data:DropTable"],
+      "Action": ["data:CreateSchema", "data:DropSchema"],
       "Resource": "data:schema:ice.etl"
     },
     {
       "Sid": "EtlTables",
       "Effect": "Allow",
-      "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete", "data:CreateTable", "data:DropTable", "data:AlterTable"],
+      "Action": ["data:Select", "data:Insert", "data:Update", "data:Delete", "data:Merge", "data:CreateTable", "data:DropTable", "data:AlterTable", "data:CreateView", "data:DropView"],
       "Resource": "data:table:ice.etl.*"
     }
   ]
@@ -848,4 +852,4 @@ granting `*`.
 
 ## Applying a template
 
-Templates are starting points — pick one under **New Policy → Governance Template**, adjust the catalog / schema names, and save it under a new `name`. Every template is a document the server accepts (see [Validation and warnings](iam.md#validation-and-warnings)); the ones that keep `data:Merge` for the Trino gateway are saved with a warning about it. To change a policy later, use **Edit** on its card (or `PUT /admin/iam/policies/{name}`): that keeps its group and user attachments, whereas deleting and re-creating it does not. Policies attach to a user or a group (a group policy applies to all members). See [Creating and updating policies](iam.md#policy-based-access-control) for the REST/CLI flow.
+Templates are starting points — pick one under **New Policy → Governance Template**, adjust the catalog / schema names, and save it under a new `name`. Every template is a document the server accepts without a warning (see [Validation and warnings](iam.md#validation-and-warnings)); they use the statement-named actions (`data:Merge`, `data:CreateSchema`, …), which Ontul SQL and the chango Trino gateway both check. To change a policy later, use **Edit** on its card (or `PUT /admin/iam/policies/{name}`): that keeps its group and user attachments, whereas deleting and re-creating it does not. Policies attach to a user or a group (a group policy applies to all members). See [Creating and updating policies](iam.md#policy-based-access-control) for the REST/CLI flow.
