@@ -137,13 +137,13 @@ Ontul sends `header.X-Iceberg-Access-Delegation: ""` on every catalog call so Po
 
 | Statement | Notes |
 |---|---|
-| `CREATE SCHEMA [IF NOT EXISTS] catalog.namespace` | Creates an Iceberg namespace. |
-| `CREATE TABLE [IF NOT EXISTS] catalog.ns.t (cols) [USING iceberg] [PARTITIONED BY (...)] [SORT BY (...)] [WITH (props) \| TBLPROPERTIES (props)]` | Format v2, with optional hidden partitioning and sort order. `USING iceberg` (Spark style) is accepted and ignored; `WITH` and `TBLPROPERTIES` are interchangeable property clauses. |
+| `CREATE SCHEMA [IF NOT EXISTS] catalog.namespace` | Creates an Iceberg namespace. An existing one is an error (`Schema 'c.ns' already exists`) unless `IF NOT EXISTS`. |
+| `CREATE TABLE [IF NOT EXISTS] catalog.ns.t (cols) [USING iceberg] [PARTITIONED BY (...)] [SORT BY (...)] [WITH (props) \| TBLPROPERTIES (props)]` | Format v2, with optional hidden partitioning and sort order. `USING iceberg` (Spark style) is accepted and ignored; `WITH` and `TBLPROPERTIES` are interchangeable property clauses. An existing table is an error (`Table 'c.ns.t' already exists`) unless `IF NOT EXISTS`, which leaves it unchanged. |
 | `CREATE TABLE catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...` | CTAS, distributed across workers. |
-| `DROP TABLE [IF EXISTS] catalog.ns.t` | Honors Polaris `polaris.config.drop-with-purge.enabled` for actual S3 cleanup. |
-| `DROP SCHEMA [IF EXISTS] catalog.namespace` | Namespace must be empty. |
+| `DROP TABLE [IF EXISTS] catalog.ns.t` | Honors Polaris `polaris.config.drop-with-purge.enabled` for actual S3 cleanup. A missing table is an error unless `IF EXISTS`; see [Missing objects and failures](#missing-objects-and-failures). |
+| `DROP SCHEMA [IF EXISTS] catalog.namespace` | Namespace must be empty (`Cannot drop non-empty schema 'c.ns'`, with or without `IF EXISTS`). |
 | `CREATE [OR REPLACE] VIEW catalog.ns.v AS <SELECT>` | Persisted via Iceberg's view spec; see [Views](#views). |
-| `DROP VIEW [IF EXISTS] catalog.ns.v` | Stops resolving on every master at once; see [Views](#views). |
+| `DROP VIEW [IF EXISTS] catalog.ns.v` | Stops resolving on every master at once; see [Views](#views). A missing view is an error unless `IF EXISTS`. |
 | `COMMENT ON TABLE catalog.ns.t IS '...'` | |
 | `COMMENT ON COLUMN catalog.ns.t.col IS '...'` | |
 
@@ -407,6 +407,30 @@ ALTER TABLE ice.ns.t EXECUTE add_partition_field(field => 'region');
 ALTER TABLE ice.ns.t EXECUTE drop_partition_field(field => 'region');
 ```
 
+### Missing objects and failures
+
+DDL answers like Trino. Dropping an object that does not exist is an error naming it, and `IF EXISTS` makes it a
+no-op; creating one that exists is an error, and `IF NOT EXISTS` makes it a no-op. A statement that fails is an
+error carrying the cause -- never a success:
+
+| Statement | Answer |
+|---|---|
+| `DROP TABLE ice.ns.missing` | `Table 'ice.ns.missing' does not exist` |
+| `DROP TABLE ice.missing` | `Table 'ice.default.missing' does not exist` (a two-part name is read in `default`) |
+| `DROP VIEW ice.ns.missing` | `View 'ice.ns.missing' does not exist` |
+| `DROP SCHEMA ice.missing` | `Schema 'ice.missing' does not exist` |
+| `DROP SCHEMA [IF EXISTS] ice.ns` (with tables) | `Cannot drop non-empty schema 'ice.ns'` |
+| `CREATE SCHEMA ice.ns` (exists) | `Schema 'ice.ns' already exists` |
+| `CREATE TABLE ice.ns.t (...)` (exists) | `Table 'ice.ns.t' already exists` |
+| `DROP TABLE tpch.tiny.nation` | `DROP TABLE is not supported for catalog 'tpch' (connector tpch)` |
+| `DROP TABLE nocat.s.t` | `Catalog 'nocat' is not loaded on this master` |
+| a drop the catalog refuses | `DROP TABLE ice.ns.t failed: <the catalog's reason>` |
+
+Quoted names are unquoted first (`DROP TABLE "ice"."ns"."T"` drops `ice.ns.T`). Earlier releases answered success
+when the drop failed, when nothing by that name existed, for a catalog that does not exist or cannot drop tables,
+and for `DROP SCHEMA IF EXISTS` of a schema that would not drop; `CREATE TABLE` of an existing table answered success
+and kept the old definition.
+
 Partition spec evolution preserves history — files written under the old spec keep their original partition values, new files use the new spec. Reads transparently span both.
 
 ## Views
@@ -588,6 +612,19 @@ query names an unknown object) also removes what the catalog no longer lists —
 
 Earlier releases kept every table and view they had seen: a dropped view went on answering from its stored SQL,
 a dropped table failed with `cannot plan a scan ...: Table does not exist`, and both stayed in `SHOW TABLES`.
+
+**A view whose base table is gone.** Dropping a table does not drop the views that read it (as in Trino). A query
+on such a view names the view and the missing table, on every master and whichever engine dropped the table:
+
+```text
+View 'ice.sales.v_recent' is invalid: its base table 'ice.sales.orders' does not exist
+```
+
+A view whose body no longer plans for another reason (a column it reads was dropped) answers
+`View '<view>' is invalid: <reason>`. Only queries on that view fail: `SHOW TABLES`, `SHOW SCHEMAS`, the Catalog
+Browser and every other table and view of the schema answer as before, the view can be dropped, and re-creating the
+base table makes it valid again.
+Earlier releases answered `Column 'id' not found in any table`, naming neither the view nor the table.
 
 ### Cross-catalog federation
 
