@@ -3177,7 +3177,7 @@
 </tr>
 <tr>
 <td><code>Source.s3(path, format)</code></td>
-<td>Read from S3 (parquet, json, csv, binary)</td>
+<td>Read from S3 (parquet, json, csv, binary) through the server's <code>read_s3()</code>; the caller needs <code>data:ReadS3</code> on <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code> (<a href="../iam/">IAM</a>)</td>
 </tr>
 <tr>
 <td><code>Source.data(list)</code></td>

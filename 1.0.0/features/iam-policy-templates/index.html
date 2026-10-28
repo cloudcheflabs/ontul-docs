@@ -3296,12 +3296,20 @@
 <td>Write / row-level DML. <code>MERGE</code> is authorized as <code>data:Insert</code>, plus <code>data:Delete</code> when it has <code>WHEN MATCHED THEN DELETE</code></td>
 </tr>
 <tr>
-<td><code>data:Merge</code></td>
-<td><strong>Not checked by Ontul's own SQL</strong> — the chango Trino gateway checks a Trino <code>MERGE</code> as <code>data:Merge</code> through <code>/v1/api/authz/check</code>, which is why some templates keep it. Saving it is answered with a warning</td>
+<td><code>data:CreateTable</code> / <code>data:DropTable</code> / <code>data:AlterTable</code></td>
+<td>DDL on <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code>: <code>CREATE TABLE</code> / CTAS need <code>data:CreateTable</code> on the new table (CTAS also <code>data:Select</code> on its sources; legacy alias <code>data:Insert</code>), <code>DROP TABLE</code> <code>data:DropTable</code>, and <code>ALTER TABLE</code>, <code>OPTIMIZE</code>, <code>VACUUM</code>, <code>EXPIRE SNAPSHOTS</code>, <code>CREATE</code> / <code>DROP INDEX</code> and <code>COMMENT ON</code> <code>data:AlterTable</code></td>
 </tr>
 <tr>
-<td><code>data:CreateTable</code> / <code>data:DropTable</code> / <code>data:AlterTable</code></td>
-<td>DDL. <code>CREATE SCHEMA</code> / <code>DROP SCHEMA</code> need <code>data:CreateTable</code> / <code>data:DropTable</code> on <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code>; <code>DROP TABLE</code> / <code>DROP VIEW</code> need <code>data:DropTable</code>, <code>CREATE VIEW</code> <code>data:CreateTable</code>, and <code>ALTER TABLE</code>, <code>OPTIMIZE</code>, <code>VACUUM</code>, <code>EXPIRE SNAPSHOTS</code> <code>data:AlterTable</code> on <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code>. <code>CREATE TABLE</code> / CTAS is authorized as <code>data:Insert</code> on the new table</td>
+<td><code>data:CreateSchema</code> / <code>data:DropSchema</code></td>
+<td><code>CREATE SCHEMA</code> / <code>DROP SCHEMA</code> on <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code> (legacy alias: <code>data:CreateTable</code> / <code>data:DropTable</code> on the schema)</td>
+</tr>
+<tr>
+<td><code>data:CreateView</code> / <code>data:DropView</code></td>
+<td><code>CREATE VIEW</code> / <code>DROP VIEW</code> on <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;view&gt;</code> (legacy alias: <code>data:CreateTable</code> / <code>data:DropTable</code>)</td>
+</tr>
+<tr>
+<td><code>data:Merge</code></td>
+<td><code>MERGE INTO</code> on the target table (legacy alias: <code>data:Insert</code>, plus <code>data:Delete</code> with <code>WHEN MATCHED THEN DELETE</code>)</td>
 </tr>
 <tr>
 <td><code>data:KillJob</code> / <code>data:CancelQuery</code></td>
@@ -3310,6 +3318,10 @@
 <tr>
 <td><code>data:UploadS3</code></td>
 <td>Server-side S3 write: Flight <code>UPLOAD_S3</code> and <code>WRITE_S3</code> statements, on <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code></td>
+</tr>
+<tr>
+<td><code>data:ReadS3</code></td>
+<td>Server-side S3 read: the <code>read_s3()</code> table function, on <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code> (e.g. <code>data:s3:landing/team-a/*</code>)</td>
 </tr>
 <tr>
 <td><code>data:MapExecute</code></td>
@@ -3593,22 +3605,23 @@
 </code></pre></div>
 <h3 id="etl-schema-owner-one-schema">ETL Schema Owner (one schema)</h3>
 <p>An ETL role that owns one schema: it may create the schema itself, create / load / change / drop the tables in it,
-and nothing outside it. <code>CREATE SCHEMA</code> is checked as <code>data:CreateTable</code> on <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code>, which a
-<code>data:table:</code> grant never covers (there is no hierarchy), and <code>CREATE TABLE</code> / CTAS as <code>data:Insert</code> on the new
-table. Replace <code>ice.etl</code> with your catalog and schema in <strong>both</strong> statements.</p>
+and nothing outside it. <code>CREATE SCHEMA</code> / <code>DROP SCHEMA</code> are checked as <code>data:CreateSchema</code> / <code>data:DropSchema</code> on
+<code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code>, which a <code>data:table:</code> grant never covers (there is no hierarchy), and
+<code>CREATE TABLE</code> / CTAS as <code>data:CreateTable</code> on the new table. Replace <code>ice.etl</code> with your catalog and schema in
+<strong>both</strong> statements.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
 <a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
 <a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">    </span><span class="p">{</span>
 <a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EtlSchema&quot;</span><span class="p">,</span>
 <a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;data:CreateTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropTable&quot;</span><span class="p">],</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;data:CreateSchema&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropSchema&quot;</span><span class="p">],</span>
 <a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:schema:ice.etl&quot;</span>
 <a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">    </span><span class="p">},</span>
 <a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">    </span><span class="p">{</span>
 <a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">      </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EtlTables&quot;</span><span class="p">,</span>
 <a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Insert&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Delete&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:CreateTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:AlterTable&quot;</span><span class="p">],</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Insert&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Delete&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Merge&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:CreateTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:AlterTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:CreateView&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropView&quot;</span><span class="p">],</span>
 <a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:ice.etl.*&quot;</span>
 <a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="w">    </span><span class="p">}</span>
 <a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a><span class="w">  </span><span class="p">]</span>
@@ -4038,7 +4051,7 @@ granting <code>*</code>.</p>
 <a id="__codelineno-35-17" name="__codelineno-35-17" href="#__codelineno-35-17"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="applying-a-template">Applying a template</h2>
-<p>Templates are starting points — pick one under <strong>New Policy → Governance Template</strong>, adjust the catalog / schema names, and save it under a new <code>name</code>. Every template is a document the server accepts (see <a href="../iam/#validation-and-warnings">Validation and warnings</a>); the ones that keep <code>data:Merge</code> for the Trino gateway are saved with a warning about it. To change a policy later, use <strong>Edit</strong> on its card (or <code>PUT /admin/iam/policies/{name}</code>): that keeps its group and user attachments, whereas deleting and re-creating it does not. Policies attach to a user or a group (a group policy applies to all members). See <a href="../iam/#policy-based-access-control">Creating and updating policies</a> for the REST/CLI flow.</p>
+<p>Templates are starting points — pick one under <strong>New Policy → Governance Template</strong>, adjust the catalog / schema names, and save it under a new <code>name</code>. Every template is a document the server accepts without a warning (see <a href="../iam/#validation-and-warnings">Validation and warnings</a>); they use the statement-named actions (<code>data:Merge</code>, <code>data:CreateSchema</code>, …), which Ontul SQL and the chango Trino gateway both check. To change a policy later, use <strong>Edit</strong> on its card (or <code>PUT /admin/iam/policies/{name}</code>): that keeps its group and user attachments, whereas deleting and re-creating it does not. Policies attach to a user or a group (a group policy applies to all members). See <a href="../iam/#policy-based-access-control">Creating and updating policies</a> for the REST/CLI flow.</p>
 
 
 

@@ -1470,10 +1470,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#external-engines-use-their-own-action-names" class="md-nav__link">
+  <a href="#external-engines" class="md-nav__link">
     <span class="md-ellipsis">
       
-        External engines use their own action names
+        External engines
       
     </span>
   </a>
@@ -3158,10 +3158,10 @@ button; expanding the row still shows the attached policies with their detach bu
 <a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="p">}</span>
 </code></pre></div>
 <ul>
-<li><strong>Action verbs in <code>data:</code> namespace</strong> — runtime SQL: <code>data:Select</code>, <code>data:Insert</code>, <code>data:Update</code>, <code>data:Delete</code> (<code>MERGE</code> is checked as <code>data:Insert</code>, plus <code>data:Delete</code> when it has <code>WHEN MATCHED THEN DELETE</code>; <code>data:Merge</code> is only used by the chango Trino gateway). Catalog DDL: <code>data:CreateTable</code>, <code>data:DropTable</code>, <code>data:AlterTable</code>. Operational: <code>data:KillJob</code>, <code>data:CancelQuery</code>. The metadata-only <code>data:SelectTable</code> verb gates discovery surfaces (semantic views, object types, retrievers: listing and fetching their definitions) — distinct from the runtime <code>data:Select</code> that gates actual scans. A <code>data:Select</code> grant on a name also makes it discoverable, so a user who may read a table sees the views and object types built on it; reading table data (including Lance blobs) always needs <code>data:Select</code>. Catalog / schema / table listings, <code>DESCRIBE</code>, <code>EXPLAIN</code> and lineage follow <code>data:Select</code> (see <a href="../bi-integration/">BI integration</a>).</li>
+<li><strong>Action verbs in <code>data:</code> namespace</strong> — runtime SQL: <code>data:Select</code>, <code>data:Insert</code>, <code>data:Update</code>, <code>data:Delete</code> <code>data:Merge</code>. Catalog DDL: <code>data:CreateTable</code>, <code>data:DropTable</code>, <code>data:AlterTable</code>, <code>data:CreateSchema</code>, <code>data:DropSchema</code>, <code>data:CreateView</code>, <code>data:DropView</code> (legacy aliases still accepted, see the table below). Operational: <code>data:KillJob</code>, <code>data:CancelQuery</code>. The metadata-only <code>data:SelectTable</code> verb gates discovery surfaces (semantic views, object types, retrievers: listing and fetching their definitions) — distinct from the runtime <code>data:Select</code> that gates actual scans. A <code>data:Select</code> grant on a name also makes it discoverable, so a user who may read a table sees the views and object types built on it; reading table data (including Lance blobs) always needs <code>data:Select</code>. Catalog / schema / table listings, <code>DESCRIBE</code>, <code>EXPLAIN</code> and lineage follow <code>data:Select</code> (see <a href="../bi-integration/">BI integration</a>).</li>
 <li><strong>UDF actions</strong> stay in the <code>UDF:</code> namespace — see <a href="#udf-permissions">UDF Permissions</a>.</li>
 <li><strong>Ontology actions</strong> live in the <code>ontology:</code> namespace and gate the <a href="../ontology/">ontology</a> surface: <code>ontology:InvokeAction</code> (perform a governed write-back), <code>ontology:InvokeWorkflow</code> (run a multi-step Saga), <code>ontology:Certify</code> (sign off on a definition). Administrators are always allowed; for everyone else these are deny-by-default like any other action.</li>
-<li><strong>Server-side S3 writes and remote functions</strong> — <code>data:UploadS3</code> on <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code> gates the Flight <code>UPLOAD_S3</code> action and the <code>WRITE_S3 '&lt;s3 path&gt;' ...</code> statement (the master writes where the caller names); <code>data:MapExecute</code> on <code>data:compute:map</code> / <code>data:compute:py-map</code> gates the Flight <code>MAP_EXECUTE</code> / <code>PY_MAP_EXECUTE</code> actions (the caller's function runs on every worker); the Flight <code>CancelQuery</code> action needs <code>data:CancelQuery</code> on <code>data:query:&lt;id&gt;</code>, like <code>POST /admin/query/cancel</code>. All deny by default; administrators pass.</li>
+<li><strong>Server-side S3 reads, writes and remote functions</strong> — <code>data:ReadS3</code> on <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code> gates <code>read_s3('&lt;s3 path&gt;', ...)</code> (the master reads where the caller names, with inline keys, a stored connection's or its own credentials); <code>data:UploadS3</code> on the same resource gates the Flight <code>UPLOAD_S3</code> action and the <code>WRITE_S3 '&lt;s3 path&gt;' ...</code> statement (the master writes where the caller names); <code>data:MapExecute</code> on <code>data:compute:map</code> / <code>data:compute:py-map</code> gates the Flight <code>MAP_EXECUTE</code> / <code>PY_MAP_EXECUTE</code> actions (the caller's function runs on every worker); the Flight <code>CancelQuery</code> action needs <code>data:CancelQuery</code> on <code>data:query:&lt;id&gt;</code>, like <code>POST /admin/query/cancel</code>. All deny by default; administrators pass.</li>
 <li><strong>Resources</strong>: <code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code>, <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code>, <code>data:job:*</code>, <code>data:query:*</code>, <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code>, <code>data:compute:map</code>, <code>udf:&lt;name&gt;</code>. Wildcards <code>*</code> and <code>?</code> are supported. There is no <code>data:catalog:</code> resource: a whole catalog is <code>data:table:&lt;catalog&gt;.*.*</code> plus <code>data:schema:&lt;catalog&gt;.*</code>. <strong>Semantic-layer and ontology objects are addressed by their BARE fully-qualified name</strong> — <code>semantic.rag.*</code>, <code>ontology.sales.*</code> — <em>not</em> prefixed with <code>data:table:</code>. A policy written as <code>data:table:ontology.sales.*</code> never matches, which reads like "IAM is broken" rather than "the pattern did not match".</li>
 <li><strong>Attachment</strong>: policies attach to users (direct) or groups (via group membership).</li>
 <li><strong>Deny rules take precedence</strong> over allow rules.</li>
@@ -3232,14 +3232,19 @@ which is not an IAM user and cannot be created as one.</p>
 <h3 id="canonical-actions-and-resources">Canonical actions and resources</h3>
 <p>What each operation is authorized as — the exact <code>(action, resource)</code> pair the engine evaluates. The same table is
 in the Admin UI policy editor (<strong>Action &amp; resource reference</strong>), and a denial names the pair it checked, e.g.
-<code>Access denied: no matching policy for user 'wf-runner' to data:CreateTable on 'data:schema:iceberg.wf'</code>: grant
+<code>Access denied: no matching policy for user 'wf-runner' to data:CreateSchema on 'data:schema:iceberg.wf'</code>: grant
 exactly that.</p>
+<p>Action names follow the SQL statement — the same names the chango Trino gateway sends to
+<code>/v1/api/authz/check</code>. Where Ontul used another name before, that name is a <strong>legacy alias</strong>: an Allow of it still
+grants the statement, and a Deny of either the action or its legacy alias denies it, so existing policies keep
+working and an existing Deny cannot be stepped around by the rename.</p>
 <table>
 <thead>
 <tr>
 <th>Operation</th>
 <th>Action</th>
 <th>Resource</th>
+<th>Legacy alias</th>
 </tr>
 </thead>
 <tbody>
@@ -3247,116 +3252,204 @@ exactly that.</p>
 <td><code>SELECT</code>, <code>EXPLAIN</code>, <code>DESCRIBE</code>, <code>SHOW …</code> (listings are filtered)</td>
 <td><code>data:Select</code></td>
 <td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
 </tr>
 <tr>
-<td><code>INSERT INTO</code></td>
+<td><code>INSERT INTO</code> an existing table</td>
 <td><code>data:Insert</code></td>
 <td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
 </tr>
 <tr>
-<td><code>CREATE TABLE</code>, <code>CREATE TABLE AS SELECT</code></td>
-<td><code>data:Insert</code></td>
+<td><code>CREATE TABLE</code></td>
+<td><code>data:CreateTable</code></td>
 <td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td><code>data:Insert</code></td>
+</tr>
+<tr>
+<td><code>CREATE TABLE … AS SELECT</code> — filling the new table is part of creating it (no separate <code>data:Insert</code>), plus <code>data:Select</code> on every source table</td>
+<td><code>data:CreateTable</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td><code>data:Insert</code></td>
 </tr>
 <tr>
 <td><code>UPDATE</code></td>
 <td><code>data:Update</code></td>
 <td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
 </tr>
 <tr>
 <td><code>DELETE FROM</code></td>
 <td><code>data:Delete</code></td>
 <td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
 </tr>
 <tr>
-<td><code>MERGE INTO</code> (+ <code>data:Delete</code> with <code>WHEN MATCHED THEN DELETE</code>)</td>
-<td><code>data:Insert</code></td>
+<td><code>MERGE INTO</code></td>
+<td><code>data:Merge</code></td>
 <td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td><code>data:Insert</code> (+ <code>data:Delete</code> with <code>WHEN MATCHED THEN DELETE</code>)</td>
 </tr>
 <tr>
 <td><code>CREATE SCHEMA</code> / <code>NAMESPACE</code> / <code>DATABASE</code></td>
-<td><code>data:CreateTable</code></td>
+<td><code>data:CreateSchema</code></td>
 <td><code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code></td>
+<td><code>data:CreateTable</code></td>
 </tr>
 <tr>
 <td><code>DROP SCHEMA</code></td>
-<td><code>data:DropTable</code></td>
+<td><code>data:DropSchema</code></td>
 <td><code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code></td>
+<td><code>data:DropTable</code></td>
 </tr>
 <tr>
 <td><code>CREATE [MATERIALIZED] VIEW</code></td>
-<td><code>data:CreateTable</code></td>
+<td><code>data:CreateView</code></td>
 <td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;view&gt;</code></td>
+<td><code>data:CreateTable</code></td>
 </tr>
 <tr>
-<td><code>DROP TABLE</code> / <code>DROP VIEW</code></td>
+<td><code>DROP VIEW</code> / <code>DROP MATERIALIZED VIEW</code></td>
+<td><code>data:DropView</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;view&gt;</code></td>
+<td><code>data:DropTable</code></td>
+</tr>
+<tr>
+<td><code>DROP TABLE</code></td>
 <td><code>data:DropTable</code></td>
 <td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
 </tr>
 <tr>
 <td><code>ALTER TABLE</code> / <code>VIEW</code>, <code>OPTIMIZE</code>, <code>VACUUM</code>, <code>EXPIRE SNAPSHOTS</code>, <code>REMOVE ORPHAN FILES</code>, <code>REWRITE MANIFESTS</code></td>
 <td><code>data:AlterTable</code></td>
 <td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>CREATE INDEX</code> / <code>DROP INDEX … ON &lt;table&gt;</code>, <code>COMMENT ON TABLE</code> / <code>COLUMN</code></td>
+<td><code>data:AlterTable</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>PUBLISH WAP</code> (a WAP branch appended to main)</td>
+<td><code>data:Insert</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>INSERT … SELECT</code>, subqueries of <code>UPDATE</code> / <code>DELETE</code> / <code>MERGE</code>: every table read</td>
+<td><code>data:Select</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>match()</code> / <code>vector_search()</code> (refused when column / row rules apply to the caller)</td>
+<td><code>data:Select</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>INSERT</code> / <code>UPDATE</code> / <code>DELETE</code> on a JDBC catalog (sent to the database): every other table it names</td>
+<td><code>data:Select</code></td>
+<td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
 </tr>
 <tr>
 <td><code>WRITE_S3</code>, Flight <code>UPLOAD_S3</code></td>
 <td><code>data:UploadS3</code></td>
 <td><code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>read_s3()</code> — whatever credentials it carries (inline keys, a <code>connectionId</code>, or the server's own default chain)</td>
+<td><code>data:ReadS3</code></td>
+<td><code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code></td>
+<td></td>
 </tr>
 <tr>
 <td>Flight <code>MAP_EXECUTE</code> / <code>PY_MAP_EXECUTE</code></td>
 <td><code>data:MapExecute</code></td>
 <td><code>data:compute:map</code> / <code>data:compute:py-map</code></td>
+<td></td>
 </tr>
 <tr>
 <td>Cancel a query (SQL page, Flight <code>CancelQuery</code>)</td>
 <td><code>data:CancelQuery</code></td>
 <td><code>data:query:*</code> (Flight: <code>data:query:&lt;id&gt;</code>)</td>
+<td></td>
 </tr>
 <tr>
 <td>Kill a job (the job's owner needs nothing on <code>/v1/api</code>)</td>
 <td><code>data:KillJob</code></td>
 <td><code>data:job:*</code></td>
+<td></td>
 </tr>
 <tr>
 <td>Streaming flow: source table / sink table (+ <code>data:Update</code>, <code>data:Delete</code> for CDC / upsert)</td>
 <td><code>data:Select</code> / <code>data:Insert</code></td>
 <td><code>data:table:&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;</code></td>
+<td></td>
 </tr>
 <tr>
 <td>Semantic views, retrievers, object types: list / get / invoke</td>
 <td><code>data:SelectTable</code></td>
 <td><code>&lt;catalog&gt;.&lt;schema&gt;.&lt;name&gt;</code> (no prefix)</td>
+<td></td>
 </tr>
 <tr>
 <td>UDF in a query / register / drop (<code>GLOBAL</code> scope: <code>_GLOBAL</code>)</td>
 <td><code>UDF:EXECUTE</code> / <code>UDF:CREATE</code> / <code>UDF:DROP</code></td>
 <td><code>udf:&lt;name&gt;</code></td>
+<td></td>
 </tr>
 <tr>
 <td><code>ai_verdict()</code> / <code>ai_verdict_one()</code></td>
 <td><code>AI:DECIDE</code></td>
 <td><code>connection:&lt;connectionId&gt;</code></td>
+<td></td>
 </tr>
 <tr>
 <td><code>CALL</code> an action / workflow / operation</td>
 <td><code>ontology:InvokeAction</code> / <code>InvokeWorkflow</code> / <code>InvokeOperation</code></td>
 <td><code>&lt;catalog&gt;.&lt;schema&gt;.&lt;action&gt;</code> (operation: <code>operation:&lt;catalog&gt;:&lt;op&gt;</code>)</td>
+<td></td>
 </tr>
 <tr>
 <td>Certify an ontology object</td>
 <td><code>ontology:Certify</code></td>
 <td><code>ontology.&lt;schema&gt;.&lt;name&gt;</code></td>
+<td></td>
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Migrating to the statement names</p>
+<p>Nothing has to change for existing policies: <code>data:CreateTable</code> on <code>data:schema:…</code> still allows <code>CREATE SCHEMA</code>,
+<code>data:Insert</code> still allows <code>CREATE TABLE</code> / CTAS and (with <code>data:Delete</code> for <code>WHEN MATCHED THEN DELETE</code>)
+<code>MERGE</code>, and a Deny written with the old name still denies. Saving a policy with <code>data:CreateTable</code> /
+<code>data:DropTable</code> on a <code>data:schema:</code> resource is answered with a note naming <code>data:CreateSchema</code> /
+<code>data:DropSchema</code>. To migrate, replace the legacy name with the action in the table (or add it next to the
+legacy one); the policy templates already use the new names. <code>/v1/api/authz/check</code> answers with the same
+rules, and a <code>data:CreateSchema</code> / <code>data:DropSchema</code> check on the gateway's <code>data:table:&lt;catalog&gt;.&lt;schema&gt;</code>
+spelling is also answered by a <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code> grant.</p>
+</div>
 <p>How matching works:</p>
 <ul>
 <li>Case-insensitive. <code>*</code> matches any characters (including <code>.</code> and <code>:</code>), <code>?</code> exactly one. <code>"*"</code> alone matches everything.</li>
 <li>There is <strong>no hierarchy</strong>: <code>data:table:iceberg.wf.*</code> does not cover <code>data:schema:iceberg.wf</code>. A role that creates its
   own schema needs a <code>data:schema:</code> statement as well — see the <strong>ETL Schema Owner (one schema)</strong> template below.</li>
-<li>Names are checked as written in the statement, so write tables and schemas fully qualified (<code>catalog.schema.table</code>)
-  to match qualified grants.</li>
+<li>Names are checked as the engine resolves them, not as written: quotes are removed and case is ignored, so
+  <code>"ICEBERG"."NS"."T"</code> meets a statement on <code>data:table:iceberg.ns.t</code>. A <code>SELECT</code> must name <code>catalog.schema.table</code>
+  (Ontul has no default catalog or schema; <code>SELECT * FROM t</code> fails to plan). In DDL / DML a two-part <code>catalog.table</code>
+  is <code>catalog.default.table</code> — what the statement acts on — and is checked as that.</li>
+<li>A statement whose target cannot be read from it (e.g. <code>COMMENT ON SCHEMA …</code>), and a JDBC-catalog <code>INSERT</code> /
+  <code>UPDATE</code> / <code>DELETE</code> that holds more than one statement or names a table not written as
+  <code>catalog.schema.table</code> of that catalog, is refused for anyone but an administrator.</li>
+<li>S3 resources are <code>data:s3:&lt;bucket&gt;/&lt;key&gt;</code> without the scheme; <code>data:s3:bucket/team/*</code> grants everything under
+  <code>team/</code>. A path that is not <code>s3://</code> / <code>s3a://</code>, or that has a <code>.</code> / <code>..</code> segment, is refused whatever the policy says
+  (Hadoop would have normalized <code>team/../secret</code> to <code>secret</code>).</li>
 <li>Administration routes (users, groups, policies, catalogs, connections, KMS, backup, …) are not governed by actions:
   they need the built-in <code>AdministratorAccess</code> policy.</li>
 </ul>
@@ -3364,12 +3457,13 @@ exactly that.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EtlSchema&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;data:CreateTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropTable&quot;</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:schema:iceberg.etl&quot;</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EtlSchema&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;data:CreateSchema&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropSchema&quot;</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:schema:iceberg.etl&quot;</span><span class="w"> </span><span class="p">},</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;Sid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EtlTables&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Insert&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Delete&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:CreateTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:AlterTable&quot;</span><span class="p">],</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:iceberg.etl.*&quot;</span><span class="w"> </span><span class="p">}</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="p">]</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">}</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;data:Select&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Insert&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Delete&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:Merge&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:CreateTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropTable&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">                 </span><span class="s2">&quot;data:AlterTable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:CreateView&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;data:DropView&quot;</span><span class="p">],</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:table:iceberg.etl.*&quot;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">}</span>
 </code></pre></div>
 <h3 id="validation-and-warnings">Validation and warnings</h3>
 <p>Every create and update checks the document the way the evaluator will read it. A document it cannot read as
@@ -3384,29 +3478,31 @@ written is <strong>refused with <code>400</code></strong> and a message naming t
 which the Admin UI shows after Save. A warning is given when</p>
 <ul>
 <li>an action in a namespace Ontul owns (<code>data:</code>, <code>UDF:</code>, <code>AI:</code>, <code>ontology:</code>) is not one Ontul's engine checks —
-  with what it checks instead, e.g. <code>Statement 2: 'data:CreateSchema' is not an action Ontul's own engine checks —
-  CREATE SCHEMA is authorized as data:CreateTable on data:schema:&lt;catalog&gt;.&lt;schema&gt; (the chango Trino gateway sends
-  data:CreateSchema to /v1/api/authz/check, so keep it only for that). ...</code>;</li>
+  with what it checks instead, e.g. <code>Statement 2: 'data:CreateNamespace' is not an action Ontul's own engine
+  checks — CREATE SCHEMA / NAMESPACE / DATABASE is authorized as data:CreateSchema on data:schema:&lt;catalog&gt;.&lt;schema&gt;. ...</code>;</li>
+<li>a legacy name is used — a note, not a problem: <code>Statement 1: data:CreateTable on 'data:schema:iceberg.wf' is the
+  legacy alias of data:CreateSchema (still accepted; data:CreateSchema is the name to use)</code>;</li>
 <li>a <code>data:</code> resource is not a form Ontul checks (<code>data:catalog:…</code>, <code>data:tables:…</code>);</li>
 <li>none of a statement's resources has the form its action is checked on, e.g. <code>data:Insert</code> on
   <code>data:schema:iceberg.etl</code> (<code>data:Insert</code> is checked on <code>data:table:…</code>), so the statement never applies.</li>
 </ul>
 <p>These are warnings rather than errors because the same policies answer external engines (next section), which
-use some of those names.</p>
-<h3 id="external-engines-use-their-own-action-names">External engines use their own action names</h3>
+may use names of their own.</p>
+<h3 id="external-engines">External engines</h3>
 <p>Trino, Spark and Flink (chango) ask Ontul through <code>POST /v1/api/authz/check</code> / <code>check-batch</code> with the action and
-resource <strong>they</strong> build; Ontul evaluates exactly what it receives. The chango Trino gateway checks <code>CREATE SCHEMA</code>
-as <code>data:CreateSchema</code>, <code>DROP SCHEMA</code> as <code>data:DropSchema</code>, <code>MERGE</code> as <code>data:Merge</code>, <code>CREATE VIEW</code> / <code>DROP VIEW</code>
-as <code>data:CreateView</code> / <code>data:DropView</code> and <code>CREATE TABLE</code> as <code>data:CreateTable</code> — all on
-<code>data:table:&lt;catalog&gt;.&lt;schema&gt;[.&lt;table&gt;]</code>. Ontul's own SQL checks the names in the table above. A policy that
-must work both in Ontul SQL and from Trino therefore needs both spellings (the templates keep <code>data:Merge</code> for
-this reason).</p>
+resource <strong>they</strong> build. The chango Trino gateway uses the names in the table above (<code>data:CreateSchema</code>,
+<code>data:DropSchema</code>, <code>data:Merge</code>, <code>data:CreateView</code>, <code>data:DropView</code>, <code>data:CreateTable</code>, …), so one policy governs a
+statement in Ontul SQL and from Trino alike. The check applies the same legacy aliases (a <code>data:Merge</code> check from an
+engine, which cannot tell whether the MERGE deletes rows, takes the legacy <code>data:Insert</code> only together with
+<code>data:Delete</code>). The gateway names a schema <code>data:table:&lt;catalog&gt;.&lt;schema&gt;</code>; for <code>data:CreateSchema</code> /
+<code>data:DropSchema</code> on such a two-part name the check also asks <code>data:schema:&lt;catalog&gt;.&lt;schema&gt;</code> — an Allow on either
+allows, a Deny on either denies.</p>
 <h3 id="why-was-i-denied">Why was I denied?</h3>
 <p>A denial names the exact action and resource that was checked. When the caller's <strong>own</strong> policies hold a near
 miss, the message adds a hint (only the caller's own Allow statements are looked at):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Access denied: no matching policy for user &#39;wf-runner&#39; to data:CreateTable on &#39;data:schema:iceberg.wf&#39;.
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  Hint: your policy grants data:CreateSchema on &#39;data:schema:iceberg.wf&#39;, which Ontul does not check —
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  CREATE SCHEMA is authorized as data:CreateTable on data:schema:&lt;catalog&gt;.&lt;schema&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Access denied: no matching policy for user &#39;wf-runner&#39; to data:CreateSchema on &#39;data:schema:iceberg.wf&#39;.
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  Hint: your policy grants data:CreateNamespace on &#39;data:schema:iceberg.wf&#39;, which Ontul does not check —
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  CREATE SCHEMA / NAMESPACE / DATABASE is authorized as data:CreateSchema on data:schema:&lt;catalog&gt;.&lt;schema&gt;
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Access denied: no matching policy for user &#39;etl&#39; to data:Insert on &#39;data:table:iceberg.wf.t&#39;.
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  Hint: your policies grant data:Insert only on &#39;data:table:iceberg.etl.*&#39;
 </code></pre></div>
