@@ -252,7 +252,7 @@ Every type can be tested: S3 lists the bucket, JDBC and NeorunBase log in, Kafka
 topics, REST / RERANK / Elasticsearch must answer an HTTP `GET`, and DECIDE answers one real question —
 see [Admin UI → Connections](admin-ui.md#connections).
 
-The list response returns IDs, types, and non-secret properties only — encrypted fields (`secretKey`, `password`, `sasl.jaas.config`, …) are masked.
+The list response returns IDs, types, and non-secret properties only — encrypted fields (`secretKey`, `password`, `sasl.jaas.config`, …) are masked. The same holds for the logs: every master and worker log line that prints a catalog or connection config, a storage setting or a statement (registration, update, reload, Flight / REST statements, batch-job statements, including DEBUG) shows secret values as `***` — a catalog's password used to be printed in plain text in `Registering catalog '<name>': {...}`.
 
 ## Best Practices
 
