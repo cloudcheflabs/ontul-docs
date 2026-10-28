@@ -2954,6 +2954,25 @@ an unknown or missing type with <code>201</code> and created a <code>file</code>
 JDBC, KAFKA, NEORUNBASE, REST, RERANK, S3</code> (case ignored, stored upper-case), otherwise
 <code>unknown connection type 'S4' (accepted: ...)</code>; only <code>connectionId</code>, <code>type</code>, <code>description</code> and <code>properties</code> are
 accepted; <code>properties</code> values are strings; <code>connectionId</code> is required and cannot be changed by an update.</p>
+<p><strong><code>POST</code> creates, <code>PUT</code> updates.</strong> <code>POST /admin/catalogs</code> only registers a new catalog. A name that is already
+registered — compared ignoring case, as SQL resolves names (<code>ICEBERG</code> is <code>iceberg</code>), the built-in <code>tpch</code> / <code>tpcds</code>
+included — is refused and the existing catalog is left exactly as it was (config, connector, queries):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>409 {&quot;error&quot;: &quot;Catalog &#39;iceberg&#39; already exists; update it with PUT /admin/catalogs/iceberg&quot;}
+</code></pre></div>
+<p>To change a catalog, send the whole registration to <code>PUT /admin/catalogs/&lt;name&gt;</code>: it is checked like a
+registration, replaces the stored config and rebuilds the catalog on every master (the workers drop their cached
+connector). A secret sent back as the list's mask <code>***</code> keeps the stored value; a config that cannot connect is
+refused (<code>400</code>) and the previous catalog keeps serving. A <code>PUT</code> whose body names another existing catalog (a rename
+onto it) is <code>409</code> the same way. <code>PUT</code> of a name that is not registered registers it, so a script that must be
+re-runnable and apply edits uses <code>PUT</code>. The Admin UI's <strong>Edit catalog</strong> panel sends <code>PUT</code>; <strong>Register Catalog</strong> sends
+<code>POST</code> and shows the <code>409</code> text in the panel. Earlier releases replaced the catalog on a <code>POST</code> of an existing name.</p>
+<p>Connections work the same way: <code>POST /admin/connections</code> with a <code>connectionId</code> that exists is</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>409 {&quot;error&quot;: &quot;Connection &#39;warehouse-s3&#39; already exists; update it with PUT /admin/connections/warehouse-s3&quot;}
+</code></pre></div>
+<p>and the stored connection is unchanged (earlier releases answered <code>400 Connection already exists: &lt;id&gt;</code>). Update it
+with <code>PUT /admin/connections/&lt;id&gt;</code> (<strong>Edit connection</strong> in the Admin UI). A catalog that uses the connection keeps the
+settings it was built with until it is reloaded: <code>POST /admin/catalogs/&lt;name&gt;/reload</code> (the catalog card's <strong>Reload</strong>)
+rebuilds it from the updated connection on every master and on every worker.</p>
 <h2 id="built-in-connectors">Built-in Connectors</h2>
 <h3 id="catalog-connectors-querybatch">Catalog Connectors (Query/Batch)</h3>
 <p>Registered via <code>POST /admin/catalogs</code>. Used in SQL queries and batch pipelines.</p>
@@ -3019,17 +3038,17 @@ accepted; <code>properties</code> values are strings; <code>connectionId</code> 
 </table>
 <h4 id="elasticsearch-source-connector">Elasticsearch source connector</h4>
 <p>Register an Elasticsearch (or OpenSearch) cluster as a catalog and query its indices as tables over the normal SQL / SDK path:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;es&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elasticsearch&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">&quot;hosts&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://es-host:9200&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elastic&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">&quot;scrollSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1000&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">&quot;scrollTimeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1m&quot;</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;es&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elasticsearch&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">&quot;hosts&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://es-host:9200&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elastic&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">&quot;scrollSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1000&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">&quot;scrollTimeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1m&quot;</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="p">}</span>
 </code></pre></div>
 <p>Once registered, each index (and alias) shows up as a table — e.g. <code>SELECT * FROM es.default.my_index</code>. Behaviour:</p>
 <ul>
@@ -3099,9 +3118,9 @@ accepted; <code>properties</code> values are strings; <code>connectionId</code> 
 </table>
 <h2 id="cross-engine-federation">Cross-Engine Federation</h2>
 <p>Multiple catalogs can be joined in a single query:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">neorun</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">events</span><span class="w"> </span><span class="n">n</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_custkey</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">neorun</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">events</span><span class="w"> </span><span class="n">n</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_custkey</span>
 </code></pre></div>
 <h2 id="plugin-connectors">Plugin Connectors</h2>
 <p>External connectors can be loaded as plugins via <code>URLClassLoader</code> with full dependency isolation. Each plugin JAR is loaded in its own classloader, preventing dependency conflicts between connectors.</p>

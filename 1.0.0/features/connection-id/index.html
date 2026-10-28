@@ -3148,7 +3148,7 @@ see <a href="../admin-ui/#connections">Admin UI → Connections</a>.</p>
 <ul>
 <li><strong>One connection per logical system, per environment.</strong> Name them <code>&lt;role&gt;-&lt;system&gt;</code>: <code>warehouse-s3</code>, <code>events-kafka</code>, <code>analytics-pg</code>. Avoid <code>prod-2</code> and other mystery IDs.</li>
 <li><strong>Never embed credentials in SQL, job classes, REST payloads, or <code>conf/ontul.properties</code>.</strong> If you find yourself writing <code>accessKey</code> into a job, register a connection instead.</li>
-<li><strong>Rotate at the connection level.</strong> <code>PUT /admin/connections/{id}</code> updates all jobs, catalogs, and streaming pipelines that reference it on the next open.</li>
+<li><strong>Rotate at the connection level.</strong> <code>PUT /admin/connections/{id}</code> updates all jobs and streaming pipelines that reference it on the next open. A catalog built on the connection picks the change up when it is reloaded (<code>POST /admin/catalogs/&lt;name&gt;/reload</code>, the catalog card's <strong>Reload</strong>), on every master and worker. <code>POST /admin/connections</code> never replaces: an existing id is <code>409 Connection '&lt;id&gt;' already exists; update it with PUT /admin/connections/&lt;id&gt;</code>.</li>
 <li><strong>Use IAM to gate connection management.</strong> <code>CONNECTION:CREATE</code>, <code>CONNECTION:UPDATE</code>, and <code>CONNECTION:DELETE</code> are admin-only by default; grant <code>CONNECTION:READ</code> to operators that only need to list IDs.</li>
 </ul>
 
