@@ -194,8 +194,11 @@ DROP MATERIALIZED VIEW [IF EXISTS] ice.sales.revenue_by_region;   -- the definit
   Iceberg catalog`) rather than refreshed by delete-then-insert, during which readers would see an empty table.
 - **Between refreshes the view is a snapshot.** Changes to the base tables show up at the next refresh.
 - **Scheduled refresh** (`REFRESH EVERY`) runs on the leader master only; definitions are replicated to every
-  master, so a view created through any master is refreshed, and a leader change needs nothing. A failed scheduled
-  refresh is logged and tried again one interval later. (`-Dontul.mv.refresh.tick.ms`, default `1000`, is how
+  master, so a view created through any master is refreshed, and a leader change needs nothing (the new leader
+  refreshes the view once right away). The interval counts from one refresh's start to the next; a refresh that
+  takes longer than the interval is followed by the next one as soon as it ends, never by two at once. A failed
+  scheduled refresh is logged and tried again one interval later. A view dropped through any master stops being
+  refreshed. (`-Dontul.mv.refresh.tick.ms`, default `1000`, is how
   often the leader checks which views are due.)
 - **Whose rights.** The query runs with the rights of the view's owner (the user who created it), for a `REFRESH`
   by anyone and for the scheduled refresh: row filters and column masks of the owner apply, and a refresh fails
