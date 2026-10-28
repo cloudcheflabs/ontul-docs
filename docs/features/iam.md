@@ -223,13 +223,24 @@ Vocabulary is **warned about, not refused**: the document is stored and the answ
 which the Admin UI shows after Save. A warning is given when
 
 - an action in a namespace Ontul owns (`data:`, `UDF:`, `AI:`, `ontology:`) is not one Ontul's engine checks —
-  with what it checks instead, e.g. `Statement 2: 'data:CreateNamespace' is not an action Ontul's own engine
-  checks — CREATE SCHEMA / NAMESPACE / DATABASE is authorized as data:CreateSchema on data:schema:<catalog>.<schema>. ...`;
+  with what it checks instead, and that no engine integration sends it either, e.g. `Statement 2:
+  'data:CreateNamespace' is not an action Ontul checks — CREATE SCHEMA / NAMESPACE / DATABASE is authorized as
+  data:CreateSchema on data:schema:<catalog>.<schema>. No engine integration sends this either — it has no effect and
+  can be removed. ...`. `data:ShowSchemas`, `data:ShowTables`, `data:ShowCatalogs` and `data:Describe` are such
+  names: listings and DESCRIBE are authorized as `data:Select`;
+- a name only the engine integrations send — a note, not a problem: the gateway's schema form
+  `data:CreateSchema` / `data:DropSchema` on `data:table:<catalog>.<schema>` answers `... is not checked by Ontul's
+  own SQL (it checks data:CreateSchema on data:schema:...); it is sent by the Trino/Spark/Flink gateway integration —
+  keep it if you use those`;
 - a legacy name is used — a note, not a problem: `Statement 1: data:CreateTable on 'data:schema:iceberg.wf' is the
   legacy alias of data:CreateSchema (still accepted; data:CreateSchema is the name to use)`;
 - a `data:` resource is not a form Ontul checks (`data:catalog:…`, `data:tables:…`);
 - none of a statement's resources has the form its action is checked on, e.g. `data:Insert` on
-  `data:schema:iceberg.etl` (`data:Insert` is checked on `data:table:…`), so the statement never applies.
+  `data:schema:iceberg.etl` or `data:Select` on `data:schema:…` (`data:Select` is checked on `data:table:…`), so the
+  statement never applies — "it has no effect and can be removed".
+
+The console's action reference (policy editor and Policies tab) is served by the server
+(`GET /admin/iam/policy-reference`) from the same vocabulary these warnings use.
 
 These are warnings rather than errors because the same policies answer external engines (next section), which
 may use names of their own.
