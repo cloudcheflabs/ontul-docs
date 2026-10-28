@@ -3303,8 +3303,8 @@
 <td>Format v2, with optional hidden partitioning and sort order. <code>USING iceberg</code> (Spark style) is accepted and ignored; <code>WITH</code> and <code>TBLPROPERTIES</code> are interchangeable property clauses. An existing table is an error (<code>Table 'c.ns.t' already exists</code>) unless <code>IF NOT EXISTS</code>, which leaves it unchanged.</td>
 </tr>
 <tr>
-<td><code>CREATE TABLE catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...</code></td>
-<td>CTAS, distributed across workers.</td>
+<td><code>CREATE TABLE [IF NOT EXISTS] catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...</code></td>
+<td>CTAS, distributed across workers. On an existing table, plain CTAS <strong>appends</strong> the rows (unlike Trino, which refuses it) and <code>IF NOT EXISTS</code> is a no-op answering <code>CREATE TABLE 0 (table catalog.ns.t already exists; nothing written)</code> — see <a href="#missing-objects-and-failures">Missing objects and failures</a>.</td>
 </tr>
 <tr>
 <td><code>DROP TABLE [IF EXISTS] catalog.ns.t</code></td>
@@ -3599,8 +3599,8 @@ is. A source row that matched a target row is never inserted. For an unmatched s
 </code></pre></div>
 <h3 id="missing-objects-and-failures">Missing objects and failures</h3>
 <p>DDL answers like Trino. Dropping an object that does not exist is an error naming it, and <code>IF EXISTS</code> makes it a
-no-op; creating one that exists is an error, and <code>IF NOT EXISTS</code> makes it a no-op. A statement that fails is an
-error carrying the cause -- never a success:</p>
+no-op; creating one that exists is an error, and <code>IF NOT EXISTS</code> makes it a no-op -- except a plain CTAS, which
+appends to an existing table (below). A statement that fails is an error carrying the cause -- never a success:</p>
 <table>
 <thead>
 <tr>
@@ -3609,6 +3609,14 @@ error carrying the cause -- never a success:</p>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><code>CREATE TABLE IF NOT EXISTS ice.ns.t AS SELECT ...</code> (t exists)</td>
+<td><code>CREATE TABLE 0 (table ice.ns.t already exists; nothing written)</code> — nothing is read or written</td>
+</tr>
+<tr>
+<td><code>CREATE TABLE ice.ns.t AS SELECT ...</code> (t exists)</td>
+<td><strong>appends</strong> the rows: <code>CREATE TABLE &lt;n&gt;</code>. This differs from Trino (an error); the SDK table sink and materialized-view refresh rely on it</td>
+</tr>
 <tr>
 <td><code>DROP TABLE ice.ns.missing</code></td>
 <td><code>Table 'ice.ns.missing' does not exist</code></td>

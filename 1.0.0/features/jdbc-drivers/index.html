@@ -2814,6 +2814,11 @@ JAR to go back to the bundled version.</p>
 every other master and worker to remove its copy. A name that does not exist answers <code>404</code>. Upload and delete
 need administrator access, and a file name must end in <code>.jar</code> and may not contain
 <code>/</code>, <code>\</code> or <code>..</code>.</p>
+<p>Deleting (or replacing) a JAR also takes its drivers out of the JVM's driver registry on every node, so the next
+connection uses the bundled driver again. Earlier releases closed the JAR but left its driver registered: the next
+connection on that node went to a driver whose classes could no longer load — for PostgreSQL
+<code>NoClassDefFoundError: org/postgresql/jre7/sasl/ScramAuthenticator</code> on a SCRAM login — and every JDBC catalog on
+that database failed there until a restart.</p>
 <h2 id="streamed-to-every-master-and-worker">Streamed to every master and worker</h2>
 <p>On upload the master validates and loads the JAR, then <strong>streams it to each
 worker and to the other masters in bounded chunks</strong> over the internal NIO channel (rather than encoding a

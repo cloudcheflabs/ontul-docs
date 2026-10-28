@@ -3138,9 +3138,21 @@ with <code>UNAUTHENTICATED: invalid or missing credentials</code>. See
 <a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="k">DROP</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">products</span><span class="w">   </span><span class="c1">-- a no-op when it does not exist</span>
 </code></pre></div>
 <p>Like Trino, dropping an object that does not exist is an error (<code>Table 'ice.examples.products' does not exist</code>)
-unless <code>IF EXISTS</code>, creating one that exists is an error unless <code>IF NOT EXISTS</code>, and a DDL statement that fails is an
-error with its cause, never a success. See
+unless <code>IF EXISTS</code>, creating one that exists is an error unless <code>IF NOT EXISTS</code> (CTAS is the exception, below), and
+a DDL statement that fails is an error with its cause, never a success. See
 <a href="../../iceberg/integration/#missing-objects-and-failures">Iceberg: missing objects and failures</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">CTAS onto an existing table appends — unlike Trino</p>
+<p><code>CREATE TABLE t AS SELECT ...</code> (no <code>IF NOT EXISTS</code>) of a table that already exists <strong>appends</strong> the SELECT's
+rows to it and answers <code>CREATE TABLE &lt;rows written&gt;</code>. Trino refuses that statement (<code>Table ... already
+exists</code>). The SDK table sinks (Java <code>df.sink(Sink.table(...))</code>, Python <code>session.sink(table, target)</code>) and
+materialized-view refresh rely on this append; use <code>INSERT INTO</code> when appending is what you mean, and
+<code>DROP TABLE</code> first when you want to replace a table.</p>
+<p><code>CREATE TABLE IF NOT EXISTS t AS SELECT ...</code> of an existing table is a <strong>no-op</strong>, like Trino: nothing is read
+or written, and the answer is <code>CREATE TABLE 0 (table &lt;catalog.schema.table&gt; already exists; nothing written)</code>
+(update count 0 over Flight SQL / JDBC). It used to append as well, so re-running a script "to make sure the
+table is there" added the rows again each time.</p>
+</div>
 <h3 id="dml">DML</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1">-- Insert values</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">examples</span><span class="p">.</span><span class="n">products</span><span class="w"> </span><span class="k">VALUES</span>

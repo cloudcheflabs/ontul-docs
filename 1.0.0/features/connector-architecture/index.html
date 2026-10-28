@@ -2970,9 +2970,32 @@ re-runnable and apply edits uses <code>PUT</code>. The Admin UI's <strong>Edit c
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>409 {&quot;error&quot;: &quot;Connection &#39;warehouse-s3&#39; already exists; update it with PUT /admin/connections/warehouse-s3&quot;}
 </code></pre></div>
 <p>and the stored connection is unchanged (earlier releases answered <code>400 Connection already exists: &lt;id&gt;</code>). Update it
-with <code>PUT /admin/connections/&lt;id&gt;</code> (<strong>Edit connection</strong> in the Admin UI). A catalog that uses the connection keeps the
-settings it was built with until it is reloaded: <code>POST /admin/catalogs/&lt;name&gt;/reload</code> (the catalog card's <strong>Reload</strong>)
-rebuilds it from the updated connection on every master and on every worker.</p>
+with <code>PUT /admin/connections/&lt;id&gt;</code> (<strong>Edit connection</strong> in the Admin UI).</p>
+<p><strong>An update reloads the catalogs that use the connection.</strong> Every catalog whose config names the <code>connectionId</code> is
+rebuilt from the updated connection on every master, and every worker drops its connector for it — no <strong>Reload</strong>
+needed (earlier releases kept serving the old settings until someone pressed Reload). The answer lists them:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>200 {&quot;status&quot;: &quot;ok&quot;, &quot;connectionId&quot;: &quot;pg-sales&quot;, &quot;updated&quot;: true, &quot;reloadedCatalogs&quot;: [&quot;pg&quot;], &quot;failedCatalogs&quot;: []}
+</code></pre></div>
+<p>If a catalog cannot load with the new settings on some master (a wrong password, an unreachable host), the update
+is <strong>refused as a whole</strong>: the previous connection is put back, the catalogs are rebuilt with it everywhere, and
+the answer says which catalog failed where and why:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>422 {&quot;connectionId&quot;: &quot;pg-sales&quot;, &quot;updated&quot;: false,
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>     &quot;error&quot;: &quot;Connection &#39;pg-sales&#39; was not updated: catalog &#39;pg&#39; cannot load with it (master-1: FATAL: password authentication failed for user \&quot;flow\&quot;, master-2: FATAL: password authentication failed for user \&quot;flow\&quot;). The previous connection is kept; PUT with ?force=true stores it anyway.&quot;,
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>     &quot;failedCatalogs&quot;: [{&quot;catalog&quot;: &quot;pg&quot;, &quot;node&quot;: &quot;master-1&quot;, &quot;error&quot;: &quot;FATAL: password authentication failed for user \&quot;flow\&quot;&quot;}, ...],
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>     &quot;restoredCatalogs&quot;: [&quot;pg&quot;]}
+</code></pre></div>
+<p>Rejecting rather than keeping the new settings keeps the cluster consistent: a master whose reload fails keeps
+serving the connector it had, while the workers would build theirs from the new, failing settings — two masters
+and the workers each on different credentials. When the new settings are right but the database is unreachable
+for now (a password rotated during an outage), <code>PUT /admin/connections/&lt;id&gt;?force=true</code> stores them anyway and
+answers <code>200</code> with the failures in <code>failedCatalogs</code> and a <code>warning</code>; the catalog keeps its connector until a later
+reload succeeds. A master that does not answer is listed in <code>unreachableMasters</code>; it reads the stored connection
+when it is back.</p>
+<p><code>DELETE /admin/connections/&lt;id&gt;</code> does not reload anything (that would take the catalogs down at once). Catalogs
+that still use the connection keep their loaded connectors until reloaded or restarted, then fail with
+<code>Connection not found: &lt;id&gt;</code>; the answer names them so they can be re-pointed or dropped:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>200 {&quot;status&quot;: &quot;ok&quot;, &quot;catalogsUsingIt&quot;: [&quot;pg&quot;], &quot;warning&quot;: &quot;catalog(s) pg still use connection &#39;pg-sales&#39;; they keep working until reloaded or restarted, then fail with \&quot;Connection not found: pg-sales\&quot;&quot;}
+</code></pre></div>
 <h2 id="built-in-connectors">Built-in Connectors</h2>
 <h3 id="catalog-connectors-querybatch">Catalog Connectors (Query/Batch)</h3>
 <p>Registered via <code>POST /admin/catalogs</code>. Used in SQL queries and batch pipelines.</p>
@@ -3038,17 +3061,17 @@ rebuilds it from the updated connection on every master and on every worker.</p>
 </table>
 <h4 id="elasticsearch-source-connector">Elasticsearch source connector</h4>
 <p>Register an Elasticsearch (or OpenSearch) cluster as a catalog and query its indices as tables over the normal SQL / SDK path:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;es&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elasticsearch&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">&quot;hosts&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://es-host:9200&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elastic&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">&quot;scrollSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1000&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">&quot;scrollTimeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1m&quot;</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;es&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nt">&quot;connector&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elasticsearch&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="nt">&quot;hosts&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://es-host:9200&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elastic&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">    </span><span class="nt">&quot;scrollSize&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1000&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span><span class="nt">&quot;scrollTimeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1m&quot;</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="p">}</span>
 </code></pre></div>
 <p>Once registered, each index (and alias) shows up as a table — e.g. <code>SELECT * FROM es.default.my_index</code>. Behaviour:</p>
 <ul>
@@ -3118,9 +3141,9 @@ rebuilds it from the updated connection on every master and on every worker.</p>
 </table>
 <h2 id="cross-engine-federation">Cross-Engine Federation</h2>
 <p>Multiple catalogs can be joined in a single query:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">neorun</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">events</span><span class="w"> </span><span class="n">n</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_custkey</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_name</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">FROM</span><span class="w"> </span><span class="n">neorun</span><span class="p">.</span><span class="k">public</span><span class="p">.</span><span class="n">events</span><span class="w"> </span><span class="n">n</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="k">JOIN</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">n</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">c_custkey</span>
 </code></pre></div>
 <h2 id="plugin-connectors">Plugin Connectors</h2>
 <p>External connectors can be loaded as plugins via <code>URLClassLoader</code> with full dependency isolation. Each plugin JAR is loaded in its own classloader, preventing dependency conflicts between connectors.</p>
