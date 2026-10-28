@@ -252,11 +252,11 @@ Every type can be tested: S3 lists the bucket, JDBC and NeorunBase log in, Kafka
 topics, REST / RERANK / Elasticsearch must answer an HTTP `GET`, and DECIDE answers one real question —
 see [Admin UI → Connections](admin-ui.md#connections).
 
-The list response returns IDs, types, and non-secret properties only — encrypted fields (`secretKey`, `password`, `sasl.jaas.config`, …) are masked.
+The list response returns IDs, types, and non-secret properties only — encrypted fields (`secretKey`, `password`, `sasl.jaas.config`, …) are masked. The same holds for the logs: every master and worker log line that prints a catalog or connection config, a storage setting or a statement (registration, update, reload, Flight / REST statements, batch-job statements, including DEBUG) shows secret values as `***` — a catalog's password used to be printed in plain text in `Registering catalog '<name>': {...}`.
 
 ## Best Practices
 
 - **One connection per logical system, per environment.** Name them `<role>-<system>`: `warehouse-s3`, `events-kafka`, `analytics-pg`. Avoid `prod-2` and other mystery IDs.
 - **Never embed credentials in SQL, job classes, REST payloads, or `conf/ontul.properties`.** If you find yourself writing `accessKey` into a job, register a connection instead.
-- **Rotate at the connection level.** `PUT /admin/connections/{id}` updates all jobs and streaming pipelines that reference it on the next open. A catalog built on the connection picks the change up when it is reloaded (`POST /admin/catalogs/<name>/reload`, the catalog card's **Reload**), on every master and worker. `POST /admin/connections` never replaces: an existing id is `409 Connection '<id>' already exists; update it with PUT /admin/connections/<id>`.
+- **Rotate at the connection level.** `PUT /admin/connections/{id}` updates all jobs and streaming pipelines that reference it on the next open. Catalogs built on the connection are reloaded by the update itself, on every master and worker, and listed in the answer (`reloadedCatalogs`); an update a catalog cannot load with (wrong credentials) is refused with `422` naming the catalog, master and reason, and nothing changes (`?force=true` stores it anyway) — see [Connector architecture](connector-architecture.md). `POST /admin/connections` never replaces: an existing id is `409 Connection '<id>' already exists; update it with PUT /admin/connections/<id>`.
 - **Use IAM to gate connection management.** `CONNECTION:CREATE`, `CONNECTION:UPDATE`, and `CONNECTION:DELETE` are admin-only by default; grant `CONNECTION:READ` to operators that only need to list IDs.

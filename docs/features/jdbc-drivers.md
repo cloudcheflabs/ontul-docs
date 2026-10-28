@@ -41,6 +41,12 @@ every other master and worker to remove its copy. A name that does not exist ans
 need administrator access, and a file name must end in `.jar` and may not contain
 `/`, `\` or `..`.
 
+Deleting (or replacing) a JAR also takes its drivers out of the JVM's driver registry on every node, so the next
+connection uses the bundled driver again. Earlier releases closed the JAR but left its driver registered: the next
+connection on that node went to a driver whose classes could no longer load — for PostgreSQL
+`NoClassDefFoundError: org/postgresql/jre7/sasl/ScramAuthenticator` on a SCRAM login — and every JDBC catalog on
+that database failed there until a restart.
+
 ## Streamed to every master and worker
 
 On upload the master validates and loads the JAR, then **streams it to each

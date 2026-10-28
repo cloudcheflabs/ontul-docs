@@ -115,9 +115,42 @@ Connections work the same way: `POST /admin/connections` with a `connectionId` t
 ```
 
 and the stored connection is unchanged (earlier releases answered `400 Connection already exists: <id>`). Update it
-with `PUT /admin/connections/<id>` (**Edit connection** in the Admin UI). A catalog that uses the connection keeps the
-settings it was built with until it is reloaded: `POST /admin/catalogs/<name>/reload` (the catalog card's **Reload**)
-rebuilds it from the updated connection on every master and on every worker.
+with `PUT /admin/connections/<id>` (**Edit connection** in the Admin UI).
+
+**An update reloads the catalogs that use the connection.** Every catalog whose config names the `connectionId` is
+rebuilt from the updated connection on every master, and every worker drops its connector for it — no **Reload**
+needed (earlier releases kept serving the old settings until someone pressed Reload). The answer lists them:
+
+```
+200 {"status": "ok", "connectionId": "pg-sales", "updated": true, "reloadedCatalogs": ["pg"], "failedCatalogs": []}
+```
+
+If a catalog cannot load with the new settings on some master (a wrong password, an unreachable host), the update
+is **refused as a whole**: the previous connection is put back, the catalogs are rebuilt with it everywhere, and
+the answer says which catalog failed where and why:
+
+```
+422 {"connectionId": "pg-sales", "updated": false,
+     "error": "Connection 'pg-sales' was not updated: catalog 'pg' cannot load with it (master-1: FATAL: password authentication failed for user \"flow\", master-2: FATAL: password authentication failed for user \"flow\"). The previous connection is kept; PUT with ?force=true stores it anyway.",
+     "failedCatalogs": [{"catalog": "pg", "node": "master-1", "error": "FATAL: password authentication failed for user \"flow\""}, ...],
+     "restoredCatalogs": ["pg"]}
+```
+
+Rejecting rather than keeping the new settings keeps the cluster consistent: a master whose reload fails keeps
+serving the connector it had, while the workers would build theirs from the new, failing settings — two masters
+and the workers each on different credentials. When the new settings are right but the database is unreachable
+for now (a password rotated during an outage), `PUT /admin/connections/<id>?force=true` stores them anyway and
+answers `200` with the failures in `failedCatalogs` and a `warning`; the catalog keeps its connector until a later
+reload succeeds. A master that does not answer is listed in `unreachableMasters`; it reads the stored connection
+when it is back.
+
+`DELETE /admin/connections/<id>` does not reload anything (that would take the catalogs down at once). Catalogs
+that still use the connection keep their loaded connectors until reloaded or restarted, then fail with
+`Connection not found: <id>`; the answer names them so they can be re-pointed or dropped:
+
+```
+200 {"status": "ok", "catalogsUsingIt": ["pg"], "warning": "catalog(s) pg still use connection 'pg-sales'; they keep working until reloaded or restarted, then fail with \"Connection not found: pg-sales\""}
+```
 
 ## Built-in Connectors
 

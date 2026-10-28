@@ -245,10 +245,59 @@ database owns — add the column there.
 Both are surfaced in the Flow list and Metrics tab (`1,204 rec · 2.3s`), in the periodic progress line
 in the flow's log, and on the job status API as `sourceLag` / `sourceLagMs`. A flow's worker count is
 fixed for a run: to scale one out, **Stop → change `numWorkers` → Start**. A flow keeps its checkpoints
-under `flow-<name>`, so the new run resumes from the last completed checkpoint — offsets and window
+under its **state id** (below), so the new run resumes from the last completed checkpoint — offsets and window
 state, redistributed by key over the new worker count. Nothing is lost; an exactly-once sink also
 reprocesses nothing, an at-least-once sink may receive the records read after that checkpoint again.
-Set `"startFrom": "fresh"` in the flow config to start over instead.
+Set `"startFrom": "fresh"` in the flow config to start one run over instead (for a CDC source this also
+discards the worker's Debezium offsets, so it takes its snapshot again), or **Reset** the flow (below).
+
+## Flow state: delete and reset
+
+A flow keeps its progress under a **state id**: `flow-<name>-<instance>` (shown as `stateId` in
+`GET /admin/flows`). The instance is assigned when the flow is created and kept across edits, stops and
+starts; a flow saved before instance ids keeps `flow-<name>`, and a `stateId` set in the flow config is used
+as it is. Under the state id live:
+
+- its **checkpoints** (in the exchange: `checkpoints/<stateId>/`, local disk or S3);
+- for a **CDC** source, Debezium's offset file and schema history on the worker
+  (`cdc-offset-<stateId>.dat`, `cdc-schemahistory-<stateId>.dat` under the worker's data dir), the
+  PostgreSQL replication slot `ontul_<stateId>` and the publication `ontul_pub_<stateId>` (unless the
+  source sets `slotName` / `publicationName`);
+- for a **Kafka** source, the default consumer group `ontul-stream-<stateId>` (unless the source sets `groupId`);
+- the offsets an exactly-once Iceberg sink stamps into its snapshots.
+
+**Deleting a flow deletes its state**: the job is stopped, then every worker removes the offset / schema-history
+files and the checkpoints of that state id, and one worker drops the replication slot and the publication Ontul
+created (a slot nobody reads keeps WAL on the source database forever). `DELETE /admin/flows/<name>` answers what
+was removed:
+
+```json
+{"status": "ok",
+ "state": {"stateId": "flow-orders-1a2b3c4d",
+           "workers": [{"worker": "worker-1", "removedFiles": ["cdc-offset-flow_orders_1a2b3c4d.dat"], "checkpointsDeleted": 3},
+                       {"worker": "worker-2", "removedFiles": [], "checkpointsDeleted": 3}],
+           "source": {"worker": "worker-1", "slot": "ontul_flow_orders_1a2b3c4d", "slotDropped": true,
+                      "publicationDropped": "ontul_pub_flow_orders_1a2b3c4d"}}}
+```
+
+What could not be removed (a worker that is down, a source that cannot be reached) is reported there and does not
+fail the delete. A flow created again with the same name gets a new instance, so it never resumes the deleted
+one's state either way: a CDC flow takes its snapshot again. (A deleted flow's offsets used to stay on the worker,
+and a new flow of the same name found *"a previous offset indicating a completed snapshot"* and loaded nothing.)
+
+**Reset** — the **Reset** button in the Flow list, or `POST /admin/flows/<name>/reset` — makes the next start
+begin from scratch while keeping the definition and run history: no checkpoint, no offsets; a CDC source takes
+its snapshot again, a Kafka source reads from its starting position (`autoOffsetReset`) under a new default
+consumer group. The flow must be stopped (`409 flow is running — stop it before resetting it` otherwise). Its state is
+deleted as on delete, and it gets a new instance:
+
+```json
+{"status": "ok", "previousStateId": "flow-orders-1a2b3c4d", "stateId": "flow-orders-9f8e7d6c", "state": {...}}
+```
+
+The sink table is not touched by either: to load a CDC snapshot again into an empty table, drop or truncate the
+sink first (`DROP TABLE`; the flow creates it again), or use a CDC-apply / upsert sink, which applies the snapshot
+as upserts.
 
 ## Keeping the sink table fast
 

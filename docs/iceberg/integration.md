@@ -139,7 +139,7 @@ Ontul sends `header.X-Iceberg-Access-Delegation: ""` on every catalog call so Po
 |---|---|
 | `CREATE SCHEMA [IF NOT EXISTS] catalog.namespace` | Creates an Iceberg namespace. An existing one is an error (`Schema 'c.ns' already exists`) unless `IF NOT EXISTS`. |
 | `CREATE TABLE [IF NOT EXISTS] catalog.ns.t (cols) [USING iceberg] [PARTITIONED BY (...)] [SORT BY (...)] [WITH (props) \| TBLPROPERTIES (props)]` | Format v2, with optional hidden partitioning and sort order. `USING iceberg` (Spark style) is accepted and ignored; `WITH` and `TBLPROPERTIES` are interchangeable property clauses. An existing table is an error (`Table 'c.ns.t' already exists`) unless `IF NOT EXISTS`, which leaves it unchanged. |
-| `CREATE TABLE catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...` | CTAS, distributed across workers. |
+| `CREATE TABLE [IF NOT EXISTS] catalog.ns.t [PARTITIONED BY (...)] AS SELECT ...` | CTAS, distributed across workers. On an existing table, plain CTAS **appends** the rows (unlike Trino, which refuses it) and `IF NOT EXISTS` is a no-op answering `CREATE TABLE 0 (table catalog.ns.t already exists; nothing written)` — see [Missing objects and failures](#missing-objects-and-failures). |
 | `DROP TABLE [IF EXISTS] catalog.ns.t` | Honors Polaris `polaris.config.drop-with-purge.enabled` for actual S3 cleanup. A missing table is an error unless `IF EXISTS`; see [Missing objects and failures](#missing-objects-and-failures). |
 | `DROP SCHEMA [IF EXISTS] catalog.namespace` | Namespace must be empty (`Cannot drop non-empty schema 'c.ns'`, with or without `IF EXISTS`). |
 | `CREATE [OR REPLACE] VIEW catalog.ns.v AS <SELECT>` | Persisted via Iceberg's view spec; see [Views](#views). |
@@ -410,11 +410,13 @@ ALTER TABLE ice.ns.t EXECUTE drop_partition_field(field => 'region');
 ### Missing objects and failures
 
 DDL answers like Trino. Dropping an object that does not exist is an error naming it, and `IF EXISTS` makes it a
-no-op; creating one that exists is an error, and `IF NOT EXISTS` makes it a no-op. A statement that fails is an
-error carrying the cause -- never a success:
+no-op; creating one that exists is an error, and `IF NOT EXISTS` makes it a no-op -- except a plain CTAS, which
+appends to an existing table (below). A statement that fails is an error carrying the cause -- never a success:
 
 | Statement | Answer |
 |---|---|
+| `CREATE TABLE IF NOT EXISTS ice.ns.t AS SELECT ...` (t exists) | `CREATE TABLE 0 (table ice.ns.t already exists; nothing written)` — nothing is read or written |
+| `CREATE TABLE ice.ns.t AS SELECT ...` (t exists) | **appends** the rows: `CREATE TABLE <n>`. This differs from Trino (an error); the SDK table sink and materialized-view refresh rely on it |
 | `DROP TABLE ice.ns.missing` | `Table 'ice.ns.missing' does not exist` |
 | `DROP TABLE ice.missing` | `Table 'ice.default.missing' does not exist` (a two-part name is read in `default`) |
 | `DROP VIEW ice.ns.missing` | `View 'ice.ns.missing' does not exist` |
