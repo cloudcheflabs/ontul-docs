@@ -88,7 +88,7 @@ Each master builds its own connector for every catalog. If the REST catalog cann
      "error": "Catalog 'iceberg' is unavailable: Unable to process (code: 500) ... Connection to db:5432 refused (since 2026-10-20T10:09:20Z, 3 attempt(s); retried every 30s, POST /admin/catalogs/iceberg/reload retries now)"}
     ```
 
-- `GET /admin/catalogs` reports each catalog's state, as seen by every master. `available` is `true` only when every master that answered has the catalog loaded, so it can be used in a health check:
+- `GET /admin/catalogs` reports each catalog's state, as seen by every master. `available` is `false` when a master that answered failed to load the catalog, and then `unavailableReason` and `unavailableSince` say why and since when; it can be used in a health check:
 
     ```json
     [{"name": "iceberg", "connectorType": "iceberg", "available": false,
@@ -97,6 +97,18 @@ Each master builds its own connector for every catalog. If the REST catalog cann
       "masters": [{"node": "master-1", "available": false, "reason": "...", "attempts": 3, "lastAttemptAt": "..."},
                   {"node": "master-2", "available": false, "reason": "...", "attempts": 3, "lastAttemptAt": "..."}]}]
     ```
+
+- A catalog that is registered but not built yet on some master — right after **Register Catalog**, or while a follower is still catching up — is **loading**, not unavailable. No master has failed, so `available` stays `true`, and `loading: true` is added to the catalog and to each master that has not built it yet:
+
+    ```json
+    [{"name": "iceberg", "connectorType": "iceberg", "available": true, "loading": true,
+      "masters": [{"node": "master-1", "available": true},
+                  {"node": "master-2", "available": true, "loading": true}]}]
+    ```
+
+    `available: false` is reported only for a load that really failed, and always comes with its reason and time. (Earlier releases reported a catalog that was still loading as `available: false` with no reason, and the Catalogs page showed it as `unavailable · Cannot load since —:`.)
+
+- On the **Catalogs** page an unavailable catalog has a red `unavailable` badge and `Cannot load since <time>: <reason>`. A loading catalog has an amber `loading` badge and `Loading on every master…`. The page reads the list again every 2 seconds while any catalog is loading, so the card changes to `N tables` without a manual refresh.
 
 - Recovery does not need a restart:
     - Every master retries the catalog every `ontul.catalog.reload.retry.seconds` (default 30).
