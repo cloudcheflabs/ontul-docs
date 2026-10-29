@@ -3354,6 +3354,11 @@ every catalog and showed any table's columns to any signed-in user.</p>
 <li>A connector type the form does not know is edited as raw JSON properties, so nothing is lost by
   opening it in the UI.</li>
 <li>Masked secrets are restored from the stored catalog when you save without retyping them.</li>
+<li>Each card shows the catalog's state on every master: <code>N tables</code> when it is loaded, an amber <strong>loading</strong>
+  badge (<code>Loading on every master…</code>) right after registration or while a follower is still building it, and a
+  red <strong>unavailable</strong> badge with <code>Cannot load since &lt;time&gt;: &lt;reason&gt;</code> only when a load really failed. While a
+  catalog is loading the page re-reads the list every 2 seconds until it settles. See
+  <a href="../../iceberg/integration/#catalog-availability">Catalog availability</a>.</li>
 </ul>
 <h3 id="connections">Connections</h3>
 <p>Manage connections of eight types — S3, JDBC, Kafka, REST, NeorunBase, Elasticsearch, RERANK (retriever
@@ -3499,6 +3504,11 @@ refused certification or an IAM-blocked write is visible here.</p>
 <code>before_version</code>). VACUUM asks for confirmation showing the exact statement. Recent runs list each
 statement with its result and duration.</p>
 <h3 id="storage">Storage</h3>
+<p>Changing storage is administrator-only (<code>POST /admin/config/storage</code> and <code>POST /admin/connections/test</code>
+answer <code>403</code> to anyone else). A non-administrator sees the page read-only: no <em>Save &amp; Sync</em> and no
+<em>Test Connection</em> button, the S3 connection list disabled, the prefix not editable, and the note
+<code>Read-only: changing storage settings needs AdministratorAccess.</code> (Earlier releases showed <em>Save &amp; Sync</em> to
+every user, and a non-administrator's save failed with no explanation.)</p>
 <p>Switch the dependency, spill, exchange and job-log backends between local disk and S3 <strong>without a
 restart</strong> — the change is persisted to the replicated metadata store and pushed to every master and worker.
 One S3 connection and base prefix cover all four (dependencies directly under the prefix, <code>&lt;prefix&gt;/spill</code>,
