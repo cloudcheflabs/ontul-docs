@@ -3119,7 +3119,11 @@ CLI or scripts) get JSON as before. Paths under <code>/admin/auth/</code> (login
 handled by the server.</p>
 <h2 id="who-can-change-what">Who can change what</h2>
 <p>Every admin API call is checked on the server, whatever the console shows. Hiding a button is a
-convenience; the check is what keeps a non-administrator out.</p>
+convenience; the check is what keeps a non-administrator out. The console follows the same table: where
+a change is administrator-only, a non-administrator's page shows the settings read-only — switches
+disabled, fields read-only, the buttons that would change or test something not shown — with a note
+saying <code>AdministratorAccess</code> is needed; pages that are administrator-only for reading too (KMS,
+Backup &amp; Restore) show <strong>Access Restricted</strong>.</p>
 <table>
 <thead>
 <tr>
@@ -3575,6 +3579,10 @@ worker, so a new driver does not require rebuilding an image.</p>
 <li><strong>Delete</strong> removes the JAR from the master and from every worker, and answers <code>404</code> for a name that
   does not exist.</li>
 <li>File names must end in <code>.jar</code> and may not contain path separators or <code>..</code>.</li>
+<li>Uploading and deleting drivers is administrator-only (<code>POST</code> / <code>DELETE /admin/drivers</code> answer <code>403</code> to
+  anyone else). A non-administrator sees the installed drivers and their classes, without the
+  <em>Upload Driver JAR</em> control or the delete buttons, and the note
+  <code>Read-only: uploading or deleting drivers needs AdministratorAccess.</code></li>
 </ul>
 <h3 id="jobs">Jobs</h3>
 <p>Monitor active and completed jobs, view real-time logs, and kill running jobs. Jobs are submitted with
@@ -3619,8 +3627,19 @@ certificate read out of it, and generate an SP keypair when the provider needs e
 or signed requests. Each provider has a <strong>test</strong> button, so a mistake surfaces before anyone tries to
 log in with it.</p>
 <p>Settings are stored in the replicated metadata store and applied on every master with no restart.
-Changing them needs <code>AdministratorAccess</code>; everyone else sees the page read-only. See
-<a href="../sso/">Single Sign-On</a>.</p>
+Changing them needs <code>AdministratorAccess</code> (every non-GET under <code>/admin/sso</code> answers <code>403</code> to anyone
+else), and everyone else sees the page read-only, on every tab:</p>
+<ul>
+<li>the switches (<em>Enable OpenID Connect</em>, <em>Enable SAML 2.0</em>, <em>Sign authentication requests</em>, <em>Enable LDAP /
+  Active Directory</em>, <em>StartTLS</em>, <em>Allow identities whose groups map to nothing</em>) are disabled;</li>
+<li>every field is read-only;</li>
+<li>the actions that write or probe — <em>Test the connection</em>, <em>Check the configuration</em>, <em>Test the bind</em>,
+  <em>Generate an SP keypair</em> and pasting / reading the provider's metadata — are not shown;</li>
+<li><em>This cluster's SP metadata</em> (a download) stays, and <em>Save</em> is disabled with
+  <code>Read-only: changing SSO settings needs AdministratorAccess.</code></li>
+</ul>
+<p>(Earlier releases disabled only <em>Save</em>, so a non-administrator could flip a switch or start a test and
+get a <code>403</code> with no explanation.) See <a href="../sso/">Single Sign-On</a>.</p>
 <h3 id="kms">KMS</h3>
 <p>Key management interface for viewing and managing encryption keys: create keys, rotate them and see
 each key's versions. Administrators only. Key IDs are trimmed and checked for duplicates before
@@ -3634,7 +3653,10 @@ accepts any table name and suggests tables seen in health data and maintenance h
 Now</strong>, the history refreshes until the run finishes.</p>
 <p>A non-administrator sees maintenance history only for tables they may read (<code>data:Select</code>), and reading
 the configuration of a table they may not read answers <code>403</code>; changing settings and running maintenance
-are administrator-only.</p>
+are administrator-only. On the page a non-administrator has no <em>Run Now</em> and no <em>Save Configuration</em>,
+sees <code>Read-only: running maintenance or changing a table's configuration needs AdministratorAccess.</code>,
+and can still <strong>Load</strong> the configuration of a table they may read — shown with every switch disabled
+and every number and the cron read-only.</p>
 <h3 id="backup-restore">Backup &amp; Restore</h3>
 <p>Backup the cluster's KMS / IAM / metadata stores and connections to S3 and restore from any prior backup. The page exposes manual <em>Backup Now</em> and one <strong>Configuration</strong> form: S3 connection, S3 prefix, <em>Auto Backup Interval</em> (hours, 0 = off) and <em>Cron Expression</em> (5-field UNIX, e.g. <code>0 2 * * *</code>, empty = none). <strong>Save Config</strong> sends all four fields in one request — the cron typed on the page used to be left out, so it could be seen but not set or changed. The page checks the fields first (connection chosen, <code>s3://bucket/path</code> prefix, 5 cron fields) and marks the ones that are wrong; the server repeats those checks, validates the cron values and checks the bucket with the connection's keys (read, then write and delete a probe object), and a refusal is shown under the button with its reason. After a save the page reads the configuration back and shows <strong>what the server has scheduled</strong> — "Every N hours — next run …" and "Cron … (time zone) — next run …", or "No automatic backup is scheduled" — rather than the values that were typed. <strong>Turn Off Schedules</strong> clears both. See <a href="../backup-restore/">Backup &amp; Restore</a> for the full flow.</p>
 <p>Backups are listed newest first with their UTC time; <strong>Restore</strong> asks for confirmation listing what is
@@ -3643,6 +3665,9 @@ time and duration. The form stays disabled until the saved configuration has loa
 early is never overwritten by it. <em>Backup Now</em> needs a saved backup configuration. The backup list reports the storage error — a missing
 bucket, wrong credentials — instead of showing an empty list. Scheduled and cron backups run on the
 leader only, so a multi-master cluster takes one backup per run.</p>
+<p>Backup is administrator-only for reading as well (every <code>/admin/backup</code> call answers <code>403</code> to anyone
+else), so a non-administrator sees <strong>Access Restricted</strong> on this page, as on KMS, and the page makes no
+backup calls.</p>
 <h2 id="rest-api">REST API</h2>
 <p>All operations available in the Admin UI are also accessible via the REST API, enabling automation and integration with external tools. The full API is documented in OpenAPI 3.0 format.</p>
 <h2 id="prometheus-metrics">Prometheus Metrics</h2>
