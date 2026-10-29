@@ -269,6 +269,11 @@ Register, unregister, and manage data source catalogs. View connector type, conn
 - A connector type the form does not know is edited as raw JSON properties, so nothing is lost by
   opening it in the UI.
 - Masked secrets are restored from the stored catalog when you save without retyping them.
+- Each card shows the catalog's state on every master: `N tables` when it is loaded, an amber **loading**
+  badge (`Loading on every master…`) right after registration or while a follower is still building it, and a
+  red **unavailable** badge with `Cannot load since <time>: <reason>` only when a load really failed. While a
+  catalog is loading the page re-reads the list every 2 seconds until it settles. See
+  [Catalog availability](../iceberg/integration.md#catalog-availability).
 
 ### Connections
 
@@ -415,6 +420,12 @@ Compaction and cleanup for [Lance](lance-integration.md) datasets: **OPTIMIZE** 
 statement with its result and duration.
 
 ### Storage
+
+Changing storage is administrator-only (`POST /admin/config/storage` and `POST /admin/connections/test`
+answer `403` to anyone else). A non-administrator sees the page read-only: no *Save & Sync* and no
+*Test Connection* button, the S3 connection list disabled, the prefix not editable, and the note
+`Read-only: changing storage settings needs AdministratorAccess.` (Earlier releases showed *Save & Sync* to
+every user, and a non-administrator's save failed with no explanation.)
 
 Switch the dependency, spill, exchange and job-log backends between local disk and S3 **without a
 restart** — the change is persisted to the replicated metadata store and pushed to every master and worker.
