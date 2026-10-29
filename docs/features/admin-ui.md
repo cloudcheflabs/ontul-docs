@@ -41,7 +41,11 @@ handled by the server.
 ## Who can change what
 
 Every admin API call is checked on the server, whatever the console shows. Hiding a button is a
-convenience; the check is what keeps a non-administrator out.
+convenience; the check is what keeps a non-administrator out. The console follows the same table: where
+a change is administrator-only, a non-administrator's page shows the settings read-only — switches
+disabled, fields read-only, the buttons that would change or test something not shown — with a note
+saying `AdministratorAccess` is needed; pages that are administrator-only for reading too (KMS,
+Backup & Restore) show **Access Restricted**.
 
 | Area | Read | Change |
 |---|---|---|
@@ -479,6 +483,10 @@ worker, so a new driver does not require rebuilding an image.
 - **Delete** removes the JAR from the master and from every worker, and answers `404` for a name that
   does not exist.
 - File names must end in `.jar` and may not contain path separators or `..`.
+- Uploading and deleting drivers is administrator-only (`POST` / `DELETE /admin/drivers` answer `403` to
+  anyone else). A non-administrator sees the installed drivers and their classes, without the
+  *Upload Driver JAR* control or the delete buttons, and the note
+  `Read-only: uploading or deleting drivers needs AdministratorAccess.`
 
 ### Jobs
 
@@ -529,8 +537,19 @@ or signed requests. Each provider has a **test** button, so a mistake surfaces b
 log in with it.
 
 Settings are stored in the replicated metadata store and applied on every master with no restart.
-Changing them needs `AdministratorAccess`; everyone else sees the page read-only. See
-[Single Sign-On](sso.md).
+Changing them needs `AdministratorAccess` (every non-GET under `/admin/sso` answers `403` to anyone
+else), and everyone else sees the page read-only, on every tab:
+
+- the switches (*Enable OpenID Connect*, *Enable SAML 2.0*, *Sign authentication requests*, *Enable LDAP /
+  Active Directory*, *StartTLS*, *Allow identities whose groups map to nothing*) are disabled;
+- every field is read-only;
+- the actions that write or probe — *Test the connection*, *Check the configuration*, *Test the bind*,
+  *Generate an SP keypair* and pasting / reading the provider's metadata — are not shown;
+- *This cluster's SP metadata* (a download) stays, and *Save* is disabled with
+  `Read-only: changing SSO settings needs AdministratorAccess.`
+
+(Earlier releases disabled only *Save*, so a non-administrator could flip a switch or start a test and
+get a `403` with no explanation.) See [Single Sign-On](sso.md).
 
 ### KMS
 
@@ -550,7 +569,10 @@ Now**, the history refreshes until the run finishes.
 
 A non-administrator sees maintenance history only for tables they may read (`data:Select`), and reading
 the configuration of a table they may not read answers `403`; changing settings and running maintenance
-are administrator-only.
+are administrator-only. On the page a non-administrator has no *Run Now* and no *Save Configuration*,
+sees `Read-only: running maintenance or changing a table's configuration needs AdministratorAccess.`,
+and can still **Load** the configuration of a table they may read — shown with every switch disabled
+and every number and the cron read-only.
 
 ### Backup & Restore
 
@@ -562,6 +584,10 @@ time and duration. The form stays disabled until the saved configuration has loa
 early is never overwritten by it. *Backup Now* needs a saved backup configuration. The backup list reports the storage error — a missing
 bucket, wrong credentials — instead of showing an empty list. Scheduled and cron backups run on the
 leader only, so a multi-master cluster takes one backup per run.
+
+Backup is administrator-only for reading as well (every `/admin/backup` call answers `403` to anyone
+else), so a non-administrator sees **Access Restricted** on this page, as on KMS, and the page makes no
+backup calls.
 
 ## REST API
 
