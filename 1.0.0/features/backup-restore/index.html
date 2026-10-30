@@ -1660,6 +1660,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#retention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retention
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#layout-of-a-backup" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2770,7 +2781,8 @@
 
 <h1 id="backup-restore">Backup &amp; Restore</h1>
 <p>Ontul exports the cluster's stateful stores — <strong>KMS keystore</strong>, <strong>IAM</strong> (users, policies, access keys), the <strong>catalog metadata store</strong> and the <strong>Connection Store</strong> — to an S3 bucket of your choosing, and restores them in a coordinated way that blocks requests, broadcasts the recovered state to followers, and only marks the cluster ready once every node has caught up.</p>
-<p>Three trigger modes share the same backup/restore implementation:</p>
+<p>Three trigger modes share the same backup/restore implementation, and an optional <a href="#retention">retention policy</a>
+deletes old backups after each successful one (off by default: every backup is kept):</p>
 <table>
 <thead>
 <tr>
@@ -2874,7 +2886,9 @@
   <code>intervalNextFireMillis</code> and <code>cronNextFireMillis</code> (0 when that schedule is off) and <code>cronTimeZone</code>.</li>
 </ul>
 <p><code>cron</code> is optional in the body: <strong>absent</strong> leaves the current cron schedule as it is (callers written
-before cron existed), <strong><code>""</code> or <code>null</code></strong> clears it.</p>
+before cron existed), <strong><code>""</code> or <code>null</code></strong> clears it. The retention fields <code>retentionCount</code> and <code>retentionDays</code>
+(see <a href="#retention">Retention</a>) work the same way: absent leaves the stored policy unchanged; <code>retentionCount</code> is
+<code>0</code>–<code>10000</code> and <code>retentionDays</code> is <code>0</code>–<code>3660</code>.</p>
 <p>The settings are persisted in the metadata store and survive restarts. Every master re-reads them
 (on each 30-second scheduler tick and whenever the configuration is read), so a master that becomes
 leader runs — and reports — the schedule saved last, not the one it booted with.</p>
@@ -2903,16 +2917,73 @@ leader runs — and reports — the schedule saved last, not the one it booted w
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="s1">    &quot;cron&quot;: &quot;0 2 * * *&quot;</span>
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="s1">  }&#39;</span>
 </code></pre></div>
+<h2 id="retention">Retention</h2>
+<p>Without a retention policy every backup stays in the bucket forever. Two rules, both <strong>off by default (<code>0</code>)</strong>,
+limit what is kept:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Admin UI</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>retentionCount</code></td>
+<td><em>Keep Newest Backups</em></td>
+<td>Keep only the newest N backups. <code>0</code> = keep all.</td>
+</tr>
+<tr>
+<td><code>retentionDays</code></td>
+<td><em>Delete Backups Older Than</em> (days)</td>
+<td>Delete backups older than N days, by the time in their id. <code>0</code> = no age limit.</td>
+</tr>
+</tbody>
+</table>
+<p>With both at <code>0</code> (the default) nothing is ever deleted — the behaviour of earlier releases. When both are set, a
+backup is deleted if <strong>either</strong> rule drops it (for example <code>5</code> and <code>30</code>: at most the newest five, and none older
+than 30 days).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/configure<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="s1">    &quot;connectionId&quot;: &quot;ontul-backup-s3&quot;,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="s1">    &quot;s3Prefix&quot;: &quot;s3://my-ontul-backups/cluster&quot;,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="s1">    &quot;intervalHours&quot;: 0,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="s1">    &quot;cron&quot;: &quot;0 2 * * *&quot;,</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="s1">    &quot;retentionCount&quot;: 14,</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="s1">    &quot;retentionDays&quot;: 0</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<p>How it is applied:</p>
+<ul>
+<li><strong>After each successful backup</strong> — manual, interval or cron — on the leader, with the backup's own S3
+  connection. Saving a policy deletes nothing by itself; the next successful backup applies it. A failed backup
+  deletes nothing.</li>
+<li>The backup <strong>just written is never deleted</strong>, so at least one backup always remains.</li>
+<li>Only folders whose name is a backup id (<code>yyyyMMdd-HHmmss</code>) are considered. Anything else under the prefix —
+  a manual copy, a README — is never touched.</li>
+<li>Every object under a deleted backup's folder (<code>kms.bin</code>, <code>iam.bin</code>, <code>metadata.bin</code>, <code>connections.bin</code>, older
+  <code>*.json</code> parts) is removed.</li>
+<li>Each run that deletes something adds a <strong><code>prune</code></strong> entry to the history, for example
+  <code>Retention (keep newest 5): deleted 8 (20261030-120000, …)</code>. If deleting fails part-way, the entry is recorded
+  as an error with what was already deleted; the backup itself stays successful.</li>
+</ul>
+<p>The policy is stored in the metadata store (<code>backup.retentionCount</code>, <code>backup.retentionDays</code>), so it survives
+restarts and leader changes like the schedule does. <code>GET /admin/backup/config</code> reports it as <code>retentionCount</code>
+and <code>retentionDays</code>, and the Admin UI's status panel states it in words ("Retention: keeps the newest 5 backups;
+older ones are deleted after each successful backup", or "Retention: every backup is kept").</p>
 <h2 id="layout-of-a-backup">Layout of a backup</h2>
 <p>Each run writes to <code>&lt;s3Prefix&gt;/&lt;timestamp&gt;/</code>. <strong>Every part is encrypted</strong> — nothing in the bucket is readable
 without the cluster's KMS master key:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>s3://my-ontul-backups/cluster/20260529-120000/
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  ├── kms.bin            # the KMS keystore as stored: wrapped with the cluster master key
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  ├── iam.bin            # users, password hashes, groups, policies, access keys + secrets + tokens,
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  │                      #   STS and federated sessions -- sealed with the `backup` KMS key
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  ├── metadata.bin       # catalog configs (with their credentials), SSO settings, flows, every other
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  │                      #   config key -- sealed with the `backup` KMS key
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>  └── connections.bin    # every connection, sealed with the `connections` KMS key
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>s3://my-ontul-backups/cluster/20260529-120000/
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  ├── kms.bin            # the KMS keystore as stored: wrapped with the cluster master key
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  ├── iam.bin            # users, password hashes, groups, policies, access keys + secrets + tokens,
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  │                      #   STS and federated sessions -- sealed with the `backup` KMS key
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>  ├── metadata.bin       # catalog configs (with their credentials), SSO settings, flows, every other
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>  │                      #   config key -- sealed with the `backup` KMS key
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>  └── connections.bin    # every connection, sealed with the `connections` KMS key
 </code></pre></div>
 <p><code>iam.bin</code> and <code>metadata.bin</code> are KMS envelopes (a random data key per part, wrapped by the <code>backup</code> KMS key).
 The <code>backup</code> key is created on the first backup and travels inside the same backup's <code>kms.bin</code>, which is itself
@@ -2944,7 +3015,18 @@ read the backup bucket could read them. Those backups <strong>still restore</str
 </ol>
 </div>
 <p>Backup ids are unique per master: a second backup started in the same second as the previous one takes the next free second, so two backups never write the same files.</p>
-<p>The history is exposed at <code>GET /admin/backup/history</code> (last 100 entries) and the available backup ids at <code>GET /admin/backup/list</code> (newest first).</p>
+<p>The history is exposed at <code>GET /admin/backup/history</code>: the last 100 backup, restore and prune entries, newest
+first. It is kept <strong>in memory on the master that ran the operation</strong> — the leader, since every backup endpoint
+is forwarded to it — so it starts empty after that master restarts or another master becomes leader; the
+backups themselves are in S3 and still listed.</p>
+<p>The available backup ids are at <code>GET /admin/backup/list</code>, newest first. Without parameters it answers every id
+as a JSON array. With <code>limit</code> (1–1000) and/or <code>offset</code> (default <code>limit</code> 10, <code>offset</code> 0) it answers one page:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>curl<span class="w"> </span><span class="s2">&quot;http://localhost:8080/admin/backup/list?limit=10&amp;offset=10&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># {&quot;backups&quot;:[&quot;20261029-020000&quot;, ...],&quot;total&quot;:23,&quot;offset&quot;:10,&quot;limit&quot;:10}</span>
+</code></pre></div>
+<p>A <code>limit</code> outside 1–1000 or a negative <code>offset</code> answers <code>400</code>. The Admin UI reads the list this way: <em>Available
+Backups</em> shows the newest 10 with <em>Previous</em> / <em>Next</em> and "Showing 11–20 of 23 backups", and <em>Job History</em> pages
+its entries 10 at a time the same way.</p>
 <p><code>/admin/backup/list</code> checks that the bucket exists before listing it and pages through every backup under the prefix. When the target cannot be read — a missing bucket, wrong credentials, a deleted connection — it answers <code>502</code> with the storage error, and the Admin UI shows that error instead of "No backups found". With no backup configured it answers <code>[]</code>. <em>Backup Now</em> in the UI is enabled only once a configuration has been saved. Saving a configuration always re-arms the interval schedule (an interval of <code>0</code> turns it off). Since a configuration can only be saved after its bucket passed the check above, a <code>502</code> from the list now means the target broke after it was saved (bucket deleted, key revoked).</p>
 <p>Scheduled and cron backups run on the <strong>leader only</strong>: every master keeps the schedule, but a follower's tick does nothing, so a three-master cluster takes one backup per run rather than three. All backup endpoints, including the reads, need administrator access.</p>
 <h2 id="restore">Restore</h2>
@@ -2955,10 +3037,10 @@ read the backup bucket could read them. Those backups <strong>still restore</str
 <li><strong>Broadcast + wait.</strong> Pushes the recovered KMS keystore, IAM snapshot, metadata and connections to every follower over the internal NIO protocol, then waits for the cluster-ready signal before re-accepting traffic.</li>
 </ol>
 <p>If a step fails (the bucket cannot be read, a file times out), the restore answers with the error and the cluster is <strong>returned to service</strong> with the state the leader holds at that point — the stores imported before the failure plus the untouched rest, pushed to every node so they agree. It no longer stays "not ready" until a restart. Check the restore history entry and run the restore again once the storage problem is fixed.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/restore<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;backupId&quot;: &quot;20260529-120000&quot;}&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8080/admin/backup/restore<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;backupId&quot;: &quot;20260529-120000&quot;}&#39;</span>
 </code></pre></div>
 <p>The Admin UI exposes this as a <em>Restore</em> button on each entry in the <em>Available Backups</em> list, behind an explicit confirmation modal that names every store about to be overwritten.</p>
 <div class="admonition note">
@@ -2990,13 +3072,13 @@ rather than assuming the window you opened is still open.</p>
 <td><code>GET</code></td>
 <td><code>/admin/backup/config</code></td>
 <td>—</td>
-<td>Current config + scheduler state (<code>scheduled</code>, <code>intervalNextFireMillis</code>, <code>cron</code>, <code>cronScheduled</code>, <code>cronNextFireMillis</code>, <code>cronTimeZone</code>, last backup)</td>
+<td>Current config + scheduler state (<code>scheduled</code>, <code>intervalNextFireMillis</code>, <code>cron</code>, <code>cronScheduled</code>, <code>cronNextFireMillis</code>, <code>cronTimeZone</code>, <code>retentionCount</code>, <code>retentionDays</code>, last backup)</td>
 </tr>
 <tr>
 <td><code>POST</code></td>
 <td><code>/admin/backup/configure</code></td>
-<td><code>{connectionId, s3Prefix, intervalHours, cron?}</code></td>
-<td>Validate, check the bucket (read + probe write/delete) and save connection / prefix / fixed-interval / cron in one call; <code>400</code> with the reason otherwise</td>
+<td><code>{connectionId, s3Prefix, intervalHours, cron?, retentionCount?, retentionDays?}</code></td>
+<td>Validate, check the bucket (read + probe write/delete) and save connection / prefix / fixed-interval / cron / retention in one call; <code>400</code> with the reason otherwise</td>
 </tr>
 <tr>
 <td><code>POST</code></td>
@@ -3019,14 +3101,14 @@ rather than assuming the window you opened is still open.</p>
 <tr>
 <td><code>GET</code></td>
 <td><code>/admin/backup/list</code></td>
-<td>—</td>
-<td>Backup ids in S3, newest first</td>
+<td>— (<code>?limit=&amp;offset=</code> for one page)</td>
+<td>Backup ids in S3, newest first: an array, or <code>{backups, total, offset, limit}</code> with paging</td>
 </tr>
 <tr>
 <td><code>GET</code></td>
 <td><code>/admin/backup/history</code></td>
 <td>—</td>
-<td>Last 100 history entries (backup + restore)</td>
+<td>Last 100 history entries (backup, restore, prune), in memory on the leader</td>
 </tr>
 </tbody>
 </table>
