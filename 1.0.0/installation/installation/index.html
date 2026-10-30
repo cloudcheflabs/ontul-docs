@@ -2853,7 +2853,7 @@
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Bundled libraries</p>
-<p>Ontul uses Hadoop only as a client library (configuration, the S3A file system, Parquet/ORC readers and writers) and Kafka Connect only through Debezium's embedded CDC engine. Neither project's own web server runs, so their end-of-life web stacks are not shipped: the distribution and the SDK bundle contain no Jetty 9.4, no Jersey 1.x and no YARN client jars.</p>
+<p>Ontul uses Hadoop only as a client library (configuration, the S3A file system, Parquet/ORC readers and writers) and Kafka Connect only through Debezium's embedded CDC engine. Neither project's own web server runs, so their end-of-life web stacks are not shipped: the distribution and the SDK bundle contain no Jetty 9.4, no Jersey 1.x and no YARN client jars. JCraft JSch 0.1.55 (unmaintained upstream; used only by Hadoop's SFTP file system and SSH fencing) is left out too. Oracle JDBC ships once, as <code>ojdbc11</code> 23.x: the <code>ojdbc8</code> 21.x that the Debezium Oracle connector depends on (Oracle 21c, out of support) is not bundled, since <code>ojdbc11</code> provides the same <code>oracle.jdbc</code> classes that Oracle CDC uses.</p>
 </div>
 <h3 id="quick-start">Quick Start</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 1. Set master key for KMS encryption (minimum 32 characters)</span>
