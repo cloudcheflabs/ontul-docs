@@ -86,7 +86,7 @@ upstream ontul_admin {
     hash $remote_addr consistent;    # keep multi-step stateful admin flows on one Master
     server master-1:8080  max_fails=2 fail_timeout=5s;
     server master-2:8080  max_fails=2 fail_timeout=5s;
-    keepalive 32;
+    # no `keepalive`: every admin response closes its connection (Connection: close)
 }
 
 # ── Arrow Flight SQL (gRPC over HTTP/2) ──
@@ -113,6 +113,9 @@ server {
     }
 }
 ```
+
+!!! note "Admin upstream: no connection reuse"
+    The admin HTTP server answers each request on its own connection and closes it, sending `Connection: close`. An upstream `keepalive` pool therefore saves nothing for `ontul_admin`. Earlier builds closed without that header; nginx with `keepalive` then occasionally sent a request down a connection the Master was closing and logged `upstream prematurely closed connection while reading response header` — a GET is retried on another Master, a POST (an IAM change, a key) reached the client as `502`. Current builds send the header, but drop `keepalive` from the admin upstream on existing installs as well.
 
 ### Choosing the hash key
 
