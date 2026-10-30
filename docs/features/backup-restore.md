@@ -2,7 +2,8 @@
 
 Ontul exports the cluster's stateful stores — **KMS keystore**, **IAM** (users, policies, access keys), the **catalog metadata store** and the **Connection Store** — to an S3 bucket of your choosing, and restores them in a coordinated way that blocks requests, broadcasts the recovered state to followers, and only marks the cluster ready once every node has caught up.
 
-Three trigger modes share the same backup/restore implementation:
+Three trigger modes share the same backup/restore implementation, and an optional [retention policy](#retention)
+deletes old backups after each successful one (off by default: every backup is kept):
 
 | Trigger | Where it's configured | When to use |
 |---|---|---|
@@ -71,7 +72,9 @@ curl -X POST http://localhost:8080/admin/backup/configure \
   `intervalNextFireMillis` and `cronNextFireMillis` (0 when that schedule is off) and `cronTimeZone`.
 
 `cron` is optional in the body: **absent** leaves the current cron schedule as it is (callers written
-before cron existed), **`""` or `null`** clears it.
+before cron existed), **`""` or `null`** clears it. The retention fields `retentionCount` and `retentionDays`
+(see [Retention](#retention)) work the same way: absent leaves the stored policy unchanged; `retentionCount` is
+`0`–`10000` and `retentionDays` is `0`–`3660`.
 
 The settings are persisted in the metadata store and survive restarts. Every master re-reads them
 (on each 30-second scheduler tick and whenever the configuration is read), so a master that becomes
@@ -112,6 +115,53 @@ curl -X POST http://localhost:8080/admin/backup/configure \
     "cron": "0 2 * * *"
   }'
 ```
+
+## Retention
+
+Without a retention policy every backup stays in the bucket forever. Two rules, both **off by default (`0`)**,
+limit what is kept:
+
+| Field | Admin UI | Meaning |
+|---|---|---|
+| `retentionCount` | *Keep Newest Backups* | Keep only the newest N backups. `0` = keep all. |
+| `retentionDays` | *Delete Backups Older Than* (days) | Delete backups older than N days, by the time in their id. `0` = no age limit. |
+
+With both at `0` (the default) nothing is ever deleted — the behaviour of earlier releases. When both are set, a
+backup is deleted if **either** rule drops it (for example `5` and `30`: at most the newest five, and none older
+than 30 days).
+
+```bash
+curl -X POST http://localhost:8080/admin/backup/configure \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "connectionId": "ontul-backup-s3",
+    "s3Prefix": "s3://my-ontul-backups/cluster",
+    "intervalHours": 0,
+    "cron": "0 2 * * *",
+    "retentionCount": 14,
+    "retentionDays": 0
+  }'
+```
+
+How it is applied:
+
+- **After each successful backup** — manual, interval or cron — on the leader, with the backup's own S3
+  connection. Saving a policy deletes nothing by itself; the next successful backup applies it. A failed backup
+  deletes nothing.
+- The backup **just written is never deleted**, so at least one backup always remains.
+- Only folders whose name is a backup id (`yyyyMMdd-HHmmss`) are considered. Anything else under the prefix —
+  a manual copy, a README — is never touched.
+- Every object under a deleted backup's folder (`kms.bin`, `iam.bin`, `metadata.bin`, `connections.bin`, older
+  `*.json` parts) is removed.
+- Each run that deletes something adds a **`prune`** entry to the history, for example
+  `Retention (keep newest 5): deleted 8 (20261030-120000, …)`. If deleting fails part-way, the entry is recorded
+  as an error with what was already deleted; the backup itself stays successful.
+
+The policy is stored in the metadata store (`backup.retentionCount`, `backup.retentionDays`), so it survives
+restarts and leader changes like the schedule does. `GET /admin/backup/config` reports it as `retentionCount`
+and `retentionDays`, and the Admin UI's status panel states it in words ("Retention: keeps the newest 5 backups;
+older ones are deleted after each successful backup", or "Retention: every backup is kept").
 
 ## Layout of a backup
 
@@ -160,7 +210,22 @@ and the cluster keeps its current keystore and state.
 
 Backup ids are unique per master: a second backup started in the same second as the previous one takes the next free second, so two backups never write the same files.
 
-The history is exposed at `GET /admin/backup/history` (last 100 entries) and the available backup ids at `GET /admin/backup/list` (newest first).
+The history is exposed at `GET /admin/backup/history`: the last 100 backup, restore and prune entries, newest
+first. It is kept **in memory on the master that ran the operation** — the leader, since every backup endpoint
+is forwarded to it — so it starts empty after that master restarts or another master becomes leader; the
+backups themselves are in S3 and still listed.
+
+The available backup ids are at `GET /admin/backup/list`, newest first. Without parameters it answers every id
+as a JSON array. With `limit` (1–1000) and/or `offset` (default `limit` 10, `offset` 0) it answers one page:
+
+```bash
+curl "http://localhost:8080/admin/backup/list?limit=10&offset=10" -H "Authorization: Bearer $TOKEN"
+# {"backups":["20261029-020000", ...],"total":23,"offset":10,"limit":10}
+```
+
+A `limit` outside 1–1000 or a negative `offset` answers `400`. The Admin UI reads the list this way: *Available
+Backups* shows the newest 10 with *Previous* / *Next* and "Showing 11–20 of 23 backups", and *Job History* pages
+its entries 10 at a time the same way.
 
 `/admin/backup/list` checks that the bucket exists before listing it and pages through every backup under the prefix. When the target cannot be read — a missing bucket, wrong credentials, a deleted connection — it answers `502` with the storage error, and the Admin UI shows that error instead of "No backups found". With no backup configured it answers `[]`. *Backup Now* in the UI is enabled only once a configuration has been saved. Saving a configuration always re-arms the interval schedule (an interval of `0` turns it off). Since a configuration can only be saved after its bucket passed the check above, a `502` from the list now means the target broke after it was saved (bucket deleted, key revoked).
 
@@ -204,12 +269,12 @@ The Admin UI exposes this as a *Restore* button on each entry in the *Available 
 
 | Method | Path | Body | Purpose |
 |---|---|---|---|
-| `GET` | `/admin/backup/config` | — | Current config + scheduler state (`scheduled`, `intervalNextFireMillis`, `cron`, `cronScheduled`, `cronNextFireMillis`, `cronTimeZone`, last backup) |
-| `POST` | `/admin/backup/configure` | `{connectionId, s3Prefix, intervalHours, cron?}` | Validate, check the bucket (read + probe write/delete) and save connection / prefix / fixed-interval / cron in one call; `400` with the reason otherwise |
+| `GET` | `/admin/backup/config` | — | Current config + scheduler state (`scheduled`, `intervalNextFireMillis`, `cron`, `cronScheduled`, `cronNextFireMillis`, `cronTimeZone`, `retentionCount`, `retentionDays`, last backup) |
+| `POST` | `/admin/backup/configure` | `{connectionId, s3Prefix, intervalHours, cron?, retentionCount?, retentionDays?}` | Validate, check the bucket (read + probe write/delete) and save connection / prefix / fixed-interval / cron / retention in one call; `400` with the reason otherwise |
 | `POST` | `/admin/backup/cron` | `{cron: string \| null}` | Set or clear the cron schedule |
 | `POST` | `/admin/backup/run` | — | Trigger a backup immediately |
 | `POST` | `/admin/backup/restore` | `{backupId}` | Restore from a specific backup id |
-| `GET` | `/admin/backup/list` | — | Backup ids in S3, newest first |
-| `GET` | `/admin/backup/history` | — | Last 100 history entries (backup + restore) |
+| `GET` | `/admin/backup/list` | — (`?limit=&offset=` for one page) | Backup ids in S3, newest first: an array, or `{backups, total, offset, limit}` with paging |
+| `GET` | `/admin/backup/history` | — | Last 100 history entries (backup, restore, prune), in memory on the leader |
 
 The Admin UI's *Backup & Restore* page wires the same endpoints; the underlying state survives master restarts.
