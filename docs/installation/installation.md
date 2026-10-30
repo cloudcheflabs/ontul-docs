@@ -14,7 +14,7 @@ cd ontul-1.0.0
 - **ZooKeeper** (embedded ZooKeeper included for standalone mode)
 
 !!! note "Bundled libraries"
-    Ontul uses Hadoop only as a client library (configuration, the S3A file system, Parquet/ORC readers and writers) and Kafka Connect only through Debezium's embedded CDC engine. Neither project's own web server runs, so their end-of-life web stacks are not shipped: the distribution and the SDK bundle contain no Jetty 9.4, no Jersey 1.x and no YARN client jars.
+    Ontul uses Hadoop only as a client library (configuration, the S3A file system, Parquet/ORC readers and writers) and Kafka Connect only through Debezium's embedded CDC engine. Neither project's own web server runs, so their end-of-life web stacks are not shipped: the distribution and the SDK bundle contain no Jetty 9.4, no Jersey 1.x and no YARN client jars. JCraft JSch 0.1.55 (unmaintained upstream; used only by Hadoop's SFTP file system and SSH fencing) is left out too. Oracle JDBC ships once, as `ojdbc11` 23.x: the `ojdbc8` 21.x that the Debezium Oracle connector depends on (Oracle 21c, out of support) is not bundled, since `ojdbc11` provides the same `oracle.jdbc` classes that Oracle CDC uses.
 
 ### Quick Start
 
