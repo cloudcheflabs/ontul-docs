@@ -2925,7 +2925,7 @@ and would not travel with a backup.</p>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="kn">hash</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="w"> </span><span class="s">consistent</span><span class="p">;</span><span class="w">    </span><span class="c1"># keep multi-step stateful admin flows on one Master</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-1</span><span class="p">:</span><span class="mi">8080</span><span class="w">  </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">master-2</span><span class="p">:</span><span class="mi">8080</span><span class="w">  </span><span class="s">max_fails=2</span><span class="w"> </span><span class="s">fail_timeout=5s</span><span class="p">;</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="kn">keepalive</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="c1"># no `keepalive`: every admin response closes its connection (Connection: close)</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># ── Arrow Flight SQL (gRPC over HTTP/2) ──</span>
@@ -2952,6 +2952,10 @@ and would not travel with a backup.</p>
 <a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">    </span><span class="p">}</span>
 <a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="p">}</span>
 </code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Admin upstream: no connection reuse</p>
+<p>The admin HTTP server answers each request on its own connection and closes it, sending <code>Connection: close</code>. An upstream <code>keepalive</code> pool therefore saves nothing for <code>ontul_admin</code>. Earlier builds closed without that header; nginx with <code>keepalive</code> then occasionally sent a request down a connection the Master was closing and logged <code>upstream prematurely closed connection while reading response header</code> — a GET is retried on another Master, a POST (an IAM change, a key) reached the client as <code>502</code>. Current builds send the header, but drop <code>keepalive</code> from the admin upstream on existing installs as well.</p>
+</div>
 <h3 id="choosing-the-hash-key">Choosing the hash key</h3>
 <p><code>hash $remote_addr consistent</code> keys the affinity on the <strong>client IP</strong>, which is the right default for direct clients. Be aware of two cases:</p>
 <ul>
