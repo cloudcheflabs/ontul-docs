@@ -576,11 +576,18 @@ and every number and the cron read-only.
 
 ### Backup & Restore
 
-Backup the cluster's KMS / IAM / metadata stores and connections to S3 and restore from any prior backup. The page exposes manual *Backup Now* and one **Configuration** form: S3 connection, S3 prefix, *Auto Backup Interval* (hours, 0 = off) and *Cron Expression* (5-field UNIX, e.g. `0 2 * * *`, empty = none). **Save Config** sends all four fields in one request — the cron typed on the page used to be left out, so it could be seen but not set or changed. The page checks the fields first (connection chosen, `s3://bucket/path` prefix, 5 cron fields) and marks the ones that are wrong; the server repeats those checks, validates the cron values and checks the bucket with the connection's keys (read, then write and delete a probe object), and a refusal is shown under the button with its reason. After a save the page reads the configuration back and shows **what the server has scheduled** — "Every N hours — next run …" and "Cron … (time zone) — next run …", or "No automatic backup is scheduled" — rather than the values that were typed. **Turn Off Schedules** clears both. See [Backup & Restore](backup-restore.md) for the full flow.
+Backup the cluster's KMS / IAM / metadata stores and connections to S3 and restore from any prior backup. The page exposes manual *Backup Now* and one **Configuration** form: S3 connection, S3 prefix, *Auto Backup Interval* (hours, 0 = off), *Cron Expression* (5-field UNIX, e.g. `0 2 * * *`, empty = none), *Keep Newest Backups* (0 = keep all) and *Delete Backups Older Than* (days, 0 = no limit). **Save Config** sends every field in one request — the cron typed on the page used to be left out, so it could be seen but not set or changed. The page checks the fields first (connection chosen, `s3://bucket/path` prefix, 5 cron fields) and marks the ones that are wrong; the server repeats those checks, validates the cron values and checks the bucket with the connection's keys (read, then write and delete a probe object), and a refusal is shown under the button with its reason. After a save the page reads the configuration back and shows **what the server has scheduled** — "Every N hours — next run …" and "Cron … (time zone) — next run …", or "No automatic backup is scheduled" — rather than the values that were typed. **Turn Off Schedules** clears both. See [Backup & Restore](backup-restore.md) for the full flow.
 
-Backups are listed newest first with their UTC time; **Restore** asks for confirmation listing what is
-overwritten (KMS, IAM, metadata, connections). The job history shows every backup and restore with its
-time and duration. The form stays disabled until the saved configuration has loaded, so a value typed
+The status panel also states the [retention policy](backup-restore.md#retention) in force — "Retention: every
+backup is kept" by default, or e.g. "Retention: keeps the newest 5 backups; older ones are deleted after each
+successful backup". Retention runs after each successful backup, never deletes the backup just written or a
+folder that is not a backup, and records a **PRUNE** row in the job history listing the ids it deleted.
+
+Backups are listed newest first with their UTC time, **10 per page**: "Showing 1–10 of 23 backups" with
+*Previous* / *Next*, each page read from the server (`/admin/backup/list?limit=10&offset=…`) rather than the
+whole bucket listing at once. **Restore** asks for confirmation listing what is overwritten (KMS, IAM,
+metadata, connections). The job history shows every backup, restore and prune with its time and duration,
+also 10 per page. The form stays disabled until the saved configuration has loaded, so a value typed
 early is never overwritten by it. *Backup Now* needs a saved backup configuration. The backup list reports the storage error — a missing
 bucket, wrong credentials — instead of showing an empty list. Scheduled and cron backups run on the
 leader only, so a multi-master cluster takes one backup per run.
