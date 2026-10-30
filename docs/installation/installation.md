@@ -157,7 +157,8 @@ upstream ontul_admin {
     hash $remote_addr consistent;
     server master-1:8080 max_fails=2 fail_timeout=5s;
     server master-2:8080 max_fails=2 fail_timeout=5s;
-    keepalive 32;
+    # No `keepalive` here: the admin server closes the connection after every
+    # response (and says so with `Connection: close`), so there is nothing to reuse.
 }
 
 upstream ontul_flight_sql {
