@@ -3266,6 +3266,9 @@
 <p>On the <strong>Catalogs</strong> page an unavailable catalog has a red <code>unavailable</code> badge and <code>Cannot load since &lt;time&gt;: &lt;reason&gt;</code>. A loading catalog has an amber <code>loading</code> badge and <code>Loading on every master…</code>. The page reads the list again every 2 seconds while any catalog is loading, so the card changes to <code>N tables</code> without a manual refresh.</p>
 </li>
 <li>
+<p>DDL through Ontul (<code>CREATE</code> / <code>DROP TABLE</code>, CTAS, <code>CREATE</code> / <code>DROP SCHEMA</code>, views, <code>ALTER TABLE</code>) refreshes the catalog's table list on <strong>every</strong> master, whichever master ran it — the SQL page, Flight SQL / JDBC or the REST API. The <code>N tables</code> count on the Catalogs page and the other masters' planners see the change right away. (Earlier releases refreshed only the master that ran the statement. A <code>CREATE TABLE</code> over Flight SQL that landed on a follower left the count the console shows — the leader's — unchanged until something else refreshed it.) Tables created by another engine (Trino, Spark) appear on the next refresh: the <strong>Refresh</strong> button, <code>POST /admin/catalogs/&lt;name&gt;/refresh</code>, or the first query that names them.</p>
+</li>
+<li>
 <p>Recovery does not need a restart:</p>
 <ul>
 <li>Every master retries the catalog every <code>ontul.catalog.reload.retry.seconds</code> (default 30).</li>
