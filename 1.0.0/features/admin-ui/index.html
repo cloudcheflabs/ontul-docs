@@ -3648,11 +3648,21 @@ creation. No key material is ever shown.</p>
 <p>Configure and monitor Iceberg table maintenance — snapshot expiration, data compaction, manifest rewrite, orphan-file cleanup, and position-delete consolidation. Per-table configuration covers per-operation toggles plus Spark-aligned parameters (target file size, compaction <code>window_hours</code> and <code>min_input_files</code>, snapshot retention and <code>retain_last</code>, orphan safety window) and a <strong>schedule</strong> that is either a fixed interval or a 5-field UNIX <strong>cron</strong> (e.g. <code>0 */2 * * *</code>) which overrides the interval. A <strong>Manual Trigger</strong> runs any single operation (or all) on demand against a wildcard table pattern, with full job history.</p>
 <p>Settings are validated on save, and an invalid value is reported rather than stored: snapshot retention
 and <code>retain_last</code> at least 1, the orphan-file safety window at least 24 hours (shorter windows can delete
-files a running write has not committed yet), and a valid 5-field cron expression. The table field
-accepts any table name and suggests tables seen in health data and maintenance history. After <strong>Run
+files a running write has not committed yet), and a valid 5-field cron expression. <strong>Table Configuration</strong> finds the table by
+name on the server: type part of <code>catalog.schema.table</code> and the picker lists up to 20 matching Iceberg
+tables (exact name first, then names that start with what was typed), with "Showing 20 of N matching
+tables — type more of the name to narrow" when there are more. It searches every table the engine knows,
+so thousands of tables are not a list to scroll; the arrow keys, Enter and Esc work in it, and a name it
+does not know can still be opened with <strong>Load</strong>. The opened configuration has <strong>Close</strong>; edits not yet
+saved are marked <em>Unsaved changes</em>, <strong>Discard Changes</strong> puts back the stored values, and closing the panel
+or opening another table with unsaved changes asks first (<em>Keep editing</em> / <em>Discard</em>). <strong>Saved
+Configurations</strong> lists the tables that have a saved configuration (Auto on/off, schedule, operations), 10
+per page with a name filter, and <strong>Open</strong> loads one; every other table runs on the defaults
+(auto-maintenance on, every 6 hours). After <strong>Run
 Now</strong>, the history refreshes until the run finishes.</p>
-<p>A non-administrator sees maintenance history only for tables they may read (<code>data:Select</code>), and reading
-the configuration of a table they may not read answers <code>403</code>; changing settings and running maintenance
+<p>A non-administrator sees maintenance history, table search results and saved configurations only for
+tables they may read (<code>data:Select</code>), and reading the configuration of a table they may not read answers
+<code>403</code>; changing settings and running maintenance
 are administrator-only. On the page a non-administrator has no <em>Run Now</em> and no <em>Save Configuration</em>,
 sees <code>Read-only: running maintenance or changing a table's configuration needs AdministratorAccess.</code>,
 and can still <strong>Load</strong> the configuration of a table they may read — shown with every switch disabled

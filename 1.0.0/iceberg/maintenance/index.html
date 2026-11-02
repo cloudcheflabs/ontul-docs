@@ -3097,8 +3097,15 @@ metadata-only operation; useful after many small commits have fragmented the man
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">rewrite_manifests</span><span class="p">();</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">rewrite_manifests</span><span class="p">(</span><span class="n">spec_id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
 </code></pre></div>
-<p>A table with no snapshot yet (created, nothing written) has no manifests: the procedure returns
-<code>No manifests to rewrite</code> and the scheduler skips the table instead of recording an error.</p>
+<p>The data manifests of the current snapshot are merged per partition spec into as few as the target
+manifest size (<code>commit.manifest.target-size-bytes</code>) allows, in one commit; the data files stay the same.
+The answer names the counts, e.g. <code>Manifests rewritten: data manifests 3 → 1</code>.</p>
+<p>When there is nothing to merge -- no snapshot yet, or fewer than two data manifests (of <code>spec_id</code>, when
+given) -- nothing is committed: the procedure answers <code>No manifests to rewrite: nothing to merge: 1 data
+manifest</code>, and scheduled maintenance records <code>skipped</code> with that reason. Earlier builds committed an
+empty <code>replace</code> snapshot on every run without merging anything; on a schedule that moved <code>main</code> forward
+for no reason, and a WAP branch staged before such a run could no longer be published with
+<code>fast_forward</code> (<code>Cannot fast-forward: main is not an ancestor of …</code>).</p>
 <hr />
 <h3 id="rewrite_position_delete_files-consolidate-v2-delete-files"><code>rewrite_position_delete_files</code> — consolidate v2 delete files</h3>
 <p>For Iceberg v2 tables, consolidates multiple Parquet <strong>position-delete</strong> files that target the same
@@ -3172,6 +3179,13 @@ the master log (with the stack trace).</p>
 <code>error</code>), <code>operation</code>, <code>since</code>, <code>until</code> and <code>limit</code>. The Maintenance page has the same table filter above the
 Job History. <code>POST /admin/maintenance/run</code> without <code>tableKey</code>, with an unknown <code>operation</code>, or with a body that
 is not a JSON object answers <code>400</code> with a message (it used to be a <code>500</code>).</p>
+<p><strong>Finding tables and saved configurations.</strong> <code>GET /admin/maintenance/tables?q=&amp;limit=</code> returns the Iceberg
+tables whose <code>catalog.schema.table</code> contains <code>q</code> (case-insensitive; exact name first, then names starting
+with <code>q</code>), at most <code>limit</code> (default 20, 1–100), as <code>{tables, total, limit}</code>; it searches the tables the
+engine already knows, without listing the catalogs. <code>GET /admin/maintenance/configs?q=&amp;offset=&amp;limit=</code> returns
+the tables that have a saved configuration, <code>{configs: [{tableKey, config}], total, offset, limit}</code> (default
+10 per page, <code>limit</code> 1–1000); a table without a saved configuration runs on the defaults. A bad <code>limit</code> or
+<code>offset</code> answers <code>400</code>. For a non-administrator both list only tables they may read (<code>data:Select</code>).</p>
 <hr />
 <h3 id="rollback_to_timestamp-rollback_to_snapshot-revert-the-table"><code>rollback_to_timestamp</code> / <code>rollback_to_snapshot</code> — revert the table</h3>
 <p>Resets the table's current snapshot to an earlier version — to recover from a bad write, or to
