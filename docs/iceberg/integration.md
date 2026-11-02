@@ -110,6 +110,8 @@ Each master builds its own connector for every catalog. If the REST catalog cann
 
 - On the **Catalogs** page an unavailable catalog has a red `unavailable` badge and `Cannot load since <time>: <reason>`. A loading catalog has an amber `loading` badge and `Loading on every master…`. The page reads the list again every 2 seconds while any catalog is loading, so the card changes to `N tables` without a manual refresh.
 
+- DDL through Ontul (`CREATE` / `DROP TABLE`, CTAS, `CREATE` / `DROP SCHEMA`, views, `ALTER TABLE`) refreshes the catalog's table list on **every** master, whichever master ran it — the SQL page, Flight SQL / JDBC or the REST API. The `N tables` count on the Catalogs page and the other masters' planners see the change right away. (Earlier releases refreshed only the master that ran the statement. A `CREATE TABLE` over Flight SQL that landed on a follower left the count the console shows — the leader's — unchanged until something else refreshed it.) Tables created by another engine (Trino, Spark) appear on the next refresh: the **Refresh** button, `POST /admin/catalogs/<name>/refresh`, or the first query that names them.
+
 - Recovery does not need a restart:
     - Every master retries the catalog every `ontul.catalog.reload.retry.seconds` (default 30).
     - A query that names the catalog starts a retry in the background (at most once every 5 seconds). The query itself fails at once and does not wait for it.
