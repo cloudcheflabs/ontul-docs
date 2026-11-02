@@ -3139,7 +3139,7 @@ Backup &amp; Restore) show <strong>Access Restricted</strong>.</p>
 <td>administrators only</td>
 </tr>
 <tr>
-<td>IAM (users, groups, policies, keys), SSO, connections, catalogs, drivers, storage and other <code>/admin/config/*</code> settings, Iceberg maintenance, health scan, audit settings, cluster maintenance mode</td>
+<td>IAM (users, groups, policies, other users' keys), SSO, connections, catalogs, drivers, storage and other <code>/admin/config/*</code> settings, Iceberg maintenance, health scan, audit settings, cluster maintenance mode</td>
 <td>any signed-in user (secrets masked)</td>
 <td>administrators only</td>
 </tr>
@@ -3154,9 +3154,14 @@ Backup &amp; Restore) show <strong>Access Restricted</strong>.</p>
 <td>settings: administrators only. Recording an event (<code>POST /v1/api/audit</code>) for another user, and recording lineage (<code>POST /v1/api/lineage</code>), need administrator access</td>
 </tr>
 <tr>
-<td>Your own access key download</td>
+<td>Your own access keys (issue with <strong>New Token</strong>, download, revoke)</td>
 <td>the key's owner or an administrator</td>
+<td>the key's owner or an administrator; another user's key is administrator-only</td>
+</tr>
+<tr>
+<td>Your own password (key icon in the header)</td>
 <td>—</td>
+<td>every signed-in user, for their own account only</td>
 </tr>
 </tbody>
 </table>
@@ -3192,6 +3197,11 @@ refused from the next call on, not when a cache expires. A token is accepted onl
 is <strong>Active</strong> and is not past its expiry date. An expiry date picked in the UI means <em>to the end of that
 day</em>. The download icon for a key is shown only to an administrator and to the key's owner, and the
 server enforces the same rule.</p>
+<p>Every user issues and revokes <strong>their own</strong> keys: a non-administrator sees <strong>New Token</strong> and the revoke
+button only on their own row of <strong>IAM → Users</strong>. On the API, <code>POST /admin/iam/keys</code> from a
+non-administrator issues a key for the caller (leaving out <code>username</code> means "me"); naming another user is
+refused with <code>403</code>. <code>DELETE /admin/iam/users/{username}/keys/{accessKeyId}</code> likewise works on the caller's
+own keys and is <code>403</code> for anyone else's. A self-issued key carries only the caller's own permissions.</p>
 <h2 id="pages">Pages</h2>
 <h3 id="dashboard">Dashboard</h3>
 <p>Stat cards for the number of masters and workers, and per-node charts of the last hour: <strong>CPU Usage (%)</strong>,

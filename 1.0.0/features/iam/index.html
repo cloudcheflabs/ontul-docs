@@ -3116,8 +3116,15 @@
 <td>Issue access key</td>
 <td><code>POST /admin/iam/keys</code> <code>{username, expiresAt?}</code></td>
 </tr>
+<tr>
+<td>Revoke access key</td>
+<td><code>DELETE /admin/iam/users/{username}/keys/{accessKeyId}</code></td>
+</tr>
 </tbody>
 </table>
+<p>Any user may issue and revoke their own access keys (a non-administrator who leaves out <code>username</code> gets a
+key for themselves); issuing or revoking another user's key needs <code>AdministratorAccess</code> (<code>403</code> otherwise).
+Every other change on this list is administrator-only.</p>
 <p>Creating a group can attach its policies in the same call, and creating a user can place it in groups,
 attach policies directly and set its attributes:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://&lt;master&gt;:8080/admin/iam/groups&quot;</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
