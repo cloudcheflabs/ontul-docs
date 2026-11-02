@@ -50,10 +50,11 @@ Backup & Restore) show **Access Restricted**.
 | Area | Read | Change |
 |---|---|---|
 | KMS, Backup & Restore, STS, node logs (Topology **Logs**) | administrators only | administrators only |
-| IAM (users, groups, policies, keys), SSO, connections, catalogs, drivers, storage and other `/admin/config/*` settings, Iceberg maintenance, health scan, audit settings, cluster maintenance mode | any signed-in user (secrets masked) | administrators only |
+| IAM (users, groups, policies, other users' keys), SSO, connections, catalogs, drivers, storage and other `/admin/config/*` settings, Iceberg maintenance, health scan, audit settings, cluster maintenance mode | any signed-in user (secrets masked) | administrators only |
 | SQL query history, jobs (console and `/v1/api/job/*`: list, history, status, log) | your own entries; administrators see everyone's | your own queries and jobs; killing another user's job needs `data:KillJob` |
 | Audit events | your own events; administrators see everyone's | settings: administrators only. Recording an event (`POST /v1/api/audit`) for another user, and recording lineage (`POST /v1/api/lineage`), need administrator access |
-| Your own access key download | the key's owner or an administrator | — |
+| Your own access keys (issue with **New Token**, download, revoke) | the key's owner or an administrator | the key's owner or an administrator; another user's key is administrator-only |
+| Your own password (key icon in the header) | — | every signed-in user, for their own account only |
 
 "Administrator" means a user whose policies grant `AdministratorAccess`. A non-administrator who calls
 an administrator-only route gets `403 Forbidden`. The check runs after a follower master forwards the
@@ -93,6 +94,12 @@ refused from the next call on, not when a cache expires. A token is accepted onl
 is **Active** and is not past its expiry date. An expiry date picked in the UI means *to the end of that
 day*. The download icon for a key is shown only to an administrator and to the key's owner, and the
 server enforces the same rule.
+
+Every user issues and revokes **their own** keys: a non-administrator sees **New Token** and the revoke
+button only on their own row of **IAM → Users**. On the API, `POST /admin/iam/keys` from a
+non-administrator issues a key for the caller (leaving out `username` means "me"); naming another user is
+refused with `403`. `DELETE /admin/iam/users/{username}/keys/{accessKeyId}` likewise works on the caller's
+own keys and is `403` for anyone else's. A self-issued key carries only the caller's own permissions.
 
 ## Pages
 
