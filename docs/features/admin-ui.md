@@ -563,12 +563,22 @@ Configure and monitor Iceberg table maintenance — snapshot expiration, data co
 
 Settings are validated on save, and an invalid value is reported rather than stored: snapshot retention
 and `retain_last` at least 1, the orphan-file safety window at least 24 hours (shorter windows can delete
-files a running write has not committed yet), and a valid 5-field cron expression. The table field
-accepts any table name and suggests tables seen in health data and maintenance history. After **Run
+files a running write has not committed yet), and a valid 5-field cron expression. **Table Configuration** finds the table by
+name on the server: type part of `catalog.schema.table` and the picker lists up to 20 matching Iceberg
+tables (exact name first, then names that start with what was typed), with "Showing 20 of N matching
+tables — type more of the name to narrow" when there are more. It searches every table the engine knows,
+so thousands of tables are not a list to scroll; the arrow keys, Enter and Esc work in it, and a name it
+does not know can still be opened with **Load**. The opened configuration has **Close**; edits not yet
+saved are marked *Unsaved changes*, **Discard Changes** puts back the stored values, and closing the panel
+or opening another table with unsaved changes asks first (*Keep editing* / *Discard*). **Saved
+Configurations** lists the tables that have a saved configuration (Auto on/off, schedule, operations), 10
+per page with a name filter, and **Open** loads one; every other table runs on the defaults
+(auto-maintenance on, every 6 hours). After **Run
 Now**, the history refreshes until the run finishes.
 
-A non-administrator sees maintenance history only for tables they may read (`data:Select`), and reading
-the configuration of a table they may not read answers `403`; changing settings and running maintenance
+A non-administrator sees maintenance history, table search results and saved configurations only for
+tables they may read (`data:Select`), and reading the configuration of a table they may not read answers
+`403`; changing settings and running maintenance
 are administrator-only. On the page a non-administrator has no *Run Now* and no *Save Configuration*,
 sees `Read-only: running maintenance or changing a table's configuration needs AdministratorAccess.`,
 and can still **Load** the configuration of a table they may read — shown with every switch disabled

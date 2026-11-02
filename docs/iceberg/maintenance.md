@@ -200,8 +200,16 @@ ALTER TABLE ice.sales.orders EXECUTE rewrite_manifests();
 ALTER TABLE ice.sales.orders EXECUTE rewrite_manifests(spec_id => 0);
 ```
 
-A table with no snapshot yet (created, nothing written) has no manifests: the procedure returns
-`No manifests to rewrite` and the scheduler skips the table instead of recording an error.
+The data manifests of the current snapshot are merged per partition spec into as few as the target
+manifest size (`commit.manifest.target-size-bytes`) allows, in one commit; the data files stay the same.
+The answer names the counts, e.g. `Manifests rewritten: data manifests 3 → 1`.
+
+When there is nothing to merge -- no snapshot yet, or fewer than two data manifests (of `spec_id`, when
+given) -- nothing is committed: the procedure answers `No manifests to rewrite: nothing to merge: 1 data
+manifest`, and scheduled maintenance records `skipped` with that reason. Earlier builds committed an
+empty `replace` snapshot on every run without merging anything; on a schedule that moved `main` forward
+for no reason, and a WAP branch staged before such a run could no longer be published with
+`fast_forward` (`Cannot fast-forward: main is not an ancestor of …`).
 
 ---
 
@@ -265,6 +273,14 @@ the master log (with the stack trace).
 `error`), `operation`, `since`, `until` and `limit`. The Maintenance page has the same table filter above the
 Job History. `POST /admin/maintenance/run` without `tableKey`, with an unknown `operation`, or with a body that
 is not a JSON object answers `400` with a message (it used to be a `500`).
+
+**Finding tables and saved configurations.** `GET /admin/maintenance/tables?q=&limit=` returns the Iceberg
+tables whose `catalog.schema.table` contains `q` (case-insensitive; exact name first, then names starting
+with `q`), at most `limit` (default 20, 1–100), as `{tables, total, limit}`; it searches the tables the
+engine already knows, without listing the catalogs. `GET /admin/maintenance/configs?q=&offset=&limit=` returns
+the tables that have a saved configuration, `{configs: [{tableKey, config}], total, offset, limit}` (default
+10 per page, `limit` 1–1000); a table without a saved configuration runs on the defaults. A bad `limit` or
+`offset` answers `400`. For a non-administrator both list only tables they may read (`data:Select`).
 
 ---
 
