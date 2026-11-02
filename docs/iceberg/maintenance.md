@@ -29,7 +29,9 @@ toggles, target file size, `window_hours`, `min_input_files`, snapshot retention
 the orphan safety window, and the compaction **concurrency-safety** controls (window cooldown
 minutes, sequence margin, skip-active-partitions, max commit retries) — plus a **schedule**: either
 a fixed interval (hours) or, when set, a 5-field **UNIX cron** expression that overrides the interval
-(e.g. `0 */2 * * *` = every 2 hours). This makes incremental, scheduled compaction practical for
+(e.g. `0 */2 * * *` = every 2 hours). A newly saved cron waits for its next fire time; it does not
+run the table straight away. The table key must be `catalog.schema.table`: a shorter key is refused
+when it is loaded, not only when it is saved. This makes incremental, scheduled compaction practical for
 streaming tables: e.g. a cron of `0 * * * *` with `window_hours => 1` compacts just the last hour's
 small files every hour. Unlike ad-hoc `EXECUTE optimize` (safety filters OFF by default), scheduled
 auto-maintenance applies **safe defaults** (cooldown 10 min, seq_margin 1, skip-active on, retries 3)
