@@ -90,6 +90,25 @@ FROM ice.sales."orders$files"
 WHERE file_size_in_bytes < 64 * 1024 * 1024;
 ```
 
+## Reading `$manifests`, `$files` and `$partitions` as of an older snapshot
+
+These three describe one snapshot, the current one by default. Add `FOR VERSION AS OF` (a snapshot id, or a
+branch / tag name in quotes) or `FOR TIMESTAMP AS OF` to read them as of another one:
+
+```sql
+-- manifests before and after a rewrite_manifests
+SELECT count(*) FROM ice.sales."orders$manifests" FOR VERSION AS OF 7411386050377125523;
+SELECT count(*) FROM ice.sales."orders$manifests";
+
+-- the data files a WAP branch would publish
+SELECT count(*), sum(record_count) FROM ice.sales."orders$files" FOR VERSION AS OF 'audit_branch';
+```
+
+`$snapshots`, `$history`, `$refs` and `$metadata_files` already list the whole table history, so a
+`FOR … AS OF` on them is refused with a message; filter their rows instead (for example on `snapshot_id`).
+A snapshot id, branch or tag the table does not have is also refused rather than answered from the
+current snapshot.
+
 ## `$metadata_files` — table recreation / UUID generations
 
 Iceberg's `table_uuid` changes when a table is **dropped and recreated at the same path** — the storage location is reused but it is a different logical table. No engine's `$snapshots` shows this, because `$snapshots` only reflects the *current* table. `$metadata_files` exposes the `metadata.json` log with each file's `table_uuid`, so a change in `table_uuid` marks a new **generation**:
