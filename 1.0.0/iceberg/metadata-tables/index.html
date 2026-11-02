@@ -1909,6 +1909,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reading-manifests-files-and-partitions-as-of-an-older-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading $manifests, $files and $partitions as of an older snapshot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metadata_files-table-recreation-uuid-generations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2933,6 +2944,20 @@
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$files&quot;</span>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">file_size_in_bytes</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">64</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">;</span>
 </code></pre></div>
+<h2 id="reading-manifests-files-and-partitions-as-of-an-older-snapshot">Reading <code>$manifests</code>, <code>$files</code> and <code>$partitions</code> as of an older snapshot</h2>
+<p>These three describe one snapshot, the current one by default. Add <code>FOR VERSION AS OF</code> (a snapshot id, or a
+branch / tag name in quotes) or <code>FOR TIMESTAMP AS OF</code> to read them as of another one:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1">-- manifests before and after a rewrite_manifests</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$manifests&quot;</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">VERSION</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="mi">7411386050377125523</span><span class="p">;</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$manifests&quot;</span><span class="p">;</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1">-- the data files a WAP branch would publish</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">),</span><span class="w"> </span><span class="k">sum</span><span class="p">(</span><span class="n">record_count</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$files&quot;</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">VERSION</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="s1">&#39;audit_branch&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p><code>$snapshots</code>, <code>$history</code>, <code>$refs</code> and <code>$metadata_files</code> already list the whole table history, so a
+<code>FOR … AS OF</code> on them is refused with a message; filter their rows instead (for example on <code>snapshot_id</code>).
+A snapshot id, branch or tag the table does not have is also refused rather than answered from the
+current snapshot.</p>
 <h2 id="metadata_files-table-recreation-uuid-generations"><code>$metadata_files</code> — table recreation / UUID generations</h2>
 <p>Iceberg's <code>table_uuid</code> changes when a table is <strong>dropped and recreated at the same path</strong> — the storage location is reused but it is a different logical table. No engine's <code>$snapshots</code> shows this, because <code>$snapshots</code> only reflects the <em>current</em> table. <code>$metadata_files</code> exposes the <code>metadata.json</code> log with each file's <code>table_uuid</code>, so a change in <code>table_uuid</code> marks a new <strong>generation</strong>:</p>
 <table>
@@ -2966,16 +2991,16 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1">-- Number each generation in time order: a new number appears whenever a new</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1">-- table_uuid is first seen (i.e. the table was recreated at the same path).</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">metadata_file</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="n">table_uuid</span><span class="p">,</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">       </span><span class="n">DENSE_RANK</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">first_seen</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">generation</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="n">metadata_file</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="n">table_uuid</span><span class="p">,</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">         </span><span class="k">MIN</span><span class="p">(</span><span class="n">created_at</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">table_uuid</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">first_seen</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$metadata_files&quot;</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="p">)</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_at</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1">-- Number each generation in time order: a new number appears whenever a new</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1">-- table_uuid is first seen (i.e. the table was recreated at the same path).</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">metadata_file</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="n">table_uuid</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">       </span><span class="n">DENSE_RANK</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">first_seen</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">generation</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="n">metadata_file</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="n">table_uuid</span><span class="p">,</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">         </span><span class="k">MIN</span><span class="p">(</span><span class="n">created_at</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">table_uuid</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">first_seen</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">ice</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="ss">&quot;orders$metadata_files&quot;</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="p">)</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_at</span><span class="p">;</span>
 </code></pre></div>
 <p>A single <code>generation</code> value across all rows means the table was never recreated; two or more values mark recreation boundaries (the article's <code>g1</code> / <code>g2</code>).</p>
 <div class="admonition note">
