@@ -37,6 +37,12 @@ Users carry an opaque id, a hashed password, group memberships, access keys, and
 | Add to group | `POST /admin/iam/add-user-to-group` `{username, groupName}` |
 | Create group | `POST /admin/iam/groups` `{groupName, policyNames?}` |
 | Issue access key | `POST /admin/iam/keys` `{username, expiresAt?}` |
+| Revoke access key | `DELETE /admin/iam/users/{username}/keys/{accessKeyId}` |
+
+Any user may issue and revoke their own access keys (a non-administrator who leaves out `username` gets a
+key for themselves); issuing or revoking another user's key needs `AdministratorAccess` (`403` otherwise).
+Every other change on this list is administrator-only.
+
 
 Creating a group can attach its policies in the same call, and creating a user can place it in groups,
 attach policies directly and set its attributes:
