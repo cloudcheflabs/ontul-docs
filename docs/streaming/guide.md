@@ -304,6 +304,21 @@ after an exponential backoff (2 s, 4 s, … 30 s) from the last restore point. A
 `maxRetries` (job) / `ontul.streaming.max.retries` failed restarts the job is `FAILED`; a run that
 completes `ontul.streaming.retry.reset.checkpoints` checkpoints restores its retry budget.
 
+A task that stops acknowledging checkpoints while its worker stays up is restarted as well: after
+`ontul.streaming.checkpoint.tolerable.aborts` (default 10) consecutive aborted checkpoints the run
+fails with `N consecutive checkpoints aborted (last <id>): no ack from [<worker>] within <timeout>ms`.
+Examples are a task stuck writing to a sink that stopped answering, or a task whose failure report
+never reached the master. Earlier releases aborted every checkpoint and kept showing such a job as
+`RUNNING`, with nothing committed. A completed checkpoint resets the count; `0` turns the check off.
+
+A worker sends its failure report from a separate thread and retries it for up to 60 s until the
+master that owns the job takes it (a master restarting, a leader change).
+
+While a job waits to restart, `GET /v1/api/job/status/{jobId}` shows why in `lastFailure`, together
+with `retryCount` / `maxRetries`. A job that ends `FAILED` carries the reason in `errorMessage`. The
+**Jobs** page shows both under the status: `Restart 1/3 after: <reason>` for a job between attempts,
+and the reason for a failed job. Secrets in either are masked like the rest of the job.
+
 ---
 
 ## Stopping and resuming
