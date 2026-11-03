@@ -3337,6 +3337,18 @@ three times in a row restarts the job: the master stops the old run everywhere, 
 after an exponential backoff (2 s, 4 s, … 30 s) from the last restore point. After
 <code>maxRetries</code> (job) / <code>ontul.streaming.max.retries</code> failed restarts the job is <code>FAILED</code>; a run that
 completes <code>ontul.streaming.retry.reset.checkpoints</code> checkpoints restores its retry budget.</p>
+<p>A task that stops acknowledging checkpoints while its worker stays up is restarted as well: after
+<code>ontul.streaming.checkpoint.tolerable.aborts</code> (default 10) consecutive aborted checkpoints the run
+fails with <code>N consecutive checkpoints aborted (last &lt;id&gt;): no ack from [&lt;worker&gt;] within &lt;timeout&gt;ms</code>.
+Examples are a task stuck writing to a sink that stopped answering, or a task whose failure report
+never reached the master. Earlier releases aborted every checkpoint and kept showing such a job as
+<code>RUNNING</code>, with nothing committed. A completed checkpoint resets the count; <code>0</code> turns the check off.</p>
+<p>A worker sends its failure report from a separate thread and retries it for up to 60 s until the
+master that owns the job takes it (a master restarting, a leader change).</p>
+<p>While a job waits to restart, <code>GET /v1/api/job/status/{jobId}</code> shows why in <code>lastFailure</code>, together
+with <code>retryCount</code> / <code>maxRetries</code>. A job that ends <code>FAILED</code> carries the reason in <code>errorMessage</code>. The
+<strong>Jobs</strong> page shows both under the status: <code>Restart 1/3 after: &lt;reason&gt;</code> for a job between attempts,
+and the reason for a failed job. Secrets in either are masked like the rest of the job.</p>
 <hr />
 <h2 id="stopping-and-resuming">Stopping and resuming</h2>
 <p><code>POST /v1/api/job/kill/{jobId}</code> cancels a job <strong>without committing</strong>: it resumes, if started again

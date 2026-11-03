@@ -4038,6 +4038,11 @@ See <a href="../../features/cluster-maintenance/">Cluster Maintenance Mode</a>.<
 <td>On an idle stream the coordinator still stamps an empty Iceberg commit (checkpoint id + source offsets, no data files) after this many consecutive empty checkpoints, so the restore point recorded in the table keeps up. <code>1</code> stamps every checkpoint.</td>
 </tr>
 <tr>
+<td><code>ontul.streaming.checkpoint.tolerable.aborts</code></td>
+<td><code>10</code></td>
+<td>Consecutive aborted checkpoints (a worker did not acknowledge within the checkpoint timeout) tolerated before the run fails and restarts from the last completed checkpoint. Catches a task that stopped without its failure reaching the master, or one stuck on its sink. <code>0</code> = never fail on aborts.</td>
+</tr>
+<tr>
 <td><code>ontul.streaming.max.retries</code></td>
 <td><code>3</code></td>
 <td>Automatic restarts before the job is marked <code>FAILED</code>. Job override: <code>maxRetries</code>.</td>
