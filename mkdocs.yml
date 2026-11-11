@@ -63,7 +63,7 @@ nav:
       - "IAM": features/iam.md
       - "IAM Policy Templates": features/iam-policy-templates.md
       - "Single Sign-On (OIDC/SAML/LDAP)": features/sso.md
-      - "SSO 연동 (관리 화면 설정)": features/sso-setup-ko.md
+      - "Setting Up SSO (Console)": features/sso-setup.md
       - "Admin Password Recovery": features/admin-password-recovery.md
       - "Data Lineage": features/data-lineage.md
       - "Audit Log": features/audit-log.md
