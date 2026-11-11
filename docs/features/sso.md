@@ -243,3 +243,4 @@ existing passwords.
 
 - [Identity and Access Management](iam.md) — the groups and policies a federated identity maps onto.
 - [IAM Policy Templates](iam-policy-templates.md) — what to attach to a mapped group.
+- [SSO 연동 (관리 화면 설정)](sso-setup-ko.md) — step-by-step console setup guide in Korean.
