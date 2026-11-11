@@ -1,0 +1,3493 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/sso-setup-ko/">
+      
+      
+        <link rel="prev" href="../sso/">
+      
+      
+        <link rel="next" href="../admin-password-recovery/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/logo/ontul-logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>SSO 연동 (관리 화면 설정) - Ontul</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#sso" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Ontul" class="md-header__button md-logo" aria-label="Ontul" data-md-component="logo">
+      
+  <img src="../../images/logo/ontul-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Ontul
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              SSO 연동 (관리 화면 설정)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../installation/installation/" class="md-tabs__link">
+          
+  
+  
+  Installation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../unified-engine/" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../iceberg/integration/" class="md-tabs__link">
+          
+  
+  
+  Iceberg Integration
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/sdk-java/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../query/guide/" class="md-tabs__link">
+          
+  
+  
+  Query
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../batch/guide/" class="md-tabs__link">
+          
+  
+  
+  Batch
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../streaming/guide/" class="md-tabs__link">
+          
+  
+  
+  Streaming
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../demo/" class="md-tabs__link">
+          
+  
+  
+  Demo
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Ontul" class="md-nav__button md-logo" aria-label="Ontul" data-md-component="logo">
+      
+  <img src="../../images/logo/ontul-logo.png" alt="logo">
+
+    </a>
+    Ontul
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontul Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Installation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Download & Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/intro/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../unified-engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Unified Data Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arrow-native-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow-Native Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../query-performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql-capability-gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Capability Gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../connector-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connector Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../connection-id/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connection ID (Source/Sink by Reference)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../jdbc-drivers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JDBC Drivers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Queries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iceberg-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Iceberg Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iceberg-wap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Iceberg Write-Audit-Publish (WAP)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lance-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lance Integration (Vector / Multimodal)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../semantic-layer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Semantic Layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retrievers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrievers (Multi-Modal Retrieval)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai-verdict/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Typed Decisions in SQL (ai_verdict)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ontology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontology (Objects, Links & Actions)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bi-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BI Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remote Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../udf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User-Defined Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admin-ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iam/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iam-policy-templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM Policy Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sso/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Sign-On (OIDC/SAML/LDAP)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSO 연동 (관리 화면 설정)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSO 연동 (관리 화면 설정)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 시작하기 전에 정할 것
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 시작하기 전에 정할 것">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1-1. 어떤 방식으로 연동할지
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1-2. 브라우저가 접속하는 주소 (가장 중요)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-3-idp-ontul" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1-3. 권한은 IdP 가 아니라 Ontul 의 그룹·정책이 정합니다
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-ontul" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Ontul 에 그룹과 정책 만들기
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-sso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. SSO 화면 열기
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 방식별 설정
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 방식별 설정">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4-a-openid-connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-A. OpenID Connect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-b-saml-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-B. SAML 2.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-c-ldap-active-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4-C. LDAP / Active Directory
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-identity-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 그룹 매핑: Identity mapping 탭
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 로그인 확인
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. 로그인 확인">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API 로 확인 (선택)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 문제 해결
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 운영 시 알아둘 점
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        함께 보기
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admin-password-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin Password Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Lineage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit Log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../encryption/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encryption & KMS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geospatial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geospatial Support
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../high-availability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    High Availability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backup-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup & Restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cluster-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cluster Maintenance Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nic-fail-safety/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NIC Silent-Fail Safety
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Iceberg Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Iceberg Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../iceberg/integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../iceberg/maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Table Maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../iceberg/metadata-tables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metadata Tables (stats)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../iceberg/wap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Write-Audit-Publish (WAP)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/sdk-java/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/sdk-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Query
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../query/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Batch
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../batch/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Streaming
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../streaming/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../streaming/flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontul Flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Demo
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Regulation Lakehouse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo/corpus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Corpus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo/schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo/pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo/cdc-flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CDC & Flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo/iam/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM & Retrievers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo/ontology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ontology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo/agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo/verify/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="sso">SSO 연동 (관리 화면에서 설정하기)</h1>
+<p>이 문서는 사내 인증 시스템(IdP — Keycloak, Azure AD/Entra ID, ADFS, Okta, 사내 SAML IdP,
+Active Directory 등)을 Ontul 에 연동하는 절차를 <strong>관리 화면(Admin UI) 기준으로</strong> 단계별로
+설명합니다. 동작 원리와 속성 이름은 <a href="../sso/">Single Sign-On (OIDC/SAML/LDAP)</a> 에 있습니다.</p>
+<p>Ontul 을 플랫폼의 IAM 엔진(권한 검사 서버)으로 쓰는 구성에서도 절차는 같습니다. 이때 아래의
+"관리 화면"은 <strong>IAM 엔진(Ontul) 자신의 화면</strong>입니다. 플랫폼 콘솔의 <code>Settings → IAM</code> 화면이 아닙니다.</p>
+<hr />
+<h2 id="1">1. 시작하기 전에 정할 것</h2>
+<h3 id="1-1">1-1. 어떤 방식으로 연동할지</h3>
+<table>
+<thead>
+<tr>
+<th>방식</th>
+<th>사용자가 보는 것</th>
+<th>언제 고르나</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OpenID Connect (OIDC)</strong></td>
+<td>로그인 화면의 <code>Sign in with OpenID Connect</code> 버튼 → IdP 로그인 → 돌아옴</td>
+<td>IdP 가 OIDC 를 지원하면 가장 간단합니다 (Keycloak, Entra ID, Okta 등)</td>
+</tr>
+<tr>
+<td><strong>SAML 2.0</strong></td>
+<td>로그인 화면의 <code>Sign in with SAML</code> 버튼 → IdP 로그인 → 돌아옴</td>
+<td>사내 표준이 SAML 이거나 IdP 가 SAML 만 제공할 때 (ADFS 등)</td>
+</tr>
+<tr>
+<td><strong>LDAP / Active Directory</strong></td>
+<td>별도 버튼 없음. <strong>기존 로그인 폼에 사내 계정·비밀번호를 그대로 입력</strong></td>
+<td>웹 SSO 가 없고 AD/LDAP 디렉터리만 있을 때</td>
+</tr>
+</tbody>
+</table>
+<p>여러 방식을 동시에 켤 수 있습니다. <strong>로컬 계정(<code>admin</code> 등)의 비밀번호 로그인은 SSO 를 켜도 계속
+동작</strong>하므로, 설정을 잘못해도 관리자가 잠기지 않습니다.</p>
+<h3 id="1-2">1-2. 브라우저가 접속하는 주소 (가장 중요)</h3>
+<p>OIDC 의 Redirect URI, SAML 의 Assertion Consumer URL 은 <strong>사용자 브라우저가 실제로 여는 주소</strong>여야
+합니다. 마스터가 여러 대이고 앞에 프록시(nginx·로드밸런서)가 있으면 <strong>프록시 주소</strong>를 씁니다.
+마스터 한 대의 주소를 넣으면 그 마스터가 멈췄을 때 SSO 가 통째로 실패합니다.</p>
+<p>이 문서에서는 그 주소를 <code>https://iam.example.com</code> 으로 표기합니다. 실제 값으로 바꾸십시오.</p>
+<table>
+<thead>
+<tr>
+<th>용도</th>
+<th>주소</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>관리 화면</td>
+<td><code>https://iam.example.com/admin/</code></td>
+</tr>
+<tr>
+<td>OIDC Redirect URI</td>
+<td><code>https://iam.example.com/admin/auth/sso/oidc/callback</code></td>
+</tr>
+<tr>
+<td>SAML Assertion Consumer URL (ACS)</td>
+<td><code>https://iam.example.com/admin/auth/sso/saml/acs</code></td>
+</tr>
+</tbody>
+</table>
+<p>로그인 흐름은 어느 마스터에서 시작하고 어느 마스터로 돌아와도 동작합니다(로그인 상태를 모든
+마스터가 공유하는 키로 봉인해 전달합니다). 그래서 프록시에 sticky session 설정은 필요 없습니다.</p>
+<h3 id="1-3-idp-ontul">1-3. 권한은 IdP 가 아니라 Ontul 의 그룹·정책이 정합니다</h3>
+<p>SSO 로 로그인한 사용자는 IdP 가 알려준 <strong>그룹 이름</strong>을 가지고 들어옵니다. 그 그룹 이름이
+Ontul 의 그룹으로 매핑되고, <strong>그 그룹에 붙은 정책</strong>이 모든 권한을 결정합니다.</p>
+<ul>
+<li>SSO 사용자를 위해 <strong>로컬 사용자 계정을 만들지 않습니다.</strong> 사용자 목록에 나타나지도 않습니다.</li>
+<li>대신 <strong>Ontul 쪽에 그룹과 정책을 미리 만들어 두어야</strong> 합니다(2장).</li>
+<li>매핑되는 그룹이 하나도 없으면 로그인을 <strong>거부</strong>합니다(아무 권한 없는 상태로 들여보내지 않음).</li>
+<li>같은 이름의 로컬 사용자가 있으면 <strong>로컬 계정의 정책이 우선</strong>합니다.</li>
+</ul>
+<p>IdP 관리자에게 미리 받아야 할 것:</p>
+<ul>
+<li>사용자 이름으로 쓸 값 (OIDC claim 이름 / SAML attribute 이름 / AD 의 로그인 속성)</li>
+<li>그룹 정보를 담는 값 (OIDC <code>groups</code> claim / SAML <code>groups</code> attribute 등) — <strong>IdP 에서 이 값을 토큰에
+  넣도록 설정해야</strong> 합니다</li>
+<li>Ontul 에 권한을 줄 IdP 그룹 이름 목록 (예: <code>DATA-ADMIN</code>, <code>DATA-ANALYST</code>)</li>
+</ul>
+<hr />
+<h2 id="2-ontul">2. Ontul 에 그룹과 정책 만들기</h2>
+<p>관리자(<code>AdministratorAccess</code> 정책을 가진 계정)로 관리 화면에 로그인합니다. 왼쪽 메뉴
+<strong><code>GOVERNANCE</code> → <code>IAM</code></strong>.</p>
+<p>예: IdP 그룹 <code>DATA-ADMIN</code> → Ontul 관리자, <code>DATA-ANALYST</code> → 조회 전용.</p>
+<table>
+<thead>
+<tr>
+<th>하는 일</th>
+<th>클릭 순서</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>그룹 만들기</td>
+<td><code>Groups</code> 탭 → <strong><code>New Group</code></strong> → 이름 입력 (예: <code>ontul-admins</code>, <code>ontul-readers</code>)</td>
+</tr>
+<tr>
+<td>정책 만들기 (필요 시)</td>
+<td><code>Policies</code> 탭 → <strong><code>New Policy</code></strong> → <code>Policy Identifier</code> · <code>Governance Template</code>(고르면 manifest 가 채워짐) · <code>IAM Manifest (JSON)</code> → <strong><code>Commit Security Policy</code></strong></td>
+</tr>
+<tr>
+<td>그룹에 정책 붙이기</td>
+<td><code>Groups</code> 탭 → <strong>그룹 행을 눌러 펼침</strong> → <code>Policy Compliance</code> 의 <strong><code>Attach Custom</code></strong> → 드롭다운에서 정책 → <strong><code>Attach Security Manifest</code></strong></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>그룹 행에는 버튼이 없습니다. <strong>행을 눌러 펼쳐야</strong> 정책 부착 버튼이 나옵니다.</li>
+<li>SSO 사용자가 관리 화면에서 설정을 바꿀 수 있으려면 그 그룹에 <strong><code>AdministratorAccess</code></strong> 가 붙어 있어야
+  합니다. 없으면 화면은 읽기 전용으로 보입니다(변경 버튼이 숨겨지거나 비활성).</li>
+<li>어떤 정책을 붙일지는 <a href="../iam-policy-templates/">IAM Policy Templates</a> 를 참고하십시오.</li>
+</ul>
+<blockquote>
+<p><strong>그룹 이름을 IdP 와 똑같이 지을 수도 있습니다.</strong> 그러면 4장의 그룹 매핑을 비워 둬도 됩니다
+(IdP 그룹 이름이 그대로 Ontul 그룹 이름으로 쓰임). 다만 그 경우 IdP 에 같은 이름의 그룹을 새로
+만드는 것만으로 권한이 생기므로, 운영 환경에서는 매핑을 명시하는 쪽을 권장합니다.</p>
+</blockquote>
+<hr />
+<h2 id="3-sso">3. SSO 화면 열기</h2>
+<p>왼쪽 메뉴 <strong><code>GOVERNANCE</code> → <code>Single Sign-On</code></strong>. 탭이 네 개 있습니다.</p>
+<table>
+<thead>
+<tr>
+<th>탭</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OpenID Connect</code></td>
+<td>OIDC 설정</td>
+</tr>
+<tr>
+<td><code>SAML 2.0</code></td>
+<td>SAML 설정, 메타데이터 교환</td>
+</tr>
+<tr>
+<td><code>LDAP / AD</code></td>
+<td>디렉터리 설정</td>
+</tr>
+<tr>
+<td><code>Identity mapping</code></td>
+<td>그룹 매핑, 세션 시간</td>
+</tr>
+</tbody>
+</table>
+<p>공통 동작:</p>
+<ul>
+<li>입력을 바꾸면 아래 <strong><code>Save (n)</code></strong> 버튼에 바뀐 항목 수가 표시됩니다. 여러 탭을 오가며 고친 뒤 한 번에
+  저장해도 됩니다.</li>
+<li>저장하면 <strong>모든 마스터에 즉시 적용</strong>됩니다. 파일 수정이나 재시작이 필요 없습니다
+  ("Saved. Every master picks this up from the cluster store — no restart.").</li>
+<li>활성화된 방식의 탭 이름 옆에 <strong>초록 점</strong>이 표시됩니다.</li>
+<li>비밀값(Client secret, Bind password)은 저장 후 다시 보여주지 않습니다. 라벨 옆에 <code>set</code> / <code>not set</code>
+  으로 저장 여부만 표시되고, <strong>비워 두고 저장하면 기존 값이 유지</strong>됩니다.</li>
+<li>칸을 비워 두면 기본값(또는 <code>ontul.properties</code> 에 적힌 값)이 쓰입니다.</li>
+<li>관리자가 아닌 사용자에게는 모든 칸이 읽기 전용이고 <code>Read-only: changing SSO settings needs
+  AdministratorAccess.</code> 가 표시됩니다.</li>
+</ul>
+<hr />
+<h2 id="4">4. 방식별 설정</h2>
+<h3 id="4-a-openid-connect">4-A. OpenID Connect</h3>
+<p><strong>IdP 쪽 (IdP 관리자에게 요청)</strong></p>
+<ol>
+<li>클라이언트(애플리케이션) 등록 — 종류: confidential(웹 애플리케이션), 흐름: Authorization Code.</li>
+<li>Redirect URI 에 <code>https://iam.example.com/admin/auth/sso/oidc/callback</code> 을 <strong>정확히 같은 문자열로</strong>
+   등록 (끝의 <code>/</code> 유무까지 일치해야 함).</li>
+<li>ID 토큰에 그룹 claim 이 들어가도록 설정 (Keycloak 은 <code>Group Membership</code> mapper, Entra ID 는
+   <code>groupMembershipClaims</code> 등).</li>
+<li>받을 것: <strong>Issuer URL</strong>, <strong>Client ID</strong>, <strong>Client secret</strong>.</li>
+</ol>
+<p><strong>Ontul 쪽: <code>OpenID Connect</code> 탭</strong></p>
+<table>
+<thead>
+<tr>
+<th>화면 항목</th>
+<th>입력 값</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Enable OpenID Connect</code></td>
+<td>켬</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Issuer URL</code></td>
+<td>예: <code>https://sso.example.com/realms/company</code></td>
+<td>이 주소의 discovery 문서(<code>/.well-known/openid-configuration</code>)에서 나머지 엔드포인트와 서명 키를 자동으로 읽습니다</td>
+</tr>
+<tr>
+<td><code>Client ID</code></td>
+<td>IdP 에서 받은 값</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Client secret</code></td>
+<td>IdP 에서 받은 값</td>
+<td>저장 후 <code>set</code> 으로 표시</td>
+</tr>
+<tr>
+<td><code>Redirect URI</code></td>
+<td><code>https://iam.example.com/admin/auth/sso/oidc/callback</code></td>
+<td>IdP 에 등록한 값과 정확히 일치</td>
+</tr>
+<tr>
+<td><code>Scopes</code></td>
+<td>비워 둠 (기본 <code>openid profile email</code>)</td>
+<td><strong><code>groups</code> 를 넣지 마십시오.</strong> 표준 scope 가 아니어서 정의하지 않은 IdP 는 요청 전체를 <code>invalid_scope</code> 로 거부합니다. IdP 문서에 있는 경우만 추가</td>
+</tr>
+<tr>
+<td><code>Username claim</code></td>
+<td>기본 <code>preferred_username</code></td>
+<td>사번 등 다른 claim 을 쓰면 그 이름. 값이 없으면 <code>sub</code> 를 씁니다</td>
+</tr>
+<tr>
+<td><code>Groups claim</code></td>
+<td>기본 <code>groups</code></td>
+<td>IdP 가 그룹을 넣는 claim 이름</td>
+</tr>
+<tr>
+<td><code>Audience</code></td>
+<td>비워 둠</td>
+<td>비우면 Client ID. 다른 애플리케이션용으로 발급된 토큰은 거부됩니다</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>Save</code></strong> 를 누른 뒤 <strong><code>Test the connection</code></strong>. 테스트는 <strong>저장된 값</strong>을 검사하므로 저장 전에 누르면
+"save your changes first" 가 나옵니다.</p>
+<p>성공 예: <code>Discovery succeeded, 2 signing key(s) published. Authorization endpoint: https://…/auth</code></p>
+<h3 id="4-b-saml-20">4-B. SAML 2.0</h3>
+<p>SAML 연동은 칸을 채우는 작업이 아니라 <strong>메타데이터 문서를 서로 교환</strong>하는 작업입니다.</p>
+<p><strong><code>SAML 2.0</code> 탭에서 순서대로</strong></p>
+<ol>
+<li><code>Enable SAML 2.0</code> 켬.</li>
+<li>아래 칸 중 SP 쪽 두 개를 먼저 입력하고 <strong><code>Save</code></strong>:<ul>
+<li><code>SP entity ID</code> — 예: <code>ontul</code> (IdP 에 등록되는 이 서비스의 식별자. 비우면 <code>ontul</code>)</li>
+<li><code>Assertion consumer URL</code> — <code>https://iam.example.com/admin/auth/sso/saml/acs</code></li>
+</ul>
+</li>
+<li>(IdP 가 요청 서명 또는 assertion 암호화를 요구하는 경우만) <strong><code>Generate an SP keypair</code></strong> 를 누르고,
+   <code>Sign authentication requests</code> 를 켜고 <strong><code>Save</code></strong>.</li>
+<li><strong><code>This cluster's SP metadata</code></strong> 를 눌러 <code>ontul-sp-metadata.xml</code> 을 내려받아 <strong>IdP 관리자에게 전달</strong>합니다.
+   entity ID, ACS 주소, (3을 했다면) 인증서가 들어 있습니다.</li>
+<li>IdP 관리자에게 받을 것: <strong>IdP 메타데이터 XML</strong>. 또한 IdP 에서 assertion 에 사용자 이름 attribute 와
+   그룹 attribute 를 넣도록 설정해 달라고 요청합니다.</li>
+<li>받은 IdP 메타데이터 XML 전체를 <code>Paste your identity provider's SAML metadata XML here</code> 칸에 붙여 넣고
+   <strong><code>Read the provider's metadata</code></strong>. <code>IdP entity ID</code>, <code>IdP sign-on URL</code>, <code>IdP signing certificate</code>
+   세 칸이 자동으로 채워지고 <strong>바로 저장됩니다</strong>(수기 입력할 필요 없음).</li>
+<li>나머지 항목 확인 후 <strong><code>Save</code></strong>:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>화면 항목</th>
+<th>입력 값</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NameID format</code></td>
+<td>비워 둠</td>
+<td>비우면 IdP 가 설정된 형식으로 발급. 지정하면 그 형식을 발급하지 않는 IdP 가 요청을 거부합니다</td>
+</tr>
+<tr>
+<td><code>Username attribute</code></td>
+<td>기본 <code>uid</code></td>
+<td>assertion 에서 사용자 이름을 읽을 attribute. 없으면 NameID 를 씁니다</td>
+</tr>
+<tr>
+<td><code>Groups attribute</code></td>
+<td>기본 <code>groups</code></td>
+<td>IdP 가 그룹을 넣는 attribute 이름 (ADFS 는 보통 <code>http://schemas.microsoft.com/ws/2008/06/identity/claims/role</code> 같은 URI 형식)</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li><strong><code>Check the configuration</code></strong>. 성공 예: <code>Configuration is usable. AuthnRequest built and signed (… bytes),
+   identity-provider certificate parsed.</code></li>
+</ol>
+<blockquote>
+<p>SP keypair 를 <strong>나중에 다시 생성하면</strong> 인증서가 바뀝니다. 4번(SP 메타데이터 전달)을 다시 해서
+IdP 가 새 인증서를 받게 하십시오.</p>
+</blockquote>
+<p>모든 assertion 은 서명·audience·유효 기간·issuer 를 검사하고, 이미 쓰인 assertion 은 재사용을 거부합니다.</p>
+<h3 id="4-c-ldap-active-directory">4-C. LDAP / Active Directory</h3>
+<p><strong>IdP 쪽에서 받을 것</strong>: 디렉터리 주소, 사용자 검색용 서비스 계정(DN 과 비밀번호), 사용자·그룹이
+있는 OU(base DN).</p>
+<p><strong><code>LDAP / AD</code> 탭</strong></p>
+<table>
+<thead>
+<tr>
+<th>화면 항목</th>
+<th>입력 값 (Active Directory 예)</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Enable LDAP / Active Directory</code></td>
+<td>켬</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Directory URL</code></td>
+<td><code>ldaps://ad.example.com:636</code></td>
+<td><code>ldaps://</code> 를 쓰거나 아래 <code>StartTLS</code> 를 켜십시오. 아니면 비밀번호가 평문으로 전송됩니다</td>
+</tr>
+<tr>
+<td><code>Bind DN</code></td>
+<td><code>cn=svc-ontul,ou=service,dc=example,dc=com</code></td>
+<td>사용자 항목을 찾는 서비스 계정</td>
+</tr>
+<tr>
+<td><code>Bind password</code></td>
+<td>서비스 계정 비밀번호</td>
+<td></td>
+</tr>
+<tr>
+<td><code>User base DN</code></td>
+<td><code>ou=people,dc=example,dc=com</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>User filter</code></td>
+<td><code>(sAMAccountName={0})</code></td>
+<td><code>{0}</code> 은 로그인 이름. OpenLDAP 은 기본 <code>(uid={0})</code></td>
+</tr>
+<tr>
+<td><code>Group base DN</code></td>
+<td><code>ou=groups,dc=example,dc=com</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>Group filter</code></td>
+<td>기본 <code>(member={0})</code></td>
+<td><code>{0}</code> 은 사용자 DN. 사용자의 <code>memberOf</code> 도 함께 읽습니다</td>
+</tr>
+<tr>
+<td><code>Group name attribute</code></td>
+<td>기본 <code>cn</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>StartTLS</code></td>
+<td><code>ldap://</code> 를 쓸 때 켬</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>Save</code></strong> → <strong><code>Test the bind</code></strong>. 서비스 계정으로 디렉터리 접속·바인드가 되는지 확인합니다.</p>
+<p>로그인은 별도 버튼 없이 <strong>기존 로그인 폼</strong>에 사내 계정과 사내 비밀번호를 입력합니다. 로컬 계정
+비밀번호를 먼저 확인하고, 맞지 않으면 디렉터리로 확인합니다.</p>
+<hr />
+<h2 id="5-identity-mapping">5. 그룹 매핑: <code>Identity mapping</code> 탭</h2>
+<table>
+<thead>
+<tr>
+<th>화면 항목</th>
+<th>입력 값</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Group mappings</code></td>
+<td><code>DATA-ADMIN:ontul-admins,DATA-ANALYST:ontul-readers</code></td>
+<td><code>IdP그룹:Ontul그룹</code> 을 쉼표로 구분. <strong>대소문자까지 정확히</strong> 일치해야 합니다</td>
+</tr>
+<tr>
+<td><code>Allow identities whose groups map to nothing</code></td>
+<td>끔 (권장)</td>
+<td>켜면 매핑되는 그룹이 없는 사용자도 로그인되지만 아무것도 할 수 없습니다</td>
+</tr>
+<tr>
+<td><code>Federated session seconds</code></td>
+<td>기본 <code>3600</code></td>
+<td>SSO 세션 유효 시간(초). 짧을수록 IdP 에서 사용자를 막았을 때 빨리 반영됩니다</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>비워 두면 IdP 그룹 이름을 그대로 Ontul 그룹 이름으로 씁니다.</li>
+<li><strong>한 번 설정하면 목록에 없는 그룹은 모두 버려집니다.</strong> IdP 에 그룹을 새로 만드는 것만으로 권한이
+  생기지 않습니다.</li>
+<li>Keycloak 처럼 그룹 이름 앞에 <code>/</code> 가 붙어 오면(<code>/DATA-ADMIN</code>) 자동으로 떼고 비교합니다.</li>
+<li>매핑 대상 Ontul 그룹(오른쪽)은 2장에서 <strong>실제로 만들어 둔 그룹</strong>이어야 합니다. 없는 그룹으로 매핑하면
+  로그인은 되지만 정책이 없어 모든 작업이 거부됩니다.</li>
+</ul>
+<p><strong><code>Save</code></strong> 를 누릅니다.</p>
+<hr />
+<h2 id="6">6. 로그인 확인</h2>
+<ol>
+<li>다른 브라우저(또는 시크릿 창)에서 <code>https://iam.example.com/admin/</code> 을 엽니다.</li>
+<li>로그인 화면에 <code>or</code> 아래 <strong><code>Sign in with OpenID Connect</code></strong> / <strong><code>Sign in with SAML</code></strong> 버튼이 보이는지
+   확인합니다. LDAP 만 켰다면 폼 아래에 "Directory accounts sign in with the form above" 안내가 보입니다.</li>
+<li>버튼을 눌러 IdP 에서 로그인 → 관리 화면으로 돌아오면 성공입니다.</li>
+<li>관리자 그룹으로 매핑된 사용자는 <code>Single Sign-On</code> 화면의 <code>Save</code> 가 활성이고, 조회 전용 그룹 사용자는
+   <code>Read-only</code> 안내가 보이는지 확인합니다.</li>
+</ol>
+<p><strong>관리 화면 첫 연동 때는 관리자 창(로컬 <code>admin</code> 로그인)을 닫지 말고</strong> 다른 창에서 시험하십시오.
+로컬 로그인은 SSO 와 상관없이 계속 됩니다.</p>
+<h3 id="api">API 로 확인 (선택)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 로그인 화면이 보여줄 방식 (인증 불필요)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://iam.example.com/admin/auth/sso/providers
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># {&quot;providers&quot;:[&quot;oidc&quot;,&quot;saml&quot;],&quot;localLoginEnabled&quot;:true}</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># LDAP 계정으로 토큰 받기 (스크립트·SDK 용)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://iam.example.com/v1/api/auth/sso<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;hong.gildong&quot;,&quot;password&quot;:&quot;&lt;사내 비밀번호&gt;&quot;}&#39;</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># {&quot;accessToken&quot;:&quot;...&quot;,&quot;username&quot;:&quot;hong.gildong&quot;,&quot;federated&quot;:true,&quot;idp&quot;:&quot;LDAP&quot;,&quot;groups&quot;:[&quot;ontul-readers&quot;]}</span>
+</code></pre></div>
+<hr />
+<h2 id="7">7. 문제 해결</h2>
+<p>로그인이 실패하면 로그인 화면 위에 이유가 표시됩니다. 마스터 로그(<code>Console SSO refused</code>,
+<code>Federated login refused</code>, <code>Directory login refused</code>)에 같은 내용이 남습니다.</p>
+<table>
+<thead>
+<tr>
+<th>증상</th>
+<th>원인과 조치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IdP 화면에서 <code>redirect_uri</code> 오류</td>
+<td><code>Redirect URI</code> 와 IdP 에 등록한 값이 다릅니다. 프로토콜(<code>http</code>/<code>https</code>), 포트, 끝 <code>/</code> 까지 맞추십시오</td>
+</tr>
+<tr>
+<td><code>invalid_scope</code></td>
+<td><code>Scopes</code> 에 <code>groups</code> 등 IdP 가 모르는 scope 가 있습니다. 비우십시오</td>
+</tr>
+<tr>
+<td>OIDC/SAML 로그인 후 "Signed in as …, but no group from the identity provider maps to a group on this cluster"</td>
+<td>IdP 로그인은 성공했고 <strong>그룹 매핑이 비었습니다.</strong> ① IdP 가 그룹 claim/attribute 를 넣는지, ② <code>Groups claim</code>/<code>Groups attribute</code> 이름이 맞는지, ③ <code>Group mappings</code> 의 왼쪽 이름이 IdP 그룹 이름과 대소문자까지 같은지 확인하십시오</td>
+</tr>
+<tr>
+<td>LDAP: 로그인 폼에서 "Invalid credentials"</td>
+<td>로그인 폼은 비밀번호 오류와 그룹 매핑 없음을 <strong>구분하지 않습니다.</strong> 아래 명령으로 구분하십시오: 401 이면 계정·비밀번호·검색 설정 문제, <strong>403</strong> 이면 비밀번호는 맞았고 그룹 매핑이 빈 것입니다(비밀번호를 초기화할 일이 아님)</td>
+</tr>
+<tr>
+<td>로그인은 되는데 모든 화면이 권한 오류</td>
+<td>매핑된 Ontul 그룹이 없거나 그 그룹에 정책이 없습니다(2장)</td>
+</tr>
+<tr>
+<td>로그인은 되는데 설정 화면이 읽기 전용</td>
+<td>그 사용자의 그룹에 <code>AdministratorAccess</code> 가 없습니다</td>
+</tr>
+<tr>
+<td>SAML: "The assertion consumer received no SAMLResponse"</td>
+<td>IdP 가 ACS 로 POST 하지 않았습니다. IdP 의 ACS binding 이 HTTP-POST 인지, ACS 주소가 맞는지 확인하십시오</td>
+</tr>
+<tr>
+<td>SAML: 서명 검증 실패</td>
+<td>IdP 서명 인증서가 바뀌었습니다. IdP 메타데이터를 다시 받아 <code>Read the provider's metadata</code></td>
+</tr>
+<tr>
+<td>SAML: IdP 가 요청을 거부</td>
+<td><code>NameID format</code> 을 비우십시오. IdP 가 서명된 요청을 요구하면 4-B 의 3번</td>
+</tr>
+<tr>
+<td>LDAP: <code>Test the bind</code> 실패</td>
+<td>주소·포트·인증서(ldaps 의 경우 마스터 JVM 이 디렉터리 인증서를 신뢰해야 함)·Bind DN/비밀번호 확인</td>
+</tr>
+<tr>
+<td>LDAP: 아래 명령이 401</td>
+<td>사용자 검색 실패(<code>User base DN</code>/<code>User filter</code>) 또는 비밀번호 오류. AD 는 <code>(sAMAccountName={0})</code> 인지 확인</td>
+</tr>
+<tr>
+<td>일부 시도만 실패</td>
+<td><code>Redirect URI</code>/ACS 가 마스터 한 대 주소입니다. 프록시 주소로 바꾸십시오(1-2)</td>
+</tr>
+</tbody>
+</table>
+<p>LDAP 로그인 실패 원인 구분:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-w<span class="w"> </span><span class="s1">&#39;\n%{http_code}\n&#39;</span><span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://iam.example.com/admin/auth/sso/ldap/login<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;hong.gildong&quot;,&quot;password&quot;:&quot;&lt;사내 비밀번호&gt;&quot;}&#39;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 200 → 정상, 401 → 계정/비밀번호/검색 설정, 403 → 그룹 매핑 없음</span>
+</code></pre></div>
+<hr />
+<h2 id="8">8. 운영 시 알아둘 점</h2>
+<ul>
+<li><strong>퇴사·권한 회수</strong>: IdP 에서 사용자를 막으면 새 로그인은 즉시 막힙니다. 이미 발급된 세션은
+  <code>Federated session seconds</code> 가 지날 때까지 유지됩니다(Ontul 은 IdP 의 변경을 통보받지 않음).
+  SSO 세션에는 refresh token 이 없어 연장되지 않습니다.</li>
+<li><strong>엔진의 권한 검사와 SSO</strong>: 쿼리 엔진·분산 처리·스트림 처리의 권한 플러그인은 사용자를 <strong>이름으로</strong>
+  조회합니다. SSO 사용자의 그룹은 그 사용자가 SSO 로 로그인한 뒤 세션 시간 동안만 유효합니다.
+  세션이 없는 SSO 사용자의 이름은 그룹이 없는 것으로 판정되어 거부됩니다. 엔진을 계속 쓰는 서비스
+  계정이나 배치 사용자는 <strong>로컬 사용자</strong>로 만들고 그룹에 넣어 두십시오.</li>
+<li><strong>같은 이름의 로컬 사용자</strong>가 있으면 SSO 로 로그인해도 로컬 계정의 그룹·정책이 적용됩니다.</li>
+<li>설정은 클러스터 저장소에 복제되므로 마스터를 추가·재시작해도 다시 입력할 필요가 없습니다.</li>
+<li>SSO 설정 변경은 관리자만 할 수 있습니다. 일반 사용자도 이 화면을 볼 수 있고 SP 메타데이터를 내려받을
+  수 있지만, 저장·테스트·키 생성·메타데이터 가져오기는 할 수 없습니다.</li>
+</ul>
+<h2 id="_1">함께 보기</h2>
+<ul>
+<li><a href="../sso/">Single Sign-On (OIDC/SAML/LDAP)</a> — 동작 원리와 <code>ontul.properties</code> 속성</li>
+<li><a href="../iam/">IAM</a> — 그룹·정책</li>
+<li><a href="../iam-policy-templates/">IAM Policy Templates</a> — 그룹에 붙일 정책</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © <script>document.write(new Date().getFullYear())</script> Cloud Chef Labs, Inc. All rights reserved. <a href="mailto:admin@cloudchef-labs.com">admin@cloudchef-labs.com</a>
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "2.2.0", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/extra.js"></script>
+      
+    
+  </body>
+</html>
