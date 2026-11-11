@@ -8,7 +8,7 @@
       
       
       
-        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/sso-setup-ko/">
+        <link rel="canonical" href="https://cloudcheflabs.github.io/ontul-docs/1.0.0/features/sso-setup/">
       
       
         <link rel="prev" href="../sso/">
@@ -25,7 +25,7 @@
     
     
       
-        <title>SSO 연동 (관리 화면 설정) - Ontul</title>
+        <title>Setting Up SSO (Console) - Ontul</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sso" class="md-skip">
+        <a href="#setting-up-sso-in-the-admin-console" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SSO 연동 (관리 화면 설정)
+              Setting Up SSO (Console)
             
           </span>
         </div>
@@ -1426,7 +1426,7 @@
   <span class="md-ellipsis">
     
   
-    SSO 연동 (관리 화면 설정)
+    Setting Up SSO (Console)
   
 
     
@@ -1444,7 +1444,7 @@
   <span class="md-ellipsis">
     
   
-    SSO 연동 (관리 화면 설정)
+    Setting Up SSO (Console)
   
 
     
@@ -1470,22 +1470,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1" class="md-nav__link">
+  <a href="#1-decide-before-you-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. 시작하기 전에 정할 것
+        1. Decide before you start
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. 시작하기 전에 정할 것">
+    <nav class="md-nav" aria-label="1. Decide before you start">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-1" class="md-nav__link">
+  <a href="#1-1-which-provider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1-1. 어떤 방식으로 연동할지
+        1-1. Which provider
       
     </span>
   </a>
@@ -1493,10 +1493,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#1-2" class="md-nav__link">
+  <a href="#1-2-the-address-browsers-reach-the-most-important-decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1-2. 브라우저가 접속하는 주소 (가장 중요)
+        1-2. The address browsers reach (the most important decision)
       
     </span>
   </a>
@@ -1504,10 +1504,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#1-3-idp-ontul" class="md-nav__link">
+  <a href="#1-3-permissions-come-from-ontuls-groups-and-policies-not-from-the-idp" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1-3. 권한은 IdP 가 아니라 Ontul 의 그룹·정책이 정합니다
+        1-3. Permissions come from Ontul's groups and policies, not from the IdP
       
     </span>
   </a>
@@ -1520,10 +1520,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-ontul" class="md-nav__link">
+  <a href="#2-create-groups-and-policies-in-ontul" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Ontul 에 그룹과 정책 만들기
+        2. Create groups and policies in Ontul
       
     </span>
   </a>
@@ -1531,10 +1531,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-sso" class="md-nav__link">
+  <a href="#3-open-the-sso-screen" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. SSO 화면 열기
+        3. Open the SSO screen
       
     </span>
   </a>
@@ -1542,15 +1542,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4" class="md-nav__link">
+  <a href="#4-provider-settings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. 방식별 설정
+        4. Provider settings
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="4. 방식별 설정">
+    <nav class="md-nav" aria-label="4. Provider settings">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1592,10 +1592,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-identity-mapping" class="md-nav__link">
+  <a href="#5-group-mapping-the-identity-mapping-tab" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. 그룹 매핑: Identity mapping 탭
+        5. Group mapping: the Identity mapping tab
       
     </span>
   </a>
@@ -1603,22 +1603,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6" class="md-nav__link">
+  <a href="#6-verify-the-login" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. 로그인 확인
+        6. Verify the login
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="6. 로그인 확인">
+    <nav class="md-nav" aria-label="6. Verify the login">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#api" class="md-nav__link">
+  <a href="#checking-from-the-api-optional" class="md-nav__link">
     <span class="md-ellipsis">
       
-        API 로 확인 (선택)
+        Checking from the API (optional)
       
     </span>
   </a>
@@ -1631,10 +1631,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7" class="md-nav__link">
+  <a href="#7-troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. 문제 해결
+        7. Troubleshooting
       
     </span>
   </a>
@@ -1642,10 +1642,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8" class="md-nav__link">
+  <a href="#8-operating-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. 운영 시 알아둘 점
+        8. Operating notes
       
     </span>
   </a>
@@ -1653,10 +1653,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        함께 보기
+        See also
       
     </span>
   </a>
@@ -2918,58 +2918,60 @@
 
 
 
-<h1 id="sso">SSO 연동 (관리 화면에서 설정하기)</h1>
-<p>이 문서는 사내 인증 시스템(IdP — Keycloak, Azure AD/Entra ID, ADFS, Okta, 사내 SAML IdP,
-Active Directory 등)을 Ontul 에 연동하는 절차를 <strong>관리 화면(Admin UI) 기준으로</strong> 단계별로
-설명합니다. 동작 원리와 속성 이름은 <a href="../sso/">Single Sign-On (OIDC/SAML/LDAP)</a> 에 있습니다.</p>
-<p>Ontul 을 플랫폼의 IAM 엔진(권한 검사 서버)으로 쓰는 구성에서도 절차는 같습니다. 이때 아래의
-"관리 화면"은 <strong>IAM 엔진(Ontul) 자신의 화면</strong>입니다. 플랫폼 콘솔의 <code>Settings → IAM</code> 화면이 아닙니다.</p>
+<h1 id="setting-up-sso-in-the-admin-console">Setting Up SSO in the Admin Console</h1>
+<p>This guide walks through connecting your organization's identity provider (IdP) — Keycloak,
+Azure AD / Entra ID, ADFS, Okta, an in-house SAML IdP, Active Directory, and so on — to Ontul,
+<strong>entirely from the admin console</strong>, step by step. How it works underneath, and the property names,
+are in <a href="../sso/">Single Sign-On (OIDC/SAML/LDAP)</a>.</p>
+<p>The procedure is the same when Ontul runs as a platform's IAM engine (the server that authorizes
+the other engines). In that case the "admin console" below is <strong>Ontul's own console</strong>, not the
+platform console's <code>Settings → IAM</code> screen.</p>
 <hr />
-<h2 id="1">1. 시작하기 전에 정할 것</h2>
-<h3 id="1-1">1-1. 어떤 방식으로 연동할지</h3>
+<h2 id="1-decide-before-you-start">1. Decide before you start</h2>
+<h3 id="1-1-which-provider">1-1. Which provider</h3>
 <table>
 <thead>
 <tr>
-<th>방식</th>
-<th>사용자가 보는 것</th>
-<th>언제 고르나</th>
+<th>Provider</th>
+<th>What users see</th>
+<th>When to choose it</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>OpenID Connect (OIDC)</strong></td>
-<td>로그인 화면의 <code>Sign in with OpenID Connect</code> 버튼 → IdP 로그인 → 돌아옴</td>
-<td>IdP 가 OIDC 를 지원하면 가장 간단합니다 (Keycloak, Entra ID, Okta 등)</td>
+<td>A <code>Sign in with OpenID Connect</code> button on the login page → IdP login → back to the console</td>
+<td>The simplest option whenever the IdP supports OIDC (Keycloak, Entra ID, Okta, …)</td>
 </tr>
 <tr>
 <td><strong>SAML 2.0</strong></td>
-<td>로그인 화면의 <code>Sign in with SAML</code> 버튼 → IdP 로그인 → 돌아옴</td>
-<td>사내 표준이 SAML 이거나 IdP 가 SAML 만 제공할 때 (ADFS 등)</td>
+<td>A <code>Sign in with SAML</code> button → IdP login → back to the console</td>
+<td>Your standard is SAML, or the IdP offers only SAML (ADFS, …)</td>
 </tr>
 <tr>
 <td><strong>LDAP / Active Directory</strong></td>
-<td>별도 버튼 없음. <strong>기존 로그인 폼에 사내 계정·비밀번호를 그대로 입력</strong></td>
-<td>웹 SSO 가 없고 AD/LDAP 디렉터리만 있을 때</td>
+<td>No extra button. Users <strong>type their directory account and password into the normal login form</strong></td>
+<td>There is no web SSO, only an AD / LDAP directory</td>
 </tr>
 </tbody>
 </table>
-<p>여러 방식을 동시에 켤 수 있습니다. <strong>로컬 계정(<code>admin</code> 등)의 비밀번호 로그인은 SSO 를 켜도 계속
-동작</strong>하므로, 설정을 잘못해도 관리자가 잠기지 않습니다.</p>
-<h3 id="1-2">1-2. 브라우저가 접속하는 주소 (가장 중요)</h3>
-<p>OIDC 의 Redirect URI, SAML 의 Assertion Consumer URL 은 <strong>사용자 브라우저가 실제로 여는 주소</strong>여야
-합니다. 마스터가 여러 대이고 앞에 프록시(nginx·로드밸런서)가 있으면 <strong>프록시 주소</strong>를 씁니다.
-마스터 한 대의 주소를 넣으면 그 마스터가 멈췄을 때 SSO 가 통째로 실패합니다.</p>
-<p>이 문서에서는 그 주소를 <code>https://iam.example.com</code> 으로 표기합니다. 실제 값으로 바꾸십시오.</p>
+<p>Several providers can be enabled at once. <strong>Local accounts (<code>admin</code> and others) keep signing in with
+their passwords while SSO is on</strong>, so a wrong setting cannot lock the administrator out.</p>
+<h3 id="1-2-the-address-browsers-reach-the-most-important-decision">1-2. The address browsers reach (the most important decision)</h3>
+<p>The OIDC Redirect URI and the SAML Assertion Consumer URL must be <strong>the address the user's browser
+actually opens</strong>. With several masters behind a proxy (nginx or a load balancer), use <strong>the proxy's
+address</strong>. A single master's address makes SSO fail entirely whenever that master is down.</p>
+<p>This guide writes that address as <code>https://iam.example.com</code>. Replace it with yours.</p>
 <table>
 <thead>
 <tr>
-<th>용도</th>
-<th>주소</th>
+<th>Purpose</th>
+<th>Address</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>관리 화면</td>
+<td>Admin console</td>
 <td><code>https://iam.example.com/admin/</code></td>
 </tr>
 <tr>
@@ -2982,263 +2984,266 @@ Active Directory 등)을 Ontul 에 연동하는 절차를 <strong>관리 화면(
 </tr>
 </tbody>
 </table>
-<p>로그인 흐름은 어느 마스터에서 시작하고 어느 마스터로 돌아와도 동작합니다(로그인 상태를 모든
-마스터가 공유하는 키로 봉인해 전달합니다). 그래서 프록시에 sticky session 설정은 필요 없습니다.</p>
-<h3 id="1-3-idp-ontul">1-3. 권한은 IdP 가 아니라 Ontul 의 그룹·정책이 정합니다</h3>
-<p>SSO 로 로그인한 사용자는 IdP 가 알려준 <strong>그룹 이름</strong>을 가지고 들어옵니다. 그 그룹 이름이
-Ontul 의 그룹으로 매핑되고, <strong>그 그룹에 붙은 정책</strong>이 모든 권한을 결정합니다.</p>
+<p>A login may start on one master and return to another: the login state is sealed with a key every
+master shares and travels with the request. No sticky sessions are needed at the proxy.</p>
+<h3 id="1-3-permissions-come-from-ontuls-groups-and-policies-not-from-the-idp">1-3. Permissions come from Ontul's groups and policies, not from the IdP</h3>
+<p>A user who signs in through SSO arrives carrying the <strong>group names</strong> the IdP reports. Those names
+are mapped to Ontul groups, and <strong>the policies attached to those groups</strong> decide every permission.</p>
 <ul>
-<li>SSO 사용자를 위해 <strong>로컬 사용자 계정을 만들지 않습니다.</strong> 사용자 목록에 나타나지도 않습니다.</li>
-<li>대신 <strong>Ontul 쪽에 그룹과 정책을 미리 만들어 두어야</strong> 합니다(2장).</li>
-<li>매핑되는 그룹이 하나도 없으면 로그인을 <strong>거부</strong>합니다(아무 권한 없는 상태로 들여보내지 않음).</li>
-<li>같은 이름의 로컬 사용자가 있으면 <strong>로컬 계정의 정책이 우선</strong>합니다.</li>
+<li><strong>No local user account is created</strong> for an SSO user, and none appears in the user list.</li>
+<li>So <strong>the groups and policies must already exist in Ontul</strong> (section 2).</li>
+<li>A user none of whose groups maps to anything is <strong>refused</strong> rather than admitted with no permissions.</li>
+<li>If a local user of the same name exists, <strong>the local account's policies win</strong>.</li>
 </ul>
-<p>IdP 관리자에게 미리 받아야 할 것:</p>
+<p>Ask the IdP administrator in advance for:</p>
 <ul>
-<li>사용자 이름으로 쓸 값 (OIDC claim 이름 / SAML attribute 이름 / AD 의 로그인 속성)</li>
-<li>그룹 정보를 담는 값 (OIDC <code>groups</code> claim / SAML <code>groups</code> attribute 등) — <strong>IdP 에서 이 값을 토큰에
-  넣도록 설정해야</strong> 합니다</li>
-<li>Ontul 에 권한을 줄 IdP 그룹 이름 목록 (예: <code>DATA-ADMIN</code>, <code>DATA-ANALYST</code>)</li>
+<li>the value to use as the user name (OIDC claim name / SAML attribute name / AD login attribute);</li>
+<li>the value carrying group membership (an OIDC <code>groups</code> claim, a SAML <code>groups</code> attribute, …) — <strong>the IdP
+  must be configured to put it in the token or assertion</strong>;</li>
+<li>the IdP group names that should get access to Ontul (for example <code>DATA-ADMIN</code>, <code>DATA-ANALYST</code>).</li>
 </ul>
 <hr />
-<h2 id="2-ontul">2. Ontul 에 그룹과 정책 만들기</h2>
-<p>관리자(<code>AdministratorAccess</code> 정책을 가진 계정)로 관리 화면에 로그인합니다. 왼쪽 메뉴
-<strong><code>GOVERNANCE</code> → <code>IAM</code></strong>.</p>
-<p>예: IdP 그룹 <code>DATA-ADMIN</code> → Ontul 관리자, <code>DATA-ANALYST</code> → 조회 전용.</p>
+<h2 id="2-create-groups-and-policies-in-ontul">2. Create groups and policies in Ontul</h2>
+<p>Sign in to the console as an administrator (an account with the <code>AdministratorAccess</code> policy). In
+the sidebar, <strong><code>GOVERNANCE</code> → <code>IAM</code></strong>.</p>
+<p>Example: IdP group <code>DATA-ADMIN</code> → Ontul administrators, <code>DATA-ANALYST</code> → read-only.</p>
 <table>
 <thead>
 <tr>
-<th>하는 일</th>
-<th>클릭 순서</th>
+<th>Task</th>
+<th>Clicks</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>그룹 만들기</td>
-<td><code>Groups</code> 탭 → <strong><code>New Group</code></strong> → 이름 입력 (예: <code>ontul-admins</code>, <code>ontul-readers</code>)</td>
+<td>Create a group</td>
+<td><code>Groups</code> tab → <strong><code>New Group</code></strong> → name it (e.g. <code>ontul-admins</code>, <code>ontul-readers</code>)</td>
 </tr>
 <tr>
-<td>정책 만들기 (필요 시)</td>
-<td><code>Policies</code> 탭 → <strong><code>New Policy</code></strong> → <code>Policy Identifier</code> · <code>Governance Template</code>(고르면 manifest 가 채워짐) · <code>IAM Manifest (JSON)</code> → <strong><code>Commit Security Policy</code></strong></td>
+<td>Create a policy (if needed)</td>
+<td><code>Policies</code> tab → <strong><code>New Policy</code></strong> → <code>Policy Identifier</code> · <code>Governance Template</code> (choosing one fills the manifest) · <code>IAM Manifest (JSON)</code> → <strong><code>Commit Security Policy</code></strong></td>
 </tr>
 <tr>
-<td>그룹에 정책 붙이기</td>
-<td><code>Groups</code> 탭 → <strong>그룹 행을 눌러 펼침</strong> → <code>Policy Compliance</code> 의 <strong><code>Attach Custom</code></strong> → 드롭다운에서 정책 → <strong><code>Attach Security Manifest</code></strong></td>
+<td>Attach a policy to a group</td>
+<td><code>Groups</code> tab → <strong>click the group row to expand it</strong> → <strong><code>Attach Custom</code></strong> under <code>Policy Compliance</code> → pick the policy → <strong><code>Attach Security Manifest</code></strong></td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li>그룹 행에는 버튼이 없습니다. <strong>행을 눌러 펼쳐야</strong> 정책 부착 버튼이 나옵니다.</li>
-<li>SSO 사용자가 관리 화면에서 설정을 바꿀 수 있으려면 그 그룹에 <strong><code>AdministratorAccess</code></strong> 가 붙어 있어야
-  합니다. 없으면 화면은 읽기 전용으로 보입니다(변경 버튼이 숨겨지거나 비활성).</li>
-<li>어떤 정책을 붙일지는 <a href="../iam-policy-templates/">IAM Policy Templates</a> 를 참고하십시오.</li>
+<li>A group row has no buttons of its own. <strong>Expand the row</strong> to reach the attach button.</li>
+<li>For SSO users to change settings in the console, their group needs <strong><code>AdministratorAccess</code></strong>.
+  Without it the console is read-only for them (change controls hidden or disabled).</li>
+<li>For which policies to attach, see <a href="../iam-policy-templates/">IAM Policy Templates</a>.</li>
 </ul>
-<blockquote>
-<p><strong>그룹 이름을 IdP 와 똑같이 지을 수도 있습니다.</strong> 그러면 4장의 그룹 매핑을 비워 둬도 됩니다
-(IdP 그룹 이름이 그대로 Ontul 그룹 이름으로 쓰임). 다만 그 경우 IdP 에 같은 이름의 그룹을 새로
-만드는 것만으로 권한이 생기므로, 운영 환경에서는 매핑을 명시하는 쪽을 권장합니다.</p>
-</blockquote>
+<div class="admonition note">
+<p class="admonition-title">Naming groups exactly as the IdP does</p>
+<p>If the Ontul groups have the same names as the IdP groups, the group mapping in section 5 can
+stay empty — IdP group names are then used as they are. But then creating a group of that name at
+the IdP is enough to grant access here, so in production an explicit mapping is recommended.</p>
+</div>
 <hr />
-<h2 id="3-sso">3. SSO 화면 열기</h2>
-<p>왼쪽 메뉴 <strong><code>GOVERNANCE</code> → <code>Single Sign-On</code></strong>. 탭이 네 개 있습니다.</p>
+<h2 id="3-open-the-sso-screen">3. Open the SSO screen</h2>
+<p>In the sidebar, <strong><code>GOVERNANCE</code> → <code>Single Sign-On</code></strong>. There are four tabs.</p>
 <table>
 <thead>
 <tr>
-<th>탭</th>
-<th>내용</th>
+<th>Tab</th>
+<th>Contents</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>OpenID Connect</code></td>
-<td>OIDC 설정</td>
+<td>OIDC settings</td>
 </tr>
 <tr>
 <td><code>SAML 2.0</code></td>
-<td>SAML 설정, 메타데이터 교환</td>
+<td>SAML settings and metadata exchange</td>
 </tr>
 <tr>
 <td><code>LDAP / AD</code></td>
-<td>디렉터리 설정</td>
+<td>Directory settings</td>
 </tr>
 <tr>
 <td><code>Identity mapping</code></td>
-<td>그룹 매핑, 세션 시간</td>
+<td>Group mapping and session length</td>
 </tr>
 </tbody>
 </table>
-<p>공통 동작:</p>
+<p>Common behaviour:</p>
 <ul>
-<li>입력을 바꾸면 아래 <strong><code>Save (n)</code></strong> 버튼에 바뀐 항목 수가 표시됩니다. 여러 탭을 오가며 고친 뒤 한 번에
-  저장해도 됩니다.</li>
-<li>저장하면 <strong>모든 마스터에 즉시 적용</strong>됩니다. 파일 수정이나 재시작이 필요 없습니다
+<li>Editing a field shows the number of changed fields on the <strong><code>Save (n)</code></strong> button. You can edit across
+  tabs and save once.</li>
+<li>Saving <strong>applies to every master at once</strong> — no file edits, no restart
   ("Saved. Every master picks this up from the cluster store — no restart.").</li>
-<li>활성화된 방식의 탭 이름 옆에 <strong>초록 점</strong>이 표시됩니다.</li>
-<li>비밀값(Client secret, Bind password)은 저장 후 다시 보여주지 않습니다. 라벨 옆에 <code>set</code> / <code>not set</code>
-  으로 저장 여부만 표시되고, <strong>비워 두고 저장하면 기존 값이 유지</strong>됩니다.</li>
-<li>칸을 비워 두면 기본값(또는 <code>ontul.properties</code> 에 적힌 값)이 쓰입니다.</li>
-<li>관리자가 아닌 사용자에게는 모든 칸이 읽기 전용이고 <code>Read-only: changing SSO settings needs
-  AdministratorAccess.</code> 가 표시됩니다.</li>
+<li>An enabled provider shows a <strong>green dot</strong> next to its tab name.</li>
+<li>Secrets (Client secret, Bind password) are never shown again after saving. The label shows only
+  <code>set</code> / <code>not set</code>, and <strong>saving with the field blank keeps the stored value</strong>.</li>
+<li>A field left empty falls back to the default (or to the value in <code>ontul.properties</code>).</li>
+<li>For non-administrators every field is read-only and the page says <code>Read-only: changing SSO settings
+  needs AdministratorAccess.</code></li>
 </ul>
 <hr />
-<h2 id="4">4. 방식별 설정</h2>
+<h2 id="4-provider-settings">4. Provider settings</h2>
 <h3 id="4-a-openid-connect">4-A. OpenID Connect</h3>
-<p><strong>IdP 쪽 (IdP 관리자에게 요청)</strong></p>
+<p><strong>At the IdP (ask the IdP administrator)</strong></p>
 <ol>
-<li>클라이언트(애플리케이션) 등록 — 종류: confidential(웹 애플리케이션), 흐름: Authorization Code.</li>
-<li>Redirect URI 에 <code>https://iam.example.com/admin/auth/sso/oidc/callback</code> 을 <strong>정확히 같은 문자열로</strong>
-   등록 (끝의 <code>/</code> 유무까지 일치해야 함).</li>
-<li>ID 토큰에 그룹 claim 이 들어가도록 설정 (Keycloak 은 <code>Group Membership</code> mapper, Entra ID 는
-   <code>groupMembershipClaims</code> 등).</li>
-<li>받을 것: <strong>Issuer URL</strong>, <strong>Client ID</strong>, <strong>Client secret</strong>.</li>
+<li>Register a client (application) — type: confidential (web application), flow: Authorization Code.</li>
+<li>Register <code>https://iam.example.com/admin/auth/sso/oidc/callback</code> as the Redirect URI, <strong>as exactly the
+   same string</strong> (down to a trailing <code>/</code>).</li>
+<li>Configure the IdP to put a groups claim in the ID token (Keycloak: a <code>Group Membership</code> mapper;
+   Entra ID: <code>groupMembershipClaims</code>; …).</li>
+<li>Collect: <strong>Issuer URL</strong>, <strong>Client ID</strong>, <strong>Client secret</strong>.</li>
 </ol>
-<p><strong>Ontul 쪽: <code>OpenID Connect</code> 탭</strong></p>
+<p><strong>In Ontul: the <code>OpenID Connect</code> tab</strong></p>
 <table>
 <thead>
 <tr>
-<th>화면 항목</th>
-<th>입력 값</th>
-<th>비고</th>
+<th>Field</th>
+<th>Value</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>Enable OpenID Connect</code></td>
-<td>켬</td>
+<td>on</td>
 <td></td>
 </tr>
 <tr>
 <td><code>Issuer URL</code></td>
-<td>예: <code>https://sso.example.com/realms/company</code></td>
-<td>이 주소의 discovery 문서(<code>/.well-known/openid-configuration</code>)에서 나머지 엔드포인트와 서명 키를 자동으로 읽습니다</td>
+<td>e.g. <code>https://sso.example.com/realms/company</code></td>
+<td>The remaining endpoints and the signing keys are read from this issuer's discovery document (<code>/.well-known/openid-configuration</code>)</td>
 </tr>
 <tr>
 <td><code>Client ID</code></td>
-<td>IdP 에서 받은 값</td>
+<td>from the IdP</td>
 <td></td>
 </tr>
 <tr>
 <td><code>Client secret</code></td>
-<td>IdP 에서 받은 값</td>
-<td>저장 후 <code>set</code> 으로 표시</td>
+<td>from the IdP</td>
+<td>Shows <code>set</code> after saving</td>
 </tr>
 <tr>
 <td><code>Redirect URI</code></td>
 <td><code>https://iam.example.com/admin/auth/sso/oidc/callback</code></td>
-<td>IdP 에 등록한 값과 정확히 일치</td>
+<td>Must match the value registered at the IdP exactly</td>
 </tr>
 <tr>
 <td><code>Scopes</code></td>
-<td>비워 둠 (기본 <code>openid profile email</code>)</td>
-<td><strong><code>groups</code> 를 넣지 마십시오.</strong> 표준 scope 가 아니어서 정의하지 않은 IdP 는 요청 전체를 <code>invalid_scope</code> 로 거부합니다. IdP 문서에 있는 경우만 추가</td>
+<td>leave empty (default <code>openid profile email</code>)</td>
+<td><strong>Do not add <code>groups</code>.</strong> It is not a standard scope, and an IdP that does not define it rejects the whole request with <code>invalid_scope</code>. Add a scope only if your IdP documents it</td>
 </tr>
 <tr>
 <td><code>Username claim</code></td>
-<td>기본 <code>preferred_username</code></td>
-<td>사번 등 다른 claim 을 쓰면 그 이름. 값이 없으면 <code>sub</code> 를 씁니다</td>
+<td>default <code>preferred_username</code></td>
+<td>Set another claim name (an employee number, say) if needed. When the claim is missing, <code>sub</code> is used</td>
 </tr>
 <tr>
 <td><code>Groups claim</code></td>
-<td>기본 <code>groups</code></td>
-<td>IdP 가 그룹을 넣는 claim 이름</td>
+<td>default <code>groups</code></td>
+<td>The claim the IdP puts groups in</td>
 </tr>
 <tr>
 <td><code>Audience</code></td>
-<td>비워 둠</td>
-<td>비우면 Client ID. 다른 애플리케이션용으로 발급된 토큰은 거부됩니다</td>
+<td>leave empty</td>
+<td>Empty means the Client ID. A token issued for another application is refused</td>
 </tr>
 </tbody>
 </table>
-<p><strong><code>Save</code></strong> 를 누른 뒤 <strong><code>Test the connection</code></strong>. 테스트는 <strong>저장된 값</strong>을 검사하므로 저장 전에 누르면
-"save your changes first" 가 나옵니다.</p>
-<p>성공 예: <code>Discovery succeeded, 2 signing key(s) published. Authorization endpoint: https://…/auth</code></p>
+<p>Click <strong><code>Save</code></strong>, then <strong><code>Test the connection</code></strong>. The test checks the <strong>saved</strong> settings, so clicking it
+with unsaved edits answers "save your changes first".</p>
+<p>A successful test reads like: <code>Discovery succeeded, 2 signing key(s) published. Authorization endpoint: https://…/auth</code></p>
 <h3 id="4-b-saml-20">4-B. SAML 2.0</h3>
-<p>SAML 연동은 칸을 채우는 작업이 아니라 <strong>메타데이터 문서를 서로 교환</strong>하는 작업입니다.</p>
-<p><strong><code>SAML 2.0</code> 탭에서 순서대로</strong></p>
+<p>A SAML integration is not form-filling; it is <strong>an exchange of metadata documents</strong>.</p>
+<p><strong>On the <code>SAML 2.0</code> tab, in order</strong></p>
 <ol>
-<li><code>Enable SAML 2.0</code> 켬.</li>
-<li>아래 칸 중 SP 쪽 두 개를 먼저 입력하고 <strong><code>Save</code></strong>:<ul>
-<li><code>SP entity ID</code> — 예: <code>ontul</code> (IdP 에 등록되는 이 서비스의 식별자. 비우면 <code>ontul</code>)</li>
+<li>Turn on <code>Enable SAML 2.0</code>.</li>
+<li>Fill in the two SP fields first and click <strong><code>Save</code></strong>:<ul>
+<li><code>SP entity ID</code> — e.g. <code>ontul</code> (this service's identifier at the IdP; <code>ontul</code> when empty)</li>
 <li><code>Assertion consumer URL</code> — <code>https://iam.example.com/admin/auth/sso/saml/acs</code></li>
 </ul>
 </li>
-<li>(IdP 가 요청 서명 또는 assertion 암호화를 요구하는 경우만) <strong><code>Generate an SP keypair</code></strong> 를 누르고,
-   <code>Sign authentication requests</code> 를 켜고 <strong><code>Save</code></strong>.</li>
-<li><strong><code>This cluster's SP metadata</code></strong> 를 눌러 <code>ontul-sp-metadata.xml</code> 을 내려받아 <strong>IdP 관리자에게 전달</strong>합니다.
-   entity ID, ACS 주소, (3을 했다면) 인증서가 들어 있습니다.</li>
-<li>IdP 관리자에게 받을 것: <strong>IdP 메타데이터 XML</strong>. 또한 IdP 에서 assertion 에 사용자 이름 attribute 와
-   그룹 attribute 를 넣도록 설정해 달라고 요청합니다.</li>
-<li>받은 IdP 메타데이터 XML 전체를 <code>Paste your identity provider's SAML metadata XML here</code> 칸에 붙여 넣고
-   <strong><code>Read the provider's metadata</code></strong>. <code>IdP entity ID</code>, <code>IdP sign-on URL</code>, <code>IdP signing certificate</code>
-   세 칸이 자동으로 채워지고 <strong>바로 저장됩니다</strong>(수기 입력할 필요 없음).</li>
-<li>나머지 항목 확인 후 <strong><code>Save</code></strong>:</li>
+<li>(Only if the IdP requires signed requests or encrypts assertions) click <strong><code>Generate an SP keypair</code></strong>,
+   turn on <code>Sign authentication requests</code>, and <strong><code>Save</code></strong>.</li>
+<li>Click <strong><code>This cluster's SP metadata</code></strong> to download <code>ontul-sp-metadata.xml</code> and <strong>hand it to the IdP
+   administrator</strong>. It carries the entity ID, the ACS address and — if you did step 3 — the certificate.</li>
+<li>From the IdP administrator, get <strong>the IdP's metadata XML</strong>. Also ask them to include a user-name
+   attribute and a groups attribute in the assertion.</li>
+<li>Paste the whole IdP metadata XML into the <code>Paste your identity provider's SAML metadata XML here</code> box
+   and click <strong><code>Read the provider's metadata</code></strong>. <code>IdP entity ID</code>, <code>IdP sign-on URL</code> and <code>IdP signing
+   certificate</code> are filled in and <strong>saved immediately</strong> — nothing to transcribe by hand.</li>
+<li>Check the remaining fields and click <strong><code>Save</code></strong>:</li>
 </ol>
 <table>
 <thead>
 <tr>
-<th>화면 항목</th>
-<th>입력 값</th>
-<th>비고</th>
+<th>Field</th>
+<th>Value</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>NameID format</code></td>
-<td>비워 둠</td>
-<td>비우면 IdP 가 설정된 형식으로 발급. 지정하면 그 형식을 발급하지 않는 IdP 가 요청을 거부합니다</td>
+<td>leave empty</td>
+<td>Empty lets the IdP issue the format it is configured for. Naming one makes IdPs that do not issue that format refuse the request</td>
 </tr>
 <tr>
 <td><code>Username attribute</code></td>
-<td>기본 <code>uid</code></td>
-<td>assertion 에서 사용자 이름을 읽을 attribute. 없으면 NameID 를 씁니다</td>
+<td>default <code>uid</code></td>
+<td>The assertion attribute holding the user name. When it is missing, the NameID is used</td>
 </tr>
 <tr>
 <td><code>Groups attribute</code></td>
-<td>기본 <code>groups</code></td>
-<td>IdP 가 그룹을 넣는 attribute 이름 (ADFS 는 보통 <code>http://schemas.microsoft.com/ws/2008/06/identity/claims/role</code> 같은 URI 형식)</td>
+<td>default <code>groups</code></td>
+<td>The attribute the IdP puts groups in (ADFS typically uses a URI such as <code>http://schemas.microsoft.com/ws/2008/06/identity/claims/role</code>)</td>
 </tr>
 </tbody>
 </table>
 <ol>
-<li><strong><code>Check the configuration</code></strong>. 성공 예: <code>Configuration is usable. AuthnRequest built and signed (… bytes),
-   identity-provider certificate parsed.</code></li>
+<li>Click <strong><code>Check the configuration</code></strong>. A successful check reads like: <code>Configuration is usable.
+   AuthnRequest built and signed (… bytes), identity-provider certificate parsed.</code></li>
 </ol>
-<blockquote>
-<p>SP keypair 를 <strong>나중에 다시 생성하면</strong> 인증서가 바뀝니다. 4번(SP 메타데이터 전달)을 다시 해서
-IdP 가 새 인증서를 받게 하십시오.</p>
-</blockquote>
-<p>모든 assertion 은 서명·audience·유효 기간·issuer 를 검사하고, 이미 쓰인 assertion 은 재사용을 거부합니다.</p>
+<div class="admonition warning">
+<p class="admonition-title">Regenerating the SP keypair</p>
+<p>Generating the SP keypair again changes the certificate. Repeat step 4 (hand over the SP metadata)
+so the IdP picks up the new certificate.</p>
+</div>
+<p>Every assertion is checked for signature, audience, validity window and issuer, and an assertion
+already used is refused.</p>
 <h3 id="4-c-ldap-active-directory">4-C. LDAP / Active Directory</h3>
-<p><strong>IdP 쪽에서 받을 것</strong>: 디렉터리 주소, 사용자 검색용 서비스 계정(DN 과 비밀번호), 사용자·그룹이
-있는 OU(base DN).</p>
-<p><strong><code>LDAP / AD</code> 탭</strong></p>
+<p><strong>From the directory administrator</strong>: the directory address, a service account for searching users
+(its DN and password), and the OUs (base DNs) holding users and groups.</p>
+<p><strong>The <code>LDAP / AD</code> tab</strong></p>
 <table>
 <thead>
 <tr>
-<th>화면 항목</th>
-<th>입력 값 (Active Directory 예)</th>
-<th>비고</th>
+<th>Field</th>
+<th>Value (Active Directory example)</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>Enable LDAP / Active Directory</code></td>
-<td>켬</td>
+<td>on</td>
 <td></td>
 </tr>
 <tr>
 <td><code>Directory URL</code></td>
 <td><code>ldaps://ad.example.com:636</code></td>
-<td><code>ldaps://</code> 를 쓰거나 아래 <code>StartTLS</code> 를 켜십시오. 아니면 비밀번호가 평문으로 전송됩니다</td>
+<td>Use <code>ldaps://</code>, or turn on <code>StartTLS</code> below. Otherwise passwords cross the network in the clear</td>
 </tr>
 <tr>
 <td><code>Bind DN</code></td>
 <td><code>cn=svc-ontul,ou=service,dc=example,dc=com</code></td>
-<td>사용자 항목을 찾는 서비스 계정</td>
+<td>The service account that finds user entries</td>
 </tr>
 <tr>
 <td><code>Bind password</code></td>
-<td>서비스 계정 비밀번호</td>
+<td>the service account's password</td>
 <td></td>
 </tr>
 <tr>
@@ -3249,7 +3254,7 @@ IdP 가 새 인증서를 받게 하십시오.</p>
 <tr>
 <td><code>User filter</code></td>
 <td><code>(sAMAccountName={0})</code></td>
-<td><code>{0}</code> 은 로그인 이름. OpenLDAP 은 기본 <code>(uid={0})</code></td>
+<td><code>{0}</code> is the login name. OpenLDAP uses the default <code>(uid={0})</code></td>
 </tr>
 <tr>
 <td><code>Group base DN</code></td>
@@ -3258,172 +3263,171 @@ IdP 가 새 인증서를 받게 하십시오.</p>
 </tr>
 <tr>
 <td><code>Group filter</code></td>
-<td>기본 <code>(member={0})</code></td>
-<td><code>{0}</code> 은 사용자 DN. 사용자의 <code>memberOf</code> 도 함께 읽습니다</td>
+<td>default <code>(member={0})</code></td>
+<td><code>{0}</code> is the user's DN. The user's <code>memberOf</code> is read as well</td>
 </tr>
 <tr>
 <td><code>Group name attribute</code></td>
-<td>기본 <code>cn</code></td>
+<td>default <code>cn</code></td>
 <td></td>
 </tr>
 <tr>
 <td><code>StartTLS</code></td>
-<td><code>ldap://</code> 를 쓸 때 켬</td>
+<td>on when using <code>ldap://</code></td>
 <td></td>
 </tr>
 </tbody>
 </table>
-<p><strong><code>Save</code></strong> → <strong><code>Test the bind</code></strong>. 서비스 계정으로 디렉터리 접속·바인드가 되는지 확인합니다.</p>
-<p>로그인은 별도 버튼 없이 <strong>기존 로그인 폼</strong>에 사내 계정과 사내 비밀번호를 입력합니다. 로컬 계정
-비밀번호를 먼저 확인하고, 맞지 않으면 디렉터리로 확인합니다.</p>
+<p>Click <strong><code>Save</code></strong> → <strong><code>Test the bind</code></strong>. This checks that the service account can connect and bind.</p>
+<p>There is no separate button for signing in: users type their directory account and password into the
+<strong>normal login form</strong>. The local password is checked first; if it does not match, the directory is tried.</p>
 <hr />
-<h2 id="5-identity-mapping">5. 그룹 매핑: <code>Identity mapping</code> 탭</h2>
+<h2 id="5-group-mapping-the-identity-mapping-tab">5. Group mapping: the <code>Identity mapping</code> tab</h2>
 <table>
 <thead>
 <tr>
-<th>화면 항목</th>
-<th>입력 값</th>
-<th>비고</th>
+<th>Field</th>
+<th>Value</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>Group mappings</code></td>
 <td><code>DATA-ADMIN:ontul-admins,DATA-ANALYST:ontul-readers</code></td>
-<td><code>IdP그룹:Ontul그룹</code> 을 쉼표로 구분. <strong>대소문자까지 정확히</strong> 일치해야 합니다</td>
+<td><code>idpGroup:ontulGroup</code> pairs, comma-separated. Names must match <strong>exactly, including case</strong></td>
 </tr>
 <tr>
 <td><code>Allow identities whose groups map to nothing</code></td>
-<td>끔 (권장)</td>
-<td>켜면 매핑되는 그룹이 없는 사용자도 로그인되지만 아무것도 할 수 없습니다</td>
+<td>off (recommended)</td>
+<td>When on, users whose groups map to nothing can sign in but can do nothing</td>
 </tr>
 <tr>
 <td><code>Federated session seconds</code></td>
-<td>기본 <code>3600</code></td>
-<td>SSO 세션 유효 시간(초). 짧을수록 IdP 에서 사용자를 막았을 때 빨리 반영됩니다</td>
+<td>default <code>3600</code></td>
+<td>How long an SSO session lasts. Shorter means a block at the IdP takes effect sooner</td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li>비워 두면 IdP 그룹 이름을 그대로 Ontul 그룹 이름으로 씁니다.</li>
-<li><strong>한 번 설정하면 목록에 없는 그룹은 모두 버려집니다.</strong> IdP 에 그룹을 새로 만드는 것만으로 권한이
-  생기지 않습니다.</li>
-<li>Keycloak 처럼 그룹 이름 앞에 <code>/</code> 가 붙어 오면(<code>/DATA-ADMIN</code>) 자동으로 떼고 비교합니다.</li>
-<li>매핑 대상 Ontul 그룹(오른쪽)은 2장에서 <strong>실제로 만들어 둔 그룹</strong>이어야 합니다. 없는 그룹으로 매핑하면
-  로그인은 되지만 정책이 없어 모든 작업이 거부됩니다.</li>
+<li>Left empty, IdP group names are used as Ontul group names unchanged.</li>
+<li><strong>Once set, any group not listed is dropped.</strong> Creating a group at the IdP does not grant access by itself.</li>
+<li>A leading <code>/</code> on group names, as Keycloak sends them (<code>/DATA-ADMIN</code>), is stripped before matching.</li>
+<li>The Ontul groups on the right must be groups <strong>actually created in section 2</strong>. Mapping to a group
+  that does not exist lets the user sign in, but with no policies every action is denied.</li>
 </ul>
-<p><strong><code>Save</code></strong> 를 누릅니다.</p>
+<p>Click <strong><code>Save</code></strong>.</p>
 <hr />
-<h2 id="6">6. 로그인 확인</h2>
+<h2 id="6-verify-the-login">6. Verify the login</h2>
 <ol>
-<li>다른 브라우저(또는 시크릿 창)에서 <code>https://iam.example.com/admin/</code> 을 엽니다.</li>
-<li>로그인 화면에 <code>or</code> 아래 <strong><code>Sign in with OpenID Connect</code></strong> / <strong><code>Sign in with SAML</code></strong> 버튼이 보이는지
-   확인합니다. LDAP 만 켰다면 폼 아래에 "Directory accounts sign in with the form above" 안내가 보입니다.</li>
-<li>버튼을 눌러 IdP 에서 로그인 → 관리 화면으로 돌아오면 성공입니다.</li>
-<li>관리자 그룹으로 매핑된 사용자는 <code>Single Sign-On</code> 화면의 <code>Save</code> 가 활성이고, 조회 전용 그룹 사용자는
-   <code>Read-only</code> 안내가 보이는지 확인합니다.</li>
+<li>In another browser (or a private window), open <code>https://iam.example.com/admin/</code>.</li>
+<li>Check that the login page shows <strong><code>Sign in with OpenID Connect</code></strong> / <strong><code>Sign in with SAML</code></strong> below <code>or</code>.
+   With only LDAP enabled, the form shows the hint "Directory accounts sign in with the form above".</li>
+<li>Click the button, sign in at the IdP, and land back in the console — that is success.</li>
+<li>A user mapped to the administrator group sees <code>Save</code> enabled on the <code>Single Sign-On</code> screen; a user in
+   the read-only group sees the <code>Read-only</code> notice.</li>
 </ol>
-<p><strong>관리 화면 첫 연동 때는 관리자 창(로컬 <code>admin</code> 로그인)을 닫지 말고</strong> 다른 창에서 시험하십시오.
-로컬 로그인은 SSO 와 상관없이 계속 됩니다.</p>
-<h3 id="api">API 로 확인 (선택)</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 로그인 화면이 보여줄 방식 (인증 불필요)</span>
+<p><strong>On the first integration, keep the administrator window (signed in as local <code>admin</code>) open</strong> and test
+in another window. Local login keeps working regardless of SSO.</p>
+<h3 id="checking-from-the-api-optional">Checking from the API (optional)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Which providers the login page offers (no authentication needed)</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://iam.example.com/admin/auth/sso/providers
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># {&quot;providers&quot;:[&quot;oidc&quot;,&quot;saml&quot;],&quot;localLoginEnabled&quot;:true}</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># LDAP 계정으로 토큰 받기 (스크립트·SDK 용)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># A token for an LDAP account (for scripts and SDKs)</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://iam.example.com/v1/api/auth/sso<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;hong.gildong&quot;,&quot;password&quot;:&quot;&lt;사내 비밀번호&gt;&quot;}&#39;</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># {&quot;accessToken&quot;:&quot;...&quot;,&quot;username&quot;:&quot;hong.gildong&quot;,&quot;federated&quot;:true,&quot;idp&quot;:&quot;LDAP&quot;,&quot;groups&quot;:[&quot;ontul-readers&quot;]}</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;jdoe&quot;,&quot;password&quot;:&quot;&lt;directory password&gt;&quot;}&#39;</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># {&quot;accessToken&quot;:&quot;...&quot;,&quot;username&quot;:&quot;jdoe&quot;,&quot;federated&quot;:true,&quot;idp&quot;:&quot;LDAP&quot;,&quot;groups&quot;:[&quot;ontul-readers&quot;]}</span>
 </code></pre></div>
 <hr />
-<h2 id="7">7. 문제 해결</h2>
-<p>로그인이 실패하면 로그인 화면 위에 이유가 표시됩니다. 마스터 로그(<code>Console SSO refused</code>,
-<code>Federated login refused</code>, <code>Directory login refused</code>)에 같은 내용이 남습니다.</p>
+<h2 id="7-troubleshooting">7. Troubleshooting</h2>
+<p>When a login fails, the reason is shown above the login form. The master log records the same
+(<code>Console SSO refused</code>, <code>Federated login refused</code>, <code>Directory login refused</code>).</p>
 <table>
 <thead>
 <tr>
-<th>증상</th>
-<th>원인과 조치</th>
+<th>Symptom</th>
+<th>Cause and fix</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>IdP 화면에서 <code>redirect_uri</code> 오류</td>
-<td><code>Redirect URI</code> 와 IdP 에 등록한 값이 다릅니다. 프로토콜(<code>http</code>/<code>https</code>), 포트, 끝 <code>/</code> 까지 맞추십시오</td>
+<td>A <code>redirect_uri</code> error at the IdP</td>
+<td><code>Redirect URI</code> differs from what the IdP has registered. Match the scheme (<code>http</code>/<code>https</code>), the port and any trailing <code>/</code></td>
 </tr>
 <tr>
 <td><code>invalid_scope</code></td>
-<td><code>Scopes</code> 에 <code>groups</code> 등 IdP 가 모르는 scope 가 있습니다. 비우십시오</td>
+<td><code>Scopes</code> contains a scope the IdP does not know, such as <code>groups</code>. Empty it</td>
 </tr>
 <tr>
-<td>OIDC/SAML 로그인 후 "Signed in as …, but no group from the identity provider maps to a group on this cluster"</td>
-<td>IdP 로그인은 성공했고 <strong>그룹 매핑이 비었습니다.</strong> ① IdP 가 그룹 claim/attribute 를 넣는지, ② <code>Groups claim</code>/<code>Groups attribute</code> 이름이 맞는지, ③ <code>Group mappings</code> 의 왼쪽 이름이 IdP 그룹 이름과 대소문자까지 같은지 확인하십시오</td>
+<td>After OIDC/SAML login: "Signed in as …, but no group from the identity provider maps to a group on this cluster"</td>
+<td>The IdP login succeeded and <strong>the group mapping came out empty.</strong> Check ① that the IdP includes the groups claim/attribute, ② that <code>Groups claim</code> / <code>Groups attribute</code> names it correctly, ③ that the left-hand names in <code>Group mappings</code> match the IdP group names, including case</td>
 </tr>
 <tr>
-<td>LDAP: 로그인 폼에서 "Invalid credentials"</td>
-<td>로그인 폼은 비밀번호 오류와 그룹 매핑 없음을 <strong>구분하지 않습니다.</strong> 아래 명령으로 구분하십시오: 401 이면 계정·비밀번호·검색 설정 문제, <strong>403</strong> 이면 비밀번호는 맞았고 그룹 매핑이 빈 것입니다(비밀번호를 초기화할 일이 아님)</td>
+<td>LDAP: "Invalid credentials" on the login form</td>
+<td>The login form <strong>does not distinguish</strong> a wrong password from an empty group mapping. Use the command below: 401 is an account, password or search problem; <strong>403</strong> means the password was right and the group mapping is empty (no password reset needed)</td>
 </tr>
 <tr>
-<td>로그인은 되는데 모든 화면이 권한 오류</td>
-<td>매핑된 Ontul 그룹이 없거나 그 그룹에 정책이 없습니다(2장)</td>
+<td>Signed in, but every screen is a permission error</td>
+<td>The mapped Ontul group does not exist or has no policy (section 2)</td>
 </tr>
 <tr>
-<td>로그인은 되는데 설정 화면이 읽기 전용</td>
-<td>그 사용자의 그룹에 <code>AdministratorAccess</code> 가 없습니다</td>
+<td>Signed in, but the settings screens are read-only</td>
+<td>The user's groups lack <code>AdministratorAccess</code></td>
 </tr>
 <tr>
 <td>SAML: "The assertion consumer received no SAMLResponse"</td>
-<td>IdP 가 ACS 로 POST 하지 않았습니다. IdP 의 ACS binding 이 HTTP-POST 인지, ACS 주소가 맞는지 확인하십시오</td>
+<td>The IdP did not POST to the ACS. Check that the IdP's ACS binding is HTTP-POST and that the ACS address is right</td>
 </tr>
 <tr>
-<td>SAML: 서명 검증 실패</td>
-<td>IdP 서명 인증서가 바뀌었습니다. IdP 메타데이터를 다시 받아 <code>Read the provider's metadata</code></td>
+<td>SAML: signature verification fails</td>
+<td>The IdP's signing certificate changed. Fetch the IdP metadata again and <code>Read the provider's metadata</code></td>
 </tr>
 <tr>
-<td>SAML: IdP 가 요청을 거부</td>
-<td><code>NameID format</code> 을 비우십시오. IdP 가 서명된 요청을 요구하면 4-B 의 3번</td>
+<td>SAML: the IdP rejects the request</td>
+<td>Empty <code>NameID format</code>. If the IdP requires signed requests, see step 3 of 4-B</td>
 </tr>
 <tr>
-<td>LDAP: <code>Test the bind</code> 실패</td>
-<td>주소·포트·인증서(ldaps 의 경우 마스터 JVM 이 디렉터리 인증서를 신뢰해야 함)·Bind DN/비밀번호 확인</td>
+<td>LDAP: <code>Test the bind</code> fails</td>
+<td>Check the address, port, certificate (for ldaps, the master JVM must trust the directory's certificate), Bind DN and password</td>
 </tr>
 <tr>
-<td>LDAP: 아래 명령이 401</td>
-<td>사용자 검색 실패(<code>User base DN</code>/<code>User filter</code>) 또는 비밀번호 오류. AD 는 <code>(sAMAccountName={0})</code> 인지 확인</td>
+<td>LDAP: the command below answers 401</td>
+<td>User search failed (<code>User base DN</code> / <code>User filter</code>) or the password is wrong. For AD, check it is <code>(sAMAccountName={0})</code></td>
 </tr>
 <tr>
-<td>일부 시도만 실패</td>
-<td><code>Redirect URI</code>/ACS 가 마스터 한 대 주소입니다. 프록시 주소로 바꾸십시오(1-2)</td>
+<td>Only some attempts fail</td>
+<td><code>Redirect URI</code> / ACS points at one master. Use the proxy's address (1-2)</td>
 </tr>
 </tbody>
 </table>
-<p>LDAP 로그인 실패 원인 구분:</p>
+<p>Telling LDAP login failures apart:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-w<span class="w"> </span><span class="s1">&#39;\n%{http_code}\n&#39;</span><span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://iam.example.com/admin/auth/sso/ldap/login<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;hong.gildong&quot;,&quot;password&quot;:&quot;&lt;사내 비밀번호&gt;&quot;}&#39;</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 200 → 정상, 401 → 계정/비밀번호/검색 설정, 403 → 그룹 매핑 없음</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;username&quot;:&quot;jdoe&quot;,&quot;password&quot;:&quot;&lt;directory password&gt;&quot;}&#39;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 200 → fine, 401 → account / password / search settings, 403 → no group mapping</span>
 </code></pre></div>
 <hr />
-<h2 id="8">8. 운영 시 알아둘 점</h2>
+<h2 id="8-operating-notes">8. Operating notes</h2>
 <ul>
-<li><strong>퇴사·권한 회수</strong>: IdP 에서 사용자를 막으면 새 로그인은 즉시 막힙니다. 이미 발급된 세션은
-  <code>Federated session seconds</code> 가 지날 때까지 유지됩니다(Ontul 은 IdP 의 변경을 통보받지 않음).
-  SSO 세션에는 refresh token 이 없어 연장되지 않습니다.</li>
-<li><strong>엔진의 권한 검사와 SSO</strong>: 쿼리 엔진·분산 처리·스트림 처리의 권한 플러그인은 사용자를 <strong>이름으로</strong>
-  조회합니다. SSO 사용자의 그룹은 그 사용자가 SSO 로 로그인한 뒤 세션 시간 동안만 유효합니다.
-  세션이 없는 SSO 사용자의 이름은 그룹이 없는 것으로 판정되어 거부됩니다. 엔진을 계속 쓰는 서비스
-  계정이나 배치 사용자는 <strong>로컬 사용자</strong>로 만들고 그룹에 넣어 두십시오.</li>
-<li><strong>같은 이름의 로컬 사용자</strong>가 있으면 SSO 로 로그인해도 로컬 계정의 그룹·정책이 적용됩니다.</li>
-<li>설정은 클러스터 저장소에 복제되므로 마스터를 추가·재시작해도 다시 입력할 필요가 없습니다.</li>
-<li>SSO 설정 변경은 관리자만 할 수 있습니다. 일반 사용자도 이 화면을 볼 수 있고 SP 메타데이터를 내려받을
-  수 있지만, 저장·테스트·키 생성·메타데이터 가져오기는 할 수 없습니다.</li>
+<li><strong>Leavers and revocation</strong>: blocking a user at the IdP stops new logins immediately. A session already
+  issued lasts until <code>Federated session seconds</code> runs out — Ontul is not told about changes at the IdP.
+  An SSO session has no refresh token, so it is never extended.</li>
+<li><strong>Engine authorization and SSO</strong>: the authorization plugins of the query, batch and streaming engines
+  look users up <strong>by name</strong>. An SSO user's groups are live only for the session length after that user
+  signs in through SSO. Outside a session the name resolves to no groups and is denied. Create service
+  accounts and batch users that use the engines continuously as <strong>local users</strong> and put them in groups.</li>
+<li><strong>A local user of the same name</strong>: signing in through SSO still applies the local account's groups and policies.</li>
+<li>The settings are replicated in the cluster store, so adding or restarting masters needs no re-entry.</li>
+<li>Only administrators can change SSO. Other users can view this screen and download the SP metadata,
+  but cannot save, test, generate keys or import metadata.</li>
 </ul>
-<h2 id="_1">함께 보기</h2>
+<h2 id="see-also">See also</h2>
 <ul>
-<li><a href="../sso/">Single Sign-On (OIDC/SAML/LDAP)</a> — 동작 원리와 <code>ontul.properties</code> 속성</li>
-<li><a href="../iam/">IAM</a> — 그룹·정책</li>
-<li><a href="../iam-policy-templates/">IAM Policy Templates</a> — 그룹에 붙일 정책</li>
+<li><a href="../sso/">Single Sign-On (OIDC/SAML/LDAP)</a> — how it works, and the <code>ontul.properties</code> properties</li>
+<li><a href="../iam/">IAM</a> — groups and policies</li>
+<li><a href="../iam-policy-templates/">IAM Policy Templates</a> — policies to attach to a group</li>
 </ul>
 
 
